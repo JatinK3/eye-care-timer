@@ -18,7 +18,7 @@ A Flutter-based 20-20-20 eye care timer with customizable work/break cycles, str
 - Android Studio / VS Code (with Flutter & Dart plugins)
 
 ### Run Locally
-1. Clone the repo:
+Clone the repo:
 git clone https://github.com/JatinK3/eye-care-timer.git
 
 Navigate to project:
