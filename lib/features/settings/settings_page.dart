@@ -7,9 +7,13 @@ class SettingsPage extends StatelessWidget {
   final int breakDurationSeconds;
   final int streakCount;
   final bool notificationsEnabled;
+  final bool hapticsEnabled;
+  final bool soundEnabled;
   final bool canChangeDurations;
   final VoidCallback toggleTheme;
   final void Function(bool enabled) setNotificationsEnabled;
+  final void Function(bool enabled) setHapticsEnabled;
+  final void Function(bool enabled) setSoundEnabled;
   final void Function(String preset) setPreset;
   final void Function(int workDurationSeconds, int breakDurationSeconds)
   saveDurations;
@@ -23,9 +27,13 @@ class SettingsPage extends StatelessWidget {
     required this.breakDurationSeconds,
     required this.streakCount,
     required this.notificationsEnabled,
+    required this.hapticsEnabled,
+    required this.soundEnabled,
     required this.canChangeDurations,
     required this.toggleTheme,
     required this.setNotificationsEnabled,
+    required this.setHapticsEnabled,
+    required this.setSoundEnabled,
     required this.setPreset,
     required this.saveDurations,
     required this.resetStreak,
@@ -138,6 +146,29 @@ class SettingsPage extends StatelessWidget {
                       : null,
                   onTap: () => setPreset(preset),
                 ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _Section(
+            title: 'Feedback',
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.vibration),
+                title: const Text('Haptics'),
+                subtitle: const Text('Vibrate when a timer phase ends'),
+                value: hapticsEnabled,
+                onChanged: setHapticsEnabled,
+              ),
+              const Divider(height: 1),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.volume_up_outlined),
+                title: const Text('Sound'),
+                subtitle: const Text('Play a short system alert at phase end'),
+                value: soundEnabled,
+                onChanged: setSoundEnabled,
               ),
             ],
           ),

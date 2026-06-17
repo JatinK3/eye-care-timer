@@ -11,6 +11,8 @@ class TimerSettings {
   final String colorPreset;
   final int streakCount;
   final bool notificationsEnabled;
+  final bool hapticsEnabled;
+  final bool soundEnabled;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -19,6 +21,8 @@ class TimerSettings {
     required this.colorPreset,
     required this.streakCount,
     required this.notificationsEnabled,
+    required this.hapticsEnabled,
+    required this.soundEnabled,
   });
 
   const TimerSettings.defaults()
@@ -27,7 +31,9 @@ class TimerSettings {
       themeMode = ThemeMode.light,
       colorPreset = defaultColorPreset,
       streakCount = 0,
-      notificationsEnabled = true;
+      notificationsEnabled = true,
+      hapticsEnabled = true,
+      soundEnabled = false;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -36,6 +42,8 @@ class TimerSettings {
     String? colorPreset,
     int? streakCount,
     bool? notificationsEnabled,
+    bool? hapticsEnabled,
+    bool? soundEnabled,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -44,6 +52,8 @@ class TimerSettings {
       colorPreset: colorPreset ?? this.colorPreset,
       streakCount: streakCount ?? this.streakCount,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
+      soundEnabled: soundEnabled ?? this.soundEnabled,
     );
   }
 }

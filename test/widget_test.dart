@@ -178,6 +178,19 @@ void main() {
     expect(find.text('05:00'), findsOneWidget);
   });
 
+  testWidgets('settings screen exposes feedback toggles', (
+    WidgetTester tester,
+  ) async {
+    await pumpEyeCareTimerApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Feedback'), findsOneWidget);
+    expect(find.text('Haptics'), findsOneWidget);
+    expect(find.text('Sound'), findsOneWidget);
+  });
+
   testWidgets('notification toggle disables reminder scheduling', (
     WidgetTester tester,
   ) async {
@@ -201,8 +214,11 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(find.text('Notifications'), 200);
+    await tester.drag(find.byType(ListView), const Offset(0, -140));
+    await tester.pumpAndSettle();
     expect(find.text('Notifications'), findsOneWidget);
-    await tester.tap(find.byType(SwitchListTile).last);
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Notifications'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Timer alerts are off'), findsOneWidget);

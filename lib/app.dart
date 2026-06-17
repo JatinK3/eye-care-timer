@@ -66,6 +66,20 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
     unawaited(_preferencesService.saveColorPreset(preset));
   }
 
+  void _setHapticsEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(hapticsEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveHapticsEnabled(enabled));
+  }
+
+  void _setSoundEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(soundEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveSoundEnabled(enabled));
+  }
+
   void _setNotificationsEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(notificationsEnabled: enabled);
@@ -131,11 +145,15 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
           breakDurationSeconds: _settings.breakDurationSeconds,
           streakCount: _settings.streakCount,
           notificationsEnabled: _settings.notificationsEnabled,
+          hapticsEnabled: _settings.hapticsEnabled,
+          soundEnabled: _settings.soundEnabled,
           canChangeDurations: canChangeDurations,
           toggleTheme: _toggleTheme,
           setPreset: _setPreset,
           saveDurations: _saveDurations,
           setNotificationsEnabled: _setNotificationsEnabled,
+          setHapticsEnabled: _setHapticsEnabled,
+          setSoundEnabled: _setSoundEnabled,
           resetStreak: _resetStreakCount,
         ),
       ),
@@ -170,6 +188,8 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
               initialBreakDurationSeconds: _settings.breakDurationSeconds,
               initialStreakCount: _settings.streakCount,
               notificationsEnabled: _settings.notificationsEnabled,
+              hapticsEnabled: _settings.hapticsEnabled,
+              soundEnabled: _settings.soundEnabled,
               initialSession: _session,
               openSettings: _openSettings,
               setPreset: _setPreset,

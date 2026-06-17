@@ -12,6 +12,8 @@ class PreferencesService {
   static const String streakCountKey = 'streakCount';
   static const String streakDateKey = 'streakDate';
   static const String notificationsEnabledKey = 'notificationsEnabled';
+  static const String hapticsEnabledKey = 'hapticsEnabled';
+  static const String soundEnabledKey = 'soundEnabled';
   static const String sessionIsActiveKey = 'sessionIsActive';
   static const String sessionIsBreakKey = 'sessionIsBreak';
   static const String sessionIsPausedKey = 'sessionIsPaused';
@@ -45,6 +47,8 @@ class PreferencesService {
           prefs.getString(colorPresetKey) ?? TimerSettings.defaultColorPreset,
       streakCount: streakCount,
       notificationsEnabled: prefs.getBool(notificationsEnabledKey) ?? true,
+      hapticsEnabled: prefs.getBool(hapticsEnabledKey) ?? true,
+      soundEnabled: prefs.getBool(soundEnabledKey) ?? false,
     );
   }
 
@@ -124,6 +128,16 @@ class PreferencesService {
   Future<void> saveNotificationsEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(notificationsEnabledKey, enabled);
+  }
+
+  Future<void> saveHapticsEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(hapticsEnabledKey, enabled);
+  }
+
+  Future<void> saveSoundEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(soundEnabledKey, enabled);
   }
 
   Future<void> saveStreakCount(int streakCount) async {

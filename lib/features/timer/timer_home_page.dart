@@ -15,6 +15,8 @@ class TimerHomePage extends StatefulWidget {
   final int initialStreakCount;
   final TimerSession initialSession;
   final bool notificationsEnabled;
+  final bool hapticsEnabled;
+  final bool soundEnabled;
   final void Function(BuildContext context, bool canChangeDurations)
   openSettings;
   final void Function(String) setPreset;
@@ -36,6 +38,8 @@ class TimerHomePage extends StatefulWidget {
     required this.initialStreakCount,
     required this.initialSession,
     required this.notificationsEnabled,
+    required this.hapticsEnabled,
+    required this.soundEnabled,
     required this.openSettings,
     required this.setPreset,
     required this.toggleTheme,
@@ -466,7 +470,12 @@ class _TimerHomePageState extends State<TimerHomePage>
   }
 
   void _playChime() {
-    HapticFeedback.lightImpact();
+    if (widget.hapticsEnabled) {
+      unawaited(HapticFeedback.lightImpact());
+    }
+    if (widget.soundEnabled) {
+      unawaited(SystemSound.play(SystemSoundType.alert));
+    }
   }
 
   String _formattedTime(int seconds) {
