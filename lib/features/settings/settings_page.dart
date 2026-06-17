@@ -6,8 +6,10 @@ class SettingsPage extends StatelessWidget {
   final int workDurationSeconds;
   final int breakDurationSeconds;
   final int streakCount;
+  final bool notificationsEnabled;
   final bool canChangeDurations;
   final VoidCallback toggleTheme;
+  final void Function(bool enabled) setNotificationsEnabled;
   final void Function(String preset) setPreset;
   final void Function(int workDurationSeconds, int breakDurationSeconds)
   saveDurations;
@@ -20,8 +22,10 @@ class SettingsPage extends StatelessWidget {
     required this.workDurationSeconds,
     required this.breakDurationSeconds,
     required this.streakCount,
+    required this.notificationsEnabled,
     required this.canChangeDurations,
     required this.toggleTheme,
+    required this.setNotificationsEnabled,
     required this.setPreset,
     required this.saveDurations,
     required this.resetStreak,
@@ -135,6 +139,27 @@ class SettingsPage extends StatelessWidget {
                   onTap: () => setPreset(preset),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _Section(
+            title: 'Reminders',
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.notifications_active_outlined),
+                title: const Text('Notifications'),
+                subtitle: const Text('Remind me when work or break time ends'),
+                value: notificationsEnabled,
+                onChanged: setNotificationsEnabled,
+              ),
+              if (!notificationsEnabled)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Timer alerts are off. The countdown still works in the app.',
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 16),

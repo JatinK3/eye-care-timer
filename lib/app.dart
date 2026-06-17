@@ -66,6 +66,18 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
     unawaited(_preferencesService.saveColorPreset(preset));
   }
 
+  void _setNotificationsEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(notificationsEnabled: enabled);
+    });
+    if (!enabled) {
+      unawaited(_notificationService.cancelPhaseReminder());
+    } else {
+      unawaited(_notificationService.requestPermissions());
+    }
+    unawaited(_preferencesService.saveNotificationsEnabled(enabled));
+  }
+
   void _saveDurations(int workDurationSeconds, int breakDurationSeconds) {
     setState(() {
       _settings = _settings.copyWith(
@@ -118,10 +130,12 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
           workDurationSeconds: _settings.workDurationSeconds,
           breakDurationSeconds: _settings.breakDurationSeconds,
           streakCount: _settings.streakCount,
+          notificationsEnabled: _settings.notificationsEnabled,
           canChangeDurations: canChangeDurations,
           toggleTheme: _toggleTheme,
           setPreset: _setPreset,
           saveDurations: _saveDurations,
+          setNotificationsEnabled: _setNotificationsEnabled,
           resetStreak: _resetStreakCount,
         ),
       ),
@@ -155,12 +169,14 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
               initialWorkDurationSeconds: _settings.workDurationSeconds,
               initialBreakDurationSeconds: _settings.breakDurationSeconds,
               initialStreakCount: _settings.streakCount,
+              notificationsEnabled: _settings.notificationsEnabled,
               initialSession: _session,
               openSettings: _openSettings,
               setPreset: _setPreset,
               toggleTheme: _toggleTheme,
               saveDurations: _saveDurations,
               saveStreakCount: _saveStreakCount,
+              setNotificationsEnabled: _setNotificationsEnabled,
               saveSession: _saveSession,
               clearSession: _clearSession,
               notificationService: _notificationService,

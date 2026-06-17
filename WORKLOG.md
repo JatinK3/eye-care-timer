@@ -36,6 +36,10 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
 - [x] Add dedicated settings screen.
   - Moved duration, theme, preset, and streak reset controls into a settings page.
   - Kept the main timer screen focused on timing controls and status.
+- [x] Add notification toggle UX.
+  - Persisted a notification enabled preference.
+  - Added a settings toggle with disabled-state copy.
+  - Skipped phase reminder scheduling when notifications are disabled.
 - [ ] Expand product features after the foundation is stable.
   - Streak/history view.
   - Optional sound/haptic settings.
@@ -44,6 +48,7 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
 
 ## Completed
 
+- Added persisted notification toggle UX and skipped reminder scheduling when alerts are off.
 - Added a dedicated settings screen for timer, appearance, and streak controls.
 - Added active session restore for running, paused, and expired timer phases.
 - Updated Android build toolchain to Gradle 8.14.3, Android Gradle Plugin 8.11.1, and Kotlin Gradle Plugin 2.2.20.

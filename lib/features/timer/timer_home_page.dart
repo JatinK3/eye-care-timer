@@ -14,6 +14,7 @@ class TimerHomePage extends StatefulWidget {
   final int initialBreakDurationSeconds;
   final int initialStreakCount;
   final TimerSession initialSession;
+  final bool notificationsEnabled;
   final void Function(BuildContext context, bool canChangeDurations)
   openSettings;
   final void Function(String) setPreset;
@@ -21,6 +22,7 @@ class TimerHomePage extends StatefulWidget {
   final void Function(int workDurationSeconds, int breakDurationSeconds)
   saveDurations;
   final void Function(int streakCount) saveStreakCount;
+  final void Function(bool enabled) setNotificationsEnabled;
   final void Function(TimerSession session) saveSession;
   final VoidCallback clearSession;
   final NotificationService notificationService;
@@ -33,11 +35,13 @@ class TimerHomePage extends StatefulWidget {
     required this.initialBreakDurationSeconds,
     required this.initialStreakCount,
     required this.initialSession,
+    required this.notificationsEnabled,
     required this.openSettings,
     required this.setPreset,
     required this.toggleTheme,
     required this.saveDurations,
     required this.saveStreakCount,
+    required this.setNotificationsEnabled,
     required this.saveSession,
     required this.clearSession,
     required this.notificationService,
@@ -451,6 +455,10 @@ class _TimerHomePageState extends State<TimerHomePage>
     int durationSeconds, {
     required bool isBreak,
   }) {
+    if (!widget.notificationsEnabled) {
+      return Future<void>.value();
+    }
+
     final delay = Duration(seconds: durationSeconds);
     return isBreak
         ? widget.notificationService.scheduleBreakCompleteReminder(delay)

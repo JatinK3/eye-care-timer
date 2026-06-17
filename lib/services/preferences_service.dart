@@ -11,6 +11,7 @@ class PreferencesService {
   static const String colorPresetKey = 'colorPreset';
   static const String streakCountKey = 'streakCount';
   static const String streakDateKey = 'streakDate';
+  static const String notificationsEnabledKey = 'notificationsEnabled';
   static const String sessionIsActiveKey = 'sessionIsActive';
   static const String sessionIsBreakKey = 'sessionIsBreak';
   static const String sessionIsPausedKey = 'sessionIsPaused';
@@ -43,6 +44,7 @@ class PreferencesService {
       colorPreset:
           prefs.getString(colorPresetKey) ?? TimerSettings.defaultColorPreset,
       streakCount: streakCount,
+      notificationsEnabled: prefs.getBool(notificationsEnabledKey) ?? true,
     );
   }
 
@@ -117,6 +119,11 @@ class PreferencesService {
   Future<void> saveColorPreset(String colorPreset) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(colorPresetKey, colorPreset);
+  }
+
+  Future<void> saveNotificationsEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(notificationsEnabledKey, enabled);
   }
 
   Future<void> saveStreakCount(int streakCount) async {

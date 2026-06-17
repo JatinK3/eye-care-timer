@@ -10,6 +10,7 @@ class TimerSettings {
   final ThemeMode themeMode;
   final String colorPreset;
   final int streakCount;
+  final bool notificationsEnabled;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -17,6 +18,7 @@ class TimerSettings {
     required this.themeMode,
     required this.colorPreset,
     required this.streakCount,
+    required this.notificationsEnabled,
   });
 
   const TimerSettings.defaults()
@@ -24,7 +26,8 @@ class TimerSettings {
       breakDurationSeconds = defaultBreakDurationSeconds,
       themeMode = ThemeMode.light,
       colorPreset = defaultColorPreset,
-      streakCount = 0;
+      streakCount = 0,
+      notificationsEnabled = true;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -32,6 +35,7 @@ class TimerSettings {
     ThemeMode? themeMode,
     String? colorPreset,
     int? streakCount,
+    bool? notificationsEnabled,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -39,6 +43,7 @@ class TimerSettings {
       themeMode: themeMode ?? this.themeMode,
       colorPreset: colorPreset ?? this.colorPreset,
       streakCount: streakCount ?? this.streakCount,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
     );
   }
 }

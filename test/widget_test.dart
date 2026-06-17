@@ -175,6 +175,37 @@ void main() {
     expect(find.text('05:00'), findsOneWidget);
   });
 
+  testWidgets('notification toggle disables reminder scheduling', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.notificationsEnabledKey: false,
+    });
+    final notificationService = await pumpEyeCareTimerApp(tester);
+
+    await tester.tap(find.text('Start'));
+    await tester.pump();
+
+    expect(find.text('Pause'), findsOneWidget);
+    expect(notificationService.workReminderCount, 0);
+  });
+
+  testWidgets('settings screen toggles notification preference', (
+    WidgetTester tester,
+  ) async {
+    final notificationService = await pumpEyeCareTimerApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Notifications'), findsOneWidget);
+    await tester.tap(find.byType(SwitchListTile).last);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Timer alerts are off'), findsOneWidget);
+    expect(notificationService.cancelCount, 1);
+  });
+
   testWidgets('start, pause, resume, and cancel keep controls consistent', (
     WidgetTester tester,
   ) async {
