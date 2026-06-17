@@ -14,6 +14,8 @@ class TimerHomePage extends StatefulWidget {
   final int initialBreakDurationSeconds;
   final int initialStreakCount;
   final TimerSession initialSession;
+  final void Function(BuildContext context, bool canChangeDurations)
+  openSettings;
   final void Function(String) setPreset;
   final VoidCallback toggleTheme;
   final void Function(int workDurationSeconds, int breakDurationSeconds)
@@ -31,6 +33,7 @@ class TimerHomePage extends StatefulWidget {
     required this.initialBreakDurationSeconds,
     required this.initialStreakCount,
     required this.initialSession,
+    required this.openSettings,
     required this.setPreset,
     required this.toggleTheme,
     required this.saveDurations,
@@ -136,6 +139,29 @@ class _TimerHomePageState extends State<TimerHomePage>
         });
 
     _restoreInitialSession();
+  }
+
+  @override
+  void didUpdateWidget(covariant TimerHomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_isRunning) {
+      return;
+    }
+    if (oldWidget.initialWorkDurationSeconds !=
+            widget.initialWorkDurationSeconds ||
+        oldWidget.initialBreakDurationSeconds !=
+            widget.initialBreakDurationSeconds ||
+        oldWidget.initialStreakCount != widget.initialStreakCount) {
+      setState(() {
+        _workDurationSeconds = widget.initialWorkDurationSeconds;
+        _breakDurationSeconds = widget.initialBreakDurationSeconds;
+        _streakCount = widget.initialStreakCount;
+        _initialDuration = _workDurationSeconds;
+        _remainingSeconds = _initialDuration;
+        _animationController.duration = Duration(seconds: _initialDuration);
+        _animationController.reset();
+      });
+    }
   }
 
   @override
@@ -508,44 +534,9 @@ class _TimerHomePageState extends State<TimerHomePage>
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(widget.isDark ? Icons.light_mode : Icons.dark_mode),
-            onPressed: widget.toggleTheme,
-            tooltip: 'Toggle theme',
-          ),
-          IconButton(
-            icon: const Icon(Icons.color_lens),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                builder: (_) => SafeArea(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: ['Pastel', 'Calm Blue']
-                        .map(
-                          (preset) => ListTile(
-                            leading: CircleAvatar(
-                              radius: 10,
-                              backgroundColor: _progressColorForMode(
-                                false,
-                                preset,
-                                isDark,
-                              ),
-                            ),
-                            title: Text(preset),
-                            trailing: preset == widget.colorPreset
-                                ? const Icon(Icons.check)
-                                : null,
-                            onTap: () {
-                              widget.setPreset(preset);
-                              Navigator.pop(context);
-                            },
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-              );
-            },
+            icon: const Icon(Icons.settings),
+            onPressed: () => widget.openSettings(context, _canChangeSettings),
+            tooltip: 'Settings',
           ),
         ],
       ),
@@ -700,105 +691,6 @@ class _TimerHomePageState extends State<TimerHomePage>
                         ],
                       ),
                       const SizedBox(height: 18),
-                      Card(
-                        elevation: 1,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Work Duration',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  DropdownButton<int>(
-                                    value: _workDurationSeconds ~/ 60,
-                                    items: [1, 2, 5, 10, 15, 20, 25, 30, 45, 60]
-                                        .map(
-                                          (m) => DropdownMenuItem<int>(
-                                            value: m,
-                                            child: Text('$m min'),
-                                          ),
-                                        )
-                                        .toList(),
-                                    onChanged: _canChangeSettings
-                                        ? (v) {
-                                            if (v == null) return;
-                                            setState(() {
-                                              _workDurationSeconds = v * 60;
-                                              if (!_isRunning && !_isBreak) {
-                                                _initialDuration =
-                                                    _workDurationSeconds;
-                                                _remainingSeconds =
-                                                    _initialDuration;
-                                              }
-                                            });
-                                            widget.saveDurations(
-                                              _workDurationSeconds,
-                                              _breakDurationSeconds,
-                                            );
-                                          }
-                                        : null,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Break Duration',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  DropdownButton<int>(
-                                    value: _breakDurationSeconds,
-                                    items: [20, 30, 45, 60, 90, 120]
-                                        .map(
-                                          (s) => DropdownMenuItem<int>(
-                                            value: s,
-                                            child: Text('$s sec'),
-                                          ),
-                                        )
-                                        .toList(),
-                                    onChanged: _canChangeSettings
-                                        ? (v) {
-                                            if (v == null) return;
-                                            setState(() {
-                                              _breakDurationSeconds = v;
-                                              if (!_isRunning && !_isBreak) {
-                                                _initialDuration =
-                                                    _workDurationSeconds;
-                                                _remainingSeconds =
-                                                    _initialDuration;
-                                              }
-                                            });
-                                            widget.saveDurations(
-                                              _workDurationSeconds,
-                                              _breakDurationSeconds,
-                                            );
-                                          }
-                                        : null,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: 14),
                       Opacity(
                         opacity: 0.95,

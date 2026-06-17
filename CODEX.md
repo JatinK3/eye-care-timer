@@ -27,8 +27,9 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 
 - `lib/main.dart`: App entrypoint only.
 - `lib/app.dart`: Top-level `MaterialApp`, theme/preset state, startup loading, persistence coordination, and notification service injection.
-- `lib/features/timer/timer_home_page.dart`: Timer UI, countdown state, lifecycle reconciliation, notification scheduling hooks, and settings controls.
+- `lib/features/timer/timer_home_page.dart`: Main timer UI, countdown state, lifecycle reconciliation, and notification scheduling hooks.
 - `lib/models/timer_settings.dart`: Persisted timer settings model and defaults.
+- `lib/features/settings/settings_page.dart`: Dedicated settings UI for durations, theme, presets, and streak reset.
 - `lib/models/timer_session.dart`: Persisted active/paused timer session state for launch restore.
 - `lib/services/preferences_service.dart`: `shared_preferences` load/save for durations, theme mode, color preset, daily streak, and active timer session.
 - `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests, phase reminder scheduling, and cancellation.
@@ -39,7 +40,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 
 - Default work duration is 20 minutes.
 - Default break duration is 20 seconds.
-- Users can change work and break durations while the timer is idle.
+- Users can change work and break durations from the settings screen while the timer is idle.
 - Start schedules a work-complete notification and begins the countdown.
 - Pause stops the animation and cancels the pending phase notification.
 - Resume schedules a new phase notification using the remaining time.
@@ -52,7 +53,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Theme mode, color preset, work duration, break duration, and daily streak are persisted.
 - Daily streak resets when the saved streak date is not today.
 - Light/dark theme toggle and `Pastel` / `Calm Blue` presets are available.
-- UI now uses icon-backed controls, responsive wrapping buttons, preset swatches, calmer text, and tighter card radius.
+- UI now uses icon-backed controls, responsive wrapping buttons, a dedicated settings screen, calmer text, and tighter card radius.
 
 ## Dependencies
 
@@ -99,7 +100,7 @@ Commands run after the current implementation:
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 7 tests.
+- `flutter test`: passing, 8 tests.
 
 Important git/worktree note:
 

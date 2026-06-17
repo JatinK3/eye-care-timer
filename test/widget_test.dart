@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -150,6 +151,28 @@ void main() {
     expect(find.text('Pause'), findsOneWidget);
     expect(find.textContaining('Streak today: 1 cycles'), findsOneWidget);
     expect(notificationService.breakReminderCount, 1);
+  });
+
+  testWidgets('settings screen updates idle work duration', (
+    WidgetTester tester,
+  ) async {
+    await pumpEyeCareTimerApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Work duration'), findsOneWidget);
+
+    await tester.tap(find.text('20 min'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('5 min').last);
+    await tester.pumpAndSettle();
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.text('05:00'), findsOneWidget);
   });
 
   testWidgets('start, pause, resume, and cancel keep controls consistent', (

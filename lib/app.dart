@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'features/settings/settings_page.dart';
 import 'features/timer/timer_home_page.dart';
 import 'models/timer_session.dart';
 import 'models/timer_settings.dart';
@@ -94,11 +95,37 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
     unawaited(_preferencesService.clearSession());
   }
 
+  void _resetStreakCount() {
+    setState(() {
+      _settings = _settings.copyWith(streakCount: 0);
+    });
+    unawaited(_preferencesService.saveStreakCount(0));
+  }
+
   void _saveStreakCount(int streakCount) {
     setState(() {
       _settings = _settings.copyWith(streakCount: streakCount);
     });
     unawaited(_preferencesService.saveStreakCount(streakCount));
+  }
+
+  void _openSettings(BuildContext context, bool canChangeDurations) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SettingsPage(
+          isDark: _settings.themeMode == ThemeMode.dark,
+          colorPreset: _settings.colorPreset,
+          workDurationSeconds: _settings.workDurationSeconds,
+          breakDurationSeconds: _settings.breakDurationSeconds,
+          streakCount: _settings.streakCount,
+          canChangeDurations: canChangeDurations,
+          toggleTheme: _toggleTheme,
+          setPreset: _setPreset,
+          saveDurations: _saveDurations,
+          resetStreak: _resetStreakCount,
+        ),
+      ),
+    );
   }
 
   @override
@@ -129,6 +156,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
               initialBreakDurationSeconds: _settings.breakDurationSeconds,
               initialStreakCount: _settings.streakCount,
               initialSession: _session,
+              openSettings: _openSettings,
               setPreset: _setPreset,
               toggleTheme: _toggleTheme,
               saveDurations: _saveDurations,
