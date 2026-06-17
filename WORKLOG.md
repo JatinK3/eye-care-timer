@@ -53,13 +53,16 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
   - Added goal progress to the timer screen.
   - Added daily goal control to settings.
 - [ ] Expand product features after the foundation is stable.
-  - Streak/history view.
-  - Optional sound/haptic settings.
-  - More presets.
-  - Branding, app icon, and store metadata cleanup.
+  - [x] Streak/history view.
+  - [x] Optional sound/haptic settings.
+  - [ ] Notification permission status in settings.
+  - [ ] Remove unused countdown dependency.
+  - [ ] More presets.
+  - [ ] Branding, app icon, and store metadata cleanup.
 
 ## Completed
 
+- Added a History screen with seven-day break counts, best-day summary, goal streak summary, and reset history action.
 - Added daily goal progress with a persisted goal setting.
 - Added persisted sound and haptic settings for phase-complete feedback.
 - Improved timer state UX with status chip, state-specific copy, and tighter short-screen layout.

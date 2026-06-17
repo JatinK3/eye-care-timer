@@ -19,6 +19,7 @@ class SettingsPage extends StatelessWidget {
   final void Function(int workDurationSeconds, int breakDurationSeconds)
   saveDurations;
   final void Function(int dailyGoal) setDailyGoal;
+  final void Function(BuildContext context) openHistory;
   final VoidCallback resetStreak;
 
   const SettingsPage({
@@ -40,6 +41,7 @@ class SettingsPage extends StatelessWidget {
     required this.setPreset,
     required this.saveDurations,
     required this.setDailyGoal,
+    required this.openHistory,
     required this.resetStreak,
   });
 
@@ -223,6 +225,15 @@ class SettingsPage extends StatelessWidget {
                     }
                   },
                 ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.history),
+                title: const Text('History'),
+                subtitle: const Text('Review your recent eye breaks'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => openHistory(context),
               ),
               const Divider(height: 1),
               ListTile(

@@ -29,11 +29,12 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/app.dart`: Top-level `MaterialApp`, theme/preset state, startup loading, persistence coordination, and notification service injection.
 - `lib/features/timer/timer_home_page.dart`: Main timer UI, countdown state, lifecycle reconciliation, and notification scheduling hooks.
 - `lib/models/timer_settings.dart`: Persisted timer settings model and defaults, including notification, feedback, and daily goal preferences.
-- `lib/features/settings/settings_page.dart`: Dedicated settings UI for durations, theme, presets, and streak reset.
+- `lib/features/settings/settings_page.dart`: Dedicated settings UI for durations, theme, presets, progress history entry point, and streak reset.
+- `lib/features/history/history_page.dart`: Seven-day break history, best-day summary, goal streak summary, and history reset UI.
 - `lib/models/timer_session.dart`: Persisted active/paused timer session state for launch restore.
-- `lib/services/preferences_service.dart`: `shared_preferences` load/save for durations, theme mode, color preset, daily streak, daily goal, notification preference, feedback preferences, and active timer session.
+- `lib/services/preferences_service.dart`: `shared_preferences` load/save for durations, theme mode, color preset, daily streak, daily history, daily goal, notification preference, feedback preferences, and active timer session.
 - `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests, phase reminder scheduling, and cancellation.
-- `test/widget_test.dart`: Widget smoke, persistence load, timer controls, notification fake, and cancel-transition regression tests.
+- `test/widget_test.dart`: Widget smoke, persistence load, timer controls, settings/history navigation, notification fake, and cancel-transition regression tests.
 - `WORKLOG.md`: Ordered roadmap and completion log.
 
 ## Current App Behavior
@@ -45,14 +46,15 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Pause stops the animation and cancels the pending phase notification.
 - Resume schedules a new phase notification using the remaining time.
 - Cancel resets to idle work state and cancels pending notifications.
-- Work completion increments the daily streak, saves it, and automatically starts a break.
+- Work completion increments the daily streak, saves it into daily history, and automatically starts a break.
 - Break completion returns to idle work state.
 - The timer stores an in-memory phase deadline and reconciles remaining time when the app resumes.
 - Active timer sessions are persisted so running and paused work/break phases can restore after app restart.
 - Expired restored work sessions advance into the remaining break time, or return idle if both work and break would already be complete.
-- Theme mode, color preset, work duration, break duration, daily streak, daily goal, notification preference, haptic/sound preferences, and active timer session are persisted.
+- Theme mode, color preset, work duration, break duration, daily streak, seven-day history source data, daily goal, notification preference, haptic/sound preferences, and active timer session are persisted.
 - Daily streak resets when the saved streak date is not today.
 - The main timer shows daily goal progress and a goal-reached state when completed breaks meet the configured goal.
+- Settings includes a History screen with best day, current goal streak, last seven days, and reset history actions.
 - Light/dark theme toggle and `Pastel` / `Calm Blue` presets are available.
 - UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification and feedback toggle UX, calmer text, and tighter card radius.
 
@@ -101,7 +103,7 @@ Commands run after the current implementation:
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 12 tests.
+- `flutter test`: passing, 13 tests.
 
 Important git/worktree note:
 
@@ -110,8 +112,7 @@ Important git/worktree note:
 ## Remaining Roadmap
 
 1. Product feature expansion.
-   - Streak/history screen.
-   - Optional sound/haptic settings.
+   - Streak/history screen is implemented with a seven-day summary and reset action.
    - More visual presets.
    - Long-break or custom break modes if useful.
 

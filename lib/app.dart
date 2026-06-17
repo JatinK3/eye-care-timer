@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'features/history/history_page.dart';
 import 'features/settings/settings_page.dart';
 import 'features/timer/timer_home_page.dart';
 import 'models/timer_session.dart';
@@ -25,6 +26,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
 
   TimerSettings _settings = const TimerSettings.defaults();
   TimerSession _session = const TimerSession.idle();
+  Map<String, int> _history = <String, int>{};
   bool _isLoadingSettings = true;
 
   @override
@@ -38,6 +40,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
   Future<void> _loadSettings() async {
     final settings = await _preferencesService.loadSettings();
     final session = await _preferencesService.loadSession();
+    final history = await _preferencesService.loadHistory();
     if (!mounted) {
       return;
     }
@@ -45,6 +48,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
     setState(() {
       _settings = settings;
       _session = session;
+      _history = history;
       _isLoadingSettings = false;
     });
   }
@@ -128,9 +132,29 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
     unawaited(_preferencesService.clearSession());
   }
 
+  String _todayKey() {
+    final today = DateTime.now();
+    final year = today.year.toString().padLeft(4, '0');
+    final month = today.month.toString().padLeft(2, '0');
+    final day = today.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+
+  void _resetHistory() {
+    setState(() {
+      _history = <String, int>{};
+      _settings = _settings.copyWith(streakCount: 0);
+    });
+    unawaited(_preferencesService.clearHistory());
+    unawaited(_preferencesService.saveStreakCount(0));
+  }
+
   void _resetStreakCount() {
     setState(() {
       _settings = _settings.copyWith(streakCount: 0);
+      final updatedHistory = Map<String, int>.from(_history);
+      updatedHistory.remove(_todayKey());
+      _history = updatedHistory;
     });
     unawaited(_preferencesService.saveStreakCount(0));
   }
@@ -138,8 +162,27 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
   void _saveStreakCount(int streakCount) {
     setState(() {
       _settings = _settings.copyWith(streakCount: streakCount);
+      final updatedHistory = Map<String, int>.from(_history);
+      if (streakCount <= 0) {
+        updatedHistory.remove(_todayKey());
+      } else {
+        updatedHistory[_todayKey()] = streakCount;
+      }
+      _history = updatedHistory;
     });
     unawaited(_preferencesService.saveStreakCount(streakCount));
+  }
+
+  void _openHistory(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => HistoryPage(
+          history: _history,
+          dailyGoal: _settings.dailyGoal,
+          resetHistory: _resetHistory,
+        ),
+      ),
+    );
   }
 
   void _openSettings(BuildContext context, bool canChangeDurations) {
@@ -163,6 +206,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
           setNotificationsEnabled: _setNotificationsEnabled,
           setHapticsEnabled: _setHapticsEnabled,
           setSoundEnabled: _setSoundEnabled,
+          openHistory: _openHistory,
           resetStreak: _resetStreakCount,
         ),
       ),

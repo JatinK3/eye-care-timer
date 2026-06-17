@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -47,6 +49,13 @@ String todayKey() {
   final year = today.year.toString().padLeft(4, '0');
   final month = today.month.toString().padLeft(2, '0');
   final day = today.day.toString().padLeft(2, '0');
+  return '$year-$month-$day';
+}
+
+String dateKey(DateTime date) {
+  final year = date.year.toString().padLeft(4, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
   return '$year-$month-$day';
 }
 
@@ -248,6 +257,40 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Daily goal: 0 / 10 breaks'), findsOneWidget);
+  });
+
+  testWidgets('settings opens recent break history', (
+    WidgetTester tester,
+  ) async {
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.dailyHistoryKey: jsonEncode({
+        todayKey(): 3,
+        dateKey(yesterday): 6,
+      }),
+      PreferencesService.streakDateKey: todayKey(),
+      PreferencesService.streakCountKey: 3,
+      PreferencesService.dailyGoalKey: 6,
+    });
+
+    await pumpEyeCareTimerApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+    final historyTile = find.widgetWithText(ListTile, 'History');
+    await tester.scrollUntilVisible(historyTile, 300);
+    await tester.pumpAndSettle();
+    await tester.tap(historyTile);
+    await tester.pumpAndSettle();
+
+    expect(find.text('History'), findsOneWidget);
+    expect(find.text('Best day'), findsOneWidget);
+    expect(find.text('Goal streak'), findsOneWidget);
+    expect(find.text('Last 7 days'), findsOneWidget);
+    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('Yesterday'), findsOneWidget);
+    expect(find.text('3 / 6'), findsOneWidget);
+    expect(find.text('6 breaks'), findsOneWidget);
   });
 
   testWidgets('start, pause, resume, and cancel keep controls consistent', (

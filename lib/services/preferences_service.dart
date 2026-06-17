@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,6 +17,7 @@ class PreferencesService {
   static const String notificationsEnabledKey = 'notificationsEnabled';
   static const String hapticsEnabledKey = 'hapticsEnabled';
   static const String soundEnabledKey = 'soundEnabled';
+  static const String dailyHistoryKey = 'dailyHistory';
   static const String sessionIsActiveKey = 'sessionIsActive';
   static const String sessionIsBreakKey = 'sessionIsBreak';
   static const String sessionIsPausedKey = 'sessionIsPaused';
@@ -31,6 +34,10 @@ class PreferencesService {
     var streakCount = prefs.getInt(streakCountKey) ?? 0;
 
     if (savedStreakDate != today) {
+      final previousStreakCount = streakCount;
+      if (savedStreakDate != null && previousStreakCount > 0) {
+        await _saveHistoryCount(prefs, savedStreakDate, previousStreakCount);
+      }
       streakCount = 0;
       await prefs.setString(streakDateKey, today);
       await prefs.setInt(streakCountKey, streakCount);
@@ -52,6 +59,21 @@ class PreferencesService {
       hapticsEnabled: prefs.getBool(hapticsEnabledKey) ?? true,
       soundEnabled: prefs.getBool(soundEnabledKey) ?? false,
     );
+  }
+
+  Future<Map<String, int>> loadHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    return _historyFromPrefs(prefs);
+  }
+
+  Future<void> saveHistoryCount(String dateKey, int count) async {
+    final prefs = await SharedPreferences.getInstance();
+    await _saveHistoryCount(prefs, dateKey, count);
+  }
+
+  Future<void> clearHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(dailyHistoryKey);
   }
 
   Future<TimerSession> loadSession() async {
@@ -149,8 +171,47 @@ class PreferencesService {
 
   Future<void> saveStreakCount(int streakCount) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(streakDateKey, _dateKey(DateTime.now()));
+    final today = _dateKey(DateTime.now());
+    await prefs.setString(streakDateKey, today);
     await prefs.setInt(streakCountKey, streakCount);
+    await _saveHistoryCount(prefs, today, streakCount);
+  }
+
+  Map<String, int> _historyFromPrefs(SharedPreferences prefs) {
+    final rawHistory = prefs.getString(dailyHistoryKey);
+    if (rawHistory == null || rawHistory.isEmpty) {
+      return <String, int>{};
+    }
+
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(rawHistory);
+    } on FormatException {
+      return <String, int>{};
+    }
+
+    if (decoded is! Map<String, dynamic>) {
+      return <String, int>{};
+    }
+
+    return decoded.map(
+      (key, value) =>
+          MapEntry(key, value is int ? value : int.tryParse('$value') ?? 0),
+    );
+  }
+
+  Future<void> _saveHistoryCount(
+    SharedPreferences prefs,
+    String dateKey,
+    int count,
+  ) async {
+    final history = _historyFromPrefs(prefs);
+    if (count <= 0) {
+      history.remove(dateKey);
+    } else {
+      history[dateKey] = count;
+    }
+    await prefs.setString(dailyHistoryKey, jsonEncode(history));
   }
 
   ThemeMode _themeModeFromString(String? value) {
