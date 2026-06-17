@@ -6,6 +6,23 @@ This repository is a Flutter app named `eyeapptimer` for an Eye Care Timer based
 
 Keep this file updated when architecture, behavior, or roadmap decisions change.
 
+
+## Project Workflow
+
+- Treat this file as the primary project knowledgebase. Read it at the start of future sessions and update it whenever architecture, behavior, roadmap, workflow, dependencies, or important implementation decisions change.
+- Update this file after long implementation sessions, after completing a meaningful feature, or when enough time has passed that the project timeline would otherwise become unclear.
+- Keep `WORKLOG.md` as the checklist and completion log. Keep `CODEX.md` as the higher-level source of truth for current architecture, behavior, decisions, and remaining direction.
+- Commit after each completed feature or cohesive work unit instead of letting unrelated work accumulate.
+- Prefer natural, feature-oriented commit messages. Examples:
+  - `Add settings persistence`
+  - `Improve timer resume behavior`
+  - `Polish timer controls`
+  - `Add notification reminders`
+- Avoid commit messages that mention internal tooling, generated-by wording, or implementation process notes that do not belong in product history.
+- If a feature requires several tightly coupled file changes, keep them in one cohesive commit rather than splitting into commits that leave the project temporarily broken.
+- Before committing code changes, run `flutter analyze` and `flutter test` unless the change is docs-only.
+- Before every commit, check `git status --short` and make sure only intended files are staged.
+
 ## Current Structure
 
 - `lib/main.dart`: App entrypoint only.
