@@ -77,6 +77,13 @@ Android manifest includes notification-related permissions and receivers:
 
 Notification scheduling now uses `AndroidScheduleMode.inexactAllowWhileIdle`, which avoids requiring exact alarm permission for this pass.
 
+Android build toolchain maintenance:
+
+- Gradle wrapper: `8.14.3`.
+- Android Gradle Plugin: `8.11.1`.
+- Kotlin Gradle Plugin: `2.2.20`.
+- `android/gradle.properties` includes Flutter migrator flags for `android.builtInKotlin=false` and `android.newDsl=false`.
+
 ## Current Audit Findings
 
 Last audit date: 2026-06-17.

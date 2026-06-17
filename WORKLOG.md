@@ -37,6 +37,7 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
 
 ## Completed
 
+- Updated Android build toolchain to Gradle 8.14.3, Android Gradle Plugin 8.11.1, and Kotlin Gradle Plugin 2.2.20.
 - Created `WORKLOG.md` with the ordered roadmap.
 - Fixed the broken default widget test and current analyzer issues.
 - Verified project health with `flutter analyze` and `flutter test`.
