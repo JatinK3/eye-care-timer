@@ -83,6 +83,75 @@ void main() {
     expect(find.textContaining('Streak today: 2 cycles'), findsOneWidget);
   });
 
+  testWidgets('restores a paused work session', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.sessionIsActiveKey: true,
+      PreferencesService.sessionIsBreakKey: false,
+      PreferencesService.sessionIsPausedKey: true,
+      PreferencesService.sessionInitialDurationSecondsKey: 20 * 60,
+      PreferencesService.sessionRemainingSecondsKey: 5 * 60,
+    });
+
+    final notificationService = await pumpEyeCareTimerApp(tester);
+
+    expect(find.text('Resume'), findsOneWidget);
+    expect(find.text('05:00'), findsOneWidget);
+    expect(notificationService.workReminderCount, 0);
+  });
+
+  testWidgets('restores a running break session and reschedules reminder', (
+    WidgetTester tester,
+  ) async {
+    final now = DateTime.now();
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.sessionIsActiveKey: true,
+      PreferencesService.sessionIsBreakKey: true,
+      PreferencesService.sessionIsPausedKey: false,
+      PreferencesService.sessionInitialDurationSecondsKey: 20,
+      PreferencesService.sessionRemainingSecondsKey: 12,
+      PreferencesService.sessionPhaseStartedAtKey: now
+          .subtract(const Duration(seconds: 8))
+          .millisecondsSinceEpoch,
+      PreferencesService.sessionPhaseEndsAtKey: now
+          .add(const Duration(seconds: 12))
+          .millisecondsSinceEpoch,
+    });
+
+    final notificationService = await pumpEyeCareTimerApp(tester);
+
+    expect(find.textContaining('Break Time'), findsOneWidget);
+    expect(find.text('Pause'), findsOneWidget);
+    expect(notificationService.breakReminderCount, 1);
+  });
+
+  testWidgets('expired saved work session moves into remaining break', (
+    WidgetTester tester,
+  ) async {
+    final now = DateTime.now();
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.breakDurationSecondsKey: 20,
+      PreferencesService.sessionIsActiveKey: true,
+      PreferencesService.sessionIsBreakKey: false,
+      PreferencesService.sessionIsPausedKey: false,
+      PreferencesService.sessionInitialDurationSecondsKey: 20 * 60,
+      PreferencesService.sessionRemainingSecondsKey: 1,
+      PreferencesService.sessionPhaseStartedAtKey: now
+          .subtract(const Duration(minutes: 20, seconds: 5))
+          .millisecondsSinceEpoch,
+      PreferencesService.sessionPhaseEndsAtKey: now
+          .subtract(const Duration(seconds: 5))
+          .millisecondsSinceEpoch,
+    });
+
+    final notificationService = await pumpEyeCareTimerApp(tester);
+    await tester.pump();
+
+    expect(find.textContaining('Break Time'), findsOneWidget);
+    expect(find.text('Pause'), findsOneWidget);
+    expect(find.textContaining('Streak today: 1 cycles'), findsOneWidget);
+    expect(notificationService.breakReminderCount, 1);
+  });
+
   testWidgets('start, pause, resume, and cancel keep controls consistent', (
     WidgetTester tester,
   ) async {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/timer_session.dart';
 import '../models/timer_settings.dart';
 
 class PreferencesService {
@@ -10,6 +11,14 @@ class PreferencesService {
   static const String colorPresetKey = 'colorPreset';
   static const String streakCountKey = 'streakCount';
   static const String streakDateKey = 'streakDate';
+  static const String sessionIsActiveKey = 'sessionIsActive';
+  static const String sessionIsBreakKey = 'sessionIsBreak';
+  static const String sessionIsPausedKey = 'sessionIsPaused';
+  static const String sessionInitialDurationSecondsKey =
+      'sessionInitialDurationSeconds';
+  static const String sessionRemainingSecondsKey = 'sessionRemainingSeconds';
+  static const String sessionPhaseStartedAtKey = 'sessionPhaseStartedAt';
+  static const String sessionPhaseEndsAtKey = 'sessionPhaseEndsAt';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -35,6 +44,60 @@ class PreferencesService {
           prefs.getString(colorPresetKey) ?? TimerSettings.defaultColorPreset,
       streakCount: streakCount,
     );
+  }
+
+  Future<TimerSession> loadSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isActive = prefs.getBool(sessionIsActiveKey) ?? false;
+    if (!isActive) {
+      return const TimerSession.idle();
+    }
+
+    return TimerSession(
+      isActive: isActive,
+      isBreak: prefs.getBool(sessionIsBreakKey) ?? false,
+      isPaused: prefs.getBool(sessionIsPausedKey) ?? false,
+      initialDurationSeconds:
+          prefs.getInt(sessionInitialDurationSecondsKey) ?? 0,
+      remainingSeconds: prefs.getInt(sessionRemainingSecondsKey) ?? 0,
+      phaseStartedAt: _dateTimeFromMillis(
+        prefs.getInt(sessionPhaseStartedAtKey),
+      ),
+      phaseEndsAt: _dateTimeFromMillis(prefs.getInt(sessionPhaseEndsAtKey)),
+    );
+  }
+
+  Future<void> saveSession(TimerSession session) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(sessionIsActiveKey, session.isActive);
+    await prefs.setBool(sessionIsBreakKey, session.isBreak);
+    await prefs.setBool(sessionIsPausedKey, session.isPaused);
+    await prefs.setInt(
+      sessionInitialDurationSecondsKey,
+      session.initialDurationSeconds,
+    );
+    await prefs.setInt(sessionRemainingSecondsKey, session.remainingSeconds);
+    await _setOptionalDateTime(
+      prefs,
+      sessionPhaseStartedAtKey,
+      session.phaseStartedAt,
+    );
+    await _setOptionalDateTime(
+      prefs,
+      sessionPhaseEndsAtKey,
+      session.phaseEndsAt,
+    );
+  }
+
+  Future<void> clearSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(sessionIsActiveKey, false);
+    await prefs.remove(sessionIsBreakKey);
+    await prefs.remove(sessionIsPausedKey);
+    await prefs.remove(sessionInitialDurationSecondsKey);
+    await prefs.remove(sessionRemainingSecondsKey);
+    await prefs.remove(sessionPhaseStartedAtKey);
+    await prefs.remove(sessionPhaseEndsAtKey);
   }
 
   Future<void> saveDurations({
@@ -76,6 +139,24 @@ class PreferencesService {
       ThemeMode.system => 'system',
       ThemeMode.light => 'light',
     };
+  }
+
+  DateTime? _dateTimeFromMillis(int? millisecondsSinceEpoch) {
+    if (millisecondsSinceEpoch == null) {
+      return null;
+    }
+    return DateTime.fromMillisecondsSinceEpoch(millisecondsSinceEpoch);
+  }
+
+  Future<void> _setOptionalDateTime(
+    SharedPreferences prefs,
+    String key,
+    DateTime? value,
+  ) {
+    if (value == null) {
+      return prefs.remove(key);
+    }
+    return prefs.setInt(key, value.millisecondsSinceEpoch);
   }
 
   String _dateKey(DateTime date) {

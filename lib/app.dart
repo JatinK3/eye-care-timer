@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'features/timer/timer_home_page.dart';
+import 'models/timer_session.dart';
 import 'models/timer_settings.dart';
 import 'services/notification_service.dart';
 import 'services/preferences_service.dart';
@@ -22,6 +23,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
   late final NotificationService _notificationService;
 
   TimerSettings _settings = const TimerSettings.defaults();
+  TimerSession _session = const TimerSession.idle();
   bool _isLoadingSettings = true;
 
   @override
@@ -34,12 +36,14 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
 
   Future<void> _loadSettings() async {
     final settings = await _preferencesService.loadSettings();
+    final session = await _preferencesService.loadSession();
     if (!mounted) {
       return;
     }
 
     setState(() {
       _settings = settings;
+      _session = session;
       _isLoadingSettings = false;
     });
   }
@@ -76,6 +80,20 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
     );
   }
 
+  void _saveSession(TimerSession session) {
+    setState(() {
+      _session = session;
+    });
+    unawaited(_preferencesService.saveSession(session));
+  }
+
+  void _clearSession() {
+    setState(() {
+      _session = const TimerSession.idle();
+    });
+    unawaited(_preferencesService.clearSession());
+  }
+
   void _saveStreakCount(int streakCount) {
     setState(() {
       _settings = _settings.copyWith(streakCount: streakCount);
@@ -110,10 +128,13 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
               initialWorkDurationSeconds: _settings.workDurationSeconds,
               initialBreakDurationSeconds: _settings.breakDurationSeconds,
               initialStreakCount: _settings.streakCount,
+              initialSession: _session,
               setPreset: _setPreset,
               toggleTheme: _toggleTheme,
               saveDurations: _saveDurations,
               saveStreakCount: _saveStreakCount,
+              saveSession: _saveSession,
+              clearSession: _clearSession,
               notificationService: _notificationService,
             ),
     );

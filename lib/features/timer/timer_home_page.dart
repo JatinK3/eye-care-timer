@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../models/timer_session.dart';
 import '../../services/notification_service.dart';
 
 /// Home page with all timer logic and UI.
@@ -12,11 +13,14 @@ class TimerHomePage extends StatefulWidget {
   final int initialWorkDurationSeconds;
   final int initialBreakDurationSeconds;
   final int initialStreakCount;
+  final TimerSession initialSession;
   final void Function(String) setPreset;
   final VoidCallback toggleTheme;
   final void Function(int workDurationSeconds, int breakDurationSeconds)
   saveDurations;
   final void Function(int streakCount) saveStreakCount;
+  final void Function(TimerSession session) saveSession;
+  final VoidCallback clearSession;
   final NotificationService notificationService;
 
   const TimerHomePage({
@@ -26,10 +30,13 @@ class TimerHomePage extends StatefulWidget {
     required this.initialWorkDurationSeconds,
     required this.initialBreakDurationSeconds,
     required this.initialStreakCount,
+    required this.initialSession,
     required this.setPreset,
     required this.toggleTheme,
     required this.saveDurations,
     required this.saveStreakCount,
+    required this.saveSession,
+    required this.clearSession,
     required this.notificationService,
   });
 
@@ -71,6 +78,7 @@ class _TimerHomePageState extends State<TimerHomePage>
   // Phase text fade.
   double _phaseOpacity = 1.0;
   Timer? _phaseTransitionTimer;
+  DateTime? _phaseStartedAt;
   DateTime? _phaseEndsAt;
 
   @override
@@ -126,6 +134,8 @@ class _TimerHomePageState extends State<TimerHomePage>
             }
           }
         });
+
+    _restoreInitialSession();
   }
 
   @override
@@ -144,6 +154,115 @@ class _TimerHomePageState extends State<TimerHomePage>
     }
   }
 
+  void _restoreInitialSession() {
+    final session = widget.initialSession;
+    if (!session.isActive) {
+      return;
+    }
+
+    if (session.isPaused) {
+      _restorePausedSession(session);
+      return;
+    }
+
+    final phaseEndsAt = session.phaseEndsAt;
+    if (phaseEndsAt == null) {
+      widget.clearSession();
+      return;
+    }
+
+    final remainingSeconds = phaseEndsAt.difference(DateTime.now()).inSeconds;
+    if (remainingSeconds <= 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _completeExpiredRestoredSession(session);
+        }
+      });
+      return;
+    }
+
+    _restoreRunningSession(session, remainingSeconds);
+  }
+
+  void _restorePausedSession(TimerSession session) {
+    final remainingSeconds = session.remainingSeconds <= 0
+        ? session.initialDurationSeconds
+        : session.remainingSeconds;
+    final progress = _progressFromRemaining(
+      initialDurationSeconds: session.initialDurationSeconds,
+      remainingSeconds: remainingSeconds,
+    );
+
+    setState(() {
+      _isBreak = session.isBreak;
+      _isRunning = true;
+      _isPaused = true;
+      _isCancelled = false;
+      _initialDuration = session.initialDurationSeconds;
+      _remainingSeconds = remainingSeconds;
+      _animationController.duration = Duration(
+        seconds: session.initialDurationSeconds,
+      );
+      _animationController.value = progress;
+    });
+  }
+
+  void _restoreRunningSession(TimerSession session, int remainingSeconds) {
+    final progress = _progressFromRemaining(
+      initialDurationSeconds: session.initialDurationSeconds,
+      remainingSeconds: remainingSeconds,
+    );
+
+    setState(() {
+      _isBreak = session.isBreak;
+      _isRunning = true;
+      _isPaused = false;
+      _isCancelled = false;
+      _phaseStartedAt = session.phaseStartedAt;
+      _phaseEndsAt = session.phaseEndsAt;
+      _initialDuration = session.initialDurationSeconds;
+      _remainingSeconds = remainingSeconds;
+      _animationController.duration = Duration(
+        seconds: session.initialDurationSeconds,
+      );
+    });
+    _animationController.forward(from: progress);
+    unawaited(
+      _schedulePhaseReminder(remainingSeconds, isBreak: session.isBreak),
+    );
+  }
+
+  void _completeExpiredRestoredSession(TimerSession session) {
+    final phaseEndsAt = session.phaseEndsAt;
+    if (session.isBreak || phaseEndsAt == null) {
+      widget.clearSession();
+      return;
+    }
+
+    setState(() => _streakCount++);
+    widget.saveStreakCount(_streakCount);
+
+    final overdueSeconds = DateTime.now().difference(phaseEndsAt).inSeconds;
+    final remainingBreakSeconds = _breakDurationSeconds - overdueSeconds;
+    if (remainingBreakSeconds <= 0) {
+      widget.clearSession();
+      return;
+    }
+
+    _startTimer(remainingBreakSeconds, isBreak: true);
+  }
+
+  double _progressFromRemaining({
+    required int initialDurationSeconds,
+    required int remainingSeconds,
+  }) {
+    if (initialDurationSeconds <= 0) {
+      return 0.0;
+    }
+    final elapsedSeconds = initialDurationSeconds - remainingSeconds;
+    return (elapsedSeconds / initialDurationSeconds).clamp(0.0, 1.0);
+  }
+
   // -------------------- Timer Logic --------------------
   void _startTimer(int duration, {bool isBreak = false}) {
     _phaseTransitionTimer?.cancel();
@@ -156,13 +275,15 @@ class _TimerHomePageState extends State<TimerHomePage>
       _isPaused = false;
       _isCancelled = false;
       _phaseOpacity = 1.0;
-      _phaseEndsAt = DateTime.now().add(Duration(seconds: duration));
+      _phaseStartedAt = DateTime.now();
+      _phaseEndsAt = _phaseStartedAt!.add(Duration(seconds: duration));
       _initialDuration = duration;
       _remainingSeconds = duration;
       _animationController.duration = Duration(seconds: duration);
     });
 
     _animationController.forward(from: 0.0);
+    _saveActiveSession(remainingSeconds: duration);
     unawaited(_schedulePhaseReminder(duration, isBreak: isBreak));
   }
 
@@ -175,10 +296,17 @@ class _TimerHomePageState extends State<TimerHomePage>
       if (_isPaused) {
         _animationController.stop();
         _pulseController.stop();
+        _phaseStartedAt = null;
         _phaseEndsAt = null;
+        _saveActiveSession(isPaused: true);
         unawaited(widget.notificationService.cancelPhaseReminder());
       } else {
+        _phaseStartedAt = DateTime.now();
+        _phaseEndsAt = _phaseStartedAt!.add(
+          Duration(seconds: _remainingSeconds),
+        );
         _animationController.forward();
+        _saveActiveSession();
         unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
         if (_remainingSeconds <= 5) _pulseController.forward();
       }
@@ -196,11 +324,13 @@ class _TimerHomePageState extends State<TimerHomePage>
       _isPaused = false;
       _isBreak = false;
       _phaseOpacity = 1.0;
+      _phaseStartedAt = null;
       _phaseEndsAt = null;
       _initialDuration = _workDurationSeconds;
       _remainingSeconds = _initialDuration;
       _animationController.reset();
     });
+    widget.clearSession();
   }
 
   void _stopTimerCleanup({bool resetPulse = false}) {
@@ -229,6 +359,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     setState(() {
       _remainingSeconds = remainingSeconds;
     });
+    _saveActiveSession(remainingSeconds: remainingSeconds);
     _animationController.forward(from: progress);
   }
 
@@ -238,6 +369,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     }
 
     final completedBreakPhase = _isBreak;
+    _phaseStartedAt = null;
     _phaseEndsAt = null;
     unawaited(widget.notificationService.cancelPhaseReminder());
     _playChime();
@@ -258,12 +390,14 @@ class _TimerHomePageState extends State<TimerHomePage>
           _isPaused = false;
           _isBreak = false;
           _phaseOpacity = 1.0;
+          _phaseStartedAt = null;
           _phaseEndsAt = null;
           _initialDuration = _workDurationSeconds;
           _remainingSeconds = _initialDuration;
           _animationController.reset();
           _pulseController.reset();
         });
+        widget.clearSession();
         return;
       }
 
@@ -271,6 +405,20 @@ class _TimerHomePageState extends State<TimerHomePage>
       widget.saveStreakCount(_streakCount);
       _startTimer(_breakDurationSeconds, isBreak: true);
     });
+  }
+
+  void _saveActiveSession({bool? isPaused, int? remainingSeconds}) {
+    widget.saveSession(
+      TimerSession(
+        isActive: true,
+        isBreak: _isBreak,
+        isPaused: isPaused ?? _isPaused,
+        initialDurationSeconds: _initialDuration,
+        remainingSeconds: remainingSeconds ?? _remainingSeconds,
+        phaseStartedAt: _phaseStartedAt,
+        phaseEndsAt: _phaseEndsAt,
+      ),
+    );
   }
 
   Future<void> _schedulePhaseReminder(

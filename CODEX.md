@@ -29,7 +29,8 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/app.dart`: Top-level `MaterialApp`, theme/preset state, startup loading, persistence coordination, and notification service injection.
 - `lib/features/timer/timer_home_page.dart`: Timer UI, countdown state, lifecycle reconciliation, notification scheduling hooks, and settings controls.
 - `lib/models/timer_settings.dart`: Persisted timer settings model and defaults.
-- `lib/services/preferences_service.dart`: `shared_preferences` load/save for durations, theme mode, color preset, and daily streak.
+- `lib/models/timer_session.dart`: Persisted active/paused timer session state for launch restore.
+- `lib/services/preferences_service.dart`: `shared_preferences` load/save for durations, theme mode, color preset, daily streak, and active timer session.
 - `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests, phase reminder scheduling, and cancellation.
 - `test/widget_test.dart`: Widget smoke, persistence load, timer controls, notification fake, and cancel-transition regression tests.
 - `WORKLOG.md`: Ordered roadmap and completion log.
@@ -46,6 +47,8 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Work completion increments the daily streak, saves it, and automatically starts a break.
 - Break completion returns to idle work state.
 - The timer stores an in-memory phase deadline and reconciles remaining time when the app resumes.
+- Active timer sessions are persisted so running and paused work/break phases can restore after app restart.
+- Expired restored work sessions advance into the remaining break time, or return idle if both work and break would already be complete.
 - Theme mode, color preset, work duration, break duration, and daily streak are persisted.
 - Daily streak resets when the saved streak date is not today.
 - Light/dark theme toggle and `Pastel` / `Calm Blue` presets are available.
@@ -96,7 +99,7 @@ Commands run after the current implementation:
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 4 tests.
+- `flutter test`: passing, 7 tests.
 
 Important git/worktree note:
 
@@ -111,7 +114,8 @@ Important git/worktree note:
    - Long-break or custom break modes if useful.
 
 2. Stronger background/session restore.
-   - Persist active phase start/end timestamps if we want the timer UI to restore after app kill/restart, not only app resume.
+   - Active session restore is implemented for launch and app resume.
+   - Future pass: consider persisted session history/audit trail if streak analytics grow.
 
 3. Store readiness.
    - App name/package cleanup.

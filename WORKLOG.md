@@ -29,6 +29,10 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
 - [x] Improve visual design.
   - Polished timer controls with icons, responsive wrapping, and clearer button hierarchy.
   - Cleaned phase/streak copy, settings card radius, ring contrast, and preset swatches.
+- [x] Persist active session restore.
+  - Saved active/paused timer phase state with start/end timestamps.
+  - Restored running and paused work/break sessions on launch.
+  - Advanced expired saved work sessions into the remaining break or idle state.
 - [ ] Expand product features after the foundation is stable.
   - Streak/history view.
   - Optional sound/haptic settings.
@@ -37,6 +41,7 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
 
 ## Completed
 
+- Added active session restore for running, paused, and expired timer phases.
 - Updated Android build toolchain to Gradle 8.14.3, Android Gradle Plugin 8.11.1, and Kotlin Gradle Plugin 2.2.20.
 - Created `WORKLOG.md` with the ordered roadmap.
 - Fixed the broken default widget test and current analyzer issues.
