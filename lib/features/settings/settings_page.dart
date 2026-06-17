@@ -6,6 +6,7 @@ class SettingsPage extends StatelessWidget {
   final int workDurationSeconds;
   final int breakDurationSeconds;
   final int streakCount;
+  final int dailyGoal;
   final bool notificationsEnabled;
   final bool hapticsEnabled;
   final bool soundEnabled;
@@ -17,6 +18,7 @@ class SettingsPage extends StatelessWidget {
   final void Function(String preset) setPreset;
   final void Function(int workDurationSeconds, int breakDurationSeconds)
   saveDurations;
+  final void Function(int dailyGoal) setDailyGoal;
   final VoidCallback resetStreak;
 
   const SettingsPage({
@@ -26,6 +28,7 @@ class SettingsPage extends StatelessWidget {
     required this.workDurationSeconds,
     required this.breakDurationSeconds,
     required this.streakCount,
+    required this.dailyGoal,
     required this.notificationsEnabled,
     required this.hapticsEnabled,
     required this.soundEnabled,
@@ -36,6 +39,7 @@ class SettingsPage extends StatelessWidget {
     required this.setSoundEnabled,
     required this.setPreset,
     required this.saveDurations,
+    required this.setDailyGoal,
     required this.resetStreak,
   });
 
@@ -53,6 +57,7 @@ class SettingsPage extends StatelessWidget {
   ];
   static const List<int> _breakDurationSeconds = [20, 30, 45, 60, 90, 120];
   static const List<String> _colorPresets = ['Pastel', 'Calm Blue'];
+  static const List<int> _dailyGoals = [3, 4, 6, 8, 10, 12];
 
   @override
   Widget build(BuildContext context) {
@@ -197,6 +202,29 @@ class SettingsPage extends StatelessWidget {
           _Section(
             title: 'Progress',
             children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.flag_outlined),
+                title: const Text('Daily goal'),
+                subtitle: Text('$streakCount / $dailyGoal breaks today'),
+                trailing: DropdownButton<int>(
+                  value: dailyGoal,
+                  items: _dailyGoals
+                      .map(
+                        (goal) => DropdownMenuItem<int>(
+                          value: goal,
+                          child: Text('$goal'),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setDailyGoal(value);
+                    }
+                  },
+                ),
+              ),
+              const Divider(height: 1),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.local_fire_department_outlined),

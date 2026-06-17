@@ -11,6 +11,7 @@ class PreferencesService {
   static const String colorPresetKey = 'colorPreset';
   static const String streakCountKey = 'streakCount';
   static const String streakDateKey = 'streakDate';
+  static const String dailyGoalKey = 'dailyGoal';
   static const String notificationsEnabledKey = 'notificationsEnabled';
   static const String hapticsEnabledKey = 'hapticsEnabled';
   static const String soundEnabledKey = 'soundEnabled';
@@ -46,6 +47,7 @@ class PreferencesService {
       colorPreset:
           prefs.getString(colorPresetKey) ?? TimerSettings.defaultColorPreset,
       streakCount: streakCount,
+      dailyGoal: prefs.getInt(dailyGoalKey) ?? 6,
       notificationsEnabled: prefs.getBool(notificationsEnabledKey) ?? true,
       hapticsEnabled: prefs.getBool(hapticsEnabledKey) ?? true,
       soundEnabled: prefs.getBool(soundEnabledKey) ?? false,
@@ -123,6 +125,11 @@ class PreferencesService {
   Future<void> saveColorPreset(String colorPreset) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(colorPresetKey, colorPreset);
+  }
+
+  Future<void> saveDailyGoal(int dailyGoal) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(dailyGoalKey, dailyGoal);
   }
 
   Future<void> saveNotificationsEnabled(bool enabled) async {

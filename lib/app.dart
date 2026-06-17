@@ -66,6 +66,13 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
     unawaited(_preferencesService.saveColorPreset(preset));
   }
 
+  void _setDailyGoal(int dailyGoal) {
+    setState(() {
+      _settings = _settings.copyWith(dailyGoal: dailyGoal);
+    });
+    unawaited(_preferencesService.saveDailyGoal(dailyGoal));
+  }
+
   void _setHapticsEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(hapticsEnabled: enabled);
@@ -144,6 +151,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
           workDurationSeconds: _settings.workDurationSeconds,
           breakDurationSeconds: _settings.breakDurationSeconds,
           streakCount: _settings.streakCount,
+          dailyGoal: _settings.dailyGoal,
           notificationsEnabled: _settings.notificationsEnabled,
           hapticsEnabled: _settings.hapticsEnabled,
           soundEnabled: _settings.soundEnabled,
@@ -151,6 +159,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
           toggleTheme: _toggleTheme,
           setPreset: _setPreset,
           saveDurations: _saveDurations,
+          setDailyGoal: _setDailyGoal,
           setNotificationsEnabled: _setNotificationsEnabled,
           setHapticsEnabled: _setHapticsEnabled,
           setSoundEnabled: _setSoundEnabled,
@@ -187,6 +196,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
               initialWorkDurationSeconds: _settings.workDurationSeconds,
               initialBreakDurationSeconds: _settings.breakDurationSeconds,
               initialStreakCount: _settings.streakCount,
+              dailyGoal: _settings.dailyGoal,
               notificationsEnabled: _settings.notificationsEnabled,
               hapticsEnabled: _settings.hapticsEnabled,
               soundEnabled: _settings.soundEnabled,

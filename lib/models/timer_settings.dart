@@ -10,6 +10,7 @@ class TimerSettings {
   final ThemeMode themeMode;
   final String colorPreset;
   final int streakCount;
+  final int dailyGoal;
   final bool notificationsEnabled;
   final bool hapticsEnabled;
   final bool soundEnabled;
@@ -20,6 +21,7 @@ class TimerSettings {
     required this.themeMode,
     required this.colorPreset,
     required this.streakCount,
+    required this.dailyGoal,
     required this.notificationsEnabled,
     required this.hapticsEnabled,
     required this.soundEnabled,
@@ -31,6 +33,7 @@ class TimerSettings {
       themeMode = ThemeMode.light,
       colorPreset = defaultColorPreset,
       streakCount = 0,
+      dailyGoal = 6,
       notificationsEnabled = true,
       hapticsEnabled = true,
       soundEnabled = false;
@@ -41,6 +44,7 @@ class TimerSettings {
     ThemeMode? themeMode,
     String? colorPreset,
     int? streakCount,
+    int? dailyGoal,
     bool? notificationsEnabled,
     bool? hapticsEnabled,
     bool? soundEnabled,
@@ -51,6 +55,7 @@ class TimerSettings {
       themeMode: themeMode ?? this.themeMode,
       colorPreset: colorPreset ?? this.colorPreset,
       streakCount: streakCount ?? this.streakCount,
+      dailyGoal: dailyGoal ?? this.dailyGoal,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
       soundEnabled: soundEnabled ?? this.soundEnabled,

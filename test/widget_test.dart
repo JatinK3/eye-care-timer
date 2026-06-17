@@ -68,6 +68,7 @@ void main() {
     expect(find.text('20:00'), findsOneWidget);
     expect(find.text('Start'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
+    expect(find.textContaining('Daily goal: 0 / 6 breaks'), findsOneWidget);
     expect(find.textContaining('Streak today: 0 cycles'), findsOneWidget);
   });
 
@@ -79,11 +80,13 @@ void main() {
       PreferencesService.breakDurationSecondsKey: 60,
       PreferencesService.streakDateKey: todayKey(),
       PreferencesService.streakCountKey: 2,
+      PreferencesService.dailyGoalKey: 8,
     });
 
     await pumpEyeCareTimerApp(tester);
 
     expect(find.text('05:00'), findsOneWidget);
+    expect(find.textContaining('Daily goal: 2 / 8 breaks'), findsOneWidget);
     expect(find.textContaining('Streak today: 2 cycles'), findsOneWidget);
   });
 
@@ -223,6 +226,28 @@ void main() {
 
     expect(find.textContaining('Timer alerts are off'), findsOneWidget);
     expect(notificationService.cancelCount, 1);
+  });
+
+  testWidgets('settings screen updates daily goal', (
+    WidgetTester tester,
+  ) async {
+    await pumpEyeCareTimerApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Daily goal'), 200);
+    await tester.drag(find.byType(ListView), const Offset(0, -140));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('6'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('10').last);
+    await tester.pumpAndSettle();
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Daily goal: 0 / 10 breaks'), findsOneWidget);
   });
 
   testWidgets('start, pause, resume, and cancel keep controls consistent', (

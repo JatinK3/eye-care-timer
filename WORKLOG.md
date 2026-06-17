@@ -48,6 +48,10 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
   - Persisted haptic and sound feedback preferences.
   - Added feedback controls to the settings page.
   - Phase completion now respects those preferences.
+- [x] Add daily goal progress.
+  - Persisted a configurable daily break goal.
+  - Added goal progress to the timer screen.
+  - Added daily goal control to settings.
 - [ ] Expand product features after the foundation is stable.
   - Streak/history view.
   - Optional sound/haptic settings.
@@ -56,6 +60,7 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
 
 ## Completed
 
+- Added daily goal progress with a persisted goal setting.
 - Added persisted sound and haptic settings for phase-complete feedback.
 - Improved timer state UX with status chip, state-specific copy, and tighter short-screen layout.
 - Added persisted notification toggle UX and skipped reminder scheduling when alerts are off.

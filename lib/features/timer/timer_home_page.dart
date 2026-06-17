@@ -13,6 +13,7 @@ class TimerHomePage extends StatefulWidget {
   final int initialWorkDurationSeconds;
   final int initialBreakDurationSeconds;
   final int initialStreakCount;
+  final int dailyGoal;
   final TimerSession initialSession;
   final bool notificationsEnabled;
   final bool hapticsEnabled;
@@ -36,6 +37,7 @@ class TimerHomePage extends StatefulWidget {
     required this.initialWorkDurationSeconds,
     required this.initialBreakDurationSeconds,
     required this.initialStreakCount,
+    required this.dailyGoal,
     required this.initialSession,
     required this.notificationsEnabled,
     required this.hapticsEnabled,
@@ -802,7 +804,16 @@ class _TimerHomePageState extends State<TimerHomePage>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Streak today: $_streakCount cycles',
+                        'Daily goal: $_streakCount / ${widget.dailyGoal} breaks',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _streakCount >= widget.dailyGoal
+                            ? 'Goal reached for today'
+                            : 'Streak today: $_streakCount cycles',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
