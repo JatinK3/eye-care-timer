@@ -65,12 +65,11 @@ Runtime dependencies currently declared:
 
 - `flutter`
 - `cupertino_icons`
-- `circular_countdown_timer`
 - `timezone`
 - `flutter_local_notifications`
 - `shared_preferences`
 
-Audit note: `circular_countdown_timer` is still declared but the active countdown uses Flutter `AnimationController`. Revisit whether to remove it if it remains unused.
+Dependency cleanup note: the unused `circular_countdown_timer` package was removed because countdown behavior uses Flutter `AnimationController`.
 
 ## Platform Notes
 
@@ -129,7 +128,7 @@ Important git/worktree note:
    - Device testing for notification permission and scheduling behavior.
 
 4. Dependency cleanup.
-   - Remove unused dependencies if they remain unused after the next feature pass.
+   - Unused countdown dependency has been removed; continue watching for unused packages as features change.
 
 ## Product Principles
 

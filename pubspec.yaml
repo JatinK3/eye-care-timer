@@ -30,7 +30,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  circular_countdown_timer: ^0.2.3
   timezone: ^0.10.1
   flutter_local_notifications: ^19.4.1
 

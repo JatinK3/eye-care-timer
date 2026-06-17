@@ -56,12 +56,13 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
   - [x] Streak/history view.
   - [x] Optional sound/haptic settings.
   - [x] Notification permission status in settings.
-  - [ ] Remove unused countdown dependency.
+  - [x] Remove unused countdown dependency.
   - [ ] More presets.
   - [ ] Branding, app icon, and store metadata cleanup.
 
 ## Completed
 
+- Removed the unused countdown package from runtime dependencies.
 - Added notification permission status in Settings using platform status checks.
 - Added a History screen with seven-day break counts, best-day summary, goal streak summary, and reset history action.
 - Added daily goal progress with a persisted goal setting.
