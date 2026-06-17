@@ -27,14 +27,37 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
   TimerSettings _settings = const TimerSettings.defaults();
   TimerSession _session = const TimerSession.idle();
   Map<String, int> _history = <String, int>{};
+  NotificationPermissionStatus _notificationPermissionStatus =
+      NotificationPermissionStatus.unknown;
   bool _isLoadingSettings = true;
 
   @override
   void initState() {
     super.initState();
     _notificationService = widget.notificationService ?? NotificationService();
-    unawaited(_notificationService.initialize());
+    unawaited(_initializeNotifications());
     unawaited(_loadSettings());
+  }
+
+  Future<void> _initializeNotifications() async {
+    await _notificationService.initialize();
+    await _refreshNotificationPermissionStatus();
+  }
+
+  Future<void> _refreshNotificationPermissionStatus() async {
+    final status = await _notificationService.permissionStatus();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _notificationPermissionStatus = status;
+    });
+  }
+
+  Future<void> _requestNotificationPermissions() async {
+    await _notificationService.requestPermissions();
+    await _refreshNotificationPermissionStatus();
   }
 
   Future<void> _loadSettings() async {
@@ -97,8 +120,9 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
     });
     if (!enabled) {
       unawaited(_notificationService.cancelPhaseReminder());
+      unawaited(_refreshNotificationPermissionStatus());
     } else {
-      unawaited(_notificationService.requestPermissions());
+      unawaited(_requestNotificationPermissions());
     }
     unawaited(_preferencesService.saveNotificationsEnabled(enabled));
   }
@@ -196,6 +220,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
           streakCount: _settings.streakCount,
           dailyGoal: _settings.dailyGoal,
           notificationsEnabled: _settings.notificationsEnabled,
+          notificationPermissionStatus: _notificationPermissionStatus,
           hapticsEnabled: _settings.hapticsEnabled,
           soundEnabled: _settings.soundEnabled,
           canChangeDurations: canChangeDurations,

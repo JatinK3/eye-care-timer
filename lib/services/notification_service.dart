@@ -3,6 +3,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+enum NotificationPermissionStatus { unknown, allowed, disabled, unsupported }
+
 class NotificationService {
   static const int _phaseReminderId = 1001;
   static const String _channelId = 'eye_care_timer_phase_reminders';
@@ -65,6 +67,49 @@ class NotificationService {
           MacOSFlutterLocalNotificationsPlugin
         >()
         ?.requestPermissions(alert: true, sound: true);
+  }
+
+  Future<NotificationPermissionStatus> permissionStatus() async {
+    if (kIsWeb) {
+      return NotificationPermissionStatus.unsupported;
+    }
+
+    await initialize();
+
+    final androidStatus = await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.areNotificationsEnabled();
+    if (androidStatus != null) {
+      return androidStatus
+          ? NotificationPermissionStatus.allowed
+          : NotificationPermissionStatus.disabled;
+    }
+
+    final iosStatus = await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >()
+        ?.checkPermissions();
+    if (iosStatus != null) {
+      return iosStatus.isEnabled
+          ? NotificationPermissionStatus.allowed
+          : NotificationPermissionStatus.disabled;
+    }
+
+    final macosStatus = await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          MacOSFlutterLocalNotificationsPlugin
+        >()
+        ?.checkPermissions();
+    if (macosStatus != null) {
+      return macosStatus.isEnabled
+          ? NotificationPermissionStatus.allowed
+          : NotificationPermissionStatus.disabled;
+    }
+
+    return NotificationPermissionStatus.unsupported;
   }
 
   Future<void> scheduleWorkCompleteReminder(Duration delay) {

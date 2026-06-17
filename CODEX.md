@@ -33,7 +33,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/features/history/history_page.dart`: Seven-day break history, best-day summary, goal streak summary, and history reset UI.
 - `lib/models/timer_session.dart`: Persisted active/paused timer session state for launch restore.
 - `lib/services/preferences_service.dart`: `shared_preferences` load/save for durations, theme mode, color preset, daily streak, daily history, daily goal, notification preference, feedback preferences, and active timer session.
-- `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests, phase reminder scheduling, and cancellation.
+- `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, phase reminder scheduling, and cancellation.
 - `test/widget_test.dart`: Widget smoke, persistence load, timer controls, settings/history navigation, notification fake, and cancel-transition regression tests.
 - `WORKLOG.md`: Ordered roadmap and completion log.
 
@@ -55,6 +55,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Daily streak resets when the saved streak date is not today.
 - The main timer shows daily goal progress and a goal-reached state when completed breaks meet the configured goal.
 - Settings includes a History screen with best day, current goal streak, last seven days, and reset history actions.
+- Settings shows notification system permission status as allowed, blocked, checking, or unsupported.
 - Light/dark theme toggle and `Pastel` / `Calm Blue` presets are available.
 - UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification and feedback toggle UX, calmer text, and tighter card radius.
 
@@ -103,7 +104,7 @@ Commands run after the current implementation:
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 13 tests.
+- `flutter test`: passing, 14 tests.
 
 Important git/worktree note:
 
@@ -113,6 +114,7 @@ Important git/worktree note:
 
 1. Product feature expansion.
    - Streak/history screen is implemented with a seven-day summary and reset action.
+   - Notification permission status is implemented in settings.
    - More visual presets.
    - Long-break or custom break modes if useful.
 

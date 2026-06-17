@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../services/notification_service.dart';
+
 class SettingsPage extends StatelessWidget {
   final bool isDark;
   final String colorPreset;
@@ -8,6 +10,7 @@ class SettingsPage extends StatelessWidget {
   final int streakCount;
   final int dailyGoal;
   final bool notificationsEnabled;
+  final NotificationPermissionStatus notificationPermissionStatus;
   final bool hapticsEnabled;
   final bool soundEnabled;
   final bool canChangeDurations;
@@ -31,6 +34,7 @@ class SettingsPage extends StatelessWidget {
     required this.streakCount,
     required this.dailyGoal,
     required this.notificationsEnabled,
+    required this.notificationPermissionStatus,
     required this.hapticsEnabled,
     required this.soundEnabled,
     required this.canChangeDurations,
@@ -191,6 +195,16 @@ class SettingsPage extends StatelessWidget {
                 value: notificationsEnabled,
                 onChanged: setNotificationsEnabled,
               ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  _notificationPermissionIcon(),
+                  color: _notificationPermissionColor(context),
+                ),
+                title: const Text('Permission status'),
+                subtitle: Text(_notificationPermissionLabel()),
+              ),
               if (!notificationsEnabled)
                 const Padding(
                   padding: EdgeInsets.only(bottom: 8),
@@ -250,6 +264,36 @@ class SettingsPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  IconData _notificationPermissionIcon() {
+    return switch (notificationPermissionStatus) {
+      NotificationPermissionStatus.allowed => Icons.check_circle_outline,
+      NotificationPermissionStatus.disabled => Icons.error_outline,
+      NotificationPermissionStatus.unsupported => Icons.info_outline,
+      NotificationPermissionStatus.unknown => Icons.hourglass_empty,
+    };
+  }
+
+  Color? _notificationPermissionColor(BuildContext context) {
+    return switch (notificationPermissionStatus) {
+      NotificationPermissionStatus.allowed => Colors.green,
+      NotificationPermissionStatus.disabled => Theme.of(
+        context,
+      ).colorScheme.error,
+      NotificationPermissionStatus.unsupported => null,
+      NotificationPermissionStatus.unknown => null,
+    };
+  }
+
+  String _notificationPermissionLabel() {
+    return switch (notificationPermissionStatus) {
+      NotificationPermissionStatus.allowed => 'System permission allowed',
+      NotificationPermissionStatus.disabled => 'System permission blocked',
+      NotificationPermissionStatus.unsupported =>
+        'Status unavailable on this platform',
+      NotificationPermissionStatus.unknown => 'Checking system permission',
+    };
   }
 
   Color _presetColor(String preset, bool isDark) {

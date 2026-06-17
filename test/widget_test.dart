@@ -9,15 +9,25 @@ import 'package:eyeapptimer/services/notification_service.dart';
 import 'package:eyeapptimer/services/preferences_service.dart';
 
 class FakeNotificationService extends NotificationService {
+  NotificationPermissionStatus status;
   int workReminderCount = 0;
   int breakReminderCount = 0;
   int cancelCount = 0;
+  int permissionStatusCheckCount = 0;
+
+  FakeNotificationService({this.status = NotificationPermissionStatus.allowed});
 
   @override
   Future<void> initialize() async {}
 
   @override
   Future<void> requestPermissions() async {}
+
+  @override
+  Future<NotificationPermissionStatus> permissionStatus() async {
+    permissionStatusCheckCount++;
+    return status;
+  }
 
   @override
   Future<void> scheduleWorkCompleteReminder(Duration delay) async {
@@ -35,11 +45,16 @@ class FakeNotificationService extends NotificationService {
   }
 }
 
-Future<FakeNotificationService> pumpEyeCareTimerApp(WidgetTester tester) async {
-  final notificationService = FakeNotificationService();
+Future<FakeNotificationService> pumpEyeCareTimerApp(
+  WidgetTester tester, {
+  NotificationPermissionStatus permissionStatus =
+      NotificationPermissionStatus.allowed,
+}) async {
+  final notificationService = FakeNotificationService(status: permissionStatus);
   await tester.pumpWidget(
     EyeCareTimerApp(notificationService: notificationService),
   );
+  await tester.pump();
   await tester.pump();
   return notificationService;
 }
@@ -235,6 +250,24 @@ void main() {
 
     expect(find.textContaining('Timer alerts are off'), findsOneWidget);
     expect(notificationService.cancelCount, 1);
+  });
+
+  testWidgets('settings shows notification permission status', (
+    WidgetTester tester,
+  ) async {
+    final notificationService = await pumpEyeCareTimerApp(
+      tester,
+      permissionStatus: NotificationPermissionStatus.disabled,
+    );
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Permission status'), 200);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Permission status'), findsOneWidget);
+    expect(find.text('System permission blocked'), findsOneWidget);
+    expect(notificationService.permissionStatusCheckCount, greaterThan(0));
   });
 
   testWidgets('settings screen updates daily goal', (
