@@ -53,7 +53,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Theme mode, color preset, work duration, break duration, daily streak, notification preference, and active timer session are persisted.
 - Daily streak resets when the saved streak date is not today.
 - Light/dark theme toggle and `Pastel` / `Calm Blue` presets are available.
-- UI now uses icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification toggle UX, calmer text, and tighter card radius.
+- UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification toggle UX, calmer text, and tighter card radius.
 
 ## Dependencies
 

@@ -40,6 +40,10 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
   - Persisted a notification enabled preference.
   - Added a settings toggle with disabled-state copy.
   - Skipped phase reminder scheduling when notifications are disabled.
+- [x] Improve timer state UX.
+  - Added state-specific idle, work, paused, and break copy.
+  - Added a compact status chip and tightened short-screen layout.
+  - Softened irrelevant idle controls.
 - [ ] Expand product features after the foundation is stable.
   - Streak/history view.
   - Optional sound/haptic settings.
@@ -48,6 +52,7 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
 
 ## Completed
 
+- Improved timer state UX with status chip, state-specific copy, and tighter short-screen layout.
 - Added persisted notification toggle UX and skipped reminder scheduling when alerts are off.
 - Added a dedicated settings screen for timer, appearance, and streak controls.
 - Added active session restore for running, paused, and expired timer phases.

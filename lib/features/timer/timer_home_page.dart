@@ -510,6 +510,50 @@ class _TimerHomePageState extends State<TimerHomePage>
     }
   }
 
+  String get _statusLabel {
+    if (!_isRunning) {
+      return 'Idle';
+    }
+    if (_isPaused) {
+      return 'Paused';
+    }
+    return _isBreak ? 'Break' : 'Work';
+  }
+
+  String get _phaseTitle {
+    if (!_isRunning) {
+      return 'Ready for your next focus session';
+    }
+    if (_isPaused) {
+      return _isBreak ? 'Break paused' : 'Work paused';
+    }
+    return _isBreak
+        ? 'Break Time - look 20 ft away'
+        : 'Work Time - focus on your task';
+  }
+
+  String get _phaseSubtitle {
+    if (!_isRunning) {
+      return 'Start when your eyes and task are ready.';
+    }
+    if (_isPaused) {
+      return 'Resume when you are ready to continue.';
+    }
+    return _isBreak
+        ? 'Relax your focus and blink naturally.'
+        : 'A reminder will help you take the next eye break.';
+  }
+
+  IconData get _statusIcon {
+    if (!_isRunning) {
+      return Icons.check_circle_outline;
+    }
+    if (_isPaused) {
+      return Icons.pause_circle_outline;
+    }
+    return _isBreak ? Icons.visibility_outlined : Icons.timer_outlined;
+  }
+
   Color _progressColorForMode(bool isBreak, String preset, bool isDark) {
     if (isBreak) {
       return isDark ? Colors.lightGreenAccent.shade100 : Colors.green;
@@ -557,13 +601,13 @@ class _TimerHomePageState extends State<TimerHomePage>
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final double size = (constraints.maxWidth - 48).clamp(
-                  240.0,
-                  360.0,
+                  220.0,
+                  320.0,
                 );
                 return SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
-                    vertical: 28,
+                    vertical: 20,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -571,15 +615,55 @@ class _TimerHomePageState extends State<TimerHomePage>
                       AnimatedOpacity(
                         opacity: _phaseOpacity,
                         duration: const Duration(milliseconds: 400),
-                        child: Text(
-                          _isBreak
-                              ? 'Break Time - look 20 ft away'
-                              : 'Work Time - focus on your task',
-                          style: Theme.of(context).textTheme.titleLarge,
-                          textAlign: TextAlign.center,
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: progressColor.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: progressColor.withValues(alpha: 0.35),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _statusIcon,
+                                    size: 16,
+                                    color: progressColor,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _statusLabel,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: progressColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              _phaseTitle,
+                              style: Theme.of(context).textTheme.titleLarge,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _phaseSubtitle,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       ScaleTransition(
                         scale: _pulseAnimation,
                         child: SizedBox(
@@ -622,7 +706,7 @@ class _TimerHomePageState extends State<TimerHomePage>
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
-                                    _isBreak ? 'Break' : 'Work',
+                                    _statusLabel,
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: textColor.withValues(alpha: 0.75),
@@ -634,7 +718,7 @@ class _TimerHomePageState extends State<TimerHomePage>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       Wrap(
                         alignment: WrapAlignment.center,
                         spacing: 12,
@@ -679,7 +763,7 @@ class _TimerHomePageState extends State<TimerHomePage>
                               ),
                             ),
                           OutlinedButton.icon(
-                            onPressed: _cancelTimer,
+                            onPressed: _isRunning ? _cancelTimer : null,
                             icon: const Icon(Icons.stop),
                             label: const Text('Cancel'),
                             style: OutlinedButton.styleFrom(
@@ -698,8 +782,7 @@ class _TimerHomePageState extends State<TimerHomePage>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 18),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 12),
                       Opacity(
                         opacity: 0.95,
                         child: Text(

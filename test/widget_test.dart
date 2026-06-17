@@ -61,7 +61,10 @@ void main() {
     await pumpEyeCareTimerApp(tester);
 
     expect(find.text('Eye Care Timer'), findsOneWidget);
-    expect(find.textContaining('Work Time'), findsOneWidget);
+    expect(
+      find.textContaining('Ready for your next focus session'),
+      findsOneWidget,
+    );
     expect(find.text('20:00'), findsOneWidget);
     expect(find.text('Start'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
