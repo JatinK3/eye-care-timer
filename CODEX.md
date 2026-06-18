@@ -79,6 +79,7 @@ Android app identity:
 
 - Application id / namespace: `com.jatin.eyecaretimer`.
 - Android launcher label: `Eye Care Timer`.
+- Launcher icons are custom eye/timer branded assets across Android, iOS, macOS, Windows, and web. Android includes adaptive icon resources for API 26+.
 - MainActivity package path: `android/app/src/main/kotlin/com/jatin/eyecaretimer/MainActivity.kt`.
 
 Android manifest includes notification-related permissions and receivers:
@@ -133,7 +134,8 @@ Important git/worktree note:
 
 3. Store readiness.
    - Android app name/package cleanup is implemented.
-   - App icon and broader branding polish.
+   - App icon polish is implemented across generated platform icon assets.
+   - Broader branding polish.
    - Android/iOS store metadata.
    - Device testing for notification permission and scheduling behavior.
 
