@@ -1,5 +1,5 @@
-# eye-care-timer
-A Flutter-based 20-20-20 eye care timer with customizable work/break cycles, streak tracking, and theme presets.
+# BlinkKind: Eye Break Timer
+A Flutter-based 20-20-20 eye break timer with customizable work/break cycles, automatic schedules, streak tracking, and theme presets.
 
 ## ✨ Features
 - ⏱️ Customizable **work** and **break** durations

@@ -1,12 +1,13 @@
 # WORKLOG.md
 
-This file tracks the improvement plan for the Eye Care Timer app. Update status as work is completed so future sessions can resume without losing context.
+This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update status as work is completed so future sessions can resume without losing context.
 
 ## Tasks
 
 - [x] Create worklog and capture the ordered roadmap.
+- [x] Rename the product to BlinkKind: Eye Break Timer across runtime UI and platform metadata while preserving technical identifiers.
 - [x] Fix current project health.
-  - Replaced stale counter widget test with an `EyeCareTimerApp` smoke test.
+  - Replaced stale counter widget test with a `BlinkKindApp` smoke test.
   - Resolved analyzer warnings and infos in `lib/main.dart`.
   - Verified with `flutter analyze` and `flutter test`.
 - [x] Audit and harden timer behavior.
@@ -78,6 +79,8 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
 
 ## Completed
 
+- Renamed the product to BlinkKind: Eye Break Timer across app UI, notifications, platform metadata, tests, and documentation.
+
 - Added persisted automatic schedule cycles with unlimited/configurable limits and restart-safe cycle progress.
 
 - Fixed dark-mode home screen Start button contrast and added regression coverage.
@@ -85,7 +88,7 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
 - Added first-run onboarding and notification permission recovery through Android system settings.
 - Cleaned web, iOS, macOS, Linux, and Windows app identity metadata and verified Android and web builds.
 - Added custom eye/timer launcher icons across Android, iOS, macOS, Windows, and web, including Android adaptive icon resources.
-- Updated Android identity to `com.jatin.eyecaretimer` with the `Eye Care Timer` launcher label and verified a debug APK build.
+- Updated Android identity to `com.jatin.eyecaretimer` with the initial launcher label and verified a debug APK build.
 - Added shared color presets and expanded the preset list with theme-aware gradients/swatches.
 - Removed the unused countdown package from runtime dependencies.
 - Added notification permission status in Settings using platform status checks.

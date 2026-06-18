@@ -33,7 +33,7 @@ class OnboardingPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Eye Care Timer',
+              'BlinkKind: Eye Break Timer',
               style: Theme.of(
                 context,
               ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),

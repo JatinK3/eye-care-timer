@@ -9,7 +9,7 @@ enum NotificationPermissionStatus { unknown, allowed, disabled, unsupported }
 class NotificationService {
   static const int _phaseReminderId = 1001;
   static const String _channelId = 'eye_care_timer_phase_reminders';
-  static const String _channelName = 'Eye Care Timer reminders';
+  static const String _channelName = 'BlinkKind reminders';
   static const String _channelDescription =
       'Reminders for work and eye break timer phases.';
   static const MethodChannel _settingsChannel = MethodChannel(

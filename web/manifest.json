@@ -1,6 +1,6 @@
 {
-    "name": "Eye Care Timer",
-    "short_name": "Eye Timer",
+    "name": "BlinkKind: Eye Break Timer",
+    "short_name": "BlinkKind",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#219696",

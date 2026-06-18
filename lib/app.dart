@@ -13,16 +13,16 @@ import 'services/preferences_service.dart';
 import 'theme/color_presets.dart';
 
 /// Top-level app that owns ThemeMode and color preset state.
-class EyeCareTimerApp extends StatefulWidget {
+class BlinkKindApp extends StatefulWidget {
   final NotificationService? notificationService;
 
-  const EyeCareTimerApp({super.key, this.notificationService});
+  const BlinkKindApp({super.key, this.notificationService});
 
   @override
-  State<EyeCareTimerApp> createState() => _EyeCareTimerAppState();
+  State<BlinkKindApp> createState() => _BlinkKindAppState();
 }
 
-class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
+class _BlinkKindAppState extends State<BlinkKindApp> {
   final PreferencesService _preferencesService = PreferencesService();
   late final NotificationService _notificationService;
 
@@ -317,7 +317,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
     final seedColor = ColorPresets.seedColor(_settings.colorPreset);
 
     return MaterialApp(
-      title: 'Eye Care Timer',
+      title: 'BlinkKind: Eye Break Timer',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

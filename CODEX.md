@@ -2,7 +2,7 @@
 
 ## Project Context
 
-This repository is a Flutter app named `eyeapptimer` for an Eye Care Timer based on the 20-20-20 rule. The app helps users work for a configurable interval, then take a short eye break. The current direction is a lightweight wellness utility with reliable timer behavior, saved preferences, reminders, daily streak tracking, calm Material 3 UI, and eventual mobile store readiness.
+This repository is the Flutter app `BlinkKind: Eye Break Timer`, based on the 20-20-20 rule. The existing Dart package name remains `eyeapptimer` for import stability. The app helps users work for a configurable interval, then take a short eye break. The current direction is a lightweight wellness utility with reliable timer behavior, saved preferences, reminders, daily streak tracking, calm Material 3 UI, and eventual mobile store readiness.
 
 Keep this file updated when architecture, behavior, or roadmap decisions change.
 
@@ -80,10 +80,11 @@ Dependency cleanup note: the unused `circular_countdown_timer` package was remov
 Android app identity:
 
 - Application id / namespace: `com.jatin.eyecaretimer`.
-- Android launcher label: `Eye Care Timer`.
+- Android launcher label: `BlinkKind: Eye Break Timer`.
 - Launcher icons are custom eye/timer branded assets across Android, iOS, macOS, Windows, and web. Android includes adaptive icon resources for API 26+.
-- Web, iOS, macOS, Linux, and Windows templates now use `Eye Care Timer` user-facing names and non-example bundle/application metadata.
+- Web, Android, Linux, and Windows use `BlinkKind: Eye Break Timer` in descriptive titles. Constrained app bars and Apple display and executable names use `BlinkKind`.
 - MainActivity package path: `android/app/src/main/kotlin/com/jatin/eyecaretimer/MainActivity.kt`.
+- The Dart package name, bundle/application id, native package path, notification channel id, method-channel name, Linux/Windows binary identifiers, and repository path intentionally retain their existing technical identifiers so upgrades, imports, and persisted settings remain compatible.
 
 Android manifest includes notification-related permissions and receivers:
 
@@ -140,7 +141,7 @@ Important git/worktree note:
    - Future pass: consider persisted session history/audit trail if streak analytics grow.
 
 3. Store readiness.
-   - Android app name/package cleanup is implemented.
+   - Product branding is implemented as `BlinkKind: Eye Break Timer`; existing technical package and application identifiers are intentionally retained for compatibility.
    - App icon polish is implemented across generated platform icon assets.
    - Broader platform metadata cleanup is implemented for web, iOS, macOS, Linux, and Windows templates.
    - Android/iOS store listing copy and screenshots still need product decisions before release.

@@ -678,7 +678,7 @@ class _TimerHomePageState extends State<TimerHomePage>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Eye Care Timer'),
+        title: const Text('BlinkKind'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [

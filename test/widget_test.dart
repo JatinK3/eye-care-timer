@@ -57,14 +57,14 @@ class FakeNotificationService extends NotificationService {
   }
 }
 
-Future<FakeNotificationService> pumpEyeCareTimerApp(
+Future<FakeNotificationService> pumpBlinkKindApp(
   WidgetTester tester, {
   NotificationPermissionStatus permissionStatus =
       NotificationPermissionStatus.allowed,
 }) async {
   final notificationService = FakeNotificationService(status: permissionStatus);
   await tester.pumpWidget(
-    EyeCareTimerApp(notificationService: notificationService),
+    BlinkKindApp(notificationService: notificationService),
   );
   await tester.pump();
   await tester.pump();
@@ -105,12 +105,12 @@ void main() {
     });
   });
 
-  testWidgets('Eye Care Timer app renders initial timer state', (
+  testWidgets('BlinkKind app renders initial timer state', (
     WidgetTester tester,
   ) async {
-    await pumpEyeCareTimerApp(tester);
+    await pumpBlinkKindApp(tester);
 
-    expect(find.text('Eye Care Timer'), findsOneWidget);
+    expect(find.text('BlinkKind'), findsOneWidget);
     expect(
       find.textContaining('Ready for your next focus session'),
       findsOneWidget,
@@ -129,7 +129,7 @@ void main() {
       PreferencesService.onboardingCompletedKey: false,
     });
 
-    final notificationService = await pumpEyeCareTimerApp(tester);
+    final notificationService = await pumpBlinkKindApp(tester);
 
     expect(
       find.text(
@@ -161,7 +161,7 @@ void main() {
       PreferencesService.dailyGoalKey: 8,
     });
 
-    await pumpEyeCareTimerApp(tester);
+    await pumpBlinkKindApp(tester);
 
     expect(find.text('05:00'), findsOneWidget);
     expect(find.textContaining('Daily goal: 2 / 8 breaks'), findsOneWidget);
@@ -178,7 +178,7 @@ void main() {
       PreferencesService.sessionRemainingSecondsKey: 5 * 60,
     });
 
-    final notificationService = await pumpEyeCareTimerApp(tester);
+    final notificationService = await pumpBlinkKindApp(tester);
 
     expect(find.text('Resume'), findsOneWidget);
     expect(find.text('05:00'), findsOneWidget);
@@ -204,7 +204,7 @@ void main() {
           .millisecondsSinceEpoch,
     });
 
-    final notificationService = await pumpEyeCareTimerApp(tester);
+    final notificationService = await pumpBlinkKindApp(tester);
 
     expect(find.textContaining('Break Time'), findsOneWidget);
     expect(find.text('Pause'), findsOneWidget);
@@ -231,7 +231,7 @@ void main() {
           .millisecondsSinceEpoch,
     });
 
-    final notificationService = await pumpEyeCareTimerApp(tester);
+    final notificationService = await pumpBlinkKindApp(tester);
     await tester.pump();
 
     expect(find.textContaining('Break Time'), findsOneWidget);
@@ -262,7 +262,7 @@ void main() {
       PreferencesService.sessionCompletedAutoRunCyclesKey: 1,
     });
 
-    final notificationService = await pumpEyeCareTimerApp(tester);
+    final notificationService = await pumpBlinkKindApp(tester);
     await tester.pump();
 
     expect(find.textContaining('Work Time'), findsOneWidget);
@@ -292,7 +292,7 @@ void main() {
       PreferencesService.sessionCompletedAutoRunCyclesKey: 1,
     });
 
-    final notificationService = await pumpEyeCareTimerApp(tester);
+    final notificationService = await pumpBlinkKindApp(tester);
     await tester.pump();
 
     expect(find.text('Start'), findsOneWidget);
@@ -302,7 +302,7 @@ void main() {
   testWidgets('settings screen updates idle work duration', (
     WidgetTester tester,
   ) async {
-    await pumpEyeCareTimerApp(tester);
+    await pumpBlinkKindApp(tester);
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
@@ -324,7 +324,7 @@ void main() {
   testWidgets('settings configures automatic schedule cycles', (
     WidgetTester tester,
   ) async {
-    await pumpEyeCareTimerApp(tester);
+    await pumpBlinkKindApp(tester);
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
@@ -348,7 +348,7 @@ void main() {
   testWidgets('settings applies quick timer presets', (
     WidgetTester tester,
   ) async {
-    await pumpEyeCareTimerApp(tester);
+    await pumpBlinkKindApp(tester);
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
@@ -372,7 +372,7 @@ void main() {
       PreferencesService.colorPresetKey: 'Pastel',
     });
 
-    await pumpEyeCareTimerApp(tester);
+    await pumpBlinkKindApp(tester);
 
     final button = tester.widget<ElevatedButton>(
       find.widgetWithText(ElevatedButton, 'Start'),
@@ -388,7 +388,7 @@ void main() {
   testWidgets('settings screen exposes feedback toggles', (
     WidgetTester tester,
   ) async {
-    await pumpEyeCareTimerApp(tester);
+    await pumpBlinkKindApp(tester);
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
@@ -404,7 +404,7 @@ void main() {
   testWidgets('settings exposes expanded color presets', (
     WidgetTester tester,
   ) async {
-    await pumpEyeCareTimerApp(tester);
+    await pumpBlinkKindApp(tester);
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
@@ -427,7 +427,7 @@ void main() {
       PreferencesService.onboardingCompletedKey: true,
       PreferencesService.notificationsEnabledKey: false,
     });
-    final notificationService = await pumpEyeCareTimerApp(tester);
+    final notificationService = await pumpBlinkKindApp(tester);
 
     await tester.tap(find.text('Start'));
     await tester.pump();
@@ -439,7 +439,7 @@ void main() {
   testWidgets('settings screen toggles notification preference', (
     WidgetTester tester,
   ) async {
-    final notificationService = await pumpEyeCareTimerApp(tester);
+    final notificationService = await pumpBlinkKindApp(tester);
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
@@ -458,7 +458,7 @@ void main() {
   testWidgets('settings shows notification permission status', (
     WidgetTester tester,
   ) async {
-    final notificationService = await pumpEyeCareTimerApp(
+    final notificationService = await pumpBlinkKindApp(
       tester,
       permissionStatus: NotificationPermissionStatus.disabled,
     );
@@ -482,7 +482,7 @@ void main() {
   testWidgets('settings screen updates daily goal', (
     WidgetTester tester,
   ) async {
-    await pumpEyeCareTimerApp(tester);
+    await pumpBlinkKindApp(tester);
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
@@ -516,7 +516,7 @@ void main() {
       PreferencesService.dailyGoalKey: 6,
     });
 
-    await pumpEyeCareTimerApp(tester);
+    await pumpBlinkKindApp(tester);
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
@@ -558,7 +558,7 @@ void main() {
       PreferencesService.longBreakDurationSecondsKey: 3 * 60,
     });
 
-    final notificationService = await pumpEyeCareTimerApp(tester);
+    final notificationService = await pumpBlinkKindApp(tester);
     await tester.pump();
 
     expect(find.textContaining('Break Time'), findsOneWidget);
@@ -572,7 +572,7 @@ void main() {
   testWidgets('start, pause, resume, and cancel keep controls consistent', (
     WidgetTester tester,
   ) async {
-    final notificationService = await pumpEyeCareTimerApp(tester);
+    final notificationService = await pumpBlinkKindApp(tester);
 
     await tester.tap(find.text('Start'));
     await tester.pump();
@@ -605,7 +605,7 @@ void main() {
   testWidgets('cancel prevents pending work-to-break transition', (
     WidgetTester tester,
   ) async {
-    final notificationService = await pumpEyeCareTimerApp(tester);
+    final notificationService = await pumpBlinkKindApp(tester);
 
     await tester.tap(find.text('Start'));
     await tester.pump();

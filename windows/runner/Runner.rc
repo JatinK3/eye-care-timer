@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "Jatin" "\0"
-            VALUE "FileDescription", "Eye Care Timer" "\0"
+            VALUE "FileDescription", "BlinkKind: Eye Break Timer" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "eye_care_timer" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 Jatin. All rights reserved." "\0"
             VALUE "OriginalFilename", "eye_care_timer.exe" "\0"
-            VALUE "ProductName", "Eye Care Timer" "\0"
+            VALUE "ProductName", "BlinkKind: Eye Break Timer" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
