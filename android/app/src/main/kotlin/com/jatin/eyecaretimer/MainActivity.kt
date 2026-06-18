@@ -1,4 +1,4 @@
-package com.example.eyeapptimer
+package com.jatin.eyecaretimer
 
 import io.flutter.embedding.android.FlutterActivity
 

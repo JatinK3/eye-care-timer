@@ -75,6 +75,12 @@ Dependency cleanup note: the unused `circular_countdown_timer` package was remov
 
 ## Platform Notes
 
+Android app identity:
+
+- Application id / namespace: `com.jatin.eyecaretimer`.
+- Android launcher label: `Eye Care Timer`.
+- MainActivity package path: `android/app/src/main/kotlin/com/jatin/eyecaretimer/MainActivity.kt`.
+
 Android manifest includes notification-related permissions and receivers:
 
 - `POST_NOTIFICATIONS`
@@ -95,17 +101,19 @@ Android build toolchain maintenance:
 
 ## Current Audit Findings
 
-Last audit date: 2026-06-17.
+Last audit date: 2026-06-18.
 
 Commands run after the current implementation:
 
 - `flutter analyze`
 - `flutter test`
+- `flutter build apk --debug`
 
 Current results:
 
 - `flutter analyze`: passing with no issues.
 - `flutter test`: passing, 15 tests.
+- `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
 
 Important git/worktree note:
 
@@ -124,8 +132,8 @@ Important git/worktree note:
    - Future pass: consider persisted session history/audit trail if streak analytics grow.
 
 3. Store readiness.
-   - App name/package cleanup.
-   - App icon and branding polish.
+   - Android app name/package cleanup is implemented.
+   - App icon and broader branding polish.
    - Android/iOS store metadata.
    - Device testing for notification permission and scheduling behavior.
 

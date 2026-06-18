@@ -59,9 +59,13 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
   - [x] Remove unused countdown dependency.
   - [x] More presets.
   - [ ] Branding, app icon, and store metadata cleanup.
+    - [x] Android application id, namespace, MainActivity package, and launcher label cleanup.
+    - [ ] App icon and adaptive icon polish.
+    - [ ] Store metadata and non-Android platform identity cleanup.
 
 ## Completed
 
+- Updated Android identity to `com.jatin.eyecaretimer` with the `Eye Care Timer` launcher label and verified a debug APK build.
 - Added shared color presets and expanded the preset list with theme-aware gradients/swatches.
 - Removed the unused countdown package from runtime dependencies.
 - Added notification permission status in Settings using platform status checks.

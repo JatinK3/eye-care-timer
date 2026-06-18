@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.eyeapptimer"
+    namespace = "com.jatin.eyecaretimer"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.eyeapptimer"
+        applicationId = "com.jatin.eyecaretimer"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
