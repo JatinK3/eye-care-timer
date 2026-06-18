@@ -80,6 +80,7 @@ Android app identity:
 - Application id / namespace: `com.jatin.eyecaretimer`.
 - Android launcher label: `Eye Care Timer`.
 - Launcher icons are custom eye/timer branded assets across Android, iOS, macOS, Windows, and web. Android includes adaptive icon resources for API 26+.
+- Web, iOS, macOS, Linux, and Windows templates now use `Eye Care Timer` user-facing names and non-example bundle/application metadata.
 - MainActivity package path: `android/app/src/main/kotlin/com/jatin/eyecaretimer/MainActivity.kt`.
 
 Android manifest includes notification-related permissions and receivers:
@@ -109,12 +110,14 @@ Commands run after the current implementation:
 - `flutter analyze`
 - `flutter test`
 - `flutter build apk --debug`
+- `flutter build web`
 
 Current results:
 
 - `flutter analyze`: passing with no issues.
 - `flutter test`: passing, 15 tests.
 - `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
+- `flutter build web`: passing; generated `build/web`.
 
 Important git/worktree note:
 
@@ -135,8 +138,8 @@ Important git/worktree note:
 3. Store readiness.
    - Android app name/package cleanup is implemented.
    - App icon polish is implemented across generated platform icon assets.
-   - Broader branding polish.
-   - Android/iOS store metadata.
+   - Broader platform metadata cleanup is implemented for web, iOS, macOS, Linux, and Windows templates.
+   - Android/iOS store listing copy and screenshots still need product decisions before release.
    - Device testing for notification permission and scheduling behavior.
 
 4. Dependency cleanup.

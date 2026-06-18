@@ -52,19 +52,20 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
   - Persisted a configurable daily break goal.
   - Added goal progress to the timer screen.
   - Added daily goal control to settings.
-- [ ] Expand product features after the foundation is stable.
+- [x] Expand product features after the foundation is stable.
   - [x] Streak/history view.
   - [x] Optional sound/haptic settings.
   - [x] Notification permission status in settings.
   - [x] Remove unused countdown dependency.
   - [x] More presets.
-  - [ ] Branding, app icon, and store metadata cleanup.
+  - [x] Branding, app icon, and store metadata cleanup.
     - [x] Android application id, namespace, MainActivity package, and launcher label cleanup.
     - [x] App icon and adaptive icon polish.
-    - [ ] Store metadata and non-Android platform identity cleanup.
+    - [x] Store metadata and non-Android platform identity cleanup.
 
 ## Completed
 
+- Cleaned web, iOS, macOS, Linux, and Windows app identity metadata and verified Android and web builds.
 - Added custom eye/timer launcher icons across Android, iOS, macOS, Windows, and web, including Android adaptive icon resources.
 - Updated Android identity to `com.jatin.eyecaretimer` with the `Eye Care Timer` launcher label and verified a debug APK build.
 - Added shared color presets and expanded the preset list with theme-aware gradients/swatches.
