@@ -17,6 +17,7 @@ class PreferencesService {
   static const String notificationsEnabledKey = 'notificationsEnabled';
   static const String hapticsEnabledKey = 'hapticsEnabled';
   static const String soundEnabledKey = 'soundEnabled';
+  static const String onboardingCompletedKey = 'onboardingCompleted';
   static const String dailyHistoryKey = 'dailyHistory';
   static const String sessionIsActiveKey = 'sessionIsActive';
   static const String sessionIsBreakKey = 'sessionIsBreak';
@@ -74,6 +75,16 @@ class PreferencesService {
   Future<void> clearHistory() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(dailyHistoryKey);
+  }
+
+  Future<bool> loadOnboardingCompleted() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(onboardingCompletedKey) ?? false;
+  }
+
+  Future<void> saveOnboardingCompleted(bool completed) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(onboardingCompletedKey, completed);
   }
 
   Future<TimerSession> loadSession() async {

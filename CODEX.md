@@ -20,7 +20,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
   - `Add notification reminders`
 - Avoid commit messages that mention internal tooling, generated-by wording, or implementation process notes that do not belong in product history.
 - If a feature requires several tightly coupled file changes, keep them in one cohesive commit rather than splitting into commits that leave the project temporarily broken.
-- Before committing code changes, run `flutter analyze` and `flutter test` unless the change is docs-only.
+- Before committing code changes, run `flutter analyze`; run `flutter test` once after the module and directly related changes are complete, before the feature commit, unless the change is docs-only. Avoid rerunning the full Flutter test suite after every small edit.
 - Before every commit, check `git status --short` and make sure only intended files are staged.
 
 ## Current Structure
@@ -30,11 +30,12 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/features/timer/timer_home_page.dart`: Main timer UI, countdown state, lifecycle reconciliation, color preset rendering, and notification scheduling hooks.
 - `lib/models/timer_settings.dart`: Persisted timer settings model and defaults, including color preset, notification, feedback, and daily goal preferences.
 - `lib/theme/color_presets.dart`: Shared preset names, seed colors, swatches, timer gradients, and progress colors.
-- `lib/features/settings/settings_page.dart`: Dedicated settings UI for durations, theme, presets, progress history entry point, and streak reset.
+- `lib/features/settings/settings_page.dart`: Dedicated settings UI for durations, theme, presets, reminder permission recovery, progress history entry point, and streak reset.
+- `lib/features/onboarding/onboarding_page.dart`: First-run 20-20-20 explanation and reminder permission entry point.
 - `lib/features/history/history_page.dart`: Seven-day break history, best-day summary, goal streak summary, and history reset UI.
 - `lib/models/timer_session.dart`: Persisted active/paused timer session state for launch restore.
-- `lib/services/preferences_service.dart`: `shared_preferences` load/save for durations, theme mode, color preset, daily streak, daily history, daily goal, notification preference, feedback preferences, and active timer session.
-- `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, phase reminder scheduling, and cancellation.
+- `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, daily goal, notification preference, feedback preferences, and active timer session.
+- `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, system settings recovery hook, phase reminder scheduling, and cancellation.
 - `test/widget_test.dart`: Widget smoke, persistence load, timer controls, settings/history navigation, notification fake, and cancel-transition regression tests.
 - `WORKLOG.md`: Ordered roadmap and completion log.
 
@@ -42,6 +43,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 
 - Default work duration is 20 minutes.
 - Default break duration is 20 seconds.
+- First run shows onboarding for the 20-20-20 habit and lets the user allow reminders or continue without them.
 - Users can change work and break durations from the settings screen while the timer is idle.
 - Start schedules a work-complete notification and begins the countdown.
 - Pause stops the animation and cancels the pending phase notification.
@@ -56,7 +58,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Daily streak resets when the saved streak date is not today.
 - The main timer shows daily goal progress and a goal-reached state when completed breaks meet the configured goal.
 - Settings includes a History screen with best day, current goal streak, last seven days, and reset history actions.
-- Settings shows notification system permission status as allowed, blocked, checking, or unsupported.
+- Settings shows notification system permission status as allowed, blocked, checking, or unsupported, and opens Android system notification settings when permission is blocked.
 - Light/dark theme toggle and `Pastel`, `Calm Blue`, `Forest`, `Rose`, `Graphite`, and `Sunrise` presets are available.
 - The app theme seed, settings swatches, timer gradients, and timer progress color now come from the same preset source.
 - UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification and feedback toggle UX, calmer text, and tighter card radius.
@@ -115,7 +117,7 @@ Commands run after the current implementation:
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 15 tests.
+- `flutter test`: passing, 16 tests.
 - `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
 - `flutter build web`: passing; generated `build/web`.
 
@@ -129,6 +131,7 @@ Important git/worktree note:
    - Streak/history screen is implemented with a seven-day summary and reset action.
    - Notification permission status is implemented in settings.
    - More visual presets are implemented through shared preset definitions.
+   - First-run onboarding and notification permission recovery are implemented.
    - Long-break or custom break modes if useful.
 
 2. Stronger background/session restore.
@@ -158,5 +161,5 @@ Important git/worktree note:
 - Read this file and `WORKLOG.md` first.
 - Check `git status --short` before edits and do not revert user changes.
 - Use `rg --files` to confirm structure before assuming paths.
-- When touching timer behavior, run `flutter analyze` and `flutter test`.
+- When touching timer behavior, run `flutter analyze` and run `flutter test` once after the module is complete and before committing.
 - When touching notifications or platform setup, test Android behavior specifically where possible.

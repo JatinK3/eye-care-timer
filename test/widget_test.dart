@@ -14,6 +14,8 @@ class FakeNotificationService extends NotificationService {
   int breakReminderCount = 0;
   int cancelCount = 0;
   int permissionStatusCheckCount = 0;
+  int requestPermissionCount = 0;
+  int openSettingsCount = 0;
 
   FakeNotificationService({this.status = NotificationPermissionStatus.allowed});
 
@@ -21,7 +23,9 @@ class FakeNotificationService extends NotificationService {
   Future<void> initialize() async {}
 
   @override
-  Future<void> requestPermissions() async {}
+  Future<void> requestPermissions() async {
+    requestPermissionCount++;
+  }
 
   @override
   Future<NotificationPermissionStatus> permissionStatus() async {
@@ -42,6 +46,12 @@ class FakeNotificationService extends NotificationService {
   @override
   Future<void> cancelPhaseReminder() async {
     cancelCount++;
+  }
+
+  @override
+  Future<bool> openNotificationSettings() async {
+    openSettingsCount++;
+    return true;
   }
 }
 
@@ -76,7 +86,9 @@ String dateKey(DateTime date) {
 
 void main() {
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+    });
   });
 
   testWidgets('Eye Care Timer app renders initial timer state', (
@@ -96,10 +108,38 @@ void main() {
     expect(find.textContaining('Streak today: 0 cycles'), findsOneWidget);
   });
 
+  testWidgets('first run onboarding can request reminders', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: false,
+    });
+
+    final notificationService = await pumpEyeCareTimerApp(tester);
+
+    expect(
+      find.text(
+        'Follow the 20-20-20 habit with gentle reminders while you work.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Allow reminders and start'), findsOneWidget);
+
+    await tester.tap(find.text('Allow reminders and start'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Ready for your next focus session'),
+      findsOneWidget,
+    );
+    expect(notificationService.requestPermissionCount, 1);
+  });
+
   testWidgets('loads saved duration and daily streak preferences', (
     WidgetTester tester,
   ) async {
     SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
       PreferencesService.workDurationSecondsKey: 5 * 60,
       PreferencesService.breakDurationSecondsKey: 60,
       PreferencesService.streakDateKey: todayKey(),
@@ -116,6 +156,7 @@ void main() {
 
   testWidgets('restores a paused work session', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
       PreferencesService.sessionIsActiveKey: true,
       PreferencesService.sessionIsBreakKey: false,
       PreferencesService.sessionIsPausedKey: true,
@@ -135,6 +176,7 @@ void main() {
   ) async {
     final now = DateTime.now();
     SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
       PreferencesService.sessionIsActiveKey: true,
       PreferencesService.sessionIsBreakKey: true,
       PreferencesService.sessionIsPausedKey: false,
@@ -160,6 +202,7 @@ void main() {
   ) async {
     final now = DateTime.now();
     SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
       PreferencesService.breakDurationSecondsKey: 20,
       PreferencesService.sessionIsActiveKey: true,
       PreferencesService.sessionIsBreakKey: false,
@@ -244,6 +287,7 @@ void main() {
     WidgetTester tester,
   ) async {
     SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
       PreferencesService.notificationsEnabledKey: false,
     });
     final notificationService = await pumpEyeCareTimerApp(tester);
@@ -289,6 +333,12 @@ void main() {
 
     expect(find.text('Permission status'), findsOneWidget);
     expect(find.text('System permission blocked'), findsOneWidget);
+    expect(find.text('Open system settings'), findsOneWidget);
+
+    await tester.tap(find.text('Open system settings'));
+    await tester.pumpAndSettle();
+
+    expect(notificationService.openSettingsCount, 1);
     expect(notificationService.permissionStatusCheckCount, greaterThan(0));
   });
 
@@ -319,6 +369,7 @@ void main() {
   ) async {
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
     SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
       PreferencesService.dailyHistoryKey: jsonEncode({
         todayKey(): 3,
         dateKey(yesterday): 6,

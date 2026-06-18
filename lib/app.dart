@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'features/history/history_page.dart';
+import 'features/onboarding/onboarding_page.dart';
 import 'features/settings/settings_page.dart';
 import 'features/timer/timer_home_page.dart';
 import 'models/timer_session.dart';
@@ -30,6 +31,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
   Map<String, int> _history = <String, int>{};
   NotificationPermissionStatus _notificationPermissionStatus =
       NotificationPermissionStatus.unknown;
+  bool _hasCompletedOnboarding = false;
   bool _isLoadingSettings = true;
 
   @override
@@ -45,15 +47,17 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
     await _refreshNotificationPermissionStatus();
   }
 
-  Future<void> _refreshNotificationPermissionStatus() async {
+  Future<NotificationPermissionStatus>
+  _refreshNotificationPermissionStatus() async {
     final status = await _notificationService.permissionStatus();
     if (!mounted) {
-      return;
+      return status;
     }
 
     setState(() {
       _notificationPermissionStatus = status;
     });
+    return status;
   }
 
   Future<void> _requestNotificationPermissions() async {
@@ -61,10 +65,32 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
     await _refreshNotificationPermissionStatus();
   }
 
+  Future<void> _completeOnboarding({required bool requestReminders}) async {
+    setState(() {
+      _hasCompletedOnboarding = true;
+      _settings = _settings.copyWith(notificationsEnabled: requestReminders);
+    });
+    await _preferencesService.saveOnboardingCompleted(true);
+    await _preferencesService.saveNotificationsEnabled(requestReminders);
+    if (requestReminders) {
+      await _requestNotificationPermissions();
+    } else {
+      await _notificationService.cancelPhaseReminder();
+      await _refreshNotificationPermissionStatus();
+    }
+  }
+
+  Future<void> _openNotificationSettings() async {
+    await _notificationService.openNotificationSettings();
+    await _refreshNotificationPermissionStatus();
+  }
+
   Future<void> _loadSettings() async {
     final settings = await _preferencesService.loadSettings();
     final session = await _preferencesService.loadSession();
     final history = await _preferencesService.loadHistory();
+    final hasCompletedOnboarding = await _preferencesService
+        .loadOnboardingCompleted();
     if (!mounted) {
       return;
     }
@@ -73,6 +99,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
       _settings = settings;
       _session = session;
       _history = history;
+      _hasCompletedOnboarding = hasCompletedOnboarding;
       _isLoadingSettings = false;
     });
   }
@@ -232,6 +259,9 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
           setNotificationsEnabled: _setNotificationsEnabled,
           setHapticsEnabled: _setHapticsEnabled,
           setSoundEnabled: _setSoundEnabled,
+          openNotificationSettings: _openNotificationSettings,
+          refreshNotificationPermissionStatus:
+              _refreshNotificationPermissionStatus,
           openHistory: _openHistory,
           resetStreak: _resetStreakCount,
         ),
@@ -262,6 +292,14 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
       themeMode: _settings.themeMode,
       home: _isLoadingSettings
           ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          : !_hasCompletedOnboarding
+          ? OnboardingPage(
+              notificationPermissionStatus: _notificationPermissionStatus,
+              continueToApp: () =>
+                  unawaited(_completeOnboarding(requestReminders: true)),
+              skipNotifications: () =>
+                  unawaited(_completeOnboarding(requestReminders: false)),
+            )
           : TimerHomePage(
               isDark: _settings.themeMode == ThemeMode.dark,
               colorPreset: _settings.colorPreset,

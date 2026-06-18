@@ -63,8 +63,18 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
     - [x] App icon and adaptive icon polish.
     - [x] Store metadata and non-Android platform identity cleanup.
 
+- [x] Add onboarding and permission recovery.
+  - [x] First-run explanation for the 20-20-20 rule and notifications.
+  - [x] Persist onboarding completion.
+  - [x] Add settings action to open system notification settings when blocked.
+- [ ] Add richer timer modes.
+  - [ ] Quick timer presets.
+  - [ ] Long break after a configurable cycle count.
+  - [ ] Persist timer mode choices.
+
 ## Completed
 
+- Added first-run onboarding and notification permission recovery through Android system settings.
 - Cleaned web, iOS, macOS, Linux, and Windows app identity metadata and verified Android and web builds.
 - Added custom eye/timer launcher icons across Android, iOS, macOS, Windows, and web, including Android adaptive icon resources.
 - Updated Android identity to `com.jatin.eyecaretimer` with the `Eye Care Timer` launcher label and verified a debug APK build.

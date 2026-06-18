@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -11,6 +12,9 @@ class NotificationService {
   static const String _channelName = 'Eye Care Timer reminders';
   static const String _channelDescription =
       'Reminders for work and eye break timer phases.';
+  static const MethodChannel _settingsChannel = MethodChannel(
+    'eye_care_timer/notification_settings',
+  );
 
   final FlutterLocalNotificationsPlugin _notificationsPlugin;
   bool _isInitialized = false;
@@ -42,7 +46,6 @@ class NotificationService {
 
     await _notificationsPlugin.initialize(initializationSettings);
     _isInitialized = true;
-    await requestPermissions();
   }
 
   Future<void> requestPermissions() async {
@@ -110,6 +113,23 @@ class NotificationService {
     }
 
     return NotificationPermissionStatus.unsupported;
+  }
+
+  Future<bool> openNotificationSettings() async {
+    if (kIsWeb) {
+      return false;
+    }
+
+    try {
+      return await _settingsChannel.invokeMethod<bool>(
+            'openNotificationSettings',
+          ) ??
+          false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
   }
 
   Future<void> scheduleWorkCompleteReminder(Duration delay) {

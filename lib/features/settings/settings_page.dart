@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../services/notification_service.dart';
 import '../../theme/color_presets.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   final bool isDark;
   final String colorPreset;
   final int workDurationSeconds;
@@ -23,6 +23,9 @@ class SettingsPage extends StatelessWidget {
   final void Function(int workDurationSeconds, int breakDurationSeconds)
   saveDurations;
   final void Function(int dailyGoal) setDailyGoal;
+  final Future<void> Function() openNotificationSettings;
+  final Future<NotificationPermissionStatus> Function()
+  refreshNotificationPermissionStatus;
   final void Function(BuildContext context) openHistory;
   final VoidCallback resetStreak;
 
@@ -46,10 +49,17 @@ class SettingsPage extends StatelessWidget {
     required this.setPreset,
     required this.saveDurations,
     required this.setDailyGoal,
+    required this.openNotificationSettings,
+    required this.refreshNotificationPermissionStatus,
     required this.openHistory,
     required this.resetStreak,
   });
 
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
   static const List<int> _workDurationMinutes = [
     1,
     2,
@@ -65,6 +75,34 @@ class SettingsPage extends StatelessWidget {
   static const List<int> _breakDurationSeconds = [20, 30, 45, 60, 90, 120];
   static const List<int> _dailyGoals = [3, 4, 6, 8, 10, 12];
 
+  late NotificationPermissionStatus _permissionStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _permissionStatus = widget.notificationPermissionStatus;
+  }
+
+  @override
+  void didUpdateWidget(covariant SettingsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.notificationPermissionStatus !=
+        widget.notificationPermissionStatus) {
+      _permissionStatus = widget.notificationPermissionStatus;
+    }
+  }
+
+  Future<void> _openSystemNotificationSettings() async {
+    await widget.openNotificationSettings();
+    final status = await widget.refreshNotificationPermissionStatus();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _permissionStatus = status;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -79,11 +117,11 @@ class SettingsPage extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.work_outline),
                 title: const Text('Work duration'),
-                subtitle: canChangeDurations
+                subtitle: widget.canChangeDurations
                     ? null
                     : const Text('Pause or cancel the timer to change this'),
                 trailing: DropdownButton<int>(
-                  value: workDurationSeconds ~/ 60,
+                  value: widget.workDurationSeconds ~/ 60,
                   items: _workDurationMinutes
                       .map(
                         (minutes) => DropdownMenuItem<int>(
@@ -92,12 +130,15 @@ class SettingsPage extends StatelessWidget {
                         ),
                       )
                       .toList(),
-                  onChanged: canChangeDurations
+                  onChanged: widget.canChangeDurations
                       ? (value) {
                           if (value == null) {
                             return;
                           }
-                          saveDurations(value * 60, breakDurationSeconds);
+                          widget.saveDurations(
+                            value * 60,
+                            widget.breakDurationSeconds,
+                          );
                         }
                       : null,
                 ),
@@ -107,11 +148,11 @@ class SettingsPage extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.visibility_outlined),
                 title: const Text('Break duration'),
-                subtitle: canChangeDurations
+                subtitle: widget.canChangeDurations
                     ? null
                     : const Text('Pause or cancel the timer to change this'),
                 trailing: DropdownButton<int>(
-                  value: breakDurationSeconds,
+                  value: widget.breakDurationSeconds,
                   items: _breakDurationSeconds
                       .map(
                         (seconds) => DropdownMenuItem<int>(
@@ -120,12 +161,15 @@ class SettingsPage extends StatelessWidget {
                         ),
                       )
                       .toList(),
-                  onChanged: canChangeDurations
+                  onChanged: widget.canChangeDurations
                       ? (value) {
                           if (value == null) {
                             return;
                           }
-                          saveDurations(workDurationSeconds, value);
+                          widget.saveDurations(
+                            widget.workDurationSeconds,
+                            value,
+                          );
                         }
                       : null,
                 ),
@@ -138,10 +182,12 @@ class SettingsPage extends StatelessWidget {
             children: [
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
+                secondary: Icon(
+                  widget.isDark ? Icons.dark_mode : Icons.light_mode,
+                ),
                 title: const Text('Dark mode'),
-                value: isDark,
-                onChanged: (_) => toggleTheme(),
+                value: widget.isDark,
+                onChanged: (_) => widget.toggleTheme(),
               ),
               const Divider(height: 1),
               ...ColorPresets.names.map(
@@ -149,13 +195,16 @@ class SettingsPage extends StatelessWidget {
                   contentPadding: EdgeInsets.zero,
                   leading: CircleAvatar(
                     radius: 10,
-                    backgroundColor: ColorPresets.swatchColor(preset, isDark),
+                    backgroundColor: ColorPresets.swatchColor(
+                      preset,
+                      widget.isDark,
+                    ),
                   ),
                   title: Text(preset),
-                  trailing: preset == colorPreset
+                  trailing: preset == widget.colorPreset
                       ? const Icon(Icons.check)
                       : null,
-                  onTap: () => setPreset(preset),
+                  onTap: () => widget.setPreset(preset),
                 ),
               ),
             ],
@@ -169,8 +218,8 @@ class SettingsPage extends StatelessWidget {
                 secondary: const Icon(Icons.vibration),
                 title: const Text('Haptics'),
                 subtitle: const Text('Vibrate when a timer phase ends'),
-                value: hapticsEnabled,
-                onChanged: setHapticsEnabled,
+                value: widget.hapticsEnabled,
+                onChanged: widget.setHapticsEnabled,
               ),
               const Divider(height: 1),
               SwitchListTile(
@@ -178,8 +227,8 @@ class SettingsPage extends StatelessWidget {
                 secondary: const Icon(Icons.volume_up_outlined),
                 title: const Text('Sound'),
                 subtitle: const Text('Play a short system alert at phase end'),
-                value: soundEnabled,
-                onChanged: setSoundEnabled,
+                value: widget.soundEnabled,
+                onChanged: widget.setSoundEnabled,
               ),
             ],
           ),
@@ -192,8 +241,8 @@ class SettingsPage extends StatelessWidget {
                 secondary: const Icon(Icons.notifications_active_outlined),
                 title: const Text('Notifications'),
                 subtitle: const Text('Remind me when work or break time ends'),
-                value: notificationsEnabled,
-                onChanged: setNotificationsEnabled,
+                value: widget.notificationsEnabled,
+                onChanged: widget.setNotificationsEnabled,
               ),
               const Divider(height: 1),
               ListTile(
@@ -205,7 +254,16 @@ class SettingsPage extends StatelessWidget {
                 title: const Text('Permission status'),
                 subtitle: Text(_notificationPermissionLabel()),
               ),
-              if (!notificationsEnabled)
+              if (_permissionStatus == NotificationPermissionStatus.disabled)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _openSystemNotificationSettings,
+                    icon: const Icon(Icons.settings_outlined),
+                    label: const Text('Open system settings'),
+                  ),
+                ),
+              if (!widget.notificationsEnabled)
                 const Padding(
                   padding: EdgeInsets.only(bottom: 8),
                   child: Text(
@@ -222,9 +280,11 @@ class SettingsPage extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.flag_outlined),
                 title: const Text('Daily goal'),
-                subtitle: Text('$streakCount / $dailyGoal breaks today'),
+                subtitle: Text(
+                  '${widget.streakCount} / ${widget.dailyGoal} breaks today',
+                ),
                 trailing: DropdownButton<int>(
-                  value: dailyGoal,
+                  value: widget.dailyGoal,
                   items: _dailyGoals
                       .map(
                         (goal) => DropdownMenuItem<int>(
@@ -235,7 +295,7 @@ class SettingsPage extends StatelessWidget {
                       .toList(),
                   onChanged: (value) {
                     if (value != null) {
-                      setDailyGoal(value);
+                      widget.setDailyGoal(value);
                     }
                   },
                 ),
@@ -247,15 +307,17 @@ class SettingsPage extends StatelessWidget {
                 title: const Text('History'),
                 subtitle: const Text('Review your recent eye breaks'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => openHistory(context),
+                onTap: () => widget.openHistory(context),
               ),
               const Divider(height: 1),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.local_fire_department_outlined),
-                title: Text('Today: $streakCount cycles'),
+                title: Text('Today: ${widget.streakCount} cycles'),
                 trailing: TextButton(
-                  onPressed: streakCount == 0 ? null : resetStreak,
+                  onPressed: widget.streakCount == 0
+                      ? null
+                      : widget.resetStreak,
                   child: const Text('Reset'),
                 ),
               ),
@@ -267,7 +329,7 @@ class SettingsPage extends StatelessWidget {
   }
 
   IconData _notificationPermissionIcon() {
-    return switch (notificationPermissionStatus) {
+    return switch (_permissionStatus) {
       NotificationPermissionStatus.allowed => Icons.check_circle_outline,
       NotificationPermissionStatus.disabled => Icons.error_outline,
       NotificationPermissionStatus.unsupported => Icons.info_outline,
@@ -276,7 +338,7 @@ class SettingsPage extends StatelessWidget {
   }
 
   Color? _notificationPermissionColor(BuildContext context) {
-    return switch (notificationPermissionStatus) {
+    return switch (_permissionStatus) {
       NotificationPermissionStatus.allowed => Colors.green,
       NotificationPermissionStatus.disabled => Theme.of(
         context,
@@ -287,7 +349,7 @@ class SettingsPage extends StatelessWidget {
   }
 
   String _notificationPermissionLabel() {
-    return switch (notificationPermissionStatus) {
+    return switch (_permissionStatus) {
       NotificationPermissionStatus.allowed => 'System permission allowed',
       NotificationPermissionStatus.disabled => 'System permission blocked',
       NotificationPermissionStatus.unsupported =>
