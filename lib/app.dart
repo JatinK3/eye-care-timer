@@ -9,6 +9,7 @@ import 'models/timer_session.dart';
 import 'models/timer_settings.dart';
 import 'services/notification_service.dart';
 import 'services/preferences_service.dart';
+import 'theme/color_presets.dart';
 
 /// Top-level app that owns ThemeMode and color preset state.
 class EyeCareTimerApp extends StatefulWidget {
@@ -240,19 +241,21 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
 
   @override
   Widget build(BuildContext context) {
+    final seedColor = ColorPresets.seedColor(_settings.colorPreset);
+
     return MaterialApp(
       title: 'Eye Care Timer',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        colorScheme: ColorScheme.fromSeed(seedColor: seedColor),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.teal,
+          seedColor: seedColor,
           brightness: Brightness.dark,
         ),
       ),

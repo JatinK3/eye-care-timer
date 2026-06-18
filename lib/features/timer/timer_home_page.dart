@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../models/timer_session.dart';
 import '../../services/notification_service.dart';
+import '../../theme/color_presets.dart';
 
 /// Home page with all timer logic and UI.
 class TimerHomePage extends StatefulWidget {
@@ -493,32 +494,7 @@ class _TimerHomePageState extends State<TimerHomePage>
   bool get _canChangeSettings => !_isRunning;
 
   LinearGradient _backgroundGradientFromPreset(String preset, bool isDark) {
-    switch (preset) {
-      case 'Calm Blue':
-        return isDark
-            ? const LinearGradient(
-                colors: [Color(0xFF0F1724), Color(0xFF102A43)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : const LinearGradient(
-                colors: [Color(0xFFDFF6FF), Color(0xFF9BBDF9)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              );
-      default: // Pastel
-        return isDark
-            ? const LinearGradient(
-                colors: [Color(0xFF101216), Color(0xFF1A1C1F)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : const LinearGradient(
-                colors: [Color(0xFFF2F7F7), Color(0xFFEAF6F5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              );
-    }
+    return ColorPresets.backgroundGradient(preset, isDark);
   }
 
   String get _statusLabel {
@@ -566,15 +542,11 @@ class _TimerHomePageState extends State<TimerHomePage>
   }
 
   Color _progressColorForMode(bool isBreak, String preset, bool isDark) {
-    if (isBreak) {
-      return isDark ? Colors.lightGreenAccent.shade100 : Colors.green;
-    }
-    switch (preset) {
-      case 'Calm Blue':
-        return isDark ? Colors.lightBlueAccent.shade100 : Colors.blue;
-      default: // Pastel
-        return isDark ? Colors.tealAccent.shade100 : Colors.teal;
-    }
+    return ColorPresets.progressColor(
+      isBreak: isBreak,
+      preset: preset,
+      isDark: isDark,
+    );
   }
 
   @override

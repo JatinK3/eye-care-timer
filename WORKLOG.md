@@ -57,11 +57,12 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
   - [x] Optional sound/haptic settings.
   - [x] Notification permission status in settings.
   - [x] Remove unused countdown dependency.
-  - [ ] More presets.
+  - [x] More presets.
   - [ ] Branding, app icon, and store metadata cleanup.
 
 ## Completed
 
+- Added shared color presets and expanded the preset list with theme-aware gradients/swatches.
 - Removed the unused countdown package from runtime dependencies.
 - Added notification permission status in Settings using platform status checks.
 - Added a History screen with seven-day break counts, best-day summary, goal streak summary, and reset history action.

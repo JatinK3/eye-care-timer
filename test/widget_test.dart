@@ -213,9 +213,31 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(find.text('Feedback'), 200);
+    await tester.pumpAndSettle();
+
     expect(find.text('Feedback'), findsOneWidget);
     expect(find.text('Haptics'), findsOneWidget);
     expect(find.text('Sound'), findsOneWidget);
+  });
+
+  testWidgets('settings exposes expanded color presets', (
+    WidgetTester tester,
+  ) async {
+    await pumpEyeCareTimerApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pastel'), findsOneWidget);
+    expect(find.text('Calm Blue'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Sunrise'), 200);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Forest'), findsOneWidget);
+    expect(find.text('Rose'), findsOneWidget);
+    expect(find.text('Graphite'), findsOneWidget);
+    expect(find.text('Sunrise'), findsOneWidget);
   });
 
   testWidgets('notification toggle disables reminder scheduling', (

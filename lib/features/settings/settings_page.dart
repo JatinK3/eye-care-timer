@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/notification_service.dart';
+import '../../theme/color_presets.dart';
 
 class SettingsPage extends StatelessWidget {
   final bool isDark;
@@ -62,7 +63,6 @@ class SettingsPage extends StatelessWidget {
     60,
   ];
   static const List<int> _breakDurationSeconds = [20, 30, 45, 60, 90, 120];
-  static const List<String> _colorPresets = ['Pastel', 'Calm Blue'];
   static const List<int> _dailyGoals = [3, 4, 6, 8, 10, 12];
 
   @override
@@ -144,12 +144,12 @@ class SettingsPage extends StatelessWidget {
                 onChanged: (_) => toggleTheme(),
               ),
               const Divider(height: 1),
-              ..._colorPresets.map(
+              ...ColorPresets.names.map(
                 (preset) => ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: CircleAvatar(
                     radius: 10,
-                    backgroundColor: _presetColor(preset, isDark),
+                    backgroundColor: ColorPresets.swatchColor(preset, isDark),
                   ),
                   title: Text(preset),
                   trailing: preset == colorPreset
@@ -294,15 +294,6 @@ class SettingsPage extends StatelessWidget {
         'Status unavailable on this platform',
       NotificationPermissionStatus.unknown => 'Checking system permission',
     };
-  }
-
-  Color _presetColor(String preset, bool isDark) {
-    switch (preset) {
-      case 'Calm Blue':
-        return isDark ? Colors.lightBlueAccent.shade100 : Colors.blue;
-      default:
-        return isDark ? Colors.tealAccent.shade100 : Colors.teal;
-    }
   }
 }
 
