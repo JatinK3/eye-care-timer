@@ -191,6 +191,21 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
     );
   }
 
+  void _saveAutoRunSettings({required bool enabled, required int cycleLimit}) {
+    setState(() {
+      _settings = _settings.copyWith(
+        autoRunEnabled: enabled,
+        autoRunCycleLimit: cycleLimit,
+      );
+    });
+    unawaited(
+      _preferencesService.saveAutoRunSettings(
+        enabled: enabled,
+        cycleLimit: cycleLimit,
+      ),
+    );
+  }
+
   void _saveSession(TimerSession session) {
     setState(() {
       _session = session;
@@ -271,6 +286,8 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
           longBreakEnabled: _settings.longBreakEnabled,
           longBreakDurationSeconds: _settings.longBreakDurationSeconds,
           longBreakEveryCycles: _settings.longBreakEveryCycles,
+          autoRunEnabled: _settings.autoRunEnabled,
+          autoRunCycleLimit: _settings.autoRunCycleLimit,
           notificationsEnabled: _settings.notificationsEnabled,
           notificationPermissionStatus: _notificationPermissionStatus,
           hapticsEnabled: _settings.hapticsEnabled,
@@ -280,6 +297,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
           setPreset: _setPreset,
           saveDurations: _saveDurations,
           saveLongBreakSettings: _saveLongBreakSettings,
+          saveAutoRunSettings: _saveAutoRunSettings,
           setDailyGoal: _setDailyGoal,
           setNotificationsEnabled: _setNotificationsEnabled,
           setHapticsEnabled: _setHapticsEnabled,
@@ -335,6 +353,8 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
               longBreakEnabled: _settings.longBreakEnabled,
               longBreakDurationSeconds: _settings.longBreakDurationSeconds,
               longBreakEveryCycles: _settings.longBreakEveryCycles,
+              autoRunEnabled: _settings.autoRunEnabled,
+              autoRunCycleLimit: _settings.autoRunCycleLimit,
               notificationsEnabled: _settings.notificationsEnabled,
               hapticsEnabled: _settings.hapticsEnabled,
               soundEnabled: _settings.soundEnabled,

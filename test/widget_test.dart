@@ -240,6 +240,65 @@ void main() {
     expect(notificationService.breakReminderCount, 1);
   });
 
+  testWidgets('expired break auto starts the next work cycle', (
+    WidgetTester tester,
+  ) async {
+    final now = DateTime.now();
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.autoRunEnabledKey: true,
+      PreferencesService.autoRunCycleLimitKey: 3,
+      PreferencesService.sessionIsActiveKey: true,
+      PreferencesService.sessionIsBreakKey: true,
+      PreferencesService.sessionIsPausedKey: false,
+      PreferencesService.sessionInitialDurationSecondsKey: 20,
+      PreferencesService.sessionRemainingSecondsKey: 1,
+      PreferencesService.sessionPhaseStartedAtKey: now
+          .subtract(const Duration(seconds: 25))
+          .millisecondsSinceEpoch,
+      PreferencesService.sessionPhaseEndsAtKey: now
+          .subtract(const Duration(seconds: 5))
+          .millisecondsSinceEpoch,
+      PreferencesService.sessionCompletedAutoRunCyclesKey: 1,
+    });
+
+    final notificationService = await pumpEyeCareTimerApp(tester);
+    await tester.pump();
+
+    expect(find.textContaining('Work Time'), findsOneWidget);
+    expect(find.text('Pause'), findsOneWidget);
+    expect(notificationService.workReminderCount, 1);
+  });
+
+  testWidgets('expired break stops when the auto run limit is reached', (
+    WidgetTester tester,
+  ) async {
+    final now = DateTime.now();
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.autoRunEnabledKey: true,
+      PreferencesService.autoRunCycleLimitKey: 1,
+      PreferencesService.sessionIsActiveKey: true,
+      PreferencesService.sessionIsBreakKey: true,
+      PreferencesService.sessionIsPausedKey: false,
+      PreferencesService.sessionInitialDurationSecondsKey: 20,
+      PreferencesService.sessionRemainingSecondsKey: 1,
+      PreferencesService.sessionPhaseStartedAtKey: now
+          .subtract(const Duration(seconds: 25))
+          .millisecondsSinceEpoch,
+      PreferencesService.sessionPhaseEndsAtKey: now
+          .subtract(const Duration(seconds: 5))
+          .millisecondsSinceEpoch,
+      PreferencesService.sessionCompletedAutoRunCyclesKey: 1,
+    });
+
+    final notificationService = await pumpEyeCareTimerApp(tester);
+    await tester.pump();
+
+    expect(find.text('Start'), findsOneWidget);
+    expect(notificationService.workReminderCount, 0);
+  });
+
   testWidgets('settings screen updates idle work duration', (
     WidgetTester tester,
   ) async {
@@ -260,6 +319,30 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('05:00'), findsOneWidget);
+  });
+
+  testWidgets('settings configures automatic schedule cycles', (
+    WidgetTester tester,
+  ) async {
+    await pumpEyeCareTimerApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Auto run'), 200);
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.widgetWithText(SwitchListTile, 'Run schedule automatically'),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Unlimited'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('3 cycles').last);
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool(PreferencesService.autoRunEnabledKey), isTrue);
+    expect(prefs.getInt(PreferencesService.autoRunCycleLimitKey), 3);
   });
 
   testWidgets('settings applies quick timer presets', (

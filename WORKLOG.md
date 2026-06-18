@@ -71,8 +71,14 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
   - [x] Quick timer presets.
   - [x] Long break after a configurable cycle count.
   - [x] Persist timer mode choices.
+- [x] Add automatic schedule cycles.
+  - [x] Continue from break to work until manually stopped.
+  - [x] Add unlimited and configurable per-run cycle limits.
+  - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Added persisted automatic schedule cycles with unlimited/configurable limits and restart-safe cycle progress.
 
 - Fixed dark-mode home screen Start button contrast and added regression coverage.
 - Added quick timer presets and configurable persisted long-break mode.

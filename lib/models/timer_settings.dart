@@ -19,6 +19,8 @@ class TimerSettings {
   final bool longBreakEnabled;
   final int longBreakDurationSeconds;
   final int longBreakEveryCycles;
+  final bool autoRunEnabled;
+  final int autoRunCycleLimit;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -33,6 +35,8 @@ class TimerSettings {
     required this.longBreakEnabled,
     required this.longBreakDurationSeconds,
     required this.longBreakEveryCycles,
+    required this.autoRunEnabled,
+    required this.autoRunCycleLimit,
   });
 
   const TimerSettings.defaults()
@@ -47,7 +51,9 @@ class TimerSettings {
       soundEnabled = false,
       longBreakEnabled = false,
       longBreakDurationSeconds = defaultLongBreakDurationSeconds,
-      longBreakEveryCycles = defaultLongBreakEveryCycles;
+      longBreakEveryCycles = defaultLongBreakEveryCycles,
+      autoRunEnabled = false,
+      autoRunCycleLimit = 0;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -62,6 +68,8 @@ class TimerSettings {
     bool? longBreakEnabled,
     int? longBreakDurationSeconds,
     int? longBreakEveryCycles,
+    bool? autoRunEnabled,
+    int? autoRunCycleLimit,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -77,6 +85,8 @@ class TimerSettings {
       longBreakDurationSeconds:
           longBreakDurationSeconds ?? this.longBreakDurationSeconds,
       longBreakEveryCycles: longBreakEveryCycles ?? this.longBreakEveryCycles,
+      autoRunEnabled: autoRunEnabled ?? this.autoRunEnabled,
+      autoRunCycleLimit: autoRunCycleLimit ?? this.autoRunCycleLimit,
     );
   }
 }

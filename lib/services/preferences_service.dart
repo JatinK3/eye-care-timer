@@ -20,6 +20,8 @@ class PreferencesService {
   static const String longBreakEnabledKey = 'longBreakEnabled';
   static const String longBreakDurationSecondsKey = 'longBreakDurationSeconds';
   static const String longBreakEveryCyclesKey = 'longBreakEveryCycles';
+  static const String autoRunEnabledKey = 'autoRunEnabled';
+  static const String autoRunCycleLimitKey = 'autoRunCycleLimit';
   static const String onboardingCompletedKey = 'onboardingCompleted';
   static const String dailyHistoryKey = 'dailyHistory';
   static const String sessionIsActiveKey = 'sessionIsActive';
@@ -30,6 +32,8 @@ class PreferencesService {
   static const String sessionRemainingSecondsKey = 'sessionRemainingSeconds';
   static const String sessionPhaseStartedAtKey = 'sessionPhaseStartedAt';
   static const String sessionPhaseEndsAtKey = 'sessionPhaseEndsAt';
+  static const String sessionCompletedAutoRunCyclesKey =
+      'sessionCompletedAutoRunCycles';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -69,6 +73,8 @@ class PreferencesService {
       longBreakEveryCycles:
           prefs.getInt(longBreakEveryCyclesKey) ??
           TimerSettings.defaultLongBreakEveryCycles,
+      autoRunEnabled: prefs.getBool(autoRunEnabledKey) ?? false,
+      autoRunCycleLimit: prefs.getInt(autoRunCycleLimitKey) ?? 0,
     );
   }
 
@@ -115,6 +121,8 @@ class PreferencesService {
         prefs.getInt(sessionPhaseStartedAtKey),
       ),
       phaseEndsAt: _dateTimeFromMillis(prefs.getInt(sessionPhaseEndsAtKey)),
+      completedAutoRunCycles:
+          prefs.getInt(sessionCompletedAutoRunCyclesKey) ?? 0,
     );
   }
 
@@ -128,6 +136,10 @@ class PreferencesService {
       session.initialDurationSeconds,
     );
     await prefs.setInt(sessionRemainingSecondsKey, session.remainingSeconds);
+    await prefs.setInt(
+      sessionCompletedAutoRunCyclesKey,
+      session.completedAutoRunCycles,
+    );
     await _setOptionalDateTime(
       prefs,
       sessionPhaseStartedAtKey,
@@ -149,6 +161,7 @@ class PreferencesService {
     await prefs.remove(sessionRemainingSecondsKey);
     await prefs.remove(sessionPhaseStartedAtKey);
     await prefs.remove(sessionPhaseEndsAtKey);
+    await prefs.remove(sessionCompletedAutoRunCyclesKey);
   }
 
   Future<void> saveDurations({
@@ -199,6 +212,15 @@ class PreferencesService {
     await prefs.setBool(longBreakEnabledKey, enabled);
     await prefs.setInt(longBreakDurationSecondsKey, durationSeconds);
     await prefs.setInt(longBreakEveryCyclesKey, everyCycles);
+  }
+
+  Future<void> saveAutoRunSettings({
+    required bool enabled,
+    required int cycleLimit,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(autoRunEnabledKey, enabled);
+    await prefs.setInt(autoRunCycleLimitKey, cycleLimit);
   }
 
   Future<void> saveStreakCount(int streakCount) async {

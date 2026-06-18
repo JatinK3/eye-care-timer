@@ -18,6 +18,8 @@ class TimerHomePage extends StatefulWidget {
   final bool longBreakEnabled;
   final int longBreakDurationSeconds;
   final int longBreakEveryCycles;
+  final bool autoRunEnabled;
+  final int autoRunCycleLimit;
   final TimerSession initialSession;
   final bool notificationsEnabled;
   final bool hapticsEnabled;
@@ -45,6 +47,8 @@ class TimerHomePage extends StatefulWidget {
     required this.longBreakEnabled,
     required this.longBreakDurationSeconds,
     required this.longBreakEveryCycles,
+    required this.autoRunEnabled,
+    required this.autoRunCycleLimit,
     required this.initialSession,
     required this.notificationsEnabled,
     required this.hapticsEnabled,
@@ -79,6 +83,9 @@ class _TimerHomePageState extends State<TimerHomePage>
   late bool _longBreakEnabled;
   late int _longBreakDurationSeconds;
   late int _longBreakEveryCycles;
+  late bool _autoRunEnabled;
+  late int _autoRunCycleLimit;
+  int _autoRunCompletedCycles = 0;
 
   late int _initialDuration;
   late int _remainingSeconds;
@@ -113,6 +120,9 @@ class _TimerHomePageState extends State<TimerHomePage>
     _longBreakEnabled = widget.longBreakEnabled;
     _longBreakDurationSeconds = widget.longBreakDurationSeconds;
     _longBreakEveryCycles = widget.longBreakEveryCycles;
+    _autoRunEnabled = widget.autoRunEnabled;
+    _autoRunCycleLimit = widget.autoRunCycleLimit;
+    _autoRunCompletedCycles = widget.initialSession.completedAutoRunCycles;
     _streakCount = widget.initialStreakCount;
     _initialDuration = _workDurationSeconds;
     _remainingSeconds = _initialDuration;
@@ -177,13 +187,17 @@ class _TimerHomePageState extends State<TimerHomePage>
         oldWidget.initialStreakCount != widget.initialStreakCount ||
         oldWidget.longBreakEnabled != widget.longBreakEnabled ||
         oldWidget.longBreakDurationSeconds != widget.longBreakDurationSeconds ||
-        oldWidget.longBreakEveryCycles != widget.longBreakEveryCycles) {
+        oldWidget.longBreakEveryCycles != widget.longBreakEveryCycles ||
+        oldWidget.autoRunEnabled != widget.autoRunEnabled ||
+        oldWidget.autoRunCycleLimit != widget.autoRunCycleLimit) {
       setState(() {
         _workDurationSeconds = widget.initialWorkDurationSeconds;
         _breakDurationSeconds = widget.initialBreakDurationSeconds;
         _longBreakEnabled = widget.longBreakEnabled;
         _longBreakDurationSeconds = widget.longBreakDurationSeconds;
         _longBreakEveryCycles = widget.longBreakEveryCycles;
+        _autoRunEnabled = widget.autoRunEnabled;
+        _autoRunCycleLimit = widget.autoRunCycleLimit;
         _streakCount = widget.initialStreakCount;
         _initialDuration = _workDurationSeconds;
         _remainingSeconds = _initialDuration;
@@ -259,6 +273,7 @@ class _TimerHomePageState extends State<TimerHomePage>
         seconds: session.initialDurationSeconds,
       );
       _animationController.value = progress;
+      _autoRunCompletedCycles = session.completedAutoRunCycles;
     });
   }
 
@@ -280,11 +295,18 @@ class _TimerHomePageState extends State<TimerHomePage>
       _animationController.duration = Duration(
         seconds: session.initialDurationSeconds,
       );
+      _autoRunCompletedCycles = session.completedAutoRunCycles;
     });
     _animationController.forward(from: progress);
     unawaited(
       _schedulePhaseReminder(remainingSeconds, isBreak: session.isBreak),
     );
+  }
+
+  bool _shouldContinueAutoRun() {
+    return _autoRunEnabled &&
+        (_autoRunCycleLimit <= 0 ||
+            _autoRunCompletedCycles < _autoRunCycleLimit);
   }
 
   int _breakDurationForCompletedCycle(int completedCycles) {
@@ -298,13 +320,27 @@ class _TimerHomePageState extends State<TimerHomePage>
 
   void _completeExpiredRestoredSession(TimerSession session) {
     final phaseEndsAt = session.phaseEndsAt;
-    if (session.isBreak || phaseEndsAt == null) {
+    if (phaseEndsAt == null) {
       widget.clearSession();
       return;
     }
 
+    _autoRunCompletedCycles = session.completedAutoRunCycles;
+    if (session.isBreak) {
+      if (_shouldContinueAutoRun()) {
+        _startTimer(_workDurationSeconds);
+      } else {
+        _autoRunCompletedCycles = 0;
+        widget.clearSession();
+      }
+      return;
+    }
+
     final completedCycles = _streakCount + 1;
-    setState(() => _streakCount = completedCycles);
+    setState(() {
+      _streakCount = completedCycles;
+      _autoRunCompletedCycles = session.completedAutoRunCycles + 1;
+    });
     widget.saveStreakCount(_streakCount);
 
     final overdueSeconds = DateTime.now().difference(phaseEndsAt).inSeconds;
@@ -353,7 +389,10 @@ class _TimerHomePageState extends State<TimerHomePage>
     unawaited(_schedulePhaseReminder(duration, isBreak: isBreak));
   }
 
-  void _startWorkTimer() => _startTimer(_workDurationSeconds);
+  void _startWorkTimer() {
+    _autoRunCompletedCycles = 0;
+    _startTimer(_workDurationSeconds);
+  }
 
   void _pauseOrResume() {
     if (!_isRunning) return;
@@ -392,6 +431,7 @@ class _TimerHomePageState extends State<TimerHomePage>
       _phaseOpacity = 1.0;
       _phaseStartedAt = null;
       _phaseEndsAt = null;
+      _autoRunCompletedCycles = 0;
       _initialDuration = _workDurationSeconds;
       _remainingSeconds = _initialDuration;
       _animationController.reset();
@@ -451,6 +491,11 @@ class _TimerHomePageState extends State<TimerHomePage>
       }
 
       if (completedBreakPhase) {
+        if (_shouldContinueAutoRun()) {
+          _startTimer(_workDurationSeconds);
+          return;
+        }
+
         setState(() {
           _isRunning = false;
           _isPaused = false;
@@ -458,6 +503,7 @@ class _TimerHomePageState extends State<TimerHomePage>
           _phaseOpacity = 1.0;
           _phaseStartedAt = null;
           _phaseEndsAt = null;
+          _autoRunCompletedCycles = 0;
           _initialDuration = _workDurationSeconds;
           _remainingSeconds = _initialDuration;
           _animationController.reset();
@@ -468,7 +514,10 @@ class _TimerHomePageState extends State<TimerHomePage>
       }
 
       final completedCycles = _streakCount + 1;
-      setState(() => _streakCount = completedCycles);
+      setState(() {
+        _streakCount = completedCycles;
+        _autoRunCompletedCycles++;
+      });
       widget.saveStreakCount(_streakCount);
       _startTimer(
         _breakDurationForCompletedCycle(completedCycles),
@@ -487,6 +536,7 @@ class _TimerHomePageState extends State<TimerHomePage>
         remainingSeconds: remainingSeconds ?? _remainingSeconds,
         phaseStartedAt: _phaseStartedAt,
         phaseEndsAt: _phaseEndsAt,
+        completedAutoRunCycles: _autoRunCompletedCycles,
       ),
     );
   }
@@ -591,10 +641,15 @@ class _TimerHomePageState extends State<TimerHomePage>
   String get _timerModeSummary {
     final workMinutes = (_workDurationSeconds / 60).round();
     final breakLabel = _durationLabel(_breakDurationSeconds);
+    final autoRunLabel = _autoRunEnabled
+        ? _autoRunCycleLimit <= 0
+              ? ' Auto run: unlimited.'
+              : ' Auto run: $_autoRunCycleLimit cycles.'
+        : '';
     if (!_longBreakEnabled) {
-      return 'Every $workMinutes min, look 20 ft away for $breakLabel.';
+      return 'Every $workMinutes min, look 20 ft away for $breakLabel.$autoRunLabel';
     }
-    return 'Every $workMinutes min, rest for $breakLabel. Long break after $_longBreakEveryCycles cycles.';
+    return 'Every $workMinutes min, rest for $breakLabel. Long break after $_longBreakEveryCycles cycles.$autoRunLabel';
   }
 
   String _durationLabel(int seconds) {

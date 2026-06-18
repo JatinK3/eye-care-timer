@@ -6,6 +6,7 @@ class TimerSession {
   final int remainingSeconds;
   final DateTime? phaseStartedAt;
   final DateTime? phaseEndsAt;
+  final int completedAutoRunCycles;
 
   const TimerSession({
     required this.isActive,
@@ -15,6 +16,7 @@ class TimerSession {
     required this.remainingSeconds,
     required this.phaseStartedAt,
     required this.phaseEndsAt,
+    this.completedAutoRunCycles = 0,
   });
 
   const TimerSession.idle()
@@ -24,5 +26,6 @@ class TimerSession {
       initialDurationSeconds = 0,
       remainingSeconds = 0,
       phaseStartedAt = null,
-      phaseEndsAt = null;
+      phaseEndsAt = null,
+      completedAutoRunCycles = 0;
 }

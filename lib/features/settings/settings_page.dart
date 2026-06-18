@@ -14,6 +14,8 @@ class SettingsPage extends StatefulWidget {
   final bool longBreakEnabled;
   final int longBreakDurationSeconds;
   final int longBreakEveryCycles;
+  final bool autoRunEnabled;
+  final int autoRunCycleLimit;
   final NotificationPermissionStatus notificationPermissionStatus;
   final bool hapticsEnabled;
   final bool soundEnabled;
@@ -32,6 +34,8 @@ class SettingsPage extends StatefulWidget {
     required int everyCycles,
   })
   saveLongBreakSettings;
+  final void Function({required bool enabled, required int cycleLimit})
+  saveAutoRunSettings;
   final Future<void> Function() openNotificationSettings;
   final Future<NotificationPermissionStatus> Function()
   refreshNotificationPermissionStatus;
@@ -50,6 +54,8 @@ class SettingsPage extends StatefulWidget {
     required this.longBreakEnabled,
     required this.longBreakDurationSeconds,
     required this.longBreakEveryCycles,
+    required this.autoRunEnabled,
+    required this.autoRunCycleLimit,
     required this.notificationPermissionStatus,
     required this.hapticsEnabled,
     required this.soundEnabled,
@@ -62,6 +68,7 @@ class SettingsPage extends StatefulWidget {
     required this.saveDurations,
     required this.setDailyGoal,
     required this.saveLongBreakSettings,
+    required this.saveAutoRunSettings,
     required this.openNotificationSettings,
     required this.refreshNotificationPermissionStatus,
     required this.openHistory,
@@ -88,14 +95,19 @@ class _SettingsPageState extends State<SettingsPage> {
   static const List<int> _breakDurationSeconds = [20, 30, 45, 60, 90, 120, 300];
   static const List<int> _longBreakDurationSeconds = [180, 300, 600, 900];
   static const List<int> _longBreakCycles = [2, 3, 4, 5, 6];
+  static const List<int> _autoRunCycleLimits = [0, 1, 2, 3, 4, 6, 8, 10, 12];
   static const List<int> _dailyGoals = [3, 4, 6, 8, 10, 12];
 
   late NotificationPermissionStatus _permissionStatus;
+  late bool _autoRunEnabled;
+  late int _autoRunCycleLimit;
 
   @override
   void initState() {
     super.initState();
     _permissionStatus = widget.notificationPermissionStatus;
+    _autoRunEnabled = widget.autoRunEnabled;
+    _autoRunCycleLimit = widget.autoRunCycleLimit;
   }
 
   @override
@@ -131,6 +143,23 @@ class _SettingsPageState extends State<SettingsPage> {
       durationSeconds: durationSeconds ?? widget.longBreakDurationSeconds,
       everyCycles: everyCycles ?? widget.longBreakEveryCycles,
     );
+  }
+
+  void _saveAutoRun({bool? enabled, int? cycleLimit}) {
+    final nextEnabled = enabled ?? _autoRunEnabled;
+    final nextCycleLimit = cycleLimit ?? _autoRunCycleLimit;
+    setState(() {
+      _autoRunEnabled = nextEnabled;
+      _autoRunCycleLimit = nextCycleLimit;
+    });
+    widget.saveAutoRunSettings(
+      enabled: nextEnabled,
+      cycleLimit: nextCycleLimit,
+    );
+  }
+
+  String _cycleLimitLabel(int cycleLimit) {
+    return cycleLimit == 0 ? 'Unlimited' : '$cycleLimit cycles';
   }
 
   String _durationLabel(int seconds) {
@@ -298,6 +327,51 @@ class _SettingsPageState extends State<SettingsPage> {
                 subtitle: const Text('Play a short system alert at phase end'),
                 value: widget.soundEnabled,
                 onChanged: widget.setSoundEnabled,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _Section(
+            title: 'Auto run',
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.autorenew),
+                title: const Text('Run schedule automatically'),
+                subtitle: Text(
+                  widget.canChangeDurations
+                      ? 'Continue work and break cycles until stopped or limit is reached'
+                      : 'Pause or cancel the timer to change this',
+                ),
+                value: _autoRunEnabled,
+                onChanged: widget.canChangeDurations
+                    ? (enabled) => _saveAutoRun(enabled: enabled)
+                    : null,
+              ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.flag_circle_outlined),
+                title: const Text('Cycle limit'),
+                subtitle: const Text('Completed work cycles in one run'),
+                trailing: DropdownButton<int>(
+                  value: _autoRunCycleLimit,
+                  items: _autoRunCycleLimits
+                      .map(
+                        (limit) => DropdownMenuItem<int>(
+                          value: limit,
+                          child: Text(_cycleLimitLabel(limit)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: widget.canChangeDurations && _autoRunEnabled
+                      ? (value) {
+                          if (value != null) {
+                            _saveAutoRun(cycleLimit: value);
+                          }
+                        }
+                      : null,
+                ),
               ),
             ],
           ),

@@ -28,15 +28,15 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/main.dart`: App entrypoint only.
 - `lib/app.dart`: Top-level `MaterialApp`, theme/preset state, startup loading, persistence coordination, and notification service injection.
 - `lib/features/timer/timer_home_page.dart`: Main timer UI, countdown state, lifecycle reconciliation, color preset rendering, and notification scheduling hooks.
-- `lib/models/timer_settings.dart`: Persisted timer settings model and defaults, including color preset, notification, feedback, long-break, and daily goal preferences.
+- `lib/models/timer_settings.dart`: Persisted timer settings model and defaults, including color preset, notification, feedback, long-break, automatic-cycle, and daily goal preferences.
 - `lib/theme/color_presets.dart`: Shared preset names, seed colors, swatches, timer gradients, and progress colors.
-- `lib/features/settings/settings_page.dart`: Dedicated settings UI for durations, theme, presets, reminder permission recovery, progress history entry point, and streak reset.
+- `lib/features/settings/settings_page.dart`: Dedicated settings UI for durations, theme, presets, reminder permission recovery, automatic-cycle controls, progress history entry point, and streak reset.
 - `lib/features/onboarding/onboarding_page.dart`: First-run 20-20-20 explanation and reminder permission entry point.
 - `lib/features/history/history_page.dart`: Seven-day break history, best-day summary, goal streak summary, and history reset UI.
-- `lib/models/timer_session.dart`: Persisted active/paused timer session state for launch restore.
-- `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, daily goal, notification preference, feedback preferences, and active timer session.
+- `lib/models/timer_session.dart`: Persisted active/paused timer session state and automatic-run cycle progress for launch restore.
+- `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, daily goal, notification preference, feedback preferences, automatic-cycle settings, and active timer session.
 - `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, system settings recovery hook, phase reminder scheduling, and cancellation.
-- `test/widget_test.dart`: Widget smoke, persistence load, timer controls, settings/history navigation, notification fake, and cancel-transition regression tests.
+- `test/widget_test.dart`: Widget smoke, persistence load, timer controls, automatic-cycle restore/limits, settings/history navigation, notification fake, and cancel-transition regression tests.
 - `WORKLOG.md`: Ordered roadmap and completion log.
 
 ## Current App Behavior
@@ -50,11 +50,11 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Resume schedules a new phase notification using the remaining time.
 - Cancel resets to idle work state and cancels pending notifications.
 - Work completion increments the daily streak, saves it into daily history, and automatically starts either the normal break or the configured long break.
-- Break completion returns to idle work state.
+- Break completion returns to idle work state by default. When automatic scheduling is enabled, it starts the next work phase until the user cancels or the configured per-run work-cycle limit is reached. A zero limit means unlimited cycles.
 - The timer stores an in-memory phase deadline and reconciles remaining time when the app resumes.
 - Active timer sessions are persisted so running and paused work/break phases can restore after app restart.
 - Expired restored work sessions advance into the remaining break time, or return idle if both work and break would already be complete.
-- Theme mode, color preset, work duration, break duration, long-break settings, daily streak, seven-day history source data, daily goal, notification preference, haptic/sound preferences, and active timer session are persisted.
+- Theme mode, color preset, work duration, break duration, long-break settings, automatic-cycle settings and current run progress, daily streak, seven-day history source data, daily goal, notification preference, haptic/sound preferences, and active timer session are persisted.
 - Daily streak resets when the saved streak date is not today.
 - The main timer shows daily goal progress and a goal-reached state when completed breaks meet the configured goal.
 - Settings includes a History screen with best day, current goal streak, last seven days, and reset history actions.
@@ -117,7 +117,7 @@ Commands run after the current implementation:
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 19 tests.
+- `flutter test`: passing, 22 tests.
 - `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
 - `flutter build web`: passing; generated `build/web`.
 
@@ -133,6 +133,7 @@ Important git/worktree note:
    - More visual presets are implemented through shared preset definitions.
    - First-run onboarding and notification permission recovery are implemented.
    - Quick timer presets and configurable long-break mode are implemented.
+   - Automatic work/break scheduling is implemented with unlimited or configurable per-run cycle limits.
 
 2. Stronger background/session restore.
    - Active session restore is implemented for launch and app resume.
