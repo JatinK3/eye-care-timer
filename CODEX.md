@@ -61,7 +61,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Settings shows notification system permission status as allowed, blocked, checking, or unsupported, and opens Android system notification settings when permission is blocked.
 - Light/dark theme toggle and `Pastel`, `Calm Blue`, `Forest`, `Rose`, `Graphite`, and `Sunrise` presets are available.
 - The app theme seed, settings swatches, timer gradients, and timer progress color now come from the same preset source.
-- UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification and feedback toggle UX, calmer text, and tighter card radius.
+- UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification and feedback toggle UX, contrast-safe dark-mode primary buttons, calmer text, and tighter card radius.
 
 ## Dependencies
 
@@ -117,7 +117,7 @@ Commands run after the current implementation:
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 18 tests.
+- `flutter test`: passing, 19 tests.
 - `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
 - `flutter build web`: passing; generated `build/web`.
 

@@ -86,6 +86,18 @@ String dateKey(DateTime date) {
   return '$year-$month-$day';
 }
 
+double contrastRatio(Color first, Color second) {
+  final firstLuminance = first.computeLuminance();
+  final secondLuminance = second.computeLuminance();
+  final lighter = firstLuminance > secondLuminance
+      ? firstLuminance
+      : secondLuminance;
+  final darker = firstLuminance > secondLuminance
+      ? secondLuminance
+      : firstLuminance;
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({
@@ -266,6 +278,28 @@ void main() {
 
     expect(find.text('25:00'), findsOneWidget);
     expect(find.textContaining('for 5 min'), findsOneWidget);
+  });
+
+  testWidgets('dark mode start button keeps readable contrast', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.themeModeKey: 'dark',
+      PreferencesService.colorPresetKey: 'Pastel',
+    });
+
+    await pumpEyeCareTimerApp(tester);
+
+    final button = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, 'Start'),
+    );
+    final background = button.style?.backgroundColor?.resolve({});
+    final foreground = button.style?.foregroundColor?.resolve({});
+
+    expect(background, isNotNull);
+    expect(foreground, isNotNull);
+    expect(contrastRatio(background!, foreground!), greaterThanOrEqualTo(4.5));
   });
 
   testWidgets('settings screen exposes feedback toggles', (

@@ -74,6 +74,7 @@ This file tracks the improvement plan for the Eye Care Timer app. Update status 
 
 ## Completed
 
+- Fixed dark-mode home screen Start button contrast and added regression coverage.
 - Added quick timer presets and configurable persisted long-break mode.
 - Added first-run onboarding and notification permission recovery through Android system settings.
 - Cleaned web, iOS, macOS, Linux, and Windows app identity metadata and verified Android and web builds.

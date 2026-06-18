@@ -582,6 +582,12 @@ class _TimerHomePageState extends State<TimerHomePage>
     );
   }
 
+  Color _foregroundForButtonBackground(Color backgroundColor) {
+    return backgroundColor.computeLuminance() > 0.45
+        ? Colors.black87
+        : Colors.white;
+  }
+
   String get _timerModeSummary {
     final workMinutes = (_workDurationSeconds / 60).round();
     final breakLabel = _durationLabel(_breakDurationSeconds);
@@ -610,6 +616,9 @@ class _TimerHomePageState extends State<TimerHomePage>
       _isBreak,
       widget.colorPreset,
       isDark,
+    );
+    final primaryButtonForeground = _foregroundForButtonBackground(
+      progressColor,
     );
 
     return Scaffold(
@@ -764,7 +773,9 @@ class _TimerHomePageState extends State<TimerHomePage>
                               label: const Text('Start'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: progressColor,
-                                foregroundColor: Colors.white,
+                                foregroundColor: primaryButtonForeground,
+                                elevation: isDark ? 3 : 1,
+                                shadowColor: Colors.black54,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 22,
                                   vertical: 12,
