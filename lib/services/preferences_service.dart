@@ -17,6 +17,9 @@ class PreferencesService {
   static const String notificationsEnabledKey = 'notificationsEnabled';
   static const String hapticsEnabledKey = 'hapticsEnabled';
   static const String soundEnabledKey = 'soundEnabled';
+  static const String longBreakEnabledKey = 'longBreakEnabled';
+  static const String longBreakDurationSecondsKey = 'longBreakDurationSeconds';
+  static const String longBreakEveryCyclesKey = 'longBreakEveryCycles';
   static const String onboardingCompletedKey = 'onboardingCompleted';
   static const String dailyHistoryKey = 'dailyHistory';
   static const String sessionIsActiveKey = 'sessionIsActive';
@@ -59,6 +62,13 @@ class PreferencesService {
       notificationsEnabled: prefs.getBool(notificationsEnabledKey) ?? true,
       hapticsEnabled: prefs.getBool(hapticsEnabledKey) ?? true,
       soundEnabled: prefs.getBool(soundEnabledKey) ?? false,
+      longBreakEnabled: prefs.getBool(longBreakEnabledKey) ?? false,
+      longBreakDurationSeconds:
+          prefs.getInt(longBreakDurationSecondsKey) ??
+          TimerSettings.defaultLongBreakDurationSeconds,
+      longBreakEveryCycles:
+          prefs.getInt(longBreakEveryCyclesKey) ??
+          TimerSettings.defaultLongBreakEveryCycles,
     );
   }
 
@@ -178,6 +188,17 @@ class PreferencesService {
   Future<void> saveSoundEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(soundEnabledKey, enabled);
+  }
+
+  Future<void> saveLongBreakSettings({
+    required bool enabled,
+    required int durationSeconds,
+    required int everyCycles,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(longBreakEnabledKey, enabled);
+    await prefs.setInt(longBreakDurationSecondsKey, durationSeconds);
+    await prefs.setInt(longBreakEveryCyclesKey, everyCycles);
   }
 
   Future<void> saveStreakCount(int streakCount) async {

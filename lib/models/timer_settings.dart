@@ -4,6 +4,8 @@ class TimerSettings {
   static const int defaultWorkDurationSeconds = 20 * 60;
   static const int defaultBreakDurationSeconds = 20;
   static const String defaultColorPreset = 'Pastel';
+  static const int defaultLongBreakDurationSeconds = 5 * 60;
+  static const int defaultLongBreakEveryCycles = 4;
 
   final int workDurationSeconds;
   final int breakDurationSeconds;
@@ -14,6 +16,9 @@ class TimerSettings {
   final bool notificationsEnabled;
   final bool hapticsEnabled;
   final bool soundEnabled;
+  final bool longBreakEnabled;
+  final int longBreakDurationSeconds;
+  final int longBreakEveryCycles;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -25,6 +30,9 @@ class TimerSettings {
     required this.notificationsEnabled,
     required this.hapticsEnabled,
     required this.soundEnabled,
+    required this.longBreakEnabled,
+    required this.longBreakDurationSeconds,
+    required this.longBreakEveryCycles,
   });
 
   const TimerSettings.defaults()
@@ -36,7 +44,10 @@ class TimerSettings {
       dailyGoal = 6,
       notificationsEnabled = true,
       hapticsEnabled = true,
-      soundEnabled = false;
+      soundEnabled = false,
+      longBreakEnabled = false,
+      longBreakDurationSeconds = defaultLongBreakDurationSeconds,
+      longBreakEveryCycles = defaultLongBreakEveryCycles;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -48,6 +59,9 @@ class TimerSettings {
     bool? notificationsEnabled,
     bool? hapticsEnabled,
     bool? soundEnabled,
+    bool? longBreakEnabled,
+    int? longBreakDurationSeconds,
+    int? longBreakEveryCycles,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -59,6 +73,10 @@ class TimerSettings {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
       soundEnabled: soundEnabled ?? this.soundEnabled,
+      longBreakEnabled: longBreakEnabled ?? this.longBreakEnabled,
+      longBreakDurationSeconds:
+          longBreakDurationSeconds ?? this.longBreakDurationSeconds,
+      longBreakEveryCycles: longBreakEveryCycles ?? this.longBreakEveryCycles,
     );
   }
 }

@@ -170,6 +170,27 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
     );
   }
 
+  void _saveLongBreakSettings({
+    required bool enabled,
+    required int durationSeconds,
+    required int everyCycles,
+  }) {
+    setState(() {
+      _settings = _settings.copyWith(
+        longBreakEnabled: enabled,
+        longBreakDurationSeconds: durationSeconds,
+        longBreakEveryCycles: everyCycles,
+      );
+    });
+    unawaited(
+      _preferencesService.saveLongBreakSettings(
+        enabled: enabled,
+        durationSeconds: durationSeconds,
+        everyCycles: everyCycles,
+      ),
+    );
+  }
+
   void _saveSession(TimerSession session) {
     setState(() {
       _session = session;
@@ -247,6 +268,9 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
           breakDurationSeconds: _settings.breakDurationSeconds,
           streakCount: _settings.streakCount,
           dailyGoal: _settings.dailyGoal,
+          longBreakEnabled: _settings.longBreakEnabled,
+          longBreakDurationSeconds: _settings.longBreakDurationSeconds,
+          longBreakEveryCycles: _settings.longBreakEveryCycles,
           notificationsEnabled: _settings.notificationsEnabled,
           notificationPermissionStatus: _notificationPermissionStatus,
           hapticsEnabled: _settings.hapticsEnabled,
@@ -255,6 +279,7 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
           toggleTheme: _toggleTheme,
           setPreset: _setPreset,
           saveDurations: _saveDurations,
+          saveLongBreakSettings: _saveLongBreakSettings,
           setDailyGoal: _setDailyGoal,
           setNotificationsEnabled: _setNotificationsEnabled,
           setHapticsEnabled: _setHapticsEnabled,
@@ -307,6 +332,9 @@ class _EyeCareTimerAppState extends State<EyeCareTimerApp> {
               initialBreakDurationSeconds: _settings.breakDurationSeconds,
               initialStreakCount: _settings.streakCount,
               dailyGoal: _settings.dailyGoal,
+              longBreakEnabled: _settings.longBreakEnabled,
+              longBreakDurationSeconds: _settings.longBreakDurationSeconds,
+              longBreakEveryCycles: _settings.longBreakEveryCycles,
               notificationsEnabled: _settings.notificationsEnabled,
               hapticsEnabled: _settings.hapticsEnabled,
               soundEnabled: _settings.soundEnabled,

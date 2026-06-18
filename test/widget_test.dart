@@ -12,6 +12,7 @@ class FakeNotificationService extends NotificationService {
   NotificationPermissionStatus status;
   int workReminderCount = 0;
   int breakReminderCount = 0;
+  Duration? lastBreakReminderDelay;
   int cancelCount = 0;
   int permissionStatusCheckCount = 0;
   int requestPermissionCount = 0;
@@ -41,6 +42,7 @@ class FakeNotificationService extends NotificationService {
   @override
   Future<void> scheduleBreakCompleteReminder(Duration delay) async {
     breakReminderCount++;
+    lastBreakReminderDelay = delay;
   }
 
   @override
@@ -248,6 +250,24 @@ void main() {
     expect(find.text('05:00'), findsOneWidget);
   });
 
+  testWidgets('settings applies quick timer presets', (
+    WidgetTester tester,
+  ) async {
+    await pumpEyeCareTimerApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('25 / 5'));
+    await tester.pumpAndSettle();
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.text('25:00'), findsOneWidget);
+    expect(find.textContaining('for 5 min'), findsOneWidget);
+  });
+
   testWidgets('settings screen exposes feedback toggles', (
     WidgetTester tester,
   ) async {
@@ -397,6 +417,39 @@ void main() {
     expect(find.text('Yesterday'), findsOneWidget);
     expect(find.text('3 / 6'), findsOneWidget);
     expect(find.text('6 breaks'), findsOneWidget);
+  });
+
+  testWidgets('long break mode restores into a longer break after interval', (
+    WidgetTester tester,
+  ) async {
+    final now = DateTime.now();
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.sessionIsActiveKey: true,
+      PreferencesService.sessionIsBreakKey: false,
+      PreferencesService.sessionIsPausedKey: false,
+      PreferencesService.sessionInitialDurationSecondsKey: 1,
+      PreferencesService.sessionRemainingSecondsKey: 1,
+      PreferencesService.sessionPhaseStartedAtKey: now
+          .subtract(const Duration(seconds: 6))
+          .millisecondsSinceEpoch,
+      PreferencesService.sessionPhaseEndsAtKey: now
+          .subtract(const Duration(seconds: 5))
+          .millisecondsSinceEpoch,
+      PreferencesService.longBreakEnabledKey: true,
+      PreferencesService.longBreakEveryCyclesKey: 1,
+      PreferencesService.longBreakDurationSecondsKey: 3 * 60,
+    });
+
+    final notificationService = await pumpEyeCareTimerApp(tester);
+    await tester.pump();
+
+    expect(find.textContaining('Break Time'), findsOneWidget);
+    expect(notificationService.breakReminderCount, 1);
+    expect(
+      notificationService.lastBreakReminderDelay?.inSeconds,
+      greaterThan(150),
+    );
   });
 
   testWidgets('start, pause, resume, and cancel keep controls consistent', (

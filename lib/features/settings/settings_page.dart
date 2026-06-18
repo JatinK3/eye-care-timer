@@ -11,6 +11,9 @@ class SettingsPage extends StatefulWidget {
   final int streakCount;
   final int dailyGoal;
   final bool notificationsEnabled;
+  final bool longBreakEnabled;
+  final int longBreakDurationSeconds;
+  final int longBreakEveryCycles;
   final NotificationPermissionStatus notificationPermissionStatus;
   final bool hapticsEnabled;
   final bool soundEnabled;
@@ -23,6 +26,12 @@ class SettingsPage extends StatefulWidget {
   final void Function(int workDurationSeconds, int breakDurationSeconds)
   saveDurations;
   final void Function(int dailyGoal) setDailyGoal;
+  final void Function({
+    required bool enabled,
+    required int durationSeconds,
+    required int everyCycles,
+  })
+  saveLongBreakSettings;
   final Future<void> Function() openNotificationSettings;
   final Future<NotificationPermissionStatus> Function()
   refreshNotificationPermissionStatus;
@@ -38,6 +47,9 @@ class SettingsPage extends StatefulWidget {
     required this.streakCount,
     required this.dailyGoal,
     required this.notificationsEnabled,
+    required this.longBreakEnabled,
+    required this.longBreakDurationSeconds,
+    required this.longBreakEveryCycles,
     required this.notificationPermissionStatus,
     required this.hapticsEnabled,
     required this.soundEnabled,
@@ -49,6 +61,7 @@ class SettingsPage extends StatefulWidget {
     required this.setPreset,
     required this.saveDurations,
     required this.setDailyGoal,
+    required this.saveLongBreakSettings,
     required this.openNotificationSettings,
     required this.refreshNotificationPermissionStatus,
     required this.openHistory,
@@ -72,7 +85,9 @@ class _SettingsPageState extends State<SettingsPage> {
     45,
     60,
   ];
-  static const List<int> _breakDurationSeconds = [20, 30, 45, 60, 90, 120];
+  static const List<int> _breakDurationSeconds = [20, 30, 45, 60, 90, 120, 300];
+  static const List<int> _longBreakDurationSeconds = [180, 300, 600, 900];
+  static const List<int> _longBreakCycles = [2, 3, 4, 5, 6];
   static const List<int> _dailyGoals = [3, 4, 6, 8, 10, 12];
 
   late NotificationPermissionStatus _permissionStatus;
@@ -103,6 +118,29 @@ class _SettingsPageState extends State<SettingsPage> {
     });
   }
 
+  void _applyPreset(int workSeconds, int breakSeconds) {
+    if (!widget.canChangeDurations) {
+      return;
+    }
+    widget.saveDurations(workSeconds, breakSeconds);
+  }
+
+  void _saveLongBreak({bool? enabled, int? durationSeconds, int? everyCycles}) {
+    widget.saveLongBreakSettings(
+      enabled: enabled ?? widget.longBreakEnabled,
+      durationSeconds: durationSeconds ?? widget.longBreakDurationSeconds,
+      everyCycles: everyCycles ?? widget.longBreakEveryCycles,
+    );
+  }
+
+  String _durationLabel(int seconds) {
+    if (seconds < 60) {
+      return '$seconds sec';
+    }
+    final minutes = seconds ~/ 60;
+    return '$minutes min';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,6 +151,37 @@ class _SettingsPageState extends State<SettingsPage> {
           _Section(
             title: 'Timer',
             children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _PresetChip(
+                    label: '20-20-20',
+                    selected:
+                        widget.workDurationSeconds == 20 * 60 &&
+                        widget.breakDurationSeconds == 20,
+                    enabled: widget.canChangeDurations,
+                    onSelected: () => _applyPreset(20 * 60, 20),
+                  ),
+                  _PresetChip(
+                    label: '25 / 5',
+                    selected:
+                        widget.workDurationSeconds == 25 * 60 &&
+                        widget.breakDurationSeconds == 5 * 60,
+                    enabled: widget.canChangeDurations,
+                    onSelected: () => _applyPreset(25 * 60, 5 * 60),
+                  ),
+                  _PresetChip(
+                    label: '45 / 5',
+                    selected:
+                        widget.workDurationSeconds == 45 * 60 &&
+                        widget.breakDurationSeconds == 5 * 60,
+                    enabled: widget.canChangeDurations,
+                    onSelected: () => _applyPreset(45 * 60, 5 * 60),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.work_outline),
@@ -157,7 +226,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       .map(
                         (seconds) => DropdownMenuItem<int>(
                           value: seconds,
-                          child: Text('$seconds sec'),
+                          child: Text(_durationLabel(seconds)),
                         ),
                       )
                       .toList(),
@@ -229,6 +298,70 @@ class _SettingsPageState extends State<SettingsPage> {
                 subtitle: const Text('Play a short system alert at phase end'),
                 value: widget.soundEnabled,
                 onChanged: widget.setSoundEnabled,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _Section(
+            title: 'Long break',
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.coffee_outlined),
+                title: const Text('Long break mode'),
+                subtitle: Text(
+                  'After ${widget.longBreakEveryCycles} work cycles, rest for ${_durationLabel(widget.longBreakDurationSeconds)}',
+                ),
+                value: widget.longBreakEnabled,
+                onChanged: (enabled) => _saveLongBreak(enabled: enabled),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.repeat),
+                title: const Text('Cycle interval'),
+                trailing: DropdownButton<int>(
+                  value: widget.longBreakEveryCycles,
+                  items: _longBreakCycles
+                      .map(
+                        (cycles) => DropdownMenuItem<int>(
+                          value: cycles,
+                          child: Text('$cycles cycles'),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: widget.longBreakEnabled
+                      ? (value) {
+                          if (value != null) {
+                            _saveLongBreak(everyCycles: value);
+                          }
+                        }
+                      : null,
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.self_improvement_outlined),
+                title: const Text('Long break duration'),
+                trailing: DropdownButton<int>(
+                  value: widget.longBreakDurationSeconds,
+                  items: _longBreakDurationSeconds
+                      .map(
+                        (seconds) => DropdownMenuItem<int>(
+                          value: seconds,
+                          child: Text(_durationLabel(seconds)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: widget.longBreakEnabled
+                      ? (value) {
+                          if (value != null) {
+                            _saveLongBreak(durationSeconds: value);
+                          }
+                        }
+                      : null,
+                ),
               ),
             ],
           ),
@@ -356,6 +489,30 @@ class _SettingsPageState extends State<SettingsPage> {
         'Status unavailable on this platform',
       NotificationPermissionStatus.unknown => 'Checking system permission',
     };
+  }
+}
+
+class _PresetChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onSelected;
+
+  const _PresetChip({
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: enabled ? (_) => onSelected() : null,
+      avatar: selected ? const Icon(Icons.check, size: 18) : null,
+    );
   }
 }
 

@@ -15,6 +15,9 @@ class TimerHomePage extends StatefulWidget {
   final int initialBreakDurationSeconds;
   final int initialStreakCount;
   final int dailyGoal;
+  final bool longBreakEnabled;
+  final int longBreakDurationSeconds;
+  final int longBreakEveryCycles;
   final TimerSession initialSession;
   final bool notificationsEnabled;
   final bool hapticsEnabled;
@@ -39,6 +42,9 @@ class TimerHomePage extends StatefulWidget {
     required this.initialBreakDurationSeconds,
     required this.initialStreakCount,
     required this.dailyGoal,
+    required this.longBreakEnabled,
+    required this.longBreakDurationSeconds,
+    required this.longBreakEveryCycles,
     required this.initialSession,
     required this.notificationsEnabled,
     required this.hapticsEnabled,
@@ -70,6 +76,9 @@ class _TimerHomePageState extends State<TimerHomePage>
   // -------------------- Durations --------------------
   late int _workDurationSeconds;
   late int _breakDurationSeconds;
+  late bool _longBreakEnabled;
+  late int _longBreakDurationSeconds;
+  late int _longBreakEveryCycles;
 
   late int _initialDuration;
   late int _remainingSeconds;
@@ -101,6 +110,9 @@ class _TimerHomePageState extends State<TimerHomePage>
     WidgetsBinding.instance.addObserver(this);
     _workDurationSeconds = widget.initialWorkDurationSeconds;
     _breakDurationSeconds = widget.initialBreakDurationSeconds;
+    _longBreakEnabled = widget.longBreakEnabled;
+    _longBreakDurationSeconds = widget.longBreakDurationSeconds;
+    _longBreakEveryCycles = widget.longBreakEveryCycles;
     _streakCount = widget.initialStreakCount;
     _initialDuration = _workDurationSeconds;
     _remainingSeconds = _initialDuration;
@@ -162,10 +174,16 @@ class _TimerHomePageState extends State<TimerHomePage>
             widget.initialWorkDurationSeconds ||
         oldWidget.initialBreakDurationSeconds !=
             widget.initialBreakDurationSeconds ||
-        oldWidget.initialStreakCount != widget.initialStreakCount) {
+        oldWidget.initialStreakCount != widget.initialStreakCount ||
+        oldWidget.longBreakEnabled != widget.longBreakEnabled ||
+        oldWidget.longBreakDurationSeconds != widget.longBreakDurationSeconds ||
+        oldWidget.longBreakEveryCycles != widget.longBreakEveryCycles) {
       setState(() {
         _workDurationSeconds = widget.initialWorkDurationSeconds;
         _breakDurationSeconds = widget.initialBreakDurationSeconds;
+        _longBreakEnabled = widget.longBreakEnabled;
+        _longBreakDurationSeconds = widget.longBreakDurationSeconds;
+        _longBreakEveryCycles = widget.longBreakEveryCycles;
         _streakCount = widget.initialStreakCount;
         _initialDuration = _workDurationSeconds;
         _remainingSeconds = _initialDuration;
@@ -269,6 +287,15 @@ class _TimerHomePageState extends State<TimerHomePage>
     );
   }
 
+  int _breakDurationForCompletedCycle(int completedCycles) {
+    if (!_longBreakEnabled || _longBreakEveryCycles <= 0) {
+      return _breakDurationSeconds;
+    }
+    return completedCycles % _longBreakEveryCycles == 0
+        ? _longBreakDurationSeconds
+        : _breakDurationSeconds;
+  }
+
   void _completeExpiredRestoredSession(TimerSession session) {
     final phaseEndsAt = session.phaseEndsAt;
     if (session.isBreak || phaseEndsAt == null) {
@@ -276,11 +303,13 @@ class _TimerHomePageState extends State<TimerHomePage>
       return;
     }
 
-    setState(() => _streakCount++);
+    final completedCycles = _streakCount + 1;
+    setState(() => _streakCount = completedCycles);
     widget.saveStreakCount(_streakCount);
 
     final overdueSeconds = DateTime.now().difference(phaseEndsAt).inSeconds;
-    final remainingBreakSeconds = _breakDurationSeconds - overdueSeconds;
+    final remainingBreakSeconds =
+        _breakDurationForCompletedCycle(completedCycles) - overdueSeconds;
     if (remainingBreakSeconds <= 0) {
       widget.clearSession();
       return;
@@ -438,9 +467,13 @@ class _TimerHomePageState extends State<TimerHomePage>
         return;
       }
 
-      setState(() => _streakCount++);
+      final completedCycles = _streakCount + 1;
+      setState(() => _streakCount = completedCycles);
       widget.saveStreakCount(_streakCount);
-      _startTimer(_breakDurationSeconds, isBreak: true);
+      _startTimer(
+        _breakDurationForCompletedCycle(completedCycles),
+        isBreak: true,
+      );
     });
   }
 
@@ -547,6 +580,23 @@ class _TimerHomePageState extends State<TimerHomePage>
       preset: preset,
       isDark: isDark,
     );
+  }
+
+  String get _timerModeSummary {
+    final workMinutes = (_workDurationSeconds / 60).round();
+    final breakLabel = _durationLabel(_breakDurationSeconds);
+    if (!_longBreakEnabled) {
+      return 'Every $workMinutes min, look 20 ft away for $breakLabel.';
+    }
+    return 'Every $workMinutes min, rest for $breakLabel. Long break after $_longBreakEveryCycles cycles.';
+  }
+
+  String _durationLabel(int seconds) {
+    if (seconds < 60) {
+      return '$seconds s';
+    }
+    final minutes = seconds ~/ 60;
+    return '$minutes min';
   }
 
   @override
@@ -769,7 +819,7 @@ class _TimerHomePageState extends State<TimerHomePage>
                       Opacity(
                         opacity: 0.95,
                         child: Text(
-                          'Every ${(_workDurationSeconds / 60).round()} min, look 20 ft away for $_breakDurationSeconds s.',
+                          _timerModeSummary,
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
