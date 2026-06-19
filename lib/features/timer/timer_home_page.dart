@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 
 import '../../models/timer_session.dart';
 import '../../services/notification_service.dart';
+import '../../services/timer_background_service.dart';
 import '../../theme/color_presets.dart';
+import 'phase_schedule.dart';
 
 /// Home page with all timer logic and UI.
 class TimerHomePage extends StatefulWidget {
@@ -37,6 +39,7 @@ class TimerHomePage extends StatefulWidget {
   final void Function(TimerSession session) saveSession;
   final VoidCallback clearSession;
   final NotificationService notificationService;
+  final TimerBackgroundService? backgroundService;
 
   const TimerHomePage({
     super.key,
@@ -65,6 +68,7 @@ class TimerHomePage extends StatefulWidget {
     required this.saveSession,
     required this.clearSession,
     required this.notificationService,
+    this.backgroundService,
   });
 
   @override
@@ -114,10 +118,13 @@ class _TimerHomePageState extends State<TimerHomePage>
   DateTime? _phaseStartedAt;
   DateTime? _phaseEndsAt;
 
+  late final TimerBackgroundService _backgroundService;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _backgroundService = widget.backgroundService ?? TimerBackgroundService();
     _workDurationSeconds = widget.initialWorkDurationSeconds;
     _breakDurationSeconds = widget.initialBreakDurationSeconds;
     _longBreakEnabled = widget.longBreakEnabled;
@@ -243,17 +250,40 @@ class _TimerHomePageState extends State<TimerHomePage>
       return;
     }
 
-    final remainingSeconds = phaseEndsAt.difference(DateTime.now()).inSeconds;
-    if (remainingSeconds <= 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _completeExpiredRestoredSession(session);
-        }
-      });
+    final projection = projectPhase(
+      now: DateTime.now(),
+      isBreak: session.isBreak,
+      phaseEndsAt: phaseEndsAt,
+      currentPhaseDurationSeconds: session.initialDurationSeconds,
+      streakCount: _streakCount,
+      autoRunCompletedCycles: session.completedAutoRunCycles,
+      plan: _currentPlan(),
+    );
+
+    if (projection.boundariesCrossed == 0 && !projection.isIdle) {
+      // Same phase is still running: restore it on the first frame without
+      // touching parent state (the persisted session is already accurate).
+      _applyProjection(
+        projection,
+        persist: false,
+        scheduleReminder: true,
+        playChime: false,
+      );
       return;
     }
 
-    _restoreRunningSession(session, remainingSeconds);
+    // One or more boundaries elapsed while the app was closed. Defer applying
+    // until after the first frame because it writes back to parent state.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _applyProjection(
+          projection,
+          persist: true,
+          scheduleReminder: true,
+          playChime: false,
+        );
+      }
+    });
   }
 
   void _restorePausedSession(TimerSession session) {
@@ -280,29 +310,100 @@ class _TimerHomePageState extends State<TimerHomePage>
     });
   }
 
-  void _restoreRunningSession(TimerSession session, int remainingSeconds) {
-    final progress = _progressFromRemaining(
-      initialDurationSeconds: session.initialDurationSeconds,
-      remainingSeconds: remainingSeconds,
+  PhasePlan _currentPlan() {
+    return PhasePlan(
+      workDurationSeconds: _workDurationSeconds,
+      breakDurationSeconds: _breakDurationSeconds,
+      longBreakEnabled: _longBreakEnabled,
+      longBreakDurationSeconds: _longBreakDurationSeconds,
+      longBreakEveryCycles: _longBreakEveryCycles,
+      autoRunEnabled: _autoRunEnabled,
+      autoRunCycleLimit: _autoRunCycleLimit,
     );
+  }
 
+  /// Applies a [projectPhase] result: records any work phases that finished
+  /// while the app was away, then either lands on the running phase or resets
+  /// to idle. Used by both launch-restore and resume reconciliation so the two
+  /// paths behave identically.
+  void _applyProjection(
+    PhaseProjection projection, {
+    required bool persist,
+    required bool scheduleReminder,
+    required bool playChime,
+  }) {
+    for (final work in projection.completedWorkSessions) {
+      widget.saveCompletedWorkSession(work.completedAt, work.durationSeconds);
+    }
+    if (projection.completedWorkSessions.isNotEmpty) {
+      _streakCount = projection.streakCount;
+      widget.saveStreakCount(_streakCount);
+    }
+    _autoRunCompletedCycles = projection.autoRunCompletedCycles;
+
+    if (playChime && projection.boundariesCrossed > 0) {
+      _playChime();
+    }
+
+    if (projection.isIdle) {
+      _phaseTransitionTimer?.cancel();
+      _phaseTransitionTimer = null;
+      unawaited(widget.notificationService.cancelPhaseReminder());
+      unawaited(_backgroundService.stopPhase());
+      setState(() {
+        _isRunning = false;
+        _isPaused = false;
+        _isBreak = false;
+        _isCancelled = false;
+        _phaseOpacity = 1.0;
+        _phaseStartedAt = null;
+        _phaseEndsAt = null;
+        _autoRunCompletedCycles = 0;
+        _initialDuration = _workDurationSeconds;
+        _remainingSeconds = _initialDuration;
+        _animationController.reset();
+        _pulseController.reset();
+      });
+      widget.clearSession();
+      return;
+    }
+
+    final progress = _progressFromRemaining(
+      initialDurationSeconds: projection.initialDurationSeconds,
+      remainingSeconds: projection.remainingSeconds,
+    );
     setState(() {
-      _isBreak = session.isBreak;
+      _isBreak = projection.isBreak;
       _isRunning = true;
       _isPaused = false;
       _isCancelled = false;
-      _phaseStartedAt = session.phaseStartedAt;
-      _phaseEndsAt = session.phaseEndsAt;
-      _initialDuration = session.initialDurationSeconds;
-      _remainingSeconds = remainingSeconds;
+      _phaseOpacity = 1.0;
+      _phaseStartedAt = projection.phaseStartedAt;
+      _phaseEndsAt = projection.phaseEndsAt;
+      _initialDuration = projection.initialDurationSeconds;
+      _remainingSeconds = projection.remainingSeconds;
       _animationController.duration = Duration(
-        seconds: session.initialDurationSeconds,
+        seconds: projection.initialDurationSeconds,
       );
-      _autoRunCompletedCycles = session.completedAutoRunCycles;
     });
     _animationController.forward(from: progress);
+    if (persist) {
+      _saveActiveSession(remainingSeconds: projection.remainingSeconds);
+    }
+    if (scheduleReminder) {
+      unawaited(
+        _schedulePhaseReminder(
+          projection.remainingSeconds,
+          isBreak: projection.isBreak,
+        ),
+      );
+    }
     unawaited(
-      _schedulePhaseReminder(remainingSeconds, isBreak: session.isBreak),
+      _backgroundService.startPhase(
+        phaseEndsAt: projection.phaseEndsAt!,
+        isBreak: projection.isBreak,
+        remainingSeconds: projection.remainingSeconds,
+      ),
     );
   }
 
@@ -319,46 +420,6 @@ class _TimerHomePageState extends State<TimerHomePage>
     return completedCycles % _longBreakEveryCycles == 0
         ? _longBreakDurationSeconds
         : _breakDurationSeconds;
-  }
-
-  void _completeExpiredRestoredSession(TimerSession session) {
-    final phaseEndsAt = session.phaseEndsAt;
-    if (phaseEndsAt == null) {
-      widget.clearSession();
-      return;
-    }
-
-    _autoRunCompletedCycles = session.completedAutoRunCycles;
-    if (session.isBreak) {
-      if (_shouldContinueAutoRun()) {
-        _startTimer(_workDurationSeconds);
-      } else {
-        _autoRunCompletedCycles = 0;
-        widget.clearSession();
-      }
-      return;
-    }
-
-    final completedCycles = _streakCount + 1;
-    setState(() {
-      _streakCount = completedCycles;
-      _autoRunCompletedCycles = session.completedAutoRunCycles + 1;
-    });
-    widget.saveStreakCount(_streakCount);
-    widget.saveCompletedWorkSession(
-      phaseEndsAt,
-      session.initialDurationSeconds,
-    );
-
-    final overdueSeconds = DateTime.now().difference(phaseEndsAt).inSeconds;
-    final remainingBreakSeconds =
-        _breakDurationForCompletedCycle(completedCycles) - overdueSeconds;
-    if (remainingBreakSeconds <= 0) {
-      widget.clearSession();
-      return;
-    }
-
-    _startTimer(remainingBreakSeconds, isBreak: true);
   }
 
   double _progressFromRemaining({
@@ -394,6 +455,13 @@ class _TimerHomePageState extends State<TimerHomePage>
     _animationController.forward(from: 0.0);
     _saveActiveSession(remainingSeconds: duration);
     unawaited(_schedulePhaseReminder(duration, isBreak: isBreak));
+    unawaited(
+      _backgroundService.startPhase(
+        phaseEndsAt: _phaseEndsAt!,
+        isBreak: isBreak,
+        remainingSeconds: duration,
+      ),
+    );
   }
 
   void _startWorkTimer() {
@@ -412,6 +480,7 @@ class _TimerHomePageState extends State<TimerHomePage>
         _phaseEndsAt = null;
         _saveActiveSession(isPaused: true);
         unawaited(widget.notificationService.cancelPhaseReminder());
+        unawaited(_backgroundService.stopPhase());
       } else {
         _phaseStartedAt = DateTime.now();
         _phaseEndsAt = _phaseStartedAt!.add(
@@ -420,6 +489,13 @@ class _TimerHomePageState extends State<TimerHomePage>
         _animationController.forward();
         _saveActiveSession();
         unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
+        unawaited(
+          _backgroundService.startPhase(
+            phaseEndsAt: _phaseEndsAt!,
+            isBreak: _isBreak,
+            remainingSeconds: _remainingSeconds,
+          ),
+        );
         if (_remainingSeconds <= 5) _pulseController.forward();
       }
     });
@@ -431,6 +507,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     _phaseTransitionTimer = null;
     _stopTimerCleanup(resetPulse: true);
     unawaited(widget.notificationService.cancelPhaseReminder());
+    unawaited(_backgroundService.stopPhase());
     setState(() {
       _isRunning = false;
       _isPaused = false;
@@ -459,21 +536,22 @@ class _TimerHomePageState extends State<TimerHomePage>
       return;
     }
 
-    final remainingSeconds = _phaseEndsAt!.difference(DateTime.now()).inSeconds;
-    if (remainingSeconds <= 0) {
-      _remainingSeconds = 0;
-      _animationController.stop();
-      _onPhaseComplete();
-      return;
-    }
-
-    final elapsedSeconds = _initialDuration - remainingSeconds;
-    final progress = (elapsedSeconds / _initialDuration).clamp(0.0, 1.0);
-    setState(() {
-      _remainingSeconds = remainingSeconds;
-    });
-    _saveActiveSession(remainingSeconds: remainingSeconds);
-    _animationController.forward(from: progress);
+    _animationController.stop();
+    final projection = projectPhase(
+      now: DateTime.now(),
+      isBreak: _isBreak,
+      phaseEndsAt: _phaseEndsAt!,
+      currentPhaseDurationSeconds: _initialDuration,
+      streakCount: _streakCount,
+      autoRunCompletedCycles: _autoRunCompletedCycles,
+      plan: _currentPlan(),
+    );
+    _applyProjection(
+      projection,
+      persist: true,
+      scheduleReminder: projection.boundariesCrossed > 0,
+      playChime: true,
+    );
   }
 
   void _onPhaseComplete() {
@@ -504,6 +582,7 @@ class _TimerHomePageState extends State<TimerHomePage>
           return;
         }
 
+        unawaited(_backgroundService.stopPhase());
         setState(() {
           _isRunning = false;
           _isPaused = false;
