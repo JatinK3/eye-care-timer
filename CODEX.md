@@ -27,19 +27,25 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 
 - `lib/main.dart`: App entrypoint only.
 - `lib/app.dart`: Top-level `MaterialApp`, theme/preset state, startup loading, persistence coordination, and notification and break-overlay service injection.
-- `lib/features/timer/timer_home_page.dart`: Main timer UI, countdown state, lifecycle reconciliation, color preset rendering, and notification scheduling hooks.
-- `lib/models/timer_settings.dart`: Persisted timer settings model and defaults, including color preset, notification, feedback, long-break, automatic-cycle, and daily goal preferences.
+- `lib/features/timer/timer_home_page.dart`: Main timer UI, countdown state, phase-event orchestration, lifecycle reconciliation, overlay lifecycle, native deadline-owner synchronization, and notification scheduling hooks.
+- `lib/features/timer/phase_schedule.dart`: Pure wall-clock phase projection used to fast-forward restored/backgrounded sessions across every elapsed work and break boundary.
+- `lib/models/timer_settings.dart`: Persisted timer settings model and defaults, including color preset, notification, feedback, long-break, automatic-cycle, daily goal, and Off/Gentle/Strict break-screen preferences.
 - `lib/theme/color_presets.dart`: Shared preset names, seed colors, swatches, timer gradients, and progress colors.
 - `lib/features/settings/settings_page.dart`: Dedicated settings UI for durations, theme, presets, reminder permission recovery, automatic-cycle controls, Android break-overlay permission and preview controls, progress history entry point, and streak reset.
 - `lib/features/onboarding/onboarding_page.dart`: First-run 20-20-20 explanation and reminder permission entry point.
 - `lib/features/history/history_page.dart`: Range-based daily history, monthly and goal metrics, week-over-week trend, recent completed-session detail, and confirmed activity clearing.
 - `lib/models/work_session_record.dart`: Deduplicated completed work-session record with completion time and configured focus duration.
-- `lib/models/timer_session.dart`: Persisted active/paused timer session state and automatic-run cycle progress for launch restore.
+- `lib/models/timer_session.dart`: Serializable active/paused timer session state and automatic-run cycle progress shared by persistence and platform synchronization.
 - `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, bounded completed-session history, daily goal, notification preference, feedback preferences, automatic-cycle settings, and active timer session.
 - `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, system settings recovery hooks, exact-alarm capability checks, battery optimization diagnostics, explicit audible-channel creation, test-reminder support, verified phase reminder scheduling with inexact fallback, and cancellation.
-- `lib/services/break_overlay_service.dart`: Android overlay permission status and native preview method-channel wrapper with safe unsupported-platform behavior.
-- `android/app/src/main/kotlin/com/jatin/eyecaretimer/BreakOverlayController.kt`: Process-scoped native black overlay preview, 10-second countdown, and immediate close handling.
-- `test/widget_test.dart`: Widget smoke, persistence load, timer controls, automatic-cycle restore/limits, settings/history navigation, notification fake, and cancel-transition regression tests.
+- `lib/services/break_overlay_service.dart`: Android overlay permission, preview, active break display, and dismissal MethodChannel wrapper with safe unsupported-platform behavior.
+- `lib/services/timer_background_service.dart`: Dart bridge that synchronizes active phase deadlines and upcoming break presentation data with the Android foreground service.
+- `android/app/src/main/kotlin/com/jatin/eyecaretimer/BreakOverlayController.kt`: Process-scoped native full-screen break overlay with preview, Gentle/Strict behavior, exercise rotation, countdown, and emergency press-and-hold exit.
+- `android/app/src/main/kotlin/com/jatin/eyecaretimer/TimerForegroundService.kt`: Native owner of active phase deadlines, ongoing countdown notification, and background work-to-break overlay launch.
+- `android/app/src/main/kotlin/com/jatin/eyecaretimer/PhaseDeadlineReceiver.kt`: Exact-alarm receiver that tells the foreground service to complete the active phase at its wall-clock deadline.
+- `test/phase_schedule_test.dart`: Unit coverage for multi-boundary wall-clock phase projection and clock-change handling.
+- `test/timer_session_test.dart`: Timer session platform-serialization coverage.
+- `test/widget_test.dart`: Widget smoke, persistence load, timer controls, automatic-cycle restore/limits, break-mode settings, settings/history navigation, notification fake, and transition regression tests.
 - `WORKLOG.md`: Ordered roadmap and completion log.
 
 ## Current App Behavior
@@ -54,15 +60,16 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Cancel resets to idle work state and cancels pending notifications.
 - Work completion increments the daily streak, saves it into daily history, and automatically starts either the normal break or the configured long break.
 - Break completion returns to idle work state by default. When automatic scheduling is enabled, it starts the next work phase until the user cancels or the configured per-run work-cycle limit is reached. A zero limit means unlimited cycles.
-- The timer stores an in-memory phase deadline and reconciles remaining time when the app resumes.
+- The timer stores an absolute phase deadline and uses the pure `projectPhase` calculation to reconcile every elapsed work/break boundary when the app resumes or restores. It records completed work, advances automatic-cycle counters, and lands on the phase that should be active at the current wall-clock time.
 - Active timer sessions are persisted so running and paused work/break phases can restore after app restart.
-- Expired restored work sessions advance into the remaining break time, or return idle if both work and break would already be complete.
+- Expired restored sessions can advance across multiple phases instead of restarting a full phase after background time has elapsed.
+- On Android, an ongoing foreground service mirrors the active absolute deadline and arms an exact alarm with an inexact fallback. It is stopped on pause, cancel, and idle.
 - Theme mode, color preset, work duration, break duration, long-break settings, automatic-cycle settings and current run progress, daily streak, daily history aggregates, completed-session records, daily goal, notification preference, haptic/sound preferences, and active timer session are persisted.
 - Daily streak resets when the saved streak date is not today.
 - The main timer shows daily goal progress and a goal-reached state when completed breaks meet the configured goal.
 - Settings includes History ranges for 7 days, 30 days, and all active days, plus current-month totals, goal completion rate, best day, weekly trend, recent completed sessions, and confirmed activity clearing.
 - Settings shows notification permission, precise-alarm capability, Android battery optimization status, direct reminder-channel sound settings, and a test reminder action. The optional in-app sound toggle is separate from system notification audio.
-- On Android, Settings also reports display-over-other-apps permission and can launch a native 10-second black break-screen preview with a countdown and close action. This preview is not connected to timer phases yet.
+- On Android, Settings reports display-over-other-apps permission and can launch a native 10-second break-screen preview. Users can persist `Off`, `Gentle`, or `Strict` behavior. Active timer transitions show and dismiss the native overlay, and a background work deadline launches it through the foreground service/alarm path. Gentle mode permits skipping; Strict mode requires a press-and-hold emergency exit.
 - Light/dark theme toggle and `Pastel`, `Calm Blue`, `Forest`, `Rose`, `Graphite`, and `Sunrise` presets are available.
 - The app theme seed, settings swatches, timer gradients, and timer progress color now come from the same preset source.
 - UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification and feedback toggle UX, contrast-safe dark-mode primary buttons, calmer text, and tighter card radius.
@@ -97,9 +104,14 @@ Android manifest includes notification-related permissions and receivers:
 - `VIBRATE`
 - `SCHEDULE_EXACT_ALARM`
 - `SYSTEM_ALERT_WINDOW`
+- `FOREGROUND_SERVICE`
+- `FOREGROUND_SERVICE_SPECIAL_USE`
+- `WAKE_LOCK`
 - `ScheduledNotificationReceiver`
 - `ScheduledNotificationBootReceiver`
 - `FlutterLocalNotificationsReceiver`
+- `TimerForegroundService`
+- `PhaseDeadlineReceiver`
 
 Android reminders use an explicitly audible, vibration-enabled alarm-category channel. Notification scheduling uses `AndroidScheduleMode.exactAllowWhileIdle` when the user grants exact-alarm access and falls back to `inexactAllowWhileIdle` otherwise. Scheduling failures are contained and the pending phase reminder is verified.
 
@@ -127,7 +139,7 @@ Current results:
 - `flutter test`: passing, 26 tests.
 - `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
 - `flutter build web`: passing; generated `build/web`.
-- Android device UI verification was not run in this shell because `adb` is unavailable.
+- Android physical-device validation remains incomplete. An Android 17 emulator is currently available for baseline cross-app, rotation, system-bar, and lifecycle checks, but it does not replace Android 10-15/OEM device testing.
 
 Important git/worktree note:
 
@@ -144,9 +156,9 @@ Implementation decisions:
 - Transition: show a configurable pre-break warning, then fade to black and enter the break surface. Restore system UI, focus, window state, and the timer state exactly once when the break ends or is safely dismissed.
 - Architecture: timer phase transitions must emit presentation-independent events. A dedicated break presentation service will choose in-app immersive UI or native desktop windows without duplicating timer logic.
 - Platform priority: prove Android overlay permission and manual overlay behavior first, integrate it with the timer second, then implement Linux, Windows, and macOS desktop enforcement. Desktop still requires tray operation and launch-at-login before overlays can be dependable while the main window is closed. X11 and Wayland require separate validation because compositors may restrict focus and topmost behavior.
-- Android: BlinkKind will request `SYSTEM_ALERT_WINDOW` as an explicit opt-in and use `TYPE_APPLICATION_OVERLAY` to cover other apps during breaks. The 10-second manual preview is implemented with permission status, grant/recovery actions, a native countdown, and immediate dismissal. Rotation, system-bar, lock-screen, call, and cross-app behavior still require physical-device validation; timer integration follows that validation. Android Go devices may reject overlay permission, and system bars or lock-screen content may remain system-controlled.
+- Android: BlinkKind requests `SYSTEM_ALERT_WINDOW` as an explicit opt-in and uses `TYPE_APPLICATION_OVERLAY` to cover other apps during breaks. The manual preview and timer-triggered overlays are implemented. Rotation, system-bar, lock-screen, call, cross-app, Doze, process-death, and OEM behavior still require physical-device validation. Android Go devices may reject overlay permission, and system bars or lock-screen content may remain system-controlled.
 - iOS: immersive break UI is available only while BlinkKind is active; iOS does not permit apps to cover other applications or force themselves foreground.
-- Android runtime: start the overlay-owning foreground service while BlinkKind is visible, persist absolute phase deadlines, use a visible service notification, and keep the existing exact notification as fallback if the service or overlay is unavailable. Android 14+ foreground-service type requirements and Android 15 background-start ordering must be tested explicitly.
+- Android runtime: the foreground service mirrors each active absolute phase deadline, shows a silent ongoing notification, arms an exact/inexact deadline alarm, and launches the break overlay when a background work phase completes. Flutter remains the phase-logic source of truth and reconciles elapsed boundaries on resume. Android 14+ foreground-service type requirements and Android 15+ background-start ordering still require device validation.
 - Safety: calls, alarms, lock screen, accessibility navigation, and an emergency exit must remain usable. The feature is habit enforcement, not device lockout.
 
 Creative follow-ups after the core overlay is stable:

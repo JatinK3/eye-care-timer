@@ -113,6 +113,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Completed
 
+- Reconciled the project knowledgebase after the wall-clock timer, native deadline owner, persisted break-screen modes, and background overlay integration landed. Physical-device validation remains deliberately open.
+
 - Added persisted Off, Gentle, and Strict break overlay mode selections in Settings, refactored timer phase transitions to trigger overlay lifecycle events, and polished the Android native break screen overlay layout with randomly rotated eye exercises, custom styling, and a press-and-hold emergency exit gesture for Strict mode. Also wired the deadline alarm to launch the overlay automatically during background phase transitions.
 
 - Reworked background timing onto a single wall-clock source of truth: a pure, unit-tested `projectPhase` fast-forward that catches up across every elapsed work/break boundary on launch and resume, plus an Android foreground service plus exact-alarm deadline owner and MethodChannel bridge. Dart fixes are tested and the native owner compiles; on-device validation across OEM background restrictions remains.
