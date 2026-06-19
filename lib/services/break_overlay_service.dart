@@ -44,9 +44,10 @@ class BreakOverlayService {
     if (!_isSupported) return false;
     try {
       return await _channel.invokeMethod<bool>("showBreakOverlay", {
-        "durationSeconds": durationSeconds,
-        "breakMode": breakMode.name,
-      }) ?? false;
+            "durationSeconds": durationSeconds,
+            "breakMode": breakMode.name,
+          }) ??
+          false;
     } on PlatformException {
       return false;
     } on MissingPluginException {

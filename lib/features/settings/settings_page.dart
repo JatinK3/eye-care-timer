@@ -482,7 +482,9 @@ class _SettingsPageState extends State<SettingsPage>
                     contentPadding: EdgeInsets.zero,
                     secondary: const Icon(Icons.psychology_outlined),
                     title: const Text('Smart Pause & Postpone'),
-                    subtitle: const Text('Pause on screen-off; delay breaks for games or videos'),
+                    subtitle: const Text(
+                      'Pause on screen-off; delay breaks for games or videos',
+                    ),
                     value: widget.smartIdleEnabled,
                     onChanged: widget.setSmartIdleEnabled,
                   ),

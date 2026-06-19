@@ -84,9 +84,14 @@ class PreferencesService {
       autoRunCycleLimit: prefs.getInt(autoRunCycleLimitKey) ?? 0,
       breakMode: _breakModeFromString(prefs.getString(breakModeKey)),
       allowSkip: prefs.getBool(allowSkipKey) ?? TimerSettings.defaultAllowSkip,
-      allowPostpone: prefs.getBool(allowPostponeKey) ?? TimerSettings.defaultAllowPostpone,
-      postponeDurationSeconds: prefs.getInt(postponeDurationSecondsKey) ?? TimerSettings.defaultPostponeDurationSeconds,
-      smartIdleEnabled: prefs.getBool(smartIdleEnabledKey) ?? TimerSettings.defaultSmartIdleEnabled,
+      allowPostpone:
+          prefs.getBool(allowPostponeKey) ?? TimerSettings.defaultAllowPostpone,
+      postponeDurationSeconds:
+          prefs.getInt(postponeDurationSecondsKey) ??
+          TimerSettings.defaultPostponeDurationSeconds,
+      smartIdleEnabled:
+          prefs.getBool(smartIdleEnabledKey) ??
+          TimerSettings.defaultSmartIdleEnabled,
     );
   }
 

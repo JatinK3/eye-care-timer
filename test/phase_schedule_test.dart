@@ -26,24 +26,27 @@ void main() {
   final now = DateTime(2026, 6, 19, 12, 0, 0);
 
   group('projectPhase', () {
-    test('keeps the current phase when the deadline is still in the future', () {
-      final projection = projectPhase(
-        now: now,
-        isBreak: false,
-        phaseEndsAt: now.add(const Duration(seconds: 300)),
-        currentPhaseDurationSeconds: 1200,
-        streakCount: 0,
-        autoRunCompletedCycles: 0,
-        plan: planWith(),
-      );
+    test(
+      'keeps the current phase when the deadline is still in the future',
+      () {
+        final projection = projectPhase(
+          now: now,
+          isBreak: false,
+          phaseEndsAt: now.add(const Duration(seconds: 300)),
+          currentPhaseDurationSeconds: 1200,
+          streakCount: 0,
+          autoRunCompletedCycles: 0,
+          plan: planWith(),
+        );
 
-      expect(projection.isIdle, isFalse);
-      expect(projection.isBreak, isFalse);
-      expect(projection.boundariesCrossed, 0);
-      expect(projection.remainingSeconds, 300);
-      expect(projection.initialDurationSeconds, 1200);
-      expect(projection.completedWorkSessions, isEmpty);
-    });
+        expect(projection.isIdle, isFalse);
+        expect(projection.isBreak, isFalse);
+        expect(projection.boundariesCrossed, 0);
+        expect(projection.remainingSeconds, 300);
+        expect(projection.initialDurationSeconds, 1200);
+        expect(projection.completedWorkSessions, isEmpty);
+      },
+    );
 
     test('advances an expired work phase into the remaining break', () {
       // Work ended 5s ago; a 20s break should have 15s left.
@@ -144,28 +147,31 @@ void main() {
       expect(projection.initialDurationSeconds, 100);
     });
 
-    test('stops after the configured cycle limit when several phases elapsed', () {
-      final projection = projectPhase(
-        now: now,
-        isBreak: false,
-        phaseEndsAt: now.subtract(const Duration(seconds: 500)),
-        currentPhaseDurationSeconds: 100,
-        streakCount: 3,
-        autoRunCompletedCycles: 0,
-        plan: planWith(
-          work: 100,
-          breakSeconds: 20,
-          autoRun: true,
-          autoRunLimit: 2,
-        ),
-      );
+    test(
+      'stops after the configured cycle limit when several phases elapsed',
+      () {
+        final projection = projectPhase(
+          now: now,
+          isBreak: false,
+          phaseEndsAt: now.subtract(const Duration(seconds: 500)),
+          currentPhaseDurationSeconds: 100,
+          streakCount: 3,
+          autoRunCompletedCycles: 0,
+          plan: planWith(
+            work: 100,
+            breakSeconds: 20,
+            autoRun: true,
+            autoRunLimit: 2,
+          ),
+        );
 
-      expect(projection.isIdle, isTrue);
-      expect(projection.boundariesCrossed, 4);
-      expect(projection.streakCount, 5);
-      expect(projection.completedWorkSessions, hasLength(2));
-      expect(projection.autoRunCompletedCycles, 0);
-    });
+        expect(projection.isIdle, isTrue);
+        expect(projection.boundariesCrossed, 4);
+        expect(projection.streakCount, 5);
+        expect(projection.completedWorkSessions, hasLength(2));
+        expect(projection.autoRunCompletedCycles, 0);
+      },
+    );
 
     test('uses the long-break duration on the configured cadence', () {
       // Long break every 1 cycle -> the very first break is the long one.

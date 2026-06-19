@@ -6,7 +6,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ### Prioritized Backlog
 1. [x] **Break Warning, Fade-to-Black & Postpone Policy**: Implement a pre-break warning notification/overlay, a smooth fade-to-black transition before the break starts, and a configurable skip/postpone settings policy in Flutter and Android.
-2. [ ] **Smart Idle & Fullscreen App Detection**: Detect when the user is playing a game, watching a video in fullscreen, or actively presenting, and delay/postpone the break overlay to avoid interrupting important tasks.
+2. [x] **Smart Idle & Fullscreen App Detection**: Detect when the user is playing a game, watching a video in fullscreen, or actively presenting, and delay/postpone the break overlay to avoid interrupting important tasks.
 3. [ ] **Linux Desktop Background Support**: Build a Linux background runner with tray controls and launch-at-login support.
 4. [x] **Android Reboot Survival**: Ensure the foreground service and exact alarms are correctly re-registered and scheduled upon system reboot.
 
@@ -123,6 +123,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Implemented Smart Idle & Fullscreen App Detection: Added a dynamic system screen-off broadcast receiver to pause the work timer while the screen is off and resume it when it is turned back on. Implemented immersion checks to postpone breaks by the configured duration if the user is playing a game, playing a video, casting/presenting to multiple displays, or has system Do Not Disturb (DND) active when the timer reaches 0. Added a user settings toggle "Smart Pause & Postpone" under Gentle mode, and added full widget test coverage.
 
 - Implemented Android reboot survival: Added a native `BootReceiver` (`BroadcastReceiver`) listening for system boot broadcasts (`BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, and quickboot actions) to automatically restore `TimerForegroundService` and exact alarms if a timer session was active prior to system shutdown. Exposed internal control methods in `TimerForegroundService` (`handleComplete`, `presentCurrentPhase`, `resumeCurrentPhase`, and `saveState`) to resolve package visibility compilation issues.
 

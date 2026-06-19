@@ -47,8 +47,7 @@ class PhasePlan {
   /// phase given how many auto-run cycles have already completed.
   bool shouldContinueAutoRun(int autoRunCompletedCycles) {
     return autoRunEnabled &&
-        (autoRunCycleLimit <= 0 ||
-            autoRunCompletedCycles < autoRunCycleLimit);
+        (autoRunCycleLimit <= 0 || autoRunCompletedCycles < autoRunCycleLimit);
   }
 }
 
@@ -155,9 +154,7 @@ PhaseProjection projectPhase({
   while (boundaries < _maxBoundaries) {
     if (curEndsAt.isAfter(now)) {
       // Landing on a phase that is still running.
-      final phaseStartedAt = curEndsAt.subtract(
-        Duration(seconds: curDuration),
-      );
+      final phaseStartedAt = curEndsAt.subtract(Duration(seconds: curDuration));
       var remaining = curEndsAt.difference(now).inSeconds;
       // Guard against a backward clock jump leaving more time than the phase
       // ever had, and never report a non-positive remaining for a live phase.

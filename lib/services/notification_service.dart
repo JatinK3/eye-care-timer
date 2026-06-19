@@ -56,6 +56,7 @@ class NotificationService {
       debugPrint('Unable to cancel warning reminder: $error');
     }
   }
+
   static const String _channelId = 'blinkkind_phase_reminders_v2';
   static const String _channelName = 'BlinkKind reminders';
   static const String _channelDescription =

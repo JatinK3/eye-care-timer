@@ -75,7 +75,9 @@ class TimerBackgroundService {
   Future<Map<String, dynamic>?> getBackgroundSession() async {
     if (!_isSupported) return null;
     try {
-      return await _channel.invokeMapMethod<String, dynamic>('getBackgroundSession');
+      return await _channel.invokeMapMethod<String, dynamic>(
+        'getBackgroundSession',
+      );
     } on PlatformException catch (error) {
       debugPrint('Unable to get background session: $error');
       return null;
