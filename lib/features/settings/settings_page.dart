@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../models/timer_settings.dart';
 import '../../services/break_overlay_service.dart';
 import '../../services/notification_service.dart';
 import '../../theme/color_presets.dart';
@@ -24,6 +25,8 @@ class SettingsPage extends StatefulWidget {
   final bool hapticsEnabled;
   final bool soundEnabled;
   final bool canChangeDurations;
+  final BreakMode breakMode;
+  final void Function(BreakMode breakMode) setBreakMode;
   final VoidCallback toggleTheme;
   final void Function(bool enabled) setNotificationsEnabled;
   final void Function(bool enabled) setHapticsEnabled;
@@ -68,6 +71,8 @@ class SettingsPage extends StatefulWidget {
     required this.longBreakEveryCycles,
     required this.autoRunEnabled,
     required this.autoRunCycleLimit,
+    required this.breakMode,
+    required this.setBreakMode,
     required this.notificationPermissionStatus,
     required this.exactAlarmStatus,
     required this.batteryOptimizationStatus,
@@ -127,6 +132,7 @@ class _SettingsPageState extends State<SettingsPage>
   late OverlayPermissionStatus _overlayPermissionStatus;
   late bool _autoRunEnabled;
   late int _autoRunCycleLimit;
+  late BreakMode _breakMode;
   bool _isTestingReminder = false;
 
   @override
@@ -139,6 +145,7 @@ class _SettingsPageState extends State<SettingsPage>
     _overlayPermissionStatus = widget.overlayPermissionStatus;
     _autoRunEnabled = widget.autoRunEnabled;
     _autoRunCycleLimit = widget.autoRunCycleLimit;
+    _breakMode = widget.breakMode;
   }
 
   @override
@@ -157,6 +164,9 @@ class _SettingsPageState extends State<SettingsPage>
     }
     if (oldWidget.overlayPermissionStatus != widget.overlayPermissionStatus) {
       _overlayPermissionStatus = widget.overlayPermissionStatus;
+    }
+    if (oldWidget.breakMode != widget.breakMode) {
+      _breakMode = widget.breakMode;
     }
   }
 
@@ -404,6 +414,31 @@ class _SettingsPageState extends State<SettingsPage>
                         : null,
                     icon: const Icon(Icons.play_arrow),
                     tooltip: 'Preview break overlay',
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.security_outlined),
+                  title: const Text('Break screen mode'),
+                  subtitle: const Text('Strict mode blocks easy exit'),
+                  trailing: DropdownButton<BreakMode>(
+                    value: _breakMode,
+                    underline: const SizedBox(),
+                    items: BreakMode.values
+                        .map(
+                          (mode) => DropdownMenuItem<BreakMode>(
+                            value: mode,
+                            child: Text(_breakModeLabel(mode)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _breakMode = value);
+                        widget.setBreakMode(value);
+                      }
+                    },
                   ),
                 ),
               ],
@@ -793,6 +828,14 @@ class _SettingsPageState extends State<SettingsPage>
         'Permission required for enforced breaks',
       OverlayPermissionStatus.unknown => 'Checking overlay permission',
       OverlayPermissionStatus.unsupported => 'Unavailable on this platform',
+    };
+  }
+
+  String _breakModeLabel(BreakMode mode) {
+    return switch (mode) {
+      BreakMode.off => 'Off',
+      BreakMode.gentle => 'Gentle',
+      BreakMode.strict => 'Strict',
     };
   }
 }

@@ -12,14 +12,14 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Add `TimerSession.toJson`/`fromJson` so the session is a single serializable source of truth across the platform boundary.
   - [x] Add an Android foreground service (`TimerForegroundService`) + exact `AlarmManager` deadline owner (`PhaseDeadlineReceiver`) + `blinkkind/timer_background` MethodChannel bridge + Dart `TimerBackgroundService`, wired into start/pause/resume/cancel/idle/projection. Code complete and compiles; the audible cue stays with flutter_local_notifications to avoid double alerts.
   - [ ] Physical-device validation: background, screen-lock, Doze, app-killed, multi-cycle auto-run, device clock change, and notifications-disabled paths on Pixel/Samsung/Xiaomi-style restrictions. Required to actually close this bug.
-  - [ ] Wire the deadline alarm to launch the immersive break overlay (fullScreenIntent) rather than only a tappable notification (depends on the break-surface UI below).
+  - [x] Wire the deadline alarm to launch the immersive break overlay (fullScreenIntent) rather than only a tappable notification (depends on the break-surface UI below).
 - [ ] Build immersive full-screen break mode (current priority).
   - [x] Build an Android overlay permission and 10-second manual preview spike before timer integration.
   - [ ] Validate the preview above other apps, system bars, lock screen, rotation, calls, and emergency dismissal on a physical device.
-  - [ ] Extract timer phase events from the home-screen presentation so break UI can be launched by platform services.
+  - [x] Extract timer phase events from the home-screen presentation so break UI can be launched by platform services.
   - [x] Add an Android foreground service and exact-deadline bridge that owns the phase deadline while BlinkKind is backgrounded (built above; still needs device validation and overlay-launch wiring).
-  - [ ] Add persisted Off, Gentle, and Strict break-screen modes with an emergency press-and-hold exit.
-  - [ ] Build a responsive black full-screen break surface with countdown, eye exercise, progress, and accessibility semantics.
+  - [x] Add persisted Off, Gentle, and Strict break-screen modes with an emergency press-and-hold exit.
+  - [x] Build a responsive black full-screen break surface with countdown, eye exercise, progress, and accessibility semantics.
   - [ ] Add pre-break warning, fade-to-black transition, and configurable skip/postpone policy.
   - [ ] Test Android 10-15 plus Pixel, Samsung, and Xiaomi-style background restrictions where devices are available.
   - [ ] Enter and restore immersive system UI safely on iOS while BlinkKind is active.
@@ -112,6 +112,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Added persisted Off, Gentle, and Strict break overlay mode selections in Settings, refactored timer phase transitions to trigger overlay lifecycle events, and polished the Android native break screen overlay layout with randomly rotated eye exercises, custom styling, and a press-and-hold emergency exit gesture for Strict mode. Also wired the deadline alarm to launch the overlay automatically during background phase transitions.
 
 - Reworked background timing onto a single wall-clock source of truth: a pure, unit-tested `projectPhase` fast-forward that catches up across every elapsed work/break boundary on launch and resume, plus an Android foreground service plus exact-alarm deadline owner and MethodChannel bridge. Dart fixes are tested and the native owner compiles; on-device validation across OEM background restrictions remains.
 

@@ -449,6 +449,27 @@ void main() {
     expect(prefs.getInt(PreferencesService.autoRunCycleLimitKey), 3);
   });
 
+  testWidgets('settings updates break screen mode', (
+    WidgetTester tester,
+  ) async {
+    await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Break screen'), 200);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gentle'), findsOneWidget);
+
+    await tester.tap(find.text('Gentle'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Strict').last);
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString(PreferencesService.breakModeKey), 'strict');
+  });
+
   testWidgets('settings applies quick timer presets', (
     WidgetTester tester,
   ) async {
@@ -538,7 +559,11 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
-    expect(find.text('Pastel'), findsOneWidget);
+    final pastelFinder = find.text('Pastel');
+    await tester.scrollUntilVisible(pastelFinder, 100);
+    await tester.pumpAndSettle();
+
+    expect(pastelFinder, findsOneWidget);
     expect(find.text('Calm Blue'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Sunrise'), 200);
     await tester.pumpAndSettle();

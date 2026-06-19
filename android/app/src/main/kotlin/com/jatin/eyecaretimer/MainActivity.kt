@@ -42,6 +42,13 @@ class MainActivity : FlutterActivity() {
                     result.success(BreakOverlayController.showPreview(this))
                 "stopOverlayPreview" ->
                     result.success(BreakOverlayController.hide())
+                "showBreakOverlay" -> {
+                    val duration = call.argument<Int>("durationSeconds") ?: 20
+                    val mode = call.argument<String>("breakMode") ?: "gentle"
+                    result.success(BreakOverlayController.show(this, duration, mode, false))
+                }
+                "stopBreakOverlay" ->
+                    result.success(BreakOverlayController.hide())
                 else -> result.notImplemented()
             }
         }
@@ -53,8 +60,10 @@ class MainActivity : FlutterActivity() {
                 "startPhase" -> {
                     val deadline = (call.argument<Number>("phaseEndsAtMillis"))?.toLong() ?: 0L
                     val isBreak = call.argument<Boolean>("isBreak") ?: false
+                    val breakMode = call.argument<String>("breakMode") ?: "gentle"
+                    val nextBreakDurationSeconds = call.argument<Int>("nextBreakDurationSeconds") ?: 0
                     if (deadline > 0L) {
-                        TimerForegroundService.start(this, deadline, isBreak)
+                        TimerForegroundService.start(this, deadline, isBreak, breakMode, nextBreakDurationSeconds)
                     } else {
                         TimerForegroundService.stop(this)
                     }

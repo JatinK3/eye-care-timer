@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../models/timer_session.dart';
+import '../../models/timer_settings.dart';
+import '../../services/break_overlay_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/timer_background_service.dart';
 import '../../theme/color_presets.dart';
@@ -26,6 +28,8 @@ class TimerHomePage extends StatefulWidget {
   final bool notificationsEnabled;
   final bool hapticsEnabled;
   final bool soundEnabled;
+  final BreakMode breakMode;
+  final BreakOverlayService? breakOverlayService;
   final void Function(BuildContext context, bool canChangeDurations)
   openSettings;
   final void Function(String) setPreset;
@@ -58,6 +62,8 @@ class TimerHomePage extends StatefulWidget {
     required this.notificationsEnabled,
     required this.hapticsEnabled,
     required this.soundEnabled,
+    required this.breakMode,
+    this.breakOverlayService,
     required this.openSettings,
     required this.setPreset,
     required this.toggleTheme,
@@ -350,6 +356,7 @@ class _TimerHomePageState extends State<TimerHomePage>
       _phaseTransitionTimer = null;
       unawaited(widget.notificationService.cancelPhaseReminder());
       unawaited(_backgroundService.stopPhase());
+      unawaited(widget.breakOverlayService?.stopBreakOverlay());
       setState(() {
         _isRunning = false;
         _isPaused = false;
@@ -403,8 +410,22 @@ class _TimerHomePageState extends State<TimerHomePage>
         phaseEndsAt: projection.phaseEndsAt!,
         isBreak: projection.isBreak,
         remainingSeconds: projection.remainingSeconds,
+        breakMode: widget.breakMode,
+        nextBreakDurationSeconds: projection.isBreak
+            ? 0
+            : _breakDurationForCompletedCycle(projection.streakCount + 1),
       ),
     );
+    if (projection.isBreak && widget.breakMode != BreakMode.off) {
+      unawaited(
+        widget.breakOverlayService?.showBreakOverlay(
+          durationSeconds: projection.remainingSeconds,
+          breakMode: widget.breakMode,
+        ),
+      );
+    } else {
+      unawaited(widget.breakOverlayService?.stopBreakOverlay());
+    }
   }
 
   bool _shouldContinueAutoRun() {
@@ -460,8 +481,22 @@ class _TimerHomePageState extends State<TimerHomePage>
         phaseEndsAt: _phaseEndsAt!,
         isBreak: isBreak,
         remainingSeconds: duration,
+        breakMode: widget.breakMode,
+        nextBreakDurationSeconds: isBreak
+            ? 0
+            : _breakDurationForCompletedCycle(_streakCount + 1),
       ),
     );
+    if (isBreak && widget.breakMode != BreakMode.off) {
+      unawaited(
+        widget.breakOverlayService?.showBreakOverlay(
+          durationSeconds: duration,
+          breakMode: widget.breakMode,
+        ),
+      );
+    } else {
+      unawaited(widget.breakOverlayService?.stopBreakOverlay());
+    }
   }
 
   void _startWorkTimer() {
@@ -494,6 +529,10 @@ class _TimerHomePageState extends State<TimerHomePage>
             phaseEndsAt: _phaseEndsAt!,
             isBreak: _isBreak,
             remainingSeconds: _remainingSeconds,
+            breakMode: widget.breakMode,
+            nextBreakDurationSeconds: _isBreak
+                ? 0
+                : _breakDurationForCompletedCycle(_streakCount + 1),
           ),
         );
         if (_remainingSeconds <= 5) _pulseController.forward();
@@ -508,6 +547,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     _stopTimerCleanup(resetPulse: true);
     unawaited(widget.notificationService.cancelPhaseReminder());
     unawaited(_backgroundService.stopPhase());
+    unawaited(widget.breakOverlayService?.stopBreakOverlay());
     setState(() {
       _isRunning = false;
       _isPaused = false;

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+enum BreakMode { off, gentle, strict }
+
 class TimerSettings {
   static const int defaultWorkDurationSeconds = 20 * 60;
   static const int defaultBreakDurationSeconds = 20;
   static const String defaultColorPreset = 'Pastel';
   static const int defaultLongBreakDurationSeconds = 5 * 60;
   static const int defaultLongBreakEveryCycles = 4;
+  static const BreakMode defaultBreakMode = BreakMode.gentle;
 
   final int workDurationSeconds;
   final int breakDurationSeconds;
@@ -21,6 +24,7 @@ class TimerSettings {
   final int longBreakEveryCycles;
   final bool autoRunEnabled;
   final int autoRunCycleLimit;
+  final BreakMode breakMode;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -37,6 +41,7 @@ class TimerSettings {
     required this.longBreakEveryCycles,
     required this.autoRunEnabled,
     required this.autoRunCycleLimit,
+    required this.breakMode,
   });
 
   const TimerSettings.defaults()
@@ -53,7 +58,8 @@ class TimerSettings {
       longBreakDurationSeconds = defaultLongBreakDurationSeconds,
       longBreakEveryCycles = defaultLongBreakEveryCycles,
       autoRunEnabled = false,
-      autoRunCycleLimit = 0;
+      autoRunCycleLimit = 0,
+      breakMode = defaultBreakMode;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -70,6 +76,7 @@ class TimerSettings {
     int? longBreakEveryCycles,
     bool? autoRunEnabled,
     int? autoRunCycleLimit,
+    BreakMode? breakMode,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -87,6 +94,7 @@ class TimerSettings {
       longBreakEveryCycles: longBreakEveryCycles ?? this.longBreakEveryCycles,
       autoRunEnabled: autoRunEnabled ?? this.autoRunEnabled,
       autoRunCycleLimit: autoRunCycleLimit ?? this.autoRunCycleLimit,
+      breakMode: breakMode ?? this.breakMode,
     );
   }
 }

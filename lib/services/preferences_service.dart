@@ -24,6 +24,7 @@ class PreferencesService {
   static const String autoRunEnabledKey = 'autoRunEnabled';
   static const String autoRunCycleLimitKey = 'autoRunCycleLimit';
   static const String onboardingCompletedKey = 'onboardingCompleted';
+  static const String breakModeKey = 'breakMode';
   static const String dailyHistoryKey = 'dailyHistory';
   static const String workSessionHistoryKey = 'workSessionHistory';
   static const String sessionIsActiveKey = 'sessionIsActive';
@@ -77,6 +78,7 @@ class PreferencesService {
           TimerSettings.defaultLongBreakEveryCycles,
       autoRunEnabled: prefs.getBool(autoRunEnabledKey) ?? false,
       autoRunCycleLimit: prefs.getInt(autoRunCycleLimitKey) ?? 0,
+      breakMode: _breakModeFromString(prefs.getString(breakModeKey)),
     );
   }
 
@@ -270,6 +272,11 @@ class PreferencesService {
     await prefs.setInt(autoRunCycleLimitKey, cycleLimit);
   }
 
+  Future<void> saveBreakMode(BreakMode breakMode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(breakModeKey, _breakModeToString(breakMode));
+  }
+
   Future<void> saveStreakCount(int streakCount) async {
     final prefs = await SharedPreferences.getInstance();
     final today = _dateKey(DateTime.now());
@@ -354,5 +361,21 @@ class PreferencesService {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '$year-$month-$day';
+  }
+
+  BreakMode _breakModeFromString(String? value) {
+    return switch (value) {
+      'off' => BreakMode.off,
+      'strict' => BreakMode.strict,
+      _ => BreakMode.gentle,
+    };
+  }
+
+  String _breakModeToString(BreakMode breakMode) {
+    return switch (breakMode) {
+      BreakMode.off => 'off',
+      BreakMode.strict => 'strict',
+      BreakMode.gentle => 'gentle',
+    };
   }
 }

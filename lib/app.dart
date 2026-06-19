@@ -260,6 +260,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     );
   }
 
+  void _setBreakMode(BreakMode breakMode) {
+    setState(() {
+      _settings = _settings.copyWith(breakMode: breakMode);
+    });
+    unawaited(_preferencesService.saveBreakMode(breakMode));
+  }
+
   void _saveSession(TimerSession session) {
     setState(() {
       _session = session;
@@ -360,6 +367,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           longBreakEveryCycles: _settings.longBreakEveryCycles,
           autoRunEnabled: _settings.autoRunEnabled,
           autoRunCycleLimit: _settings.autoRunCycleLimit,
+          breakMode: _settings.breakMode,
+          setBreakMode: _setBreakMode,
           notificationsEnabled: _settings.notificationsEnabled,
           notificationPermissionStatus: _notificationPermissionStatus,
           exactAlarmStatus: _exactAlarmStatus,
@@ -440,6 +449,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
               notificationsEnabled: _settings.notificationsEnabled,
               hapticsEnabled: _settings.hapticsEnabled,
               soundEnabled: _settings.soundEnabled,
+              breakMode: _settings.breakMode,
               initialSession: _session,
               openSettings: _openSettings,
               setPreset: _setPreset,
@@ -451,6 +461,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
               saveSession: _saveSession,
               clearSession: _clearSession,
               notificationService: _notificationService,
+              breakOverlayService: _breakOverlayService,
             ),
     );
   }

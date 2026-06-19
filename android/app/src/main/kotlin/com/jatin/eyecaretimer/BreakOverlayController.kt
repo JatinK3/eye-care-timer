@@ -14,14 +14,25 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import kotlin.random.Random
 
 object BreakOverlayController {
-    private const val previewDurationSeconds = 10
     private val handler = Handler(Looper.getMainLooper())
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
     private var countdownText: TextView? = null
-    private var remainingSeconds = previewDurationSeconds
+    private var remainingSeconds = 20
+    private var isPreview = false
+    private var breakMode = "gentle"
+
+    private val exercises = listOf(
+        "Look 20 feet away at something green.",
+        "Blink rapidly for 10 seconds to moisten your eyes.",
+        "Roll your eyes slowly in a circle, then reverse.",
+        "Close your eyes tightly and rest them.",
+        "Focus on a distant object, then a near object."
+    )
 
     private val countdownRunnable = object : Runnable {
         override fun run() {
@@ -41,8 +52,17 @@ object BreakOverlayController {
     }
 
     fun showPreview(context: Context): Boolean {
+        return show(context, 10, "gentle", true)
+    }
+
+    fun show(context: Context, durationSeconds: Int, mode: String, preview: Boolean): Boolean {
         if (!canDraw(context)) return false
         hide()
+        
+        isPreview = preview
+        breakMode = mode
+        remainingSeconds = durationSeconds
+        
         val appContext = context.applicationContext
         val manager = appContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val root = buildOverlayView(appContext)
@@ -71,7 +91,6 @@ object BreakOverlayController {
             manager.addView(root, params)
             windowManager = manager
             overlayView = root
-            remainingSeconds = previewDurationSeconds
             updateCountdown()
             handler.postDelayed(countdownRunnable, 1000)
             true
@@ -102,9 +121,9 @@ object BreakOverlayController {
     private fun buildOverlayView(context: Context): View {
         val density = context.resources.displayMetrics.density
         val root = FrameLayout(context).apply {
-            setBackgroundColor(Color.BLACK)
+            setBackgroundColor(Color.parseColor("#0F0F11")) // Deep elegant dark background
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
-            contentDescription = "BlinkKind break preview"
+            contentDescription = "BlinkKind break screen"
             systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
                 View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
@@ -112,48 +131,98 @@ object BreakOverlayController {
         val content = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setPadding((28 * density).toInt(), 24, (28 * density).toInt(), 24)
+            setPadding((32 * density).toInt(), 24, (32 * density).toInt(), 24)
         }
+        
+        val modeText = TextView(context).apply {
+            text = when {
+                isPreview -> "PREVIEW MODE"
+                breakMode == "strict" -> "STRICT MODE"
+                else -> "GENTLE MODE"
+            }
+            setTextColor(Color.parseColor("#8E8E93"))
+            textSize = 12f
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, (8 * density).toInt())
+        }
+
         val title = TextView(context).apply {
-            text = "Look 20 feet away"
+            text = "Time to rest your eyes"
             setTextColor(Color.WHITE)
             textSize = 28f
             gravity = Gravity.CENTER
         }
+
         countdownText = TextView(context).apply {
-            setTextColor(Color.WHITE)
-            textSize = 72f
+            setTextColor(Color.parseColor("#64B5F6")) // Vibrant light blue color
+            textSize = 84f
             gravity = Gravity.CENTER
-            setPadding(0, (20 * density).toInt(), 0, (12 * density).toInt())
-            contentDescription = "Break preview countdown"
+            setPadding(0, (16 * density).toInt(), 0, (8 * density).toInt())
+            contentDescription = "Break countdown"
         }
-        val instruction = TextView(context).apply {
-            text = "Relax your focus and blink naturally."
-            setTextColor(Color.LTGRAY)
-            textSize = 17f
+
+        val exerciseText = TextView(context).apply {
+            val randomExercise = exercises[Random.nextInt(exercises.size)]
+            text = randomExercise
+            setTextColor(Color.parseColor("#E5E5EA"))
+            textSize = 18f
             gravity = Gravity.CENTER
+            setPadding(0, (8 * density).toInt(), 0, (24 * density).toInt())
         }
-        val closeButton = Button(context).apply {
-            text = "Close preview"
-            contentDescription = "Close break preview"
-            setOnClickListener { hide() }
-        }
+
+        content.addView(modeText)
         content.addView(title)
         content.addView(countdownText)
-        content.addView(instruction)
-        content.addView(
-            closeButton,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = (36 * density).toInt() },
-        )
+        content.addView(exerciseText)
+
+        if (breakMode == "strict" && !isPreview) {
+            val emergencyButton = Button(context).apply {
+                text = "Emergency exit (Hold)"
+                setTextColor(Color.parseColor("#FF453A")) // Elegant system red
+                setBackgroundColor(Color.parseColor("#1C1C1E"))
+                contentDescription = "Hold for emergency exit"
+                setPadding((16 * density).toInt(), (12 * density).toInt(), (16 * density).toInt(), (12 * density).toInt())
+                
+                setOnLongClickListener {
+                    hide()
+                    Toast.makeText(context, "Emergency exit triggered", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                setOnClickListener {
+                    Toast.makeText(context, "Press and hold button to force exit", Toast.LENGTH_SHORT).show()
+                }
+            }
+            content.addView(
+                emergencyButton,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = (24 * density).toInt() }
+            )
+        } else {
+            val skipButton = Button(context).apply {
+                text = if (isPreview) "Close preview" else "Skip break"
+                setTextColor(Color.parseColor("#30D158")) // Elegant green color
+                setBackgroundColor(Color.parseColor("#1C1C1E"))
+                contentDescription = if (isPreview) "Close preview" else "Skip break"
+                setPadding((16 * density).toInt(), (12 * density).toInt(), (16 * density).toInt(), (12 * density).toInt())
+                setOnClickListener { hide() }
+            }
+            content.addView(
+                skipButton,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = (24 * density).toInt() }
+            )
+        }
+
         root.addView(
             content,
             FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT,
-            ),
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
         )
         return root
     }
@@ -161,6 +230,6 @@ object BreakOverlayController {
     private fun updateCountdown() {
         countdownText?.text = remainingSeconds.toString()
         countdownText?.contentDescription =
-            "$remainingSeconds seconds remaining in break preview"
+            "$remainingSeconds seconds remaining in break"
     }
 }
