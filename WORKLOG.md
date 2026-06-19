@@ -5,15 +5,18 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 ## Tasks
 
 - [ ] Build immersive full-screen break mode (current priority).
+  - [ ] Build an Android overlay permission and 10-second manual preview spike before timer integration.
+  - [ ] Validate the preview above other apps, system bars, lock screen, rotation, calls, and emergency dismissal on a physical device.
   - [ ] Extract timer phase events from the home-screen presentation so break UI can be launched by platform services.
+  - [ ] Add an Android foreground service and exact-deadline bridge that owns overlay lifetime while BlinkKind is backgrounded.
   - [ ] Add persisted Off, Gentle, and Strict break-screen modes with an emergency press-and-hold exit.
   - [ ] Build a responsive black full-screen break surface with countdown, eye exercise, progress, and accessibility semantics.
-  - [ ] Enter and restore immersive system UI safely on Android/iOS while BlinkKind is active.
-  - [ ] Add Linux-first desktop background runtime with tray controls and launch-at-login support.
-  - [ ] Add borderless always-on-top desktop break windows and validate X11/Wayland behavior.
-  - [ ] Cover every connected desktop monitor during enforced breaks.
   - [ ] Add pre-break warning, fade-to-black transition, and configurable skip/postpone policy.
-  - [ ] Add smart idle and existing-fullscreen detection after the enforced overlay is stable.
+  - [ ] Test Android 10-15 plus Pixel, Samsung, and Xiaomi-style background restrictions where devices are available.
+  - [ ] Enter and restore immersive system UI safely on iOS while BlinkKind is active.
+  - [ ] Add Linux desktop background runtime with tray controls and launch-at-login support.
+  - [ ] Add borderless always-on-top desktop break windows, X11/Wayland validation, and multi-monitor coverage.
+  - [ ] Add smart idle and existing-fullscreen detection after enforced overlays are stable.
 - [x] Improve notification sound reliability.
   - [x] Migrate Android reminders to a fresh explicitly audible channel.
   - [x] Make foreground sound and system notification sound responsibilities clear.
