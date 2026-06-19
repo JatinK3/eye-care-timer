@@ -4,6 +4,11 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Tasks
 
+- [ ] BUG: Timer does not run on real (RTC) time while backgrounded.
+  - Closing the app or minimizing it to background pauses the work timer at its current state instead of advancing with wall-clock time.
+  - The break timer behaves the same way: while the app is minimized or the screen is locked it does not run automatically. It freezes at the set break duration (e.g. 20s) and only starts counting down once the app is reopened.
+  - Root cause: the countdown is driven by an in-app ticker rather than reconciled against an absolute RTC deadline, so timer/break state desyncs from real elapsed time whenever the app is not in the foreground.
+  - Goal: drive both work and break phases from absolute wall-clock deadlines (and/or platform alarms/foreground service) so elapsed time stays correct across background, minimize, and screen-lock, with state reconciled on resume.
 - [ ] Build immersive full-screen break mode (current priority).
   - [x] Build an Android overlay permission and 10-second manual preview spike before timer integration.
   - [ ] Validate the preview above other apps, system bars, lock screen, rotation, calls, and emergency dismissal on a physical device.
