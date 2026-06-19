@@ -98,7 +98,7 @@ class NotificationService {
       ),
     );
 
-    await _notificationsPlugin.initialize(initializationSettings);
+    await _notificationsPlugin.initialize(settings: initializationSettings);
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -264,10 +264,10 @@ class NotificationService {
     }
     try {
       await _notificationsPlugin.show(
-        _testReminderId,
-        'BlinkKind test reminder',
-        'If you heard this, phase reminder sound is ready.',
-        _phaseNotificationDetails,
+        id: _testReminderId,
+        title: 'BlinkKind test reminder',
+        body: 'If you heard this, phase reminder sound is ready.',
+        notificationDetails: _phaseNotificationDetails,
         payload: 'test_reminder',
       );
       return true;
@@ -302,7 +302,7 @@ class NotificationService {
 
     await initialize();
     try {
-      await _notificationsPlugin.cancel(_phaseReminderId);
+      await _notificationsPlugin.cancel(id: _phaseReminderId);
     } on PlatformException catch (error) {
       debugPrint('Unable to cancel phase reminder: $error');
     }
@@ -320,15 +320,15 @@ class NotificationService {
 
     await initialize();
     try {
-      await _notificationsPlugin.cancel(_phaseReminderId);
+      await _notificationsPlugin.cancel(id: _phaseReminderId);
       final exactAlarmsAllowed =
           await exactAlarmStatus() == ExactAlarmStatus.allowed;
       await _notificationsPlugin.zonedSchedule(
-        _phaseReminderId,
-        title,
-        body,
-        tz.TZDateTime.now(tz.local).add(delay),
-        _phaseNotificationDetails,
+        id: _phaseReminderId,
+        title: title,
+        body: body,
+        scheduledDate: tz.TZDateTime.now(tz.local).add(delay),
+        notificationDetails: _phaseNotificationDetails,
         androidScheduleMode: exactAlarmsAllowed
             ? AndroidScheduleMode.exactAllowWhileIdle
             : AndroidScheduleMode.inexactAllowWhileIdle,
