@@ -188,9 +188,6 @@ class TimerForegroundService : Service() {
         }
     }
 
-        }
-    }
-
     private fun isUsageAccessGranted(context: Context): Boolean {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? android.app.AppOpsManager ?: return false
         val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
