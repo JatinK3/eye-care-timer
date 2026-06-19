@@ -4,6 +4,7 @@ import '../../models/timer_settings.dart';
 import '../../services/break_overlay_service.dart';
 import '../../services/desktop_integration_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/permissions_service.dart';
 import '../../theme/color_presets.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -63,6 +64,9 @@ class SettingsPage extends StatefulWidget {
   final Future<bool> Function() showOverlayPreview;
   final Future<OverlayPermissionStatus> Function()
   refreshOverlayPermissionStatus;
+  final UsageAccessStatus usageAccessStatus;
+  final Future<UsageAccessStatus> Function() refreshUsageAccessStatus;
+  final Future<void> Function() openUsageAccessSettings;
   final void Function(BuildContext context) openHistory;
   final VoidCallback resetStreak;
 
@@ -115,6 +119,9 @@ class SettingsPage extends StatefulWidget {
     required this.openOverlayPermissionSettings,
     required this.showOverlayPreview,
     required this.refreshOverlayPermissionStatus,
+    required this.usageAccessStatus,
+    required this.refreshUsageAccessStatus,
+    required this.openUsageAccessSettings,
     required this.openHistory,
     required this.resetStreak,
   });
@@ -148,6 +155,7 @@ class _SettingsPageState extends State<SettingsPage>
   late ExactAlarmStatus _exactAlarmStatus;
   late BatteryOptimizationStatus _batteryOptimizationStatus;
   late OverlayPermissionStatus _overlayPermissionStatus;
+  late UsageAccessStatus _usageAccessStatus;
   late bool _autoRunEnabled;
   late int _autoRunCycleLimit;
   late BreakMode _breakMode;
@@ -162,6 +170,7 @@ class _SettingsPageState extends State<SettingsPage>
     _exactAlarmStatus = widget.exactAlarmStatus;
     _batteryOptimizationStatus = widget.batteryOptimizationStatus;
     _overlayPermissionStatus = widget.overlayPermissionStatus;
+    _usageAccessStatus = widget.usageAccessStatus;
     _autoRunEnabled = widget.autoRunEnabled;
     _autoRunCycleLimit = widget.autoRunCycleLimit;
     _breakMode = widget.breakMode;
@@ -197,6 +206,9 @@ class _SettingsPageState extends State<SettingsPage>
     if (oldWidget.overlayPermissionStatus != widget.overlayPermissionStatus) {
       _overlayPermissionStatus = widget.overlayPermissionStatus;
     }
+    if (oldWidget.usageAccessStatus != widget.usageAccessStatus) {
+      _usageAccessStatus = widget.usageAccessStatus;
+    }
     if (oldWidget.breakMode != widget.breakMode) {
       _breakMode = widget.breakMode;
     }
@@ -219,12 +231,14 @@ class _SettingsPageState extends State<SettingsPage>
     final notificationStatus = await widget
         .refreshNotificationReliabilityStatus();
     final overlayStatus = await widget.refreshOverlayPermissionStatus();
+    final usageStatus = await widget.refreshUsageAccessStatus();
     if (!mounted) return;
     setState(() {
       _permissionStatus = notificationStatus.permission;
       _exactAlarmStatus = notificationStatus.exactAlarms;
       _batteryOptimizationStatus = notificationStatus.batteryOptimization;
       _overlayPermissionStatus = overlayStatus;
+      _usageAccessStatus = usageStatus;
     });
   }
 
@@ -427,6 +441,7 @@ class _SettingsPageState extends State<SettingsPage>
                       _overlayPermissionStatus ==
                           OverlayPermissionStatus.disabled
                       ? TextButton(
+                          key: const ValueKey('overlay_allow_button'),
                           onPressed: widget.openOverlayPermissionSettings,
                           child: const Text('Allow'),
                         )
@@ -503,6 +518,45 @@ class _SettingsPageState extends State<SettingsPage>
                     value: widget.smartIdleEnabled,
                     onChanged: widget.setSmartIdleEnabled,
                   ),
+                  // Usage Access permission tile — only shown when smart idle is
+                  // on and the user hasn't yet granted the permission.
+                  if (widget.smartIdleEnabled &&
+                      _usageAccessStatus !=
+                          UsageAccessStatus.unsupported) ...[
+                    const Divider(height: 1),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        _usageAccessStatus == UsageAccessStatus.allowed
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                        color: _usageAccessStatus == UsageAccessStatus.allowed
+                            ? Colors.green
+                            : Theme.of(context).colorScheme.error,
+                      ),
+                      title: const Text('Usage access'),
+                      subtitle: Text(
+                        _usageAccessStatus == UsageAccessStatus.allowed
+                            ? 'App detection enabled'
+                            : 'Required to detect games & videos',
+                      ),
+                      trailing:
+                          _usageAccessStatus != UsageAccessStatus.allowed
+                          ? TextButton(
+                              onPressed: () async {
+                                await widget.openUsageAccessSettings();
+                                if (!mounted) return;
+                                final status =
+                                    await widget.refreshUsageAccessStatus();
+                                setState(
+                                  () => _usageAccessStatus = status,
+                                );
+                              },
+                              child: const Text('Allow'),
+                            )
+                          : null,
+                    ),
+                  ],
                   if (widget.allowPostpone) ...[
                     const Divider(height: 1),
                     ListTile(

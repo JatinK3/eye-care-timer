@@ -418,20 +418,19 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
-    final allowButton = find.widgetWithText(TextButton, 'Allow');
+    // Scroll until the unique overlay 'Allow' button is visible.
+    final allowButton = find.byKey(const ValueKey('overlay_allow_button'));
     await tester.scrollUntilVisible(allowButton, 200);
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Permission required for enforced breaks'),
-      findsOneWidget,
-    );
-
+    expect(find.text('Permission required for enforced breaks'), findsOneWidget);
+    expect(allowButton, findsOneWidget);
     await tester.tap(allowButton);
     await tester.pumpAndSettle();
 
     expect(overlayService.openSettingsCount, 1);
   });
+
 
   testWidgets('settings configures automatic schedule cycles', (
     WidgetTester tester,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 
@@ -11,6 +12,7 @@ import 'models/timer_settings.dart';
 import 'models/work_session_record.dart';
 import 'services/break_overlay_service.dart';
 import 'services/notification_service.dart';
+import 'services/permissions_service.dart';
 import 'services/preferences_service.dart';
 import 'theme/color_presets.dart';
 
@@ -45,8 +47,11 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       BatteryOptimizationStatus.unknown;
   OverlayPermissionStatus _overlayPermissionStatus =
       OverlayPermissionStatus.unknown;
+  UsageAccessStatus _usageAccessStatus = UsageAccessStatus.unknown;
   bool _hasCompletedOnboarding = false;
   bool _isLoadingSettings = true;
+
+  final PermissionsService _permissionsService = PermissionsService();
 
   @override
   void initState() {
@@ -55,6 +60,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     _breakOverlayService = widget.breakOverlayService ?? BreakOverlayService();
     unawaited(_initializeNotifications());
     unawaited(_refreshOverlayPermissionStatus());
+    unawaited(_refreshUsageAccessStatus());
     unawaited(_loadSettings());
   }
 
@@ -98,6 +104,45 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       await _notificationService.cancelPhaseReminder();
       await _refreshNotificationPermissionStatus();
     }
+    // On Android 13+, show a rationale dialog if notifications are not yet
+    // granted (system dialog may not auto-prompt in all OEM configurations).
+    await _maybeShowNotificationRationale();
+  }
+
+  Future<void> _maybeShowNotificationRationale() async {
+    if (!mounted) return;
+    // Only relevant on Android 13+ (API 33)
+    if (!Platform.isAndroid) return;
+    final status = await _notificationService.permissionStatus();
+    if (status == NotificationPermissionStatus.disabled) {
+      final navigator = BreakOverlayService.navigatorKey.currentContext;
+      if (navigator == null || !navigator.mounted) return;
+      await showDialog<void>(
+        context: navigator,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Enable notifications?'),
+          content: const Text(
+            'BlinkKind uses notifications to remind you when your eye break '  
+            'is about to start. Without this permission the reminder '  
+            'will only appear while the app is open.\n\n'
+            'You can change this at any time in Settings.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Not now'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                await _notificationService.openNotificationSettings();
+              },
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Future<OverlayPermissionStatus> _refreshOverlayPermissionStatus() async {
@@ -106,6 +151,18 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       setState(() => _overlayPermissionStatus = status);
     }
     return status;
+  }
+
+  Future<UsageAccessStatus> _refreshUsageAccessStatus() async {
+    final status = await _permissionsService.usageAccessStatus();
+    if (mounted) {
+      setState(() => _usageAccessStatus = status);
+    }
+    return status;
+  }
+
+  Future<void> _openUsageAccessSettings() async {
+    await _permissionsService.openUsageAccessSettings();
   }
 
   Future<void> _openOverlayPermissionSettings() async {
@@ -410,6 +467,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           exactAlarmStatus: _exactAlarmStatus,
           batteryOptimizationStatus: _batteryOptimizationStatus,
           overlayPermissionStatus: _overlayPermissionStatus,
+          usageAccessStatus: _usageAccessStatus,
+          refreshUsageAccessStatus: _refreshUsageAccessStatus,
+          openUsageAccessSettings: _openUsageAccessSettings,
           hapticsEnabled: _settings.hapticsEnabled,
           soundEnabled: _settings.soundEnabled,
           canChangeDurations: canChangeDurations,
