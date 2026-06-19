@@ -267,6 +267,27 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveBreakMode(breakMode));
   }
 
+  void _setAllowSkip(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(allowSkip: enabled);
+    });
+    unawaited(_preferencesService.saveAllowSkip(enabled));
+  }
+
+  void _setAllowPostpone(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(allowPostpone: enabled);
+    });
+    unawaited(_preferencesService.saveAllowPostpone(enabled));
+  }
+
+  void _setPostponeDurationSeconds(int seconds) {
+    setState(() {
+      _settings = _settings.copyWith(postponeDurationSeconds: seconds);
+    });
+    unawaited(_preferencesService.savePostponeDurationSeconds(seconds));
+  }
+
   void _saveSession(TimerSession session) {
     setState(() {
       _session = session;
@@ -369,6 +390,12 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           autoRunCycleLimit: _settings.autoRunCycleLimit,
           breakMode: _settings.breakMode,
           setBreakMode: _setBreakMode,
+          allowSkip: _settings.allowSkip,
+          allowPostpone: _settings.allowPostpone,
+          postponeDurationSeconds: _settings.postponeDurationSeconds,
+          setAllowSkip: _setAllowSkip,
+          setAllowPostpone: _setAllowPostpone,
+          setPostponeDurationSeconds: _setPostponeDurationSeconds,
           notificationsEnabled: _settings.notificationsEnabled,
           notificationPermissionStatus: _notificationPermissionStatus,
           exactAlarmStatus: _exactAlarmStatus,
@@ -450,6 +477,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
               hapticsEnabled: _settings.hapticsEnabled,
               soundEnabled: _settings.soundEnabled,
               breakMode: _settings.breakMode,
+              allowSkip: _settings.allowSkip,
+              allowPostpone: _settings.allowPostpone,
+              postponeDurationSeconds: _settings.postponeDurationSeconds,
               initialSession: _session,
               openSettings: _openSettings,
               setPreset: _setPreset,

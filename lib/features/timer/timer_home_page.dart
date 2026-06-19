@@ -44,6 +44,9 @@ class TimerHomePage extends StatefulWidget {
   final VoidCallback clearSession;
   final NotificationService notificationService;
   final TimerBackgroundService? backgroundService;
+  final bool allowSkip;
+  final bool allowPostpone;
+  final int postponeDurationSeconds;
 
   const TimerHomePage({
     super.key,
@@ -63,6 +66,9 @@ class TimerHomePage extends StatefulWidget {
     required this.hapticsEnabled,
     required this.soundEnabled,
     required this.breakMode,
+    required this.allowSkip,
+    required this.allowPostpone,
+    required this.postponeDurationSeconds,
     this.breakOverlayService,
     required this.openSettings,
     required this.setPreset,
@@ -369,7 +375,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     if (projection.isIdle) {
       _phaseTransitionTimer?.cancel();
       _phaseTransitionTimer = null;
-      unawaited(widget.notificationService.cancelPhaseReminder());
+      _cancelReminders();
       unawaited(_backgroundService.stopPhase());
       unawaited(widget.breakOverlayService?.stopBreakOverlay());
       setState(() {
@@ -469,6 +475,9 @@ class _TimerHomePageState extends State<TimerHomePage>
         autoRunCycleLimit: _autoRunCycleLimit,
         streakCount: _streakCount,
         completedAutoRunCycles: _autoRunCompletedCycles,
+        allowSkip: widget.allowSkip,
+        allowPostpone: widget.allowPostpone,
+        postponeDurationSeconds: widget.postponeDurationSeconds,
       ),
     );
   }
@@ -489,7 +498,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     _phaseTransitionTimer?.cancel();
     _phaseTransitionTimer = null;
     _stopTimerCleanup(resetPulse: true);
-    unawaited(widget.notificationService.cancelPhaseReminder());
+    _cancelReminders();
     setState(() {
       _isBreak = isBreak;
       _isRunning = true;
@@ -534,7 +543,7 @@ class _TimerHomePageState extends State<TimerHomePage>
         _phaseStartedAt = null;
         _phaseEndsAt = null;
         _saveActiveSession(isPaused: true);
-        unawaited(widget.notificationService.cancelPhaseReminder());
+        _cancelReminders();
         unawaited(_backgroundService.stopPhase());
       } else {
         _phaseStartedAt = DateTime.now();
@@ -550,12 +559,43 @@ class _TimerHomePageState extends State<TimerHomePage>
     });
   }
 
+  void _cancelReminders() {
+    unawaited(widget.notificationService.cancelPhaseReminder());
+    unawaited(widget.notificationService.cancelPreBreakWarningReminder());
+  }
+
+  void _skipBreak() {
+    if (!_isBreak || !_isRunning) return;
+    _animationController.stop();
+    _onPhaseComplete();
+  }
+
+  void _postponeBreak() {
+    if (!_isRunning) return;
+    _animationController.stop();
+    _playChime();
+    _pulseController.stop();
+    setState(() {
+      _isBreak = false;
+      _phaseOpacity = 1.0;
+      _initialDuration = widget.postponeDurationSeconds;
+      _remainingSeconds = _initialDuration;
+      _phaseStartedAt = DateTime.now();
+      _phaseEndsAt = _phaseStartedAt!.add(Duration(seconds: _initialDuration));
+      _animationController.duration = Duration(seconds: _initialDuration);
+      _animationController.reset();
+      _animationController.forward(from: 0.0);
+    });
+    _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: false);
+    _saveActiveSession(remainingSeconds: _remainingSeconds);
+  }
+
   void _cancelTimer() {
     _isCancelled = true;
     _phaseTransitionTimer?.cancel();
     _phaseTransitionTimer = null;
     _stopTimerCleanup(resetPulse: true);
-    unawaited(widget.notificationService.cancelPhaseReminder());
+    _cancelReminders();
     unawaited(_backgroundService.stopPhase());
     unawaited(widget.breakOverlayService?.stopBreakOverlay());
     setState(() {
@@ -581,12 +621,40 @@ class _TimerHomePageState extends State<TimerHomePage>
     }
   }
 
-  void _syncTimerWithClock() {
+  Future<void> _syncTimerWithClock() async {
     if (!_isRunning || _isPaused || _phaseEndsAt == null) {
       return;
     }
 
     _animationController.stop();
+    final bgSession = await _backgroundService.getBackgroundSession();
+    if (!mounted) return;
+    if (bgSession != null && bgSession['isActive'] == true) {
+      final bgEndsAtMillis = bgSession['phaseEndsAtMillis'] as int;
+      final bgIsBreak = bgSession['isBreak'] as bool;
+      final bgStreakCount = bgSession['streakCount'] as int;
+      final bgCompletedAutoRunCycles = bgSession['completedAutoRunCycles'] as int;
+
+      setState(() {
+        _isBreak = bgIsBreak;
+        _streakCount = bgStreakCount;
+        _autoRunCompletedCycles = bgCompletedAutoRunCycles;
+        _phaseEndsAt = DateTime.fromMillisecondsSinceEpoch(bgEndsAtMillis);
+        
+        _workDurationSeconds = bgSession['workDurationSeconds'] as int;
+        _breakDurationSeconds = bgSession['breakDurationSeconds'] as int;
+        _longBreakEnabled = bgSession['longBreakEnabled'] as bool;
+        _longBreakDurationSeconds = bgSession['longBreakDurationSeconds'] as int;
+        _longBreakEveryCycles = bgSession['longBreakEveryCycles'] as int;
+        _autoRunEnabled = bgSession['autoRunEnabled'] as bool;
+        _autoRunCycleLimit = bgSession['autoRunCycleLimit'] as int;
+
+        _initialDuration = _isBreak
+            ? _breakDurationForCompletedCycle(_streakCount)
+            : _workDurationSeconds;
+      });
+    }
+
     final projection = projectPhase(
       now: DateTime.now(),
       isBreak: _isBreak,
@@ -613,7 +681,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     final completedPhaseAt = _phaseEndsAt ?? DateTime.now();
     _phaseStartedAt = null;
     _phaseEndsAt = null;
-    unawaited(widget.notificationService.cancelPhaseReminder());
+    _cancelReminders();
     _playChime();
     _pulseController.stop();
 
@@ -688,9 +756,18 @@ class _TimerHomePageState extends State<TimerHomePage>
     }
 
     final delay = Duration(seconds: durationSeconds);
-    return isBreak
-        ? widget.notificationService.scheduleBreakCompleteReminder(delay)
-        : widget.notificationService.scheduleWorkCompleteReminder(delay);
+    if (isBreak) {
+      return widget.notificationService.scheduleBreakCompleteReminder(delay);
+    } else {
+      if (durationSeconds > 10) {
+        unawaited(
+          widget.notificationService.schedulePreBreakWarningReminder(
+            Duration(seconds: durationSeconds - 10),
+          ),
+        );
+      }
+      return widget.notificationService.scheduleWorkCompleteReminder(delay);
+    }
   }
 
   void _playChime() {
@@ -814,6 +891,11 @@ class _TimerHomePageState extends State<TimerHomePage>
       progressColor,
     );
 
+    final showWarningOverlay = _isRunning && !_isBreak && !_isPaused && _remainingSeconds <= 10 && _remainingSeconds > 0;
+    final warningOpacity = showWarningOverlay
+        ? ((10 - _remainingSeconds) / 10.0).clamp(0.0, 1.0)
+        : 0.0;
+
     return Scaffold(
       appBar: _isFocusMode
           ? null
@@ -829,14 +911,16 @@ class _TimerHomePageState extends State<TimerHomePage>
                 ),
               ],
             ),
-      body: Container(
-        decoration: BoxDecoration(
-          color: _isFocusMode ? Colors.black : null,
-          gradient: _isFocusMode
-              ? null
-              : _backgroundGradientFromPreset(widget.colorPreset, isDark),
-        ),
-        child: SafeArea(
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: _isFocusMode ? Colors.black : null,
+              gradient: _isFocusMode
+                  ? null
+                  : _backgroundGradientFromPreset(widget.colorPreset, isDark),
+            ),
+            child: SafeArea(
           child: Center(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -928,7 +1012,7 @@ class _TimerHomePageState extends State<TimerHomePage>
                           ),
                         ),
                       )
-                    else
+                    else ...[
                       ElevatedButton.icon(
                         onPressed: _pauseOrResume,
                         icon: Icon(
@@ -949,6 +1033,43 @@ class _TimerHomePageState extends State<TimerHomePage>
                           ),
                         ),
                       ),
+                      if (_isBreak && !_isPaused) ...[
+                        if (widget.allowSkip)
+                          ElevatedButton.icon(
+                            onPressed: _skipBreak,
+                            icon: const Icon(Icons.skip_next),
+                            label: const Text('Skip'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green.shade600,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isLandscape ? 16 : 20,
+                                vertical: isLandscape ? 8 : 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        if (widget.allowPostpone)
+                          ElevatedButton.icon(
+                            onPressed: _postponeBreak,
+                            icon: const Icon(Icons.snooze),
+                            label: const Text('Postpone'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange.shade700,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isLandscape ? 16 : 20,
+                                vertical: isLandscape ? 8 : 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ],
                     OutlinedButton.icon(
                       onPressed: _isRunning ? _cancelTimer : null,
                       icon: const Icon(Icons.stop),
@@ -1158,6 +1279,83 @@ class _TimerHomePageState extends State<TimerHomePage>
             ),
           ),
         ),
+      ),
+      if (showWarningOverlay)
+        Positioned.fill(
+          child: Container(
+            color: Colors.black.withValues(alpha: warningOpacity),
+            child: Center(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.visibility_off_outlined,
+                        size: 64,
+                        color: Colors.red.shade300.withValues(alpha: warningOpacity),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Eye break starting in $_remainingSeconds seconds',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Prepare to look 20 feet away to rest your eyes',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.white70,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (widget.allowPostpone) ...[
+                            ElevatedButton.icon(
+                              onPressed: _postponeBreak,
+                              icon: const Icon(Icons.snooze),
+                              label: Text('Postpone (${widget.postponeDurationSeconds ~/ 60}m)'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white24,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                          ],
+                          OutlinedButton.icon(
+                            onPressed: _cancelTimer,
+                            icon: const Icon(Icons.close),
+                            label: const Text('Cancel Timer'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red.shade200,
+                              side: BorderSide(color: Colors.red.shade300),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        ],
       ),
     );
   }

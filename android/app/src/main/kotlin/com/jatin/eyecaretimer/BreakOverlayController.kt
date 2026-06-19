@@ -25,6 +25,9 @@ object BreakOverlayController {
     private var remainingSeconds = 20
     private var isPreview = false
     private var breakMode = "gentle"
+    private var allowSkip = true
+    private var allowPostpone = true
+    private var postponeDurationSeconds = 120
 
     private val exercises = listOf(
         "Look 20 feet away at something green.",
@@ -55,13 +58,24 @@ object BreakOverlayController {
         return show(context, 10, "gentle", true)
     }
 
-    fun show(context: Context, durationSeconds: Int, mode: String, preview: Boolean): Boolean {
+    fun show(
+        context: Context,
+        durationSeconds: Int,
+        mode: String,
+        preview: Boolean,
+        allowSkip: Boolean = true,
+        allowPostpone: Boolean = true,
+        postponeDurationSeconds: Int = 120
+    ): Boolean {
         if (!canDraw(context)) return false
         hide()
         
         isPreview = preview
         breakMode = mode
         remainingSeconds = durationSeconds
+        this.allowSkip = allowSkip
+        this.allowPostpone = allowPostpone
+        this.postponeDurationSeconds = postponeDurationSeconds
         
         val appContext = context.applicationContext
         val manager = appContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -115,6 +129,45 @@ object BreakOverlayController {
             true
         } catch (_: Exception) {
             false
+        }
+    }
+
+    private fun triggerSkip(context: Context) {
+        if (!isPreview) {
+            val intent = Intent(context, TimerForegroundService::class.java).apply {
+                action = TimerForegroundService.ACTION_SKIP_BREAK
+            }
+            try {
+                context.startService(intent)
+            } catch (_: Exception) {
+                TimerForegroundService.activeService?.let { service ->
+                    service.deadlineMillis = System.currentTimeMillis()
+                    service.handleComplete(service.deadlineMillis)
+                }
+            }
+        }
+        hide()
+    }
+
+    private fun triggerPostpone(context: Context) {
+        if (!isPreview) {
+            val intent = Intent(context, TimerForegroundService::class.java).apply {
+                action = TimerForegroundService.ACTION_POSTPONE_BREAK
+            }
+            try {
+                context.startService(intent)
+            } catch (_: Exception) {
+                TimerForegroundService.activeService?.let { service ->
+                    hide()
+                    service.isBreak = false
+                    service.deadlineMillis = System.currentTimeMillis() + service.postponeDurationSeconds * 1000L
+                    service.saveState()
+                    service.presentCurrentPhase()
+                    service.resumeCurrentPhase()
+                }
+            }
+        } else {
+            hide()
         }
     }
 
@@ -184,7 +237,7 @@ object BreakOverlayController {
                 setPadding((16 * density).toInt(), (12 * density).toInt(), (16 * density).toInt(), (12 * density).toInt())
                 
                 setOnLongClickListener {
-                    hide()
+                    triggerSkip(context)
                     Toast.makeText(context, "Emergency exit triggered", Toast.LENGTH_SHORT).show()
                     true
                 }
@@ -199,17 +252,60 @@ object BreakOverlayController {
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply { topMargin = (24 * density).toInt() }
             )
-        } else {
+        } else if (isPreview) {
             val skipButton = Button(context).apply {
-                text = if (isPreview) "Close preview" else "Skip break"
+                text = "Close preview"
                 setTextColor(Color.parseColor("#30D158")) // Elegant green color
                 setBackgroundColor(Color.parseColor("#1C1C1E"))
-                contentDescription = if (isPreview) "Close preview" else "Skip break"
+                contentDescription = "Close preview"
                 setPadding((16 * density).toInt(), (12 * density).toInt(), (16 * density).toInt(), (12 * density).toInt())
                 setOnClickListener { hide() }
             }
             content.addView(
                 skipButton,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = (24 * density).toInt() }
+            )
+        } else {
+            val buttonsContainer = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+            }
+            
+            if (allowSkip) {
+                val skipButton = Button(context).apply {
+                    text = "Skip break"
+                    setTextColor(Color.parseColor("#30D158")) // Elegant green color
+                    setBackgroundColor(Color.parseColor("#1C1C1E"))
+                    contentDescription = "Skip break"
+                    setPadding((16 * density).toInt(), (12 * density).toInt(), (16 * density).toInt(), (12 * density).toInt())
+                    setOnClickListener { triggerSkip(context) }
+                }
+                buttonsContainer.addView(skipButton)
+            }
+            
+            if (allowPostpone) {
+                if (allowSkip) {
+                    buttonsContainer.addView(View(context).apply {
+                        layoutParams = LinearLayout.LayoutParams((16 * density).toInt(), 1)
+                    })
+                }
+                
+                val postponeButton = Button(context).apply {
+                    text = "Postpone (${postponeDurationSeconds / 60}m)"
+                    setTextColor(Color.parseColor("#FF9F0A")) // Elegant orange color
+                    setBackgroundColor(Color.parseColor("#1C1C1E"))
+                    contentDescription = "Postpone break"
+                    setPadding((16 * density).toInt(), (12 * density).toInt(), (16 * density).toInt(), (12 * density).toInt())
+                    setOnClickListener { triggerPostpone(context) }
+                }
+                buttonsContainer.addView(postponeButton)
+            }
+            
+            content.addView(
+                buttonsContainer,
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT

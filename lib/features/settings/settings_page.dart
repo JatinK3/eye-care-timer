@@ -12,6 +12,12 @@ class SettingsPage extends StatefulWidget {
   final int breakDurationSeconds;
   final int streakCount;
   final int dailyGoal;
+  final bool allowSkip;
+  final bool allowPostpone;
+  final int postponeDurationSeconds;
+  final void Function(bool) setAllowSkip;
+  final void Function(bool) setAllowPostpone;
+  final void Function(int) setPostponeDurationSeconds;
   final bool notificationsEnabled;
   final bool longBreakEnabled;
   final int longBreakDurationSeconds;
@@ -73,6 +79,12 @@ class SettingsPage extends StatefulWidget {
     required this.autoRunCycleLimit,
     required this.breakMode,
     required this.setBreakMode,
+    required this.allowSkip,
+    required this.allowPostpone,
+    required this.postponeDurationSeconds,
+    required this.setAllowSkip,
+    required this.setAllowPostpone,
+    required this.setPostponeDurationSeconds,
     required this.notificationPermissionStatus,
     required this.exactAlarmStatus,
     required this.batteryOptimizationStatus,
@@ -125,6 +137,7 @@ class _SettingsPageState extends State<SettingsPage>
   static const List<int> _longBreakCycles = [2, 3, 4, 5, 6];
   static const List<int> _autoRunCycleLimits = [0, 1, 2, 3, 4, 6, 8, 10, 12];
   static const List<int> _dailyGoals = [3, 4, 6, 8, 10, 12];
+  static const List<int> _postponeDurations = [60, 120, 300, 600];
 
   late NotificationPermissionStatus _permissionStatus;
   late ExactAlarmStatus _exactAlarmStatus;
@@ -441,6 +454,52 @@ class _SettingsPageState extends State<SettingsPage>
                     },
                   ),
                 ),
+                if (_breakMode == BreakMode.gentle) ...[
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: const Icon(Icons.skip_next_outlined),
+                    title: const Text('Allow skip'),
+                    subtitle: const Text('Allow skipping the break early'),
+                    value: widget.allowSkip,
+                    onChanged: widget.setAllowSkip,
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: const Icon(Icons.snooze_outlined),
+                    title: const Text('Allow postpone'),
+                    subtitle: const Text('Allow postponing the break'),
+                    value: widget.allowPostpone,
+                    onChanged: widget.setAllowPostpone,
+                  ),
+                  if (widget.allowPostpone) ...[
+                    const Divider(height: 1),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.timer_outlined),
+                      title: const Text('Postpone duration'),
+                      subtitle: const Text('How long to delay the break'),
+                      trailing: DropdownButton<int>(
+                        value: widget.postponeDurationSeconds,
+                        underline: const SizedBox(),
+                        items: _postponeDurations
+                            .map(
+                              (seconds) => DropdownMenuItem<int>(
+                                value: seconds,
+                                child: Text('${seconds ~/ 60} min'),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            widget.setPostponeDurationSeconds(value);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ],
               ],
             ),
             const SizedBox(height: 16),

@@ -27,18 +27,26 @@ import androidx.core.app.NotificationCompat
 class TimerForegroundService : Service() {
     private val handler = Handler(Looper.getMainLooper())
 
-    private var deadlineMillis: Long = 0L
-    private var isBreak = false
-    private var breakMode = "gentle"
-    private var workDurationSeconds = 0
-    private var breakDurationSeconds = 0
-    private var longBreakEnabled = false
-    private var longBreakDurationSeconds = 0
-    private var longBreakEveryCycles = 0
-    private var autoRunEnabled = false
-    private var autoRunCycleLimit = 0
-    private var streakCount = 0
-    private var completedAutoRunCycles = 0
+    var deadlineMillis: Long = 0L
+    var isBreak = false
+    var breakMode = "gentle"
+    var workDurationSeconds = 0
+    var breakDurationSeconds = 0
+    var longBreakEnabled = false
+    var longBreakDurationSeconds = 0
+    var longBreakEveryCycles = 0
+    var autoRunEnabled = false
+    var autoRunCycleLimit = 0
+    var streakCount = 0
+    var completedAutoRunCycles = 0
+    var allowSkip = true
+    var allowPostpone = true
+    var postponeDurationSeconds = 120
+
+    override fun onCreate() {
+        super.onCreate()
+        activeService = this
+    }
 
     private val tick = object : Runnable {
         override fun run() {
@@ -74,6 +82,14 @@ class TimerForegroundService : Service() {
                 handleStop()
                 return START_NOT_STICKY
             }
+            ACTION_SKIP_BREAK -> {
+                handleSkipBreak()
+                return START_NOT_STICKY
+            }
+            ACTION_POSTPONE_BREAK -> {
+                handlePostponeBreak()
+                return START_NOT_STICKY
+            }
             else -> {
                 if (!restoreState()) {
                     handleStop()
@@ -101,6 +117,9 @@ class TimerForegroundService : Service() {
         autoRunCycleLimit = intent.getIntExtra(EXTRA_AUTO_RUN_LIMIT, 0)
         streakCount = intent.getIntExtra(EXTRA_STREAK_COUNT, 0)
         completedAutoRunCycles = intent.getIntExtra(EXTRA_COMPLETED_AUTO_RUN_CYCLES, 0)
+        allowSkip = intent.getBooleanExtra(EXTRA_ALLOW_SKIP, true)
+        allowPostpone = intent.getBooleanExtra(EXTRA_ALLOW_POSTPONE, true)
+        postponeDurationSeconds = intent.getIntExtra(EXTRA_POSTPONE_DURATION, 120)
 
         ensureChannel()
         startInForeground(buildOngoingNotification())
@@ -111,6 +130,24 @@ class TimerForegroundService : Service() {
 
         saveState()
         resumeCurrentPhase()
+    }
+
+    private fun handleSkipBreak() {
+        if (isBreak) {
+            deadlineMillis = System.currentTimeMillis()
+            handleComplete(deadlineMillis)
+        }
+    }
+
+    private fun handlePostponeBreak() {
+        if (isBreak) {
+            BreakOverlayController.hide()
+            isBreak = false
+            deadlineMillis = System.currentTimeMillis() + postponeDurationSeconds * 1000L
+            saveState()
+            presentCurrentPhase()
+            resumeCurrentPhase()
+        }
     }
 
     private fun handleComplete(expectedDeadline: Long) {
@@ -183,7 +220,15 @@ class TimerForegroundService : Service() {
     private fun presentCurrentPhase() {
         if (isBreak && breakMode != "off") {
             val seconds = secondsRemaining().coerceAtLeast(1L).coerceAtMost(Int.MAX_VALUE.toLong())
-            BreakOverlayController.show(this, seconds.toInt(), breakMode, false)
+            BreakOverlayController.show(
+                context = this,
+                durationSeconds = seconds.toInt(),
+                mode = breakMode,
+                preview = false,
+                allowSkip = allowSkip,
+                allowPostpone = allowPostpone,
+                postponeDurationSeconds = postponeDurationSeconds
+            )
         } else {
             BreakOverlayController.hide()
         }
@@ -236,6 +281,7 @@ class TimerForegroundService : Service() {
 
     override fun onDestroy() {
         handler.removeCallbacks(tick)
+        activeService = null
         super.onDestroy()
     }
 
@@ -399,7 +445,10 @@ class TimerForegroundService : Service() {
             .putInt(EXTRA_AUTO_RUN_LIMIT, autoRunCycleLimit)
             .putInt(EXTRA_STREAK_COUNT, streakCount)
             .putInt(EXTRA_COMPLETED_AUTO_RUN_CYCLES, completedAutoRunCycles)
-.commit()
+            .putBoolean(EXTRA_ALLOW_SKIP, allowSkip)
+            .putBoolean(EXTRA_ALLOW_POSTPONE, allowPostpone)
+            .putInt(EXTRA_POSTPONE_DURATION, postponeDurationSeconds)
+            .commit()
     }
 
     private fun restoreState(): Boolean {
@@ -417,6 +466,9 @@ class TimerForegroundService : Service() {
         autoRunCycleLimit = preferences.getInt(EXTRA_AUTO_RUN_LIMIT, 0)
         streakCount = preferences.getInt(EXTRA_STREAK_COUNT, 0)
         completedAutoRunCycles = preferences.getInt(EXTRA_COMPLETED_AUTO_RUN_CYCLES, 0)
+        allowSkip = preferences.getBoolean(EXTRA_ALLOW_SKIP, true)
+        allowPostpone = preferences.getBoolean(EXTRA_ALLOW_POSTPONE, true)
+        postponeDurationSeconds = preferences.getInt(EXTRA_POSTPONE_DURATION, 120)
         return true
     }
 
@@ -428,6 +480,8 @@ class TimerForegroundService : Service() {
         const val ACTION_START = "com.jatin.eyecaretimer.action.START_PHASE"
         const val ACTION_STOP = "com.jatin.eyecaretimer.action.STOP_PHASE"
         const val ACTION_COMPLETE = "com.jatin.eyecaretimer.action.COMPLETE_PHASE"
+        const val ACTION_SKIP_BREAK = "com.jatin.eyecaretimer.action.SKIP_BREAK"
+        const val ACTION_POSTPONE_BREAK = "com.jatin.eyecaretimer.action.POSTPONE_BREAK"
 
         const val EXTRA_DEADLINE = "deadlineMillis"
         const val EXTRA_EXPECTED_DEADLINE = "expectedDeadlineMillis"
@@ -442,12 +496,18 @@ class TimerForegroundService : Service() {
         const val EXTRA_AUTO_RUN_LIMIT = "autoRunCycleLimit"
         const val EXTRA_STREAK_COUNT = "streakCount"
         const val EXTRA_COMPLETED_AUTO_RUN_CYCLES = "completedAutoRunCycles"
+        const val EXTRA_ALLOW_SKIP = "allowSkip"
+        const val EXTRA_ALLOW_POSTPONE = "allowPostpone"
+        const val EXTRA_POSTPONE_DURATION = "postponeDurationSeconds"
 
         private const val CHANNEL_ID = "blinkkind_timer_status"
         private const val NOTIFICATION_ID = 2001
         private const val REQUEST_CONTENT = 3001
         private const val REQUEST_ALARM = 3002
         private const val STATE_PREFERENCES = "blinkkind_timer_background_state"
+
+        @Volatile
+        var activeService: TimerForegroundService? = null
 
         fun start(
             context: Context,
@@ -463,6 +523,9 @@ class TimerForegroundService : Service() {
             autoRunCycleLimit: Int,
             streakCount: Int,
             completedAutoRunCycles: Int,
+            allowSkip: Boolean,
+            allowPostpone: Boolean,
+            postponeDurationSeconds: Int,
         ) {
             val intent = Intent(context, TimerForegroundService::class.java).apply {
                 action = ACTION_START
@@ -478,6 +541,9 @@ class TimerForegroundService : Service() {
                 putExtra(EXTRA_AUTO_RUN_LIMIT, autoRunCycleLimit)
                 putExtra(EXTRA_STREAK_COUNT, streakCount)
                 putExtra(EXTRA_COMPLETED_AUTO_RUN_CYCLES, completedAutoRunCycles)
+                putExtra(EXTRA_ALLOW_SKIP, allowSkip)
+                putExtra(EXTRA_ALLOW_POSTPONE, allowPostpone)
+                putExtra(EXTRA_POSTPONE_DURATION, postponeDurationSeconds)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)

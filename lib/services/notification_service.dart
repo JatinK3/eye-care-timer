@@ -32,6 +32,30 @@ class NotificationReliabilityStatus {
 class NotificationService {
   static const int _phaseReminderId = 1001;
   static const int _testReminderId = 1002;
+  static const int _preBreakWarningReminderId = 1003;
+
+  Future<bool> schedulePreBreakWarningReminder(Duration delay) {
+    return _schedulePhaseReminder(
+      id: _preBreakWarningReminderId,
+      delay: delay,
+      title: 'Eye break starting soon',
+      body: 'Prepare to rest your eyes in 10 seconds.',
+      payload: 'pre_break_warning',
+    );
+  }
+
+  Future<void> cancelPreBreakWarningReminder() async {
+    if (kIsWeb) {
+      return;
+    }
+
+    await initialize();
+    try {
+      await _notificationsPlugin.cancel(id: _preBreakWarningReminderId);
+    } on PlatformException catch (error) {
+      debugPrint('Unable to cancel warning reminder: $error');
+    }
+  }
   static const String _channelId = 'blinkkind_phase_reminders_v2';
   static const String _channelName = 'BlinkKind reminders';
   static const String _channelDescription =
@@ -309,6 +333,7 @@ class NotificationService {
   }
 
   Future<bool> _schedulePhaseReminder({
+    int id = _phaseReminderId,
     required Duration delay,
     required String title,
     required String body,
@@ -320,11 +345,11 @@ class NotificationService {
 
     await initialize();
     try {
-      await _notificationsPlugin.cancel(id: _phaseReminderId);
+      await _notificationsPlugin.cancel(id: id);
       final exactAlarmsAllowed =
           await exactAlarmStatus() == ExactAlarmStatus.allowed;
       await _notificationsPlugin.zonedSchedule(
-        id: _phaseReminderId,
+        id: id,
         title: title,
         body: body,
         scheduledDate: tz.TZDateTime.now(tz.local).add(delay),
@@ -334,7 +359,8 @@ class NotificationService {
             : AndroidScheduleMode.inexactAllowWhileIdle,
         payload: payload,
       );
-      return await hasPendingPhaseReminder();
+      final pending = await _notificationsPlugin.pendingNotificationRequests();
+      return pending.any((request) => request.id == id);
     } on PlatformException catch (error) {
       debugPrint('Unable to schedule phase reminder: $error');
       return false;

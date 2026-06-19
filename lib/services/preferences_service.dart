@@ -25,6 +25,9 @@ class PreferencesService {
   static const String autoRunCycleLimitKey = 'autoRunCycleLimit';
   static const String onboardingCompletedKey = 'onboardingCompleted';
   static const String breakModeKey = 'breakMode';
+  static const String allowSkipKey = 'allowSkip';
+  static const String allowPostponeKey = 'allowPostpone';
+  static const String postponeDurationSecondsKey = 'postponeDurationSeconds';
   static const String dailyHistoryKey = 'dailyHistory';
   static const String workSessionHistoryKey = 'workSessionHistory';
   static const String sessionIsActiveKey = 'sessionIsActive';
@@ -79,6 +82,9 @@ class PreferencesService {
       autoRunEnabled: prefs.getBool(autoRunEnabledKey) ?? false,
       autoRunCycleLimit: prefs.getInt(autoRunCycleLimitKey) ?? 0,
       breakMode: _breakModeFromString(prefs.getString(breakModeKey)),
+      allowSkip: prefs.getBool(allowSkipKey) ?? TimerSettings.defaultAllowSkip,
+      allowPostpone: prefs.getBool(allowPostponeKey) ?? TimerSettings.defaultAllowPostpone,
+      postponeDurationSeconds: prefs.getInt(postponeDurationSecondsKey) ?? TimerSettings.defaultPostponeDurationSeconds,
     );
   }
 
@@ -275,6 +281,21 @@ class PreferencesService {
   Future<void> saveBreakMode(BreakMode breakMode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(breakModeKey, _breakModeToString(breakMode));
+  }
+
+  Future<void> saveAllowSkip(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(allowSkipKey, enabled);
+  }
+
+  Future<void> saveAllowPostpone(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(allowPostponeKey, enabled);
+  }
+
+  Future<void> savePostponeDurationSeconds(int seconds) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(postponeDurationSecondsKey, seconds);
   }
 
   Future<void> saveStreakCount(int streakCount) async {

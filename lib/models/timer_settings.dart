@@ -10,6 +10,10 @@ class TimerSettings {
   static const int defaultLongBreakEveryCycles = 4;
   static const BreakMode defaultBreakMode = BreakMode.gentle;
 
+  static const bool defaultAllowSkip = true;
+  static const bool defaultAllowPostpone = true;
+  static const int defaultPostponeDurationSeconds = 2 * 60;
+
   final int workDurationSeconds;
   final int breakDurationSeconds;
   final ThemeMode themeMode;
@@ -25,6 +29,9 @@ class TimerSettings {
   final bool autoRunEnabled;
   final int autoRunCycleLimit;
   final BreakMode breakMode;
+  final bool allowSkip;
+  final bool allowPostpone;
+  final int postponeDurationSeconds;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -42,6 +49,9 @@ class TimerSettings {
     required this.autoRunEnabled,
     required this.autoRunCycleLimit,
     required this.breakMode,
+    required this.allowSkip,
+    required this.allowPostpone,
+    required this.postponeDurationSeconds,
   });
 
   const TimerSettings.defaults()
@@ -59,7 +69,10 @@ class TimerSettings {
       longBreakEveryCycles = defaultLongBreakEveryCycles,
       autoRunEnabled = false,
       autoRunCycleLimit = 0,
-      breakMode = defaultBreakMode;
+      breakMode = defaultBreakMode,
+      allowSkip = defaultAllowSkip,
+      allowPostpone = defaultAllowPostpone,
+      postponeDurationSeconds = defaultPostponeDurationSeconds;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -77,6 +90,9 @@ class TimerSettings {
     bool? autoRunEnabled,
     int? autoRunCycleLimit,
     BreakMode? breakMode,
+    bool? allowSkip,
+    bool? allowPostpone,
+    int? postponeDurationSeconds,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -95,6 +111,10 @@ class TimerSettings {
       autoRunEnabled: autoRunEnabled ?? this.autoRunEnabled,
       autoRunCycleLimit: autoRunCycleLimit ?? this.autoRunCycleLimit,
       breakMode: breakMode ?? this.breakMode,
+      allowSkip: allowSkip ?? this.allowSkip,
+      allowPostpone: allowPostpone ?? this.allowPostpone,
+      postponeDurationSeconds:
+          postponeDurationSeconds ?? this.postponeDurationSeconds,
     );
   }
 }

@@ -29,6 +29,9 @@ class TimerBackgroundService {
     required int autoRunCycleLimit,
     required int streakCount,
     required int completedAutoRunCycles,
+    required bool allowSkip,
+    required bool allowPostpone,
+    required int postponeDurationSeconds,
   }) async {
     if (!_isSupported) return;
     try {
@@ -45,6 +48,9 @@ class TimerBackgroundService {
         'autoRunCycleLimit': autoRunCycleLimit,
         'streakCount': streakCount,
         'completedAutoRunCycles': completedAutoRunCycles,
+        'allowSkip': allowSkip,
+        'allowPostpone': allowPostpone,
+        'postponeDurationSeconds': postponeDurationSeconds,
       });
     } on PlatformException catch (error) {
       debugPrint('Unable to start background phase: $error');
@@ -61,6 +67,18 @@ class TimerBackgroundService {
       debugPrint('Unable to stop background phase: $error');
     } on MissingPluginException {
       // Native side unavailable (e.g. tests); ignore.
+    }
+  }
+
+  Future<Map<String, dynamic>?> getBackgroundSession() async {
+    if (!_isSupported) return null;
+    try {
+      return await _channel.invokeMapMethod<String, dynamic>('getBackgroundSession');
+    } on PlatformException catch (error) {
+      debugPrint('Unable to get background session: $error');
+      return null;
+    } on MissingPluginException {
+      return null;
     }
   }
 }

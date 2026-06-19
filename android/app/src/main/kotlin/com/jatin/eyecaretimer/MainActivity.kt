@@ -83,6 +83,9 @@ class MainActivity : FlutterActivity() {
                             streakCount = call.argument<Int>("streakCount") ?: 0,
                             completedAutoRunCycles =
                                 call.argument<Int>("completedAutoRunCycles") ?: 0,
+                            allowSkip = call.argument<Boolean>("allowSkip") ?: true,
+                            allowPostpone = call.argument<Boolean>("allowPostpone") ?: true,
+                            postponeDurationSeconds = call.argument<Int>("postponeDurationSeconds") ?: 120,
                         )
                     } else {
                         TimerForegroundService.stop(this)
@@ -92,6 +95,27 @@ class MainActivity : FlutterActivity() {
                 "stopPhase" -> {
                     TimerForegroundService.stop(this)
                     result.success(true)
+                }
+                "getBackgroundSession" -> {
+                    val service = TimerForegroundService.activeService
+                    if (service != null) {
+                        result.success(mapOf(
+                            "isActive" to true,
+                            "isBreak" to service.isBreak,
+                            "phaseEndsAtMillis" to service.deadlineMillis,
+                            "streakCount" to service.streakCount,
+                            "completedAutoRunCycles" to service.completedAutoRunCycles,
+                            "workDurationSeconds" to service.workDurationSeconds,
+                            "breakDurationSeconds" to service.breakDurationSeconds,
+                            "longBreakEnabled" to service.longBreakEnabled,
+                            "longBreakDurationSeconds" to service.longBreakDurationSeconds,
+                            "longBreakEveryCycles" to service.longBreakEveryCycles,
+                            "autoRunEnabled" to service.autoRunEnabled,
+                            "autoRunCycleLimit" to service.autoRunCycleLimit
+                        ))
+                    } else {
+                        result.success(null)
+                    }
                 }
                 else -> result.notImplemented()
             }
