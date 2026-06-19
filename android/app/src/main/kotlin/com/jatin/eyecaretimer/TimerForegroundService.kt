@@ -6,9 +6,12 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.os.PowerManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Handler
@@ -42,10 +45,44 @@ class TimerForegroundService : Service() {
     var allowSkip = true
     var allowPostpone = true
     var postponeDurationSeconds = 120
+    var smartIdleEnabled = true
+    var isScreenOffPaused = false
+    var pausedRemainingSeconds = 0L
+
+    private val screenStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (context == null || intent == null) return
+            when (intent.action) {
+                Intent.ACTION_SCREEN_OFF -> {
+                    if (smartIdleEnabled && !isBreak && deadlineMillis > 0L && !isScreenOffPaused) {
+                        isScreenOffPaused = true
+                        pausedRemainingSeconds = secondsRemaining()
+                        handler.removeCallbacks(tick)
+                        cancelExactAlarm()
+                        saveState()
+                    }
+                }
+                Intent.ACTION_SCREEN_ON -> {
+                    if (smartIdleEnabled && isScreenOffPaused) {
+                        isScreenOffPaused = false
+                        deadlineMillis = System.currentTimeMillis() + pausedRemainingSeconds * 1000L
+                        saveState()
+                        presentCurrentPhase()
+                        resumeCurrentPhase()
+                    }
+                }
+            }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
         activeService = this
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_SCREEN_OFF)
+        }
+        registerReceiver(screenStateReceiver, filter)
     }
 
     private val tick = object : Runnable {
@@ -120,6 +157,7 @@ class TimerForegroundService : Service() {
         allowSkip = intent.getBooleanExtra(EXTRA_ALLOW_SKIP, true)
         allowPostpone = intent.getBooleanExtra(EXTRA_ALLOW_POSTPONE, true)
         postponeDurationSeconds = intent.getIntExtra(EXTRA_POSTPONE_DURATION, 120)
+        smartIdleEnabled = intent.getBooleanExtra(EXTRA_SMART_IDLE, true)
 
         ensureChannel()
         startInForeground(buildOngoingNotification())
@@ -150,6 +188,100 @@ class TimerForegroundService : Service() {
         }
     }
 
+        }
+    }
+
+    private fun isUsageAccessGranted(context: Context): Boolean {
+        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? android.app.AppOpsManager ?: return false
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(
+                android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                context.packageName
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(
+                android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                context.packageName
+            )
+        }
+        return mode == android.app.AppOpsManager.MODE_ALLOWED
+    }
+
+    private fun getForegroundPackageName(context: Context): String? {
+        if (!isUsageAccessGranted(context)) return null
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? android.app.usage.UsageStatsManager ?: return null
+        val now = System.currentTimeMillis()
+        val events = usageStatsManager.queryEvents(now - 10000, now) ?: return null
+        val event = android.app.usage.UsageEvents.Event()
+        var lastForegroundApp: String? = null
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.eventType == android.app.usage.UsageEvents.Event.ACTIVITY_RESUMED) {
+                lastForegroundApp = event.packageName
+            }
+        }
+        return lastForegroundApp
+    }
+
+    private fun isGameOrVideoApp(context: Context, packageName: String): Boolean {
+        val lowerPackage = packageName.lowercase()
+        if (lowerPackage.contains("youtube") ||
+            lowerPackage.contains("netflix") ||
+            lowerPackage.contains("player") ||
+            lowerPackage.contains("video") ||
+            lowerPackage.contains("game")
+        ) {
+            return true
+        }
+        return try {
+            val pm = context.packageManager
+            val appInfo = pm.getApplicationInfo(packageName, 0)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                appInfo.category == android.content.pm.ApplicationInfo.CATEGORY_GAME ||
+                appInfo.category == android.content.pm.ApplicationInfo.CATEGORY_VIDEO
+            } else {
+                false
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun isUserImmersed(context: Context): Boolean {
+        // 1. Check if screen is being shared/cast
+        val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
+        if (displayManager != null) {
+            val displays = displayManager.displays
+            if (displays.size > 1) {
+                return true
+            }
+        }
+
+        // 2. Check if a game or video app is in the foreground
+        val foregroundApp = getForegroundPackageName(context)
+        if (foregroundApp != null && foregroundApp != context.packageName) {
+            if (isGameOrVideoApp(context, foregroundApp)) {
+                return true
+            }
+        }
+
+        // 3. Check if device is in DND (Do Not Disturb) mode
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+        if (notificationManager != null) {
+            val filter = notificationManager.currentInterruptionFilter
+            if (filter == NotificationManager.INTERRUPTION_FILTER_NONE ||
+                filter == NotificationManager.INTERRUPTION_FILTER_ALARMS ||
+                filter == NotificationManager.INTERRUPTION_FILTER_PRIORITY) {
+                return true
+            }
+        }
+
+        return false
+    }
+
     fun handleComplete(expectedDeadline: Long) {
         if (expectedDeadline > 0L && expectedDeadline != deadlineMillis) {
             // A previous alarm was already queued when Flutter changed phase.
@@ -160,6 +292,25 @@ class TimerForegroundService : Service() {
         handler.removeCallbacks(tick)
         cancelExactAlarm()
         val now = System.currentTimeMillis()
+
+        if (smartIdleEnabled && !isBreak && isUserImmersed(this)) {
+            val postponeTime = postponeDurationSeconds * 1000L
+            deadlineMillis = now + postponeTime
+            saveState()
+
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notification = baseBuilder()
+                .setContentTitle("Eye break postponed")
+                .setContentText("Postponed by ${postponeDurationSeconds / 60}m due to active game/video/cast.")
+                .setOngoing(false)
+                .setAutoCancel(true)
+                .build()
+            manager.notify(NOTIFICATION_ID, notification)
+
+            presentCurrentPhase()
+            resumeCurrentPhase()
+            return
+        }
 
         do {
             val completedWasBreak = isBreak
@@ -282,6 +433,9 @@ class TimerForegroundService : Service() {
     override fun onDestroy() {
         handler.removeCallbacks(tick)
         activeService = null
+        try {
+            unregisterReceiver(screenStateReceiver)
+        } catch (_: Exception) {}
         super.onDestroy()
     }
 
@@ -448,13 +602,18 @@ class TimerForegroundService : Service() {
             .putBoolean(EXTRA_ALLOW_SKIP, allowSkip)
             .putBoolean(EXTRA_ALLOW_POSTPONE, allowPostpone)
             .putInt(EXTRA_POSTPONE_DURATION, postponeDurationSeconds)
+            .putBoolean("smartIdleEnabled", smartIdleEnabled)
+            .putBoolean("isScreenOffPaused", isScreenOffPaused)
+            .putLong("pausedRemainingSeconds", pausedRemainingSeconds)
             .commit()
     }
 
     private fun restoreState(): Boolean {
         val preferences = statePreferences()
+        isScreenOffPaused = preferences.getBoolean("isScreenOffPaused", false)
+        pausedRemainingSeconds = preferences.getLong("pausedRemainingSeconds", 0L)
         deadlineMillis = preferences.getLong(EXTRA_DEADLINE, 0L)
-        if (deadlineMillis <= 0L) return false
+        if (deadlineMillis <= 0L && !isScreenOffPaused) return false
         isBreak = preferences.getBoolean(EXTRA_IS_BREAK, false)
         breakMode = preferences.getString(EXTRA_BREAK_MODE, "gentle") ?: "gentle"
         workDurationSeconds = preferences.getInt(EXTRA_WORK_DURATION, 0)
@@ -469,6 +628,14 @@ class TimerForegroundService : Service() {
         allowSkip = preferences.getBoolean(EXTRA_ALLOW_SKIP, true)
         allowPostpone = preferences.getBoolean(EXTRA_ALLOW_POSTPONE, true)
         postponeDurationSeconds = preferences.getInt(EXTRA_POSTPONE_DURATION, 120)
+        smartIdleEnabled = preferences.getBoolean("smartIdleEnabled", true)
+
+        val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val isScreenOn = powerManager?.isInteractive ?: true
+        if (isScreenOffPaused && isScreenOn) {
+            isScreenOffPaused = false
+            deadlineMillis = System.currentTimeMillis() + pausedRemainingSeconds * 1000L
+        }
         return true
     }
 
@@ -499,6 +666,7 @@ class TimerForegroundService : Service() {
         const val EXTRA_ALLOW_SKIP = "allowSkip"
         const val EXTRA_ALLOW_POSTPONE = "allowPostpone"
         const val EXTRA_POSTPONE_DURATION = "postponeDurationSeconds"
+        const val EXTRA_SMART_IDLE = "smartIdleEnabled"
 
         private const val CHANNEL_ID = "blinkkind_timer_status"
         private const val NOTIFICATION_ID = 2001
@@ -526,6 +694,7 @@ class TimerForegroundService : Service() {
             allowSkip: Boolean,
             allowPostpone: Boolean,
             postponeDurationSeconds: Int,
+            smartIdleEnabled: Boolean,
         ) {
             val intent = Intent(context, TimerForegroundService::class.java).apply {
                 action = ACTION_START
@@ -544,6 +713,7 @@ class TimerForegroundService : Service() {
                 putExtra(EXTRA_ALLOW_SKIP, allowSkip)
                 putExtra(EXTRA_ALLOW_POSTPONE, allowPostpone)
                 putExtra(EXTRA_POSTPONE_DURATION, postponeDurationSeconds)
+                putExtra(EXTRA_SMART_IDLE, smartIdleEnabled)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)

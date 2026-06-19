@@ -868,4 +868,31 @@ void main() {
       expect(find.textContaining('Eye break starting in'), findsNothing);
     },
   );
+
+  testWidgets(
+    'settings screen toggles smart idle preference',
+    (WidgetTester tester) async {
+      await pumpBlinkKindApp(tester);
+
+      await tester.tap(find.byIcon(Icons.settings));
+      await tester.pumpAndSettle();
+
+      final finder = find.text('Smart Pause & Postpone');
+      await tester.scrollUntilVisible(finder, 200);
+      await tester.pumpAndSettle();
+      expect(finder, findsOneWidget);
+
+      // Toggle off
+      await tester.tap(finder);
+      await tester.pumpAndSettle();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool(PreferencesService.smartIdleEnabledKey), false);
+
+      // Toggle on
+      await tester.tap(finder);
+      await tester.pumpAndSettle();
+      expect(prefs.getBool(PreferencesService.smartIdleEnabledKey), true);
+    },
+  );
 }

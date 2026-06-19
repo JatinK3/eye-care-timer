@@ -28,6 +28,7 @@ class PreferencesService {
   static const String allowSkipKey = 'allowSkip';
   static const String allowPostponeKey = 'allowPostpone';
   static const String postponeDurationSecondsKey = 'postponeDurationSeconds';
+  static const String smartIdleEnabledKey = 'smartIdleEnabled';
   static const String dailyHistoryKey = 'dailyHistory';
   static const String workSessionHistoryKey = 'workSessionHistory';
   static const String sessionIsActiveKey = 'sessionIsActive';
@@ -85,6 +86,7 @@ class PreferencesService {
       allowSkip: prefs.getBool(allowSkipKey) ?? TimerSettings.defaultAllowSkip,
       allowPostpone: prefs.getBool(allowPostponeKey) ?? TimerSettings.defaultAllowPostpone,
       postponeDurationSeconds: prefs.getInt(postponeDurationSecondsKey) ?? TimerSettings.defaultPostponeDurationSeconds,
+      smartIdleEnabled: prefs.getBool(smartIdleEnabledKey) ?? TimerSettings.defaultSmartIdleEnabled,
     );
   }
 
@@ -296,6 +298,11 @@ class PreferencesService {
   Future<void> savePostponeDurationSeconds(int seconds) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(postponeDurationSecondsKey, seconds);
+  }
+
+  Future<void> saveSmartIdleEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(smartIdleEnabledKey, enabled);
   }
 
   Future<void> saveStreakCount(int streakCount) async {

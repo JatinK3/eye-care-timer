@@ -15,9 +15,11 @@ class SettingsPage extends StatefulWidget {
   final bool allowSkip;
   final bool allowPostpone;
   final int postponeDurationSeconds;
+  final bool smartIdleEnabled;
   final void Function(bool) setAllowSkip;
   final void Function(bool) setAllowPostpone;
   final void Function(int) setPostponeDurationSeconds;
+  final void Function(bool) setSmartIdleEnabled;
   final bool notificationsEnabled;
   final bool longBreakEnabled;
   final int longBreakDurationSeconds;
@@ -82,9 +84,11 @@ class SettingsPage extends StatefulWidget {
     required this.allowSkip,
     required this.allowPostpone,
     required this.postponeDurationSeconds,
+    required this.smartIdleEnabled,
     required this.setAllowSkip,
     required this.setAllowPostpone,
     required this.setPostponeDurationSeconds,
+    required this.setSmartIdleEnabled,
     required this.notificationPermissionStatus,
     required this.exactAlarmStatus,
     required this.batteryOptimizationStatus,
@@ -472,6 +476,15 @@ class _SettingsPageState extends State<SettingsPage>
                     subtitle: const Text('Allow postponing the break'),
                     value: widget.allowPostpone,
                     onChanged: widget.setAllowPostpone,
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: const Icon(Icons.psychology_outlined),
+                    title: const Text('Smart Pause & Postpone'),
+                    subtitle: const Text('Pause on screen-off; delay breaks for games or videos'),
+                    value: widget.smartIdleEnabled,
+                    onChanged: widget.setSmartIdleEnabled,
                   ),
                   if (widget.allowPostpone) ...[
                     const Divider(height: 1),

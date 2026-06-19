@@ -32,6 +32,7 @@ class TimerBackgroundService {
     required bool allowSkip,
     required bool allowPostpone,
     required int postponeDurationSeconds,
+    required bool smartIdleEnabled,
   }) async {
     if (!_isSupported) return;
     try {
@@ -51,6 +52,7 @@ class TimerBackgroundService {
         'allowSkip': allowSkip,
         'allowPostpone': allowPostpone,
         'postponeDurationSeconds': postponeDurationSeconds,
+        'smartIdleEnabled': smartIdleEnabled,
       });
     } on PlatformException catch (error) {
       debugPrint('Unable to start background phase: $error');

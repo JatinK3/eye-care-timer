@@ -47,6 +47,7 @@ class TimerHomePage extends StatefulWidget {
   final bool allowSkip;
   final bool allowPostpone;
   final int postponeDurationSeconds;
+  final bool smartIdleEnabled;
 
   const TimerHomePage({
     super.key,
@@ -69,6 +70,7 @@ class TimerHomePage extends StatefulWidget {
     required this.allowSkip,
     required this.allowPostpone,
     required this.postponeDurationSeconds,
+    required this.smartIdleEnabled,
     this.breakOverlayService,
     required this.openSettings,
     required this.setPreset,
@@ -478,6 +480,7 @@ class _TimerHomePageState extends State<TimerHomePage>
         allowSkip: widget.allowSkip,
         allowPostpone: widget.allowPostpone,
         postponeDurationSeconds: widget.postponeDurationSeconds,
+        smartIdleEnabled: widget.smartIdleEnabled,
       ),
     );
   }

@@ -13,6 +13,7 @@ class TimerSettings {
   static const bool defaultAllowSkip = true;
   static const bool defaultAllowPostpone = true;
   static const int defaultPostponeDurationSeconds = 2 * 60;
+  static const bool defaultSmartIdleEnabled = true;
 
   final int workDurationSeconds;
   final int breakDurationSeconds;
@@ -32,6 +33,7 @@ class TimerSettings {
   final bool allowSkip;
   final bool allowPostpone;
   final int postponeDurationSeconds;
+  final bool smartIdleEnabled;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -52,6 +54,7 @@ class TimerSettings {
     required this.allowSkip,
     required this.allowPostpone,
     required this.postponeDurationSeconds,
+    required this.smartIdleEnabled,
   });
 
   const TimerSettings.defaults()
@@ -72,7 +75,8 @@ class TimerSettings {
       breakMode = defaultBreakMode,
       allowSkip = defaultAllowSkip,
       allowPostpone = defaultAllowPostpone,
-      postponeDurationSeconds = defaultPostponeDurationSeconds;
+      postponeDurationSeconds = defaultPostponeDurationSeconds,
+      smartIdleEnabled = defaultSmartIdleEnabled;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -93,6 +97,7 @@ class TimerSettings {
     bool? allowSkip,
     bool? allowPostpone,
     int? postponeDurationSeconds,
+    bool? smartIdleEnabled,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -115,6 +120,7 @@ class TimerSettings {
       allowPostpone: allowPostpone ?? this.allowPostpone,
       postponeDurationSeconds:
           postponeDurationSeconds ?? this.postponeDurationSeconds,
+      smartIdleEnabled: smartIdleEnabled ?? this.smartIdleEnabled,
     );
   }
 }
