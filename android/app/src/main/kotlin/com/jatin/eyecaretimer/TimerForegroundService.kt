@@ -32,6 +32,8 @@ class TimerForegroundService : Service() {
     private var deadlineMillis: Long = 0L
     private var isBreak: Boolean = false
     private var completed: Boolean = false
+    private var breakMode: String = "gentle"
+    private var nextBreakDurationSeconds: Int = 0
 
     private val tick = object : Runnable {
         override fun run() {
@@ -55,6 +57,8 @@ class TimerForegroundService : Service() {
     private fun handleStart(intent: Intent) {
         deadlineMillis = intent.getLongExtra(EXTRA_DEADLINE, 0L)
         isBreak = intent.getBooleanExtra(EXTRA_IS_BREAK, false)
+        breakMode = intent.getStringExtra(EXTRA_BREAK_MODE) ?: "gentle"
+        nextBreakDurationSeconds = intent.getIntExtra(EXTRA_NEXT_BREAK_DURATION, 0)
         completed = false
         // Always enter the foreground before any early return: a service started
         // with startForegroundService() must call startForeground() promptly.
@@ -73,6 +77,12 @@ class TimerForegroundService : Service() {
         completed = true
         handler.removeCallbacks(tick)
         cancelExactAlarm()
+
+        // Show overlay break screen if transitioning to break in background
+        if (!isBreak && breakMode != "off" && nextBreakDurationSeconds > 0) {
+            BreakOverlayController.show(this, nextBreakDurationSeconds, breakMode, false)
+        }
+
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(NOTIFICATION_ID, buildCompletedNotification())
         // Detach the notification so it remains tappable, then stop the service.
@@ -90,6 +100,7 @@ class TimerForegroundService : Service() {
         completed = true
         handler.removeCallbacks(tick)
         cancelExactAlarm()
+        BreakOverlayController.hide()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_REMOVE)
         } else {
@@ -267,17 +278,27 @@ class TimerForegroundService : Service() {
         const val ACTION_COMPLETE = "com.jatin.eyecaretimer.action.COMPLETE_PHASE"
         const val EXTRA_DEADLINE = "deadlineMillis"
         const val EXTRA_IS_BREAK = "isBreak"
+        const val EXTRA_BREAK_MODE = "breakMode"
+        const val EXTRA_NEXT_BREAK_DURATION = "nextBreakDuration"
 
         private const val CHANNEL_ID = "blinkkind_timer_status"
         private const val NOTIFICATION_ID = 2001
         private const val REQUEST_CONTENT = 3001
         private const val REQUEST_ALARM = 3002
 
-        fun start(context: Context, deadlineMillis: Long, isBreak: Boolean) {
+        fun start(
+            context: Context,
+            deadlineMillis: Long,
+            isBreak: Boolean,
+            breakMode: String = "gentle",
+            nextBreakDurationSeconds: Int = 0,
+        ) {
             val intent = Intent(context, TimerForegroundService::class.java).apply {
                 action = ACTION_START
                 putExtra(EXTRA_DEADLINE, deadlineMillis)
                 putExtra(EXTRA_IS_BREAK, isBreak)
+                putExtra(EXTRA_BREAK_MODE, breakMode)
+                putExtra(EXTRA_NEXT_BREAK_DURATION, nextBreakDurationSeconds)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)

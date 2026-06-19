@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../models/timer_settings.dart';
+
 /// Dart bridge to the native Android foreground service that owns the active
 /// timer phase while BlinkKind is backgrounded or the screen is locked.
 ///
@@ -22,6 +24,8 @@ class TimerBackgroundService {
     required DateTime phaseEndsAt,
     required bool isBreak,
     required int remainingSeconds,
+    required BreakMode breakMode,
+    required int nextBreakDurationSeconds,
   }) async {
     if (!_isSupported) return;
     try {
@@ -29,6 +33,8 @@ class TimerBackgroundService {
         'phaseEndsAtMillis': phaseEndsAt.millisecondsSinceEpoch,
         'isBreak': isBreak,
         'remainingSeconds': remainingSeconds,
+        'breakMode': breakMode.name,
+        'nextBreakDurationSeconds': nextBreakDurationSeconds,
       });
     } on PlatformException catch (error) {
       debugPrint('Unable to start background phase: $error');
