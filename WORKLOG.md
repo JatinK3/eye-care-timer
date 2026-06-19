@@ -10,8 +10,11 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Replace the launch/resume reconciliation with one pure, unit-tested `projectPhase` fast-forward (`lib/features/timer/phase_schedule.dart`) that crosses every elapsed work/break boundary, records completed work, advances the streak/auto-run counters, and lands on the phase that should be active now. Both `_restoreInitialSession` and `_syncTimerWithClock` route through it.
   - [x] Clamp backward clock jumps and never report a non-positive remaining for a live phase.
   - [x] Add `TimerSession.toJson`/`fromJson` so the session is a single serializable source of truth across the platform boundary.
-  - [x] Add an Android foreground service (`TimerForegroundService`) + exact `AlarmManager` deadline owner (`PhaseDeadlineReceiver`) + `blinkkind/timer_background` MethodChannel bridge + Dart `TimerBackgroundService`, wired into start/pause/resume/cancel/idle/projection. Code complete and compiles; the audible cue stays with flutter_local_notifications to avoid double alerts.
+  - [x] Add an Android foreground service (`TimerForegroundService`) + exact `AlarmManager` deadline owner (`PhaseDeadlineReceiver`) + `blinkkind/timer_background` MethodChannel bridge + Dart `TimerBackgroundService`, wired into start/pause/resume/cancel/idle/projection.
+  - [x] Continue automatic work/break cycles natively while Flutter is suspended, including cycle limits, long-break cadence, delayed-alarm fast-forward, persisted process-death recovery, and stale-alarm rejection.
+  - [x] Android 17 emulator baseline: foreground service and exact alarm registered, cross-app overlay launched at the work deadline, rotation survived, configured break auto-dismissed, and the service cleaned up.
   - [ ] Physical-device validation: background, screen-lock, Doze, app-killed, multi-cycle auto-run, device clock change, and notifications-disabled paths on Pixel/Samsung/Xiaomi-style restrictions. Required to actually close this bug.
+  - [ ] Native reboot rescheduling and audible reminders for later native-only cycle boundaries. Force-stopped apps cannot restart themselves by Android design.
   - [x] Wire the deadline alarm to launch the immersive break overlay (fullScreenIntent) rather than only a tappable notification (depends on the break-surface UI below).
 - [ ] Build immersive full-screen break mode (current priority).
   - [x] Build an Android overlay permission and 10-second manual preview spike before timer integration.
@@ -112,6 +115,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Extended the Android deadline owner across automatic work/break cycles with the same cycle-limit and long-break semantics as Flutter, persisted native recovery state, delayed-boundary fast-forward, and stale-alarm protection.
 
 - Reconciled the project knowledgebase after the wall-clock timer, native deadline owner, persisted break-screen modes, and background overlay integration landed. Physical-device validation remains deliberately open.
 

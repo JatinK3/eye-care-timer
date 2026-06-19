@@ -3,30 +3,31 @@ package com.jatin.eyecaretimer
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 
 /**
- * Fires when the exact alarm armed by [TimerForegroundService] reaches the
- * phase deadline (including while the device is in Doze). It hands control
- * back to the service so the ongoing countdown notification flips to a
- * tappable "phase complete" state. The audible cue itself is owned by
- * flutter_local_notifications, so this stays silent.
+ * Delivers an exact phase deadline to the native cadence owner. The expected
+ * deadline lets the service ignore a stale broadcast after Flutter has already
+ * changed, paused, or replaced the active phase.
  */
 class PhaseDeadlineReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        val isBreak = intent?.getBooleanExtra(
-            TimerForegroundService.EXTRA_IS_BREAK,
-            false,
-        ) ?: false
+        val expectedDeadline = intent?.getLongExtra(
+            TimerForegroundService.EXTRA_EXPECTED_DEADLINE,
+            0L,
+        ) ?: 0L
         val complete = Intent(context, TimerForegroundService::class.java).apply {
             action = TimerForegroundService.ACTION_COMPLETE
-            putExtra(TimerForegroundService.EXTRA_IS_BREAK, isBreak)
+            putExtra(TimerForegroundService.EXTRA_EXPECTED_DEADLINE, expectedDeadline)
         }
         try {
-            // The service is already running in the foreground, so delivering a
-            // command to it is permitted even from a background broadcast.
-            context.startService(complete)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(complete)
+            } else {
+                context.startService(complete)
+            }
         } catch (_: Exception) {
-            // If the service is gone, there is nothing left to update.
+            // Force-stop and platform background restrictions cannot be bypassed.
         }
     }
 

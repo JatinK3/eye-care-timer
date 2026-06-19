@@ -405,16 +405,9 @@ class _TimerHomePageState extends State<TimerHomePage>
         ),
       );
     }
-    unawaited(
-      _backgroundService.startPhase(
-        phaseEndsAt: projection.phaseEndsAt!,
-        isBreak: projection.isBreak,
-        remainingSeconds: projection.remainingSeconds,
-        breakMode: widget.breakMode,
-        nextBreakDurationSeconds: projection.isBreak
-            ? 0
-            : _breakDurationForCompletedCycle(projection.streakCount + 1),
-      ),
+    _startBackgroundPhase(
+      phaseEndsAt: projection.phaseEndsAt!,
+      isBreak: projection.isBreak,
     );
     if (projection.isBreak && widget.breakMode != BreakMode.off) {
       unawaited(
@@ -441,6 +434,28 @@ class _TimerHomePageState extends State<TimerHomePage>
     return completedCycles % _longBreakEveryCycles == 0
         ? _longBreakDurationSeconds
         : _breakDurationSeconds;
+  }
+
+  void _startBackgroundPhase({
+    required DateTime phaseEndsAt,
+    required bool isBreak,
+  }) {
+    unawaited(
+      _backgroundService.startPhase(
+        phaseEndsAt: phaseEndsAt,
+        isBreak: isBreak,
+        breakMode: widget.breakMode,
+        workDurationSeconds: _workDurationSeconds,
+        breakDurationSeconds: _breakDurationSeconds,
+        longBreakEnabled: _longBreakEnabled,
+        longBreakDurationSeconds: _longBreakDurationSeconds,
+        longBreakEveryCycles: _longBreakEveryCycles,
+        autoRunEnabled: _autoRunEnabled,
+        autoRunCycleLimit: _autoRunCycleLimit,
+        streakCount: _streakCount,
+        completedAutoRunCycles: _autoRunCompletedCycles,
+      ),
+    );
   }
 
   double _progressFromRemaining({
@@ -476,17 +491,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     _animationController.forward(from: 0.0);
     _saveActiveSession(remainingSeconds: duration);
     unawaited(_schedulePhaseReminder(duration, isBreak: isBreak));
-    unawaited(
-      _backgroundService.startPhase(
-        phaseEndsAt: _phaseEndsAt!,
-        isBreak: isBreak,
-        remainingSeconds: duration,
-        breakMode: widget.breakMode,
-        nextBreakDurationSeconds: isBreak
-            ? 0
-            : _breakDurationForCompletedCycle(_streakCount + 1),
-      ),
-    );
+    _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: isBreak);
     if (isBreak && widget.breakMode != BreakMode.off) {
       unawaited(
         widget.breakOverlayService?.showBreakOverlay(
@@ -524,17 +529,7 @@ class _TimerHomePageState extends State<TimerHomePage>
         _animationController.forward();
         _saveActiveSession();
         unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
-        unawaited(
-          _backgroundService.startPhase(
-            phaseEndsAt: _phaseEndsAt!,
-            isBreak: _isBreak,
-            remainingSeconds: _remainingSeconds,
-            breakMode: widget.breakMode,
-            nextBreakDurationSeconds: _isBreak
-                ? 0
-                : _breakDurationForCompletedCycle(_streakCount + 1),
-          ),
-        );
+        _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
         if (_remainingSeconds <= 5) _pulseController.forward();
       }
     });

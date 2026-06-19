@@ -39,10 +39,10 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, bounded completed-session history, daily goal, notification preference, feedback preferences, automatic-cycle settings, and active timer session.
 - `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, system settings recovery hooks, exact-alarm capability checks, battery optimization diagnostics, explicit audible-channel creation, test-reminder support, verified phase reminder scheduling with inexact fallback, and cancellation.
 - `lib/services/break_overlay_service.dart`: Android overlay permission, preview, active break display, and dismissal MethodChannel wrapper with safe unsupported-platform behavior.
-- `lib/services/timer_background_service.dart`: Dart bridge that synchronizes active phase deadlines and upcoming break presentation data with the Android foreground service.
+- `lib/services/timer_background_service.dart`: Dart bridge that sends the active deadline, complete cadence settings, streak, and automatic-run counters to the Android foreground service.
 - `android/app/src/main/kotlin/com/jatin/eyecaretimer/BreakOverlayController.kt`: Process-scoped native full-screen break overlay with preview, Gentle/Strict behavior, exercise rotation, countdown, and emergency press-and-hold exit.
-- `android/app/src/main/kotlin/com/jatin/eyecaretimer/TimerForegroundService.kt`: Native owner of active phase deadlines, ongoing countdown notification, and background work-to-break overlay launch.
-- `android/app/src/main/kotlin/com/jatin/eyecaretimer/PhaseDeadlineReceiver.kt`: Exact-alarm receiver that tells the foreground service to complete the active phase at its wall-clock deadline.
+- `android/app/src/main/kotlin/com/jatin/eyecaretimer/TimerForegroundService.kt`: Persisted native cadence owner for exact phase deadlines, delayed-boundary fast-forward, automatic cycle limits, long-break cadence, ongoing status, process recovery, and background overlays.
+- `android/app/src/main/kotlin/com/jatin/eyecaretimer/PhaseDeadlineReceiver.kt`: Exact-alarm receiver that restores the cadence owner when needed and includes the expected deadline so stale broadcasts are rejected.
 - `test/phase_schedule_test.dart`: Unit coverage for multi-boundary wall-clock phase projection and clock-change handling.
 - `test/timer_session_test.dart`: Timer session platform-serialization coverage.
 - `test/widget_test.dart`: Widget smoke, persistence load, timer controls, automatic-cycle restore/limits, break-mode settings, settings/history navigation, notification fake, and transition regression tests.
@@ -63,7 +63,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - The timer stores an absolute phase deadline and uses the pure `projectPhase` calculation to reconcile every elapsed work/break boundary when the app resumes or restores. It records completed work, advances automatic-cycle counters, and lands on the phase that should be active at the current wall-clock time.
 - Active timer sessions are persisted so running and paused work/break phases can restore after app restart.
 - Expired restored sessions can advance across multiple phases instead of restarting a full phase after background time has elapsed.
-- On Android, an ongoing foreground service mirrors the active absolute deadline and arms an exact alarm with an inexact fallback. It is stopped on pause, cancel, and idle.
+- On Android, an ongoing foreground service mirrors the active cadence and arms each absolute deadline with an exact alarm and inexact fallback. While Flutter is suspended it advances work/break phases, cycle limits, and long-break cadence natively, persists recovery state for process death, fast-forwards delayed alarms, and rejects stale broadcasts. It stops on pause, cancel, and idle.
 - Theme mode, color preset, work duration, break duration, long-break settings, automatic-cycle settings and current run progress, daily streak, daily history aggregates, completed-session records, daily goal, notification preference, haptic/sound preferences, and active timer session are persisted.
 - Daily streak resets when the saved streak date is not today.
 - The main timer shows daily goal progress and a goal-reached state when completed breaks meet the configured goal.
@@ -136,10 +136,10 @@ Commands run after the current implementation:
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 26 tests.
+- `flutter test`: passing, 39 tests.
 - `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
 - `flutter build web`: passing; generated `build/web`.
-- Android physical-device validation remains incomplete. An Android 17 emulator is currently available for baseline cross-app, rotation, system-bar, and lifecycle checks, but it does not replace Android 10-15/OEM device testing.
+- Android 17 emulator baseline passed for service/alarm registration, cross-app overlay launch at a background work deadline, rotation survival, automatic break dismissal, and service cleanup. This does not replace Android 10-15/OEM physical-device testing.
 
 Important git/worktree note:
 
@@ -158,7 +158,7 @@ Implementation decisions:
 - Platform priority: prove Android overlay permission and manual overlay behavior first, integrate it with the timer second, then implement Linux, Windows, and macOS desktop enforcement. Desktop still requires tray operation and launch-at-login before overlays can be dependable while the main window is closed. X11 and Wayland require separate validation because compositors may restrict focus and topmost behavior.
 - Android: BlinkKind requests `SYSTEM_ALERT_WINDOW` as an explicit opt-in and uses `TYPE_APPLICATION_OVERLAY` to cover other apps during breaks. The manual preview and timer-triggered overlays are implemented. Rotation, system-bar, lock-screen, call, cross-app, Doze, process-death, and OEM behavior still require physical-device validation. Android Go devices may reject overlay permission, and system bars or lock-screen content may remain system-controlled.
 - iOS: immersive break UI is available only while BlinkKind is active; iOS does not permit apps to cover other applications or force themselves foreground.
-- Android runtime: the foreground service mirrors each active absolute phase deadline, shows a silent ongoing notification, arms an exact/inexact deadline alarm, and launches the break overlay when a background work phase completes. Flutter remains the phase-logic source of truth and reconciles elapsed boundaries on resume. Android 14+ foreground-service type requirements and Android 15+ background-start ordering still require device validation.
+- Android runtime: the foreground service receives a full cadence snapshot, persists it separately from Flutter session state, shows a silent ongoing notification, and advances exact/inexact deadline alarms across native work/break cycles while Flutter is suspended. It mirrors cycle limits and long-break cadence, restores after ordinary process death, fast-forwards delayed delivery, and rejects stale alarms. Flutter remains authoritative and reconciles elapsed boundaries on resume. Reboot rescheduling, later native-only audible reminders, Android 14+ foreground-service requirements, Android 15+ background-start ordering, and OEM restrictions remain open; Android force-stop intentionally prevents self-restart.
 - Safety: calls, alarms, lock screen, accessibility navigation, and an emergency exit must remain usable. The feature is habit enforcement, not device lockout.
 
 Creative follow-ups after the core overlay is stable:

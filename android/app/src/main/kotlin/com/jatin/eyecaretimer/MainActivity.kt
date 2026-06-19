@@ -58,12 +58,32 @@ class MainActivity : FlutterActivity() {
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "startPhase" -> {
-                    val deadline = (call.argument<Number>("phaseEndsAtMillis"))?.toLong() ?: 0L
-                    val isBreak = call.argument<Boolean>("isBreak") ?: false
-                    val breakMode = call.argument<String>("breakMode") ?: "gentle"
-                    val nextBreakDurationSeconds = call.argument<Int>("nextBreakDurationSeconds") ?: 0
+                    val deadline =
+                        (call.argument<Number>("phaseEndsAtMillis"))?.toLong() ?: 0L
                     if (deadline > 0L) {
-                        TimerForegroundService.start(this, deadline, isBreak, breakMode, nextBreakDurationSeconds)
+                        TimerForegroundService.start(
+                            context = this,
+                            deadlineMillis = deadline,
+                            isBreak = call.argument<Boolean>("isBreak") ?: false,
+                            breakMode = call.argument<String>("breakMode") ?: "gentle",
+                            workDurationSeconds =
+                                call.argument<Int>("workDurationSeconds") ?: 0,
+                            breakDurationSeconds =
+                                call.argument<Int>("breakDurationSeconds") ?: 0,
+                            longBreakEnabled =
+                                call.argument<Boolean>("longBreakEnabled") ?: false,
+                            longBreakDurationSeconds =
+                                call.argument<Int>("longBreakDurationSeconds") ?: 0,
+                            longBreakEveryCycles =
+                                call.argument<Int>("longBreakEveryCycles") ?: 0,
+                            autoRunEnabled =
+                                call.argument<Boolean>("autoRunEnabled") ?: false,
+                            autoRunCycleLimit =
+                                call.argument<Int>("autoRunCycleLimit") ?: 0,
+                            streakCount = call.argument<Int>("streakCount") ?: 0,
+                            completedAutoRunCycles =
+                                call.argument<Int>("completedAutoRunCycles") ?: 0,
+                        )
                     } else {
                         TimerForegroundService.stop(this)
                     }

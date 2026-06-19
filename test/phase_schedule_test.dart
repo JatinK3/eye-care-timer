@@ -144,6 +144,29 @@ void main() {
       expect(projection.initialDurationSeconds, 100);
     });
 
+    test('stops after the configured cycle limit when several phases elapsed', () {
+      final projection = projectPhase(
+        now: now,
+        isBreak: false,
+        phaseEndsAt: now.subtract(const Duration(seconds: 500)),
+        currentPhaseDurationSeconds: 100,
+        streakCount: 3,
+        autoRunCompletedCycles: 0,
+        plan: planWith(
+          work: 100,
+          breakSeconds: 20,
+          autoRun: true,
+          autoRunLimit: 2,
+        ),
+      );
+
+      expect(projection.isIdle, isTrue);
+      expect(projection.boundariesCrossed, 4);
+      expect(projection.streakCount, 5);
+      expect(projection.completedWorkSessions, hasLength(2));
+      expect(projection.autoRunCompletedCycles, 0);
+    });
+
     test('uses the long-break duration on the configured cadence', () {
       // Long break every 1 cycle -> the very first break is the long one.
       final projection = projectPhase(

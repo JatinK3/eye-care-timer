@@ -3,14 +3,11 @@ import 'package:flutter/services.dart';
 
 import '../models/timer_settings.dart';
 
-/// Dart bridge to the native Android foreground service that owns the active
-/// timer phase while BlinkKind is backgrounded or the screen is locked.
+/// Dart bridge to the native Android foreground service that owns active timer
+/// phase deadlines while BlinkKind is backgrounded or the screen is locked.
 ///
-/// The native side shows an ongoing notification with a live countdown and
-/// arms an exact alarm at the phase deadline. The Flutter timer remains the
-/// single source of truth for phase logic; this just keeps a native owner in
-/// sync with the current deadline. All methods are safe no-ops on non-Android
-/// platforms and in tests (where the platform channel is absent).
+/// Flutter remains the source of truth. Android receives a cadence snapshot so
+/// it can continue automatic work/break boundaries until Flutter resumes.
 class TimerBackgroundService {
   static const MethodChannel _channel = MethodChannel(
     'blinkkind/timer_background',
@@ -19,22 +16,35 @@ class TimerBackgroundService {
   bool get _isSupported =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
-  /// Hands the current phase deadline to the native owner.
   Future<void> startPhase({
     required DateTime phaseEndsAt,
     required bool isBreak,
-    required int remainingSeconds,
     required BreakMode breakMode,
-    required int nextBreakDurationSeconds,
+    required int workDurationSeconds,
+    required int breakDurationSeconds,
+    required bool longBreakEnabled,
+    required int longBreakDurationSeconds,
+    required int longBreakEveryCycles,
+    required bool autoRunEnabled,
+    required int autoRunCycleLimit,
+    required int streakCount,
+    required int completedAutoRunCycles,
   }) async {
     if (!_isSupported) return;
     try {
       await _channel.invokeMethod<void>('startPhase', <String, dynamic>{
         'phaseEndsAtMillis': phaseEndsAt.millisecondsSinceEpoch,
         'isBreak': isBreak,
-        'remainingSeconds': remainingSeconds,
         'breakMode': breakMode.name,
-        'nextBreakDurationSeconds': nextBreakDurationSeconds,
+        'workDurationSeconds': workDurationSeconds,
+        'breakDurationSeconds': breakDurationSeconds,
+        'longBreakEnabled': longBreakEnabled,
+        'longBreakDurationSeconds': longBreakDurationSeconds,
+        'longBreakEveryCycles': longBreakEveryCycles,
+        'autoRunEnabled': autoRunEnabled,
+        'autoRunCycleLimit': autoRunCycleLimit,
+        'streakCount': streakCount,
+        'completedAutoRunCycles': completedAutoRunCycles,
       });
     } on PlatformException catch (error) {
       debugPrint('Unable to start background phase: $error');
@@ -43,7 +53,6 @@ class TimerBackgroundService {
     }
   }
 
-  /// Tears down the native owner when the timer stops or goes idle.
   Future<void> stopPhase() async {
     if (!_isSupported) return;
     try {

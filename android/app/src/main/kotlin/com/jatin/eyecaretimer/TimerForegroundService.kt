@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Handler
@@ -17,27 +18,38 @@ import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 
 /**
- * Foreground service that owns the active timer phase deadline while BlinkKind
- * is backgrounded or the screen is locked.
+ * Native owner for the active timer cadence while Flutter is suspended.
  *
- * The Flutter side remains the single source of truth for phase logic; this
- * service just mirrors the current absolute deadline so the OS keeps the
- * process alive, shows an ongoing countdown notification, and fires an exact
- * alarm at the deadline. The audible phase-complete cue is still delivered by
- * flutter_local_notifications, so this service's notifications stay silent to
- * avoid double alerts.
+ * Flutter remains authoritative and reconciles the original absolute deadline
+ * on resume. This service mirrors the cadence, persists enough state to recover
+ * from process death, and advances alarms across automatic work/break cycles.
  */
 class TimerForegroundService : Service() {
     private val handler = Handler(Looper.getMainLooper())
+
     private var deadlineMillis: Long = 0L
-    private var isBreak: Boolean = false
-    private var completed: Boolean = false
-    private var breakMode: String = "gentle"
-    private var nextBreakDurationSeconds: Int = 0
+    private var isBreak = false
+    private var breakMode = "gentle"
+    private var workDurationSeconds = 0
+    private var breakDurationSeconds = 0
+    private var longBreakEnabled = false
+    private var longBreakDurationSeconds = 0
+    private var longBreakEveryCycles = 0
+    private var autoRunEnabled = false
+    private var autoRunCycleLimit = 0
+    private var streakCount = 0
+    private var completedAutoRunCycles = 0
 
     private val tick = object : Runnable {
         override fun run() {
-            updateOngoingNotification()
+            if (deadlineMillis <= 0L) return
+            if (secondsRemaining() <= 0L) {
+                handleComplete(deadlineMillis)
+                return
+            }
+            val manager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.notify(NOTIFICATION_ID, buildOngoingNotification())
             handler.postDelayed(this, 1000)
         }
     }
@@ -47,60 +59,172 @@ class TimerForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> handleStart(intent)
-            ACTION_COMPLETE -> handleComplete()
-            ACTION_STOP -> handleStop()
-            else -> handleStop()
+            ACTION_COMPLETE -> {
+                if (deadlineMillis <= 0L && !restoreState()) {
+                    ensureChannel()
+                    startInForeground(buildOngoingNotification())
+                    handleStop()
+                    return START_NOT_STICKY
+                }
+                ensureChannel()
+                startInForeground(buildOngoingNotification())
+                handleComplete(intent.getLongExtra(EXTRA_EXPECTED_DEADLINE, 0L))
+            }
+            ACTION_STOP -> {
+                handleStop()
+                return START_NOT_STICKY
+            }
+            else -> {
+                if (!restoreState()) {
+                    handleStop()
+                    return START_NOT_STICKY
+                }
+                ensureChannel()
+                startInForeground(buildOngoingNotification())
+                presentCurrentPhase()
+                resumeCurrentPhase()
+            }
         }
-        return START_NOT_STICKY
+        return START_STICKY
     }
 
     private fun handleStart(intent: Intent) {
         deadlineMillis = intent.getLongExtra(EXTRA_DEADLINE, 0L)
         isBreak = intent.getBooleanExtra(EXTRA_IS_BREAK, false)
         breakMode = intent.getStringExtra(EXTRA_BREAK_MODE) ?: "gentle"
-        nextBreakDurationSeconds = intent.getIntExtra(EXTRA_NEXT_BREAK_DURATION, 0)
-        completed = false
-        // Always enter the foreground before any early return: a service started
-        // with startForegroundService() must call startForeground() promptly.
+        workDurationSeconds = intent.getIntExtra(EXTRA_WORK_DURATION, 0)
+        breakDurationSeconds = intent.getIntExtra(EXTRA_BREAK_DURATION, 0)
+        longBreakEnabled = intent.getBooleanExtra(EXTRA_LONG_BREAK_ENABLED, false)
+        longBreakDurationSeconds = intent.getIntExtra(EXTRA_LONG_BREAK_DURATION, 0)
+        longBreakEveryCycles = intent.getIntExtra(EXTRA_LONG_BREAK_EVERY, 0)
+        autoRunEnabled = intent.getBooleanExtra(EXTRA_AUTO_RUN_ENABLED, false)
+        autoRunCycleLimit = intent.getIntExtra(EXTRA_AUTO_RUN_LIMIT, 0)
+        streakCount = intent.getIntExtra(EXTRA_STREAK_COUNT, 0)
+        completedAutoRunCycles = intent.getIntExtra(EXTRA_COMPLETED_AUTO_RUN_CYCLES, 0)
+
         ensureChannel()
         startInForeground(buildOngoingNotification())
         if (deadlineMillis <= 0L) {
             handleStop()
             return
         }
-        handler.removeCallbacks(tick)
-        handler.post(tick)
-        scheduleExactAlarm(deadlineMillis)
+
+        saveState()
+        resumeCurrentPhase()
     }
 
-    private fun handleComplete() {
-        completed = true
-        handler.removeCallbacks(tick)
-        cancelExactAlarm()
-
-        // Show overlay break screen if transitioning to break in background
-        if (!isBreak && breakMode != "off" && nextBreakDurationSeconds > 0) {
-            BreakOverlayController.show(this, nextBreakDurationSeconds, breakMode, false)
+    private fun handleComplete(expectedDeadline: Long) {
+        if (expectedDeadline > 0L && expectedDeadline != deadlineMillis) {
+            // A previous alarm was already queued when Flutter changed phase.
+            resumeCurrentPhase()
+            return
         }
 
+        handler.removeCallbacks(tick)
+        cancelExactAlarm()
+        val now = System.currentTimeMillis()
+
+        do {
+            val completedWasBreak = isBreak
+            if (!advanceBoundary()) {
+                finishSchedule(completedWasBreak)
+                return
+            }
+        } while (deadlineMillis <= now)
+
+        saveState()
+        presentCurrentPhase()
+        resumeCurrentPhase()
+    }
+
+    /**
+     * Advances exactly one boundary. The order mirrors Dart projectPhase:
+     * work increments counters and starts a break; break checks the run limit
+     * before starting the next work phase.
+     */
+    private fun advanceBoundary(): Boolean {
+        if (isBreak) {
+            BreakOverlayController.hide()
+            if (!shouldContinueAutoRun() || workDurationSeconds <= 0) {
+                return false
+            }
+            isBreak = false
+            deadlineMillis += workDurationSeconds * 1000L
+            return true
+        }
+
+        streakCount += 1
+        completedAutoRunCycles += 1
+        val duration = breakDurationForCompletedCycle(streakCount)
+        if (duration <= 0) {
+            return false
+        }
+        isBreak = true
+        deadlineMillis += duration * 1000L
+        return true
+    }
+
+    private fun shouldContinueAutoRun(): Boolean {
+        return autoRunEnabled &&
+            (autoRunCycleLimit <= 0 || completedAutoRunCycles < autoRunCycleLimit)
+    }
+
+    private fun breakDurationForCompletedCycle(completedCycles: Int): Int {
+        if (!longBreakEnabled || longBreakEveryCycles <= 0) {
+            return breakDurationSeconds
+        }
+        return if (completedCycles % longBreakEveryCycles == 0) {
+            longBreakDurationSeconds
+        } else {
+            breakDurationSeconds
+        }
+    }
+
+    private fun presentCurrentPhase() {
+        if (isBreak && breakMode != "off") {
+            val seconds = secondsRemaining().coerceAtLeast(1L).coerceAtMost(Int.MAX_VALUE.toLong())
+            BreakOverlayController.show(this, seconds.toInt(), breakMode, false)
+        } else {
+            BreakOverlayController.hide()
+        }
+    }
+
+    private fun resumeCurrentPhase() {
+        handler.removeCallbacks(tick)
+        if (deadlineMillis <= System.currentTimeMillis()) {
+            handleComplete(deadlineMillis)
+            return
+        }
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(NOTIFICATION_ID, buildCompletedNotification())
-        // Detach the notification so it remains tappable, then stop the service.
+        manager.notify(NOTIFICATION_ID, buildOngoingNotification())
+        scheduleExactAlarm(deadlineMillis)
+        handler.post(tick)
+    }
+
+    private fun finishSchedule(completedWasBreak: Boolean) {
+        handler.removeCallbacks(tick)
+        cancelExactAlarm()
+        BreakOverlayController.hide()
+        clearState()
+
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.notify(NOTIFICATION_ID, buildCompletedNotification(completedWasBreak))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            @Suppress("DEPRECATION")
             stopForeground(STOP_FOREGROUND_DETACH)
         } else {
             @Suppress("DEPRECATION")
             stopForeground(false)
         }
+        deadlineMillis = 0L
         stopSelf()
     }
 
     private fun handleStop() {
-        completed = true
         handler.removeCallbacks(tick)
         cancelExactAlarm()
         BreakOverlayController.hide()
+        clearState()
+        deadlineMillis = 0L
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_REMOVE)
         } else {
@@ -117,8 +241,6 @@ class TimerForegroundService : Service() {
 
     private fun startInForeground(notification: Notification) {
         try {
-            // Only API 34+ requires (and enforces) an explicit foreground
-            // service type at call time; the plain overload is correct below it.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(
                     NOTIFICATION_ID,
@@ -129,8 +251,6 @@ class TimerForegroundService : Service() {
                 startForeground(NOTIFICATION_ID, notification)
             }
         } catch (_: Exception) {
-            // If the platform refuses the foreground start (e.g. missing type),
-            // fall back to a plain notification so we never crash the app.
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.notify(NOTIFICATION_ID, notification)
         }
@@ -149,17 +269,6 @@ class TimerForegroundService : Service() {
         } else {
             "${seconds}s"
         }
-    }
-
-    private fun updateOngoingNotification() {
-        if (completed) return
-        if (secondsRemaining() <= 0L) {
-            // The handler may briefly outrun the alarm; reflect completion.
-            handleComplete()
-            return
-        }
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(NOTIFICATION_ID, buildOngoingNotification())
     }
 
     private fun contentIntent(): PendingIntent {
@@ -184,8 +293,8 @@ class TimerForegroundService : Service() {
             .build()
     }
 
-    private fun buildCompletedNotification(): Notification {
-        val title = if (isBreak) "Break complete" else "Focus session complete"
+    private fun buildCompletedNotification(completedWasBreak: Boolean): Notification {
+        val title = if (completedWasBreak) "Break complete" else "Focus session complete"
         return baseBuilder()
             .setContentTitle(title)
             .setContentText("Tap to open BlinkKind.")
@@ -224,7 +333,7 @@ class TimerForegroundService : Service() {
     private fun alarmPendingIntent(): PendingIntent {
         val intent = Intent(this, PhaseDeadlineReceiver::class.java).apply {
             action = PhaseDeadlineReceiver.ACTION_FIRE
-            putExtra(EXTRA_IS_BREAK, isBreak)
+            putExtra(EXTRA_EXPECTED_DEADLINE, deadlineMillis)
         }
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -272,33 +381,103 @@ class TimerForegroundService : Service() {
         alarmManager.cancel(alarmPendingIntent())
     }
 
+    private fun statePreferences(): SharedPreferences {
+        return getSharedPreferences(STATE_PREFERENCES, Context.MODE_PRIVATE)
+    }
+
+    private fun saveState() {
+        statePreferences().edit()
+            .putLong(EXTRA_DEADLINE, deadlineMillis)
+            .putBoolean(EXTRA_IS_BREAK, isBreak)
+            .putString(EXTRA_BREAK_MODE, breakMode)
+            .putInt(EXTRA_WORK_DURATION, workDurationSeconds)
+            .putInt(EXTRA_BREAK_DURATION, breakDurationSeconds)
+            .putBoolean(EXTRA_LONG_BREAK_ENABLED, longBreakEnabled)
+            .putInt(EXTRA_LONG_BREAK_DURATION, longBreakDurationSeconds)
+            .putInt(EXTRA_LONG_BREAK_EVERY, longBreakEveryCycles)
+            .putBoolean(EXTRA_AUTO_RUN_ENABLED, autoRunEnabled)
+            .putInt(EXTRA_AUTO_RUN_LIMIT, autoRunCycleLimit)
+            .putInt(EXTRA_STREAK_COUNT, streakCount)
+            .putInt(EXTRA_COMPLETED_AUTO_RUN_CYCLES, completedAutoRunCycles)
+.commit()
+    }
+
+    private fun restoreState(): Boolean {
+        val preferences = statePreferences()
+        deadlineMillis = preferences.getLong(EXTRA_DEADLINE, 0L)
+        if (deadlineMillis <= 0L) return false
+        isBreak = preferences.getBoolean(EXTRA_IS_BREAK, false)
+        breakMode = preferences.getString(EXTRA_BREAK_MODE, "gentle") ?: "gentle"
+        workDurationSeconds = preferences.getInt(EXTRA_WORK_DURATION, 0)
+        breakDurationSeconds = preferences.getInt(EXTRA_BREAK_DURATION, 0)
+        longBreakEnabled = preferences.getBoolean(EXTRA_LONG_BREAK_ENABLED, false)
+        longBreakDurationSeconds = preferences.getInt(EXTRA_LONG_BREAK_DURATION, 0)
+        longBreakEveryCycles = preferences.getInt(EXTRA_LONG_BREAK_EVERY, 0)
+        autoRunEnabled = preferences.getBoolean(EXTRA_AUTO_RUN_ENABLED, false)
+        autoRunCycleLimit = preferences.getInt(EXTRA_AUTO_RUN_LIMIT, 0)
+        streakCount = preferences.getInt(EXTRA_STREAK_COUNT, 0)
+        completedAutoRunCycles = preferences.getInt(EXTRA_COMPLETED_AUTO_RUN_CYCLES, 0)
+        return true
+    }
+
+    private fun clearState() {
+        statePreferences().edit().clear().commit()
+    }
+
     companion object {
         const val ACTION_START = "com.jatin.eyecaretimer.action.START_PHASE"
         const val ACTION_STOP = "com.jatin.eyecaretimer.action.STOP_PHASE"
         const val ACTION_COMPLETE = "com.jatin.eyecaretimer.action.COMPLETE_PHASE"
+
         const val EXTRA_DEADLINE = "deadlineMillis"
+        const val EXTRA_EXPECTED_DEADLINE = "expectedDeadlineMillis"
         const val EXTRA_IS_BREAK = "isBreak"
         const val EXTRA_BREAK_MODE = "breakMode"
-        const val EXTRA_NEXT_BREAK_DURATION = "nextBreakDuration"
+        const val EXTRA_WORK_DURATION = "workDurationSeconds"
+        const val EXTRA_BREAK_DURATION = "breakDurationSeconds"
+        const val EXTRA_LONG_BREAK_ENABLED = "longBreakEnabled"
+        const val EXTRA_LONG_BREAK_DURATION = "longBreakDurationSeconds"
+        const val EXTRA_LONG_BREAK_EVERY = "longBreakEveryCycles"
+        const val EXTRA_AUTO_RUN_ENABLED = "autoRunEnabled"
+        const val EXTRA_AUTO_RUN_LIMIT = "autoRunCycleLimit"
+        const val EXTRA_STREAK_COUNT = "streakCount"
+        const val EXTRA_COMPLETED_AUTO_RUN_CYCLES = "completedAutoRunCycles"
 
         private const val CHANNEL_ID = "blinkkind_timer_status"
         private const val NOTIFICATION_ID = 2001
         private const val REQUEST_CONTENT = 3001
         private const val REQUEST_ALARM = 3002
+        private const val STATE_PREFERENCES = "blinkkind_timer_background_state"
 
         fun start(
             context: Context,
             deadlineMillis: Long,
             isBreak: Boolean,
-            breakMode: String = "gentle",
-            nextBreakDurationSeconds: Int = 0,
+            breakMode: String,
+            workDurationSeconds: Int,
+            breakDurationSeconds: Int,
+            longBreakEnabled: Boolean,
+            longBreakDurationSeconds: Int,
+            longBreakEveryCycles: Int,
+            autoRunEnabled: Boolean,
+            autoRunCycleLimit: Int,
+            streakCount: Int,
+            completedAutoRunCycles: Int,
         ) {
             val intent = Intent(context, TimerForegroundService::class.java).apply {
                 action = ACTION_START
                 putExtra(EXTRA_DEADLINE, deadlineMillis)
                 putExtra(EXTRA_IS_BREAK, isBreak)
                 putExtra(EXTRA_BREAK_MODE, breakMode)
-                putExtra(EXTRA_NEXT_BREAK_DURATION, nextBreakDurationSeconds)
+                putExtra(EXTRA_WORK_DURATION, workDurationSeconds)
+                putExtra(EXTRA_BREAK_DURATION, breakDurationSeconds)
+                putExtra(EXTRA_LONG_BREAK_ENABLED, longBreakEnabled)
+                putExtra(EXTRA_LONG_BREAK_DURATION, longBreakDurationSeconds)
+                putExtra(EXTRA_LONG_BREAK_EVERY, longBreakEveryCycles)
+                putExtra(EXTRA_AUTO_RUN_ENABLED, autoRunEnabled)
+                putExtra(EXTRA_AUTO_RUN_LIMIT, autoRunCycleLimit)
+                putExtra(EXTRA_STREAK_COUNT, streakCount)
+                putExtra(EXTRA_COMPLETED_AUTO_RUN_CYCLES, completedAutoRunCycles)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
@@ -314,7 +493,11 @@ class TimerForegroundService : Service() {
             try {
                 context.startService(intent)
             } catch (_: Exception) {
-                // Service not running; nothing to stop.
+                context.getSharedPreferences(STATE_PREFERENCES, Context.MODE_PRIVATE)
+                    .edit()
+                    .clear()
+                    .apply()
+                BreakOverlayController.hide()
             }
         }
     }
