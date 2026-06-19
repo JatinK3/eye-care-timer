@@ -31,10 +31,41 @@ class NotificationReliabilityStatus {
 
 class NotificationService {
   static const int _phaseReminderId = 1001;
-  static const String _channelId = 'eye_care_timer_phase_reminders';
+  static const int _testReminderId = 1002;
+  static const String _channelId = 'blinkkind_phase_reminders_v2';
   static const String _channelName = 'BlinkKind reminders';
   static const String _channelDescription =
       'Reminders for work and eye break timer phases.';
+  static const AndroidNotificationChannel _phaseChannel =
+      AndroidNotificationChannel(
+        _channelId,
+        _channelName,
+        description: _channelDescription,
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+      );
+  static const NotificationDetails _phaseNotificationDetails =
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          category: AndroidNotificationCategory.alarm,
+          audioAttributesUsage: AudioAttributesUsage.alarm,
+        ),
+        iOS: DarwinNotificationDetails(presentAlert: true, presentSound: true),
+        macOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentSound: true,
+        ),
+      );
+
   static const MethodChannel _settingsChannel = MethodChannel(
     'eye_care_timer/notification_settings',
   );
@@ -68,6 +99,11 @@ class NotificationService {
     );
 
     await _notificationsPlugin.initialize(initializationSettings);
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(_phaseChannel);
     _isInitialized = true;
   }
 
@@ -195,6 +231,9 @@ class NotificationService {
   Future<bool> openNotificationSettings() =>
       _openSystemSettings('openNotificationSettings');
 
+  Future<bool> openReminderChannelSettings() =>
+      _openSystemSettings('openReminderChannelSettings');
+
   Future<bool> _openSystemSettings(String method) async {
     if (kIsWeb) return false;
     try {
@@ -213,6 +252,27 @@ class NotificationService {
       final pending = await _notificationsPlugin.pendingNotificationRequests();
       return pending.any((request) => request.id == _phaseReminderId);
     } on PlatformException {
+      return false;
+    }
+  }
+
+  Future<bool> showTestReminder() async {
+    if (kIsWeb) return false;
+    await initialize();
+    if (await permissionStatus() != NotificationPermissionStatus.allowed) {
+      return false;
+    }
+    try {
+      await _notificationsPlugin.show(
+        _testReminderId,
+        'BlinkKind test reminder',
+        'If you heard this, phase reminder sound is ready.',
+        _phaseNotificationDetails,
+        payload: 'test_reminder',
+      );
+      return true;
+    } on PlatformException catch (error) {
+      debugPrint('Unable to show test reminder: $error');
       return false;
     }
   }
@@ -268,17 +328,7 @@ class NotificationService {
         title,
         body,
         tz.TZDateTime.now(tz.local).add(delay),
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            _channelId,
-            _channelName,
-            channelDescription: _channelDescription,
-            importance: Importance.high,
-            priority: Priority.high,
-          ),
-          iOS: DarwinNotificationDetails(),
-          macOS: DarwinNotificationDetails(),
-        ),
+        _phaseNotificationDetails,
         androidScheduleMode: exactAlarmsAllowed
             ? AndroidScheduleMode.exactAllowWhileIdle
             : AndroidScheduleMode.inexactAllowWhileIdle,

@@ -11,6 +11,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val notificationSettingsChannel = "eye_care_timer/notification_settings"
+    private val reminderChannelId = "blinkkind_phase_reminders_v2"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -20,6 +21,7 @@ class MainActivity : FlutterActivity() {
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "openNotificationSettings" -> result.success(openNotificationSettings())
+                "openReminderChannelSettings" -> result.success(openReminderChannelSettings())
                 "isBatteryOptimizationIgnored" -> result.success(isBatteryOptimizationIgnored())
                 "openBatteryOptimizationSettings" -> result.success(openBatteryOptimizationSettings())
                 else -> result.notImplemented()
@@ -40,6 +42,23 @@ class MainActivity : FlutterActivity() {
             true
         } catch (_: Exception) {
             false
+        }
+    }
+
+    private fun openReminderChannelSettings(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return openNotificationSettings()
+        }
+        return try {
+            startActivity(
+                Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    putExtra(Settings.EXTRA_CHANNEL_ID, reminderChannelId)
+                },
+            )
+            true
+        } catch (_: Exception) {
+            openNotificationSettings()
         }
     }
 

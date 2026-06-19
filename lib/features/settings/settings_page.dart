@@ -39,6 +39,8 @@ class SettingsPage extends StatefulWidget {
   final void Function({required bool enabled, required int cycleLimit})
   saveAutoRunSettings;
   final Future<void> Function() openNotificationSettings;
+  final Future<void> Function() openReminderChannelSettings;
+  final Future<bool> Function() showTestReminder;
   final Future<NotificationReliabilityStatus> Function()
   refreshNotificationReliabilityStatus;
   final Future<void> Function() requestExactAlarmPermission;
@@ -76,6 +78,8 @@ class SettingsPage extends StatefulWidget {
     required this.saveLongBreakSettings,
     required this.saveAutoRunSettings,
     required this.openNotificationSettings,
+    required this.openReminderChannelSettings,
+    required this.showTestReminder,
     required this.refreshNotificationReliabilityStatus,
     required this.requestExactAlarmPermission,
     required this.openBatteryOptimizationSettings,
@@ -112,6 +116,7 @@ class _SettingsPageState extends State<SettingsPage>
   late BatteryOptimizationStatus _batteryOptimizationStatus;
   late bool _autoRunEnabled;
   late int _autoRunCycleLimit;
+  bool _isTestingReminder = false;
 
   @override
   void initState() {
@@ -161,6 +166,22 @@ class _SettingsPageState extends State<SettingsPage>
       _exactAlarmStatus = status.exactAlarms;
       _batteryOptimizationStatus = status.batteryOptimization;
     });
+  }
+
+  Future<void> _showTestReminder() async {
+    setState(() => _isTestingReminder = true);
+    final shown = await widget.showTestReminder();
+    if (!mounted) return;
+    setState(() => _isTestingReminder = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          shown
+              ? 'Test reminder sent. Check sound and vibration.'
+              : 'Test failed. Allow notifications and try again.',
+        ),
+      ),
+    );
   }
 
   Future<void> _openSystemNotificationSettings() async {
@@ -368,8 +389,10 @@ class _SettingsPageState extends State<SettingsPage>
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 secondary: const Icon(Icons.volume_up_outlined),
-                title: const Text('Sound'),
-                subtitle: const Text('Play a short system alert at phase end'),
+                title: const Text('In-app sound'),
+                subtitle: const Text(
+                  'Play an extra system alert while BlinkKind is open',
+                ),
                 value: widget.soundEnabled,
                 onChanged: widget.setSoundEnabled,
               ),
@@ -495,6 +518,39 @@ class _SettingsPageState extends State<SettingsPage>
                 subtitle: const Text('Remind me when work or break time ends'),
                 value: widget.notificationsEnabled,
                 onChanged: widget.setNotificationsEnabled,
+              ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.volume_up_outlined),
+                title: const Text('Notification sound'),
+                subtitle: const Text('Uses system notification sound settings'),
+                trailing: _exactAlarmStatus == ExactAlarmStatus.unsupported
+                    ? null
+                    : IconButton(
+                        onPressed: widget.openReminderChannelSettings,
+                        icon: const Icon(Icons.tune),
+                        tooltip: 'Notification sound settings',
+                      ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.play_circle_outline),
+                title: const Text('Test reminder'),
+                subtitle: const Text('Play the actual reminder sound now'),
+                trailing: _isTestingReminder
+                    ? const SizedBox.square(
+                        dimension: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : IconButton(
+                        onPressed: widget.notificationsEnabled
+                            ? _showTestReminder
+                            : null,
+                        icon: const Icon(Icons.play_arrow),
+                        tooltip: 'Send test reminder',
+                      ),
               ),
               const Divider(height: 1),
               ListTile(

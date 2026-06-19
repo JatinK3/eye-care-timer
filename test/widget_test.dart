@@ -18,6 +18,8 @@ class FakeNotificationService extends NotificationService {
   int permissionStatusCheckCount = 0;
   int requestPermissionCount = 0;
   int openSettingsCount = 0;
+  int openChannelSettingsCount = 0;
+  int testReminderCount = 0;
 
   FakeNotificationService({this.status = NotificationPermissionStatus.allowed});
 
@@ -61,6 +63,18 @@ class FakeNotificationService extends NotificationService {
   @override
   Future<void> cancelPhaseReminder() async {
     cancelCount++;
+  }
+
+  @override
+  Future<bool> showTestReminder() async {
+    testReminderCount++;
+    return true;
+  }
+
+  @override
+  Future<bool> openReminderChannelSettings() async {
+    openChannelSettingsCount++;
+    return true;
   }
 
   @override
@@ -411,7 +425,32 @@ void main() {
 
     expect(find.text('Feedback'), findsOneWidget);
     expect(find.text('Haptics'), findsOneWidget);
-    expect(find.text('Sound'), findsOneWidget);
+    expect(find.text('In-app sound'), findsOneWidget);
+  });
+
+  testWidgets('settings sends a test reminder', (tester) async {
+    final notificationService = await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+    final channelSettings = find.byTooltip('Notification sound settings');
+    await tester.scrollUntilVisible(channelSettings, 300);
+    await tester.pumpAndSettle();
+    await tester.tap(channelSettings);
+    await tester.pumpAndSettle();
+    expect(notificationService.openChannelSettingsCount, 1);
+
+    final testReminder = find.byTooltip('Send test reminder');
+    await tester.scrollUntilVisible(testReminder, 100);
+    await tester.pumpAndSettle();
+    await tester.tap(testReminder);
+    await tester.pumpAndSettle();
+
+    expect(notificationService.testReminderCount, 1);
+    expect(
+      find.text('Test reminder sent. Check sound and vibration.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('settings exposes expanded color presets', (

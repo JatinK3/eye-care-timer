@@ -4,6 +4,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Tasks
 
+- [x] Improve notification sound reliability.
+  - [x] Migrate Android reminders to a fresh explicitly audible channel.
+  - [x] Make foreground sound and system notification sound responsibilities clear.
+  - [x] Add a test-reminder action with permission-aware feedback.
 - [x] Improve notification reliability.
   - [x] Use exact Android alarms when available with an inexact fallback.
   - [x] Verify pending phase reminders and contain scheduling failures.
@@ -86,6 +90,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Migrated reminders to an explicitly audible alarm-category channel, separated in-app sound copy, and added test-reminder and channel-sound settings actions.
 
 - Added deduplicated completed-session history with 7-day/30-day/all ranges, monthly and goal insights, weekly trend comparison, recent session detail, and confirmed activity clearing.
 

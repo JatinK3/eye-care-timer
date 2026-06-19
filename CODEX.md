@@ -36,7 +36,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/models/work_session_record.dart`: Deduplicated completed work-session record with completion time and configured focus duration.
 - `lib/models/timer_session.dart`: Persisted active/paused timer session state and automatic-run cycle progress for launch restore.
 - `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, bounded completed-session history, daily goal, notification preference, feedback preferences, automatic-cycle settings, and active timer session.
-- `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, system settings recovery hooks, exact-alarm capability checks, battery optimization diagnostics, verified phase reminder scheduling with inexact fallback, and cancellation.
+- `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, system settings recovery hooks, exact-alarm capability checks, battery optimization diagnostics, explicit audible-channel creation, test-reminder support, verified phase reminder scheduling with inexact fallback, and cancellation.
 - `test/widget_test.dart`: Widget smoke, persistence load, timer controls, automatic-cycle restore/limits, settings/history navigation, notification fake, and cancel-transition regression tests.
 - `WORKLOG.md`: Ordered roadmap and completion log.
 
@@ -59,7 +59,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Daily streak resets when the saved streak date is not today.
 - The main timer shows daily goal progress and a goal-reached state when completed breaks meet the configured goal.
 - Settings includes History ranges for 7 days, 30 days, and all active days, plus current-month totals, goal completion rate, best day, weekly trend, recent completed sessions, and confirmed activity clearing.
-- Settings shows notification permission, precise-alarm capability, and Android battery optimization status with recovery actions that refresh after returning from system settings.
+- Settings shows notification permission, precise-alarm capability, Android battery optimization status, direct reminder-channel sound settings, and a test reminder action. The optional in-app sound toggle is separate from system notification audio.
 - Light/dark theme toggle and `Pastel`, `Calm Blue`, `Forest`, `Rose`, `Graphite`, and `Sunrise` presets are available.
 - The app theme seed, settings swatches, timer gradients, and timer progress color now come from the same preset source.
 - UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification and feedback toggle UX, contrast-safe dark-mode primary buttons, calmer text, and tighter card radius.
@@ -85,7 +85,7 @@ Android app identity:
 - Launcher icons are custom eye/timer branded assets across Android, iOS, macOS, Windows, and web. Android includes adaptive icon resources for API 26+.
 - Web, Android, Linux, and Windows use `BlinkKind: Eye Break Timer` in descriptive titles. Constrained app bars and Apple display and executable names use `BlinkKind`.
 - MainActivity package path: `android/app/src/main/kotlin/com/jatin/eyecaretimer/MainActivity.kt`.
-- The Dart package name, bundle/application id, native package path, notification channel id, method-channel name, Linux/Windows binary identifiers, and repository path intentionally retain their existing technical identifiers so upgrades, imports, and persisted settings remain compatible.
+- The Dart package name, bundle/application id, native package path, method-channel name, Linux/Windows binary identifiers, and repository path retain their existing technical identifiers for compatibility. The Android reminder channel intentionally migrated to `blinkkind_phase_reminders_v2` so devices that created the legacy channel silently receive fresh audible defaults.
 
 Android manifest includes notification-related permissions and receivers:
 
@@ -97,7 +97,7 @@ Android manifest includes notification-related permissions and receivers:
 - `ScheduledNotificationBootReceiver`
 - `FlutterLocalNotificationsReceiver`
 
-Notification scheduling uses `AndroidScheduleMode.exactAllowWhileIdle` when the user grants exact-alarm access and falls back to `inexactAllowWhileIdle` otherwise. Scheduling failures are contained and the pending phase reminder is verified.
+Android reminders use an explicitly audible, vibration-enabled alarm-category channel. Notification scheduling uses `AndroidScheduleMode.exactAllowWhileIdle` when the user grants exact-alarm access and falls back to `inexactAllowWhileIdle` otherwise. Scheduling failures are contained and the pending phase reminder is verified.
 
 Android build toolchain maintenance:
 
@@ -120,7 +120,7 @@ Commands run after the current implementation:
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 23 tests.
+- `flutter test`: passing, 24 tests.
 - `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
 - `flutter build web`: passing; generated `build/web`.
 - Android device UI verification was not run in this shell because `adb` is unavailable.
@@ -133,7 +133,7 @@ Important git/worktree note:
 
 1. Product feature expansion.
    - History is implemented with bounded session records, range controls, monthly totals, goal rate, weekly trend, recent session detail, and safe clearing.
-   - Notification permission, exact-alarm, pending-reminder, and battery optimization diagnostics are implemented.
+   - Notification permission, exact-alarm, pending-reminder, battery optimization, channel-sound settings, and test-reminder diagnostics are implemented.
    - More visual presets are implemented through shared preset definitions.
    - First-run onboarding and notification permission recovery are implemented.
    - Quick timer presets and configurable long-break mode are implemented.

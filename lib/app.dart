@@ -93,6 +93,14 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     await _notificationService.openNotificationSettings();
   }
 
+  Future<void> _openReminderChannelSettings() async {
+    await _notificationService.openReminderChannelSettings();
+  }
+
+  Future<bool> _showTestReminder() {
+    return _notificationService.showTestReminder();
+  }
+
   Future<void> _requestExactAlarmPermission() async {
     await _notificationService.requestExactAlarmPermission();
   }
@@ -342,6 +350,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           setHapticsEnabled: _setHapticsEnabled,
           setSoundEnabled: _setSoundEnabled,
           openNotificationSettings: _openNotificationSettings,
+          openReminderChannelSettings: _openReminderChannelSettings,
+          showTestReminder: _showTestReminder,
           refreshNotificationReliabilityStatus:
               _refreshNotificationReliabilityStatus,
           requestExactAlarmPermission: _requestExactAlarmPermission,
