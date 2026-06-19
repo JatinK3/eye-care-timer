@@ -3,6 +3,7 @@ package com.jatin.eyecaretimer
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -19,8 +20,26 @@ class MainActivity : FlutterActivity() {
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "openNotificationSettings" -> result.success(openNotificationSettings())
+                "isBatteryOptimizationIgnored" -> result.success(isBatteryOptimizationIgnored())
+                "openBatteryOptimizationSettings" -> result.success(openBatteryOptimizationSettings())
                 else -> result.notImplemented()
             }
+        }
+    }
+
+    private fun isBatteryOptimizationIgnored(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+        return powerManager.isIgnoringBatteryOptimizations(packageName)
+    }
+
+    private fun openBatteryOptimizationSettings(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return false
+        return try {
+            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            true
+        } catch (_: Exception) {
+            false
         }
     }
 

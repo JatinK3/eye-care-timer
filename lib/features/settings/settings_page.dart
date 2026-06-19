@@ -17,6 +17,8 @@ class SettingsPage extends StatefulWidget {
   final bool autoRunEnabled;
   final int autoRunCycleLimit;
   final NotificationPermissionStatus notificationPermissionStatus;
+  final ExactAlarmStatus exactAlarmStatus;
+  final BatteryOptimizationStatus batteryOptimizationStatus;
   final bool hapticsEnabled;
   final bool soundEnabled;
   final bool canChangeDurations;
@@ -37,8 +39,10 @@ class SettingsPage extends StatefulWidget {
   final void Function({required bool enabled, required int cycleLimit})
   saveAutoRunSettings;
   final Future<void> Function() openNotificationSettings;
-  final Future<NotificationPermissionStatus> Function()
-  refreshNotificationPermissionStatus;
+  final Future<NotificationReliabilityStatus> Function()
+  refreshNotificationReliabilityStatus;
+  final Future<void> Function() requestExactAlarmPermission;
+  final Future<void> Function() openBatteryOptimizationSettings;
   final void Function(BuildContext context) openHistory;
   final VoidCallback resetStreak;
 
@@ -57,6 +61,8 @@ class SettingsPage extends StatefulWidget {
     required this.autoRunEnabled,
     required this.autoRunCycleLimit,
     required this.notificationPermissionStatus,
+    required this.exactAlarmStatus,
+    required this.batteryOptimizationStatus,
     required this.hapticsEnabled,
     required this.soundEnabled,
     required this.canChangeDurations,
@@ -70,7 +76,9 @@ class SettingsPage extends StatefulWidget {
     required this.saveLongBreakSettings,
     required this.saveAutoRunSettings,
     required this.openNotificationSettings,
-    required this.refreshNotificationPermissionStatus,
+    required this.refreshNotificationReliabilityStatus,
+    required this.requestExactAlarmPermission,
+    required this.openBatteryOptimizationSettings,
     required this.openHistory,
     required this.resetStreak,
   });
@@ -79,7 +87,8 @@ class SettingsPage extends StatefulWidget {
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _SettingsPageState extends State<SettingsPage>
+    with WidgetsBindingObserver {
   static const List<int> _workDurationMinutes = [
     1,
     2,
@@ -99,13 +108,18 @@ class _SettingsPageState extends State<SettingsPage> {
   static const List<int> _dailyGoals = [3, 4, 6, 8, 10, 12];
 
   late NotificationPermissionStatus _permissionStatus;
+  late ExactAlarmStatus _exactAlarmStatus;
+  late BatteryOptimizationStatus _batteryOptimizationStatus;
   late bool _autoRunEnabled;
   late int _autoRunCycleLimit;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _permissionStatus = widget.notificationPermissionStatus;
+    _exactAlarmStatus = widget.exactAlarmStatus;
+    _batteryOptimizationStatus = widget.batteryOptimizationStatus;
     _autoRunEnabled = widget.autoRunEnabled;
     _autoRunCycleLimit = widget.autoRunCycleLimit;
   }
@@ -117,17 +131,48 @@ class _SettingsPageState extends State<SettingsPage> {
         widget.notificationPermissionStatus) {
       _permissionStatus = widget.notificationPermissionStatus;
     }
+    if (oldWidget.exactAlarmStatus != widget.exactAlarmStatus) {
+      _exactAlarmStatus = widget.exactAlarmStatus;
+    }
+    if (oldWidget.batteryOptimizationStatus !=
+        widget.batteryOptimizationStatus) {
+      _batteryOptimizationStatus = widget.batteryOptimizationStatus;
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshReliability();
+    }
+  }
+
+  Future<void> _refreshReliability() async {
+    final status = await widget.refreshNotificationReliabilityStatus();
+    if (!mounted) return;
+    setState(() {
+      _permissionStatus = status.permission;
+      _exactAlarmStatus = status.exactAlarms;
+      _batteryOptimizationStatus = status.batteryOptimization;
+    });
   }
 
   Future<void> _openSystemNotificationSettings() async {
     await widget.openNotificationSettings();
-    final status = await widget.refreshNotificationPermissionStatus();
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _permissionStatus = status;
-    });
+  }
+
+  Future<void> _requestExactAlarmPermission() async {
+    await widget.requestExactAlarmPermission();
+  }
+
+  Future<void> _openBatteryOptimizationSettings() async {
+    await widget.openBatteryOptimizationSettings();
   }
 
   void _applyPreset(int workSeconds, int breakSeconds) {
@@ -461,6 +506,57 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: const Text('Permission status'),
                 subtitle: Text(_notificationPermissionLabel()),
               ),
+              if (_exactAlarmStatus != ExactAlarmStatus.unsupported) ...[
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    _exactAlarmStatus == ExactAlarmStatus.allowed
+                        ? Icons.alarm_on_outlined
+                        : Icons.alarm_off_outlined,
+                  ),
+                  title: const Text('Precise reminders'),
+                  subtitle: Text(
+                    _exactAlarmStatus == ExactAlarmStatus.allowed
+                        ? 'Exact timing allowed'
+                        : 'May arrive a little late',
+                  ),
+                  trailing: _exactAlarmStatus == ExactAlarmStatus.disabled
+                      ? TextButton(
+                          onPressed: _requestExactAlarmPermission,
+                          child: const Text('Allow'),
+                        )
+                      : null,
+                ),
+              ],
+              if (_batteryOptimizationStatus !=
+                  BatteryOptimizationStatus.unsupported) ...[
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    _batteryOptimizationStatus ==
+                            BatteryOptimizationStatus.unrestricted
+                        ? Icons.battery_saver_outlined
+                        : Icons.battery_alert_outlined,
+                  ),
+                  title: const Text('Background reliability'),
+                  subtitle: Text(
+                    _batteryOptimizationStatus ==
+                            BatteryOptimizationStatus.unrestricted
+                        ? 'Battery use is unrestricted'
+                        : 'Battery optimization may delay alerts',
+                  ),
+                  trailing:
+                      _batteryOptimizationStatus ==
+                          BatteryOptimizationStatus.restricted
+                      ? TextButton(
+                          onPressed: _openBatteryOptimizationSettings,
+                          child: const Text('Review'),
+                        )
+                      : null,
+                ),
+              ],
               if (_permissionStatus == NotificationPermissionStatus.disabled)
                 Align(
                   alignment: Alignment.centerLeft,

@@ -35,7 +35,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/features/history/history_page.dart`: Seven-day break history, best-day summary, goal streak summary, and history reset UI.
 - `lib/models/timer_session.dart`: Persisted active/paused timer session state and automatic-run cycle progress for launch restore.
 - `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, daily goal, notification preference, feedback preferences, automatic-cycle settings, and active timer session.
-- `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, system settings recovery hook, phase reminder scheduling, and cancellation.
+- `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, system settings recovery hooks, exact-alarm capability checks, battery optimization diagnostics, verified phase reminder scheduling with inexact fallback, and cancellation.
 - `test/widget_test.dart`: Widget smoke, persistence load, timer controls, automatic-cycle restore/limits, settings/history navigation, notification fake, and cancel-transition regression tests.
 - `WORKLOG.md`: Ordered roadmap and completion log.
 
@@ -58,7 +58,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Daily streak resets when the saved streak date is not today.
 - The main timer shows daily goal progress and a goal-reached state when completed breaks meet the configured goal.
 - Settings includes a History screen with best day, current goal streak, last seven days, and reset history actions.
-- Settings shows notification system permission status as allowed, blocked, checking, or unsupported, and opens Android system notification settings when permission is blocked.
+- Settings shows notification permission, precise-alarm capability, and Android battery optimization status with recovery actions that refresh after returning from system settings.
 - Light/dark theme toggle and `Pastel`, `Calm Blue`, `Forest`, `Rose`, `Graphite`, and `Sunrise` presets are available.
 - The app theme seed, settings swatches, timer gradients, and timer progress color now come from the same preset source.
 - UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification and feedback toggle UX, contrast-safe dark-mode primary buttons, calmer text, and tighter card radius.
@@ -91,11 +91,12 @@ Android manifest includes notification-related permissions and receivers:
 - `POST_NOTIFICATIONS`
 - `RECEIVE_BOOT_COMPLETED`
 - `VIBRATE`
+- `SCHEDULE_EXACT_ALARM`
 - `ScheduledNotificationReceiver`
 - `ScheduledNotificationBootReceiver`
 - `FlutterLocalNotificationsReceiver`
 
-Notification scheduling now uses `AndroidScheduleMode.inexactAllowWhileIdle`, which avoids requiring exact alarm permission for this pass.
+Notification scheduling uses `AndroidScheduleMode.exactAllowWhileIdle` when the user grants exact-alarm access and falls back to `inexactAllowWhileIdle` otherwise. Scheduling failures are contained and the pending phase reminder is verified.
 
 Android build toolchain maintenance:
 
@@ -106,7 +107,7 @@ Android build toolchain maintenance:
 
 ## Current Audit Findings
 
-Last audit date: 2026-06-18.
+Last audit date: 2026-06-19.
 
 Commands run after the current implementation:
 
@@ -130,7 +131,7 @@ Important git/worktree note:
 
 1. Product feature expansion.
    - Streak/history screen is implemented with a seven-day summary and reset action.
-   - Notification permission status is implemented in settings.
+   - Notification permission, exact-alarm, pending-reminder, and battery optimization diagnostics are implemented.
    - More visual presets are implemented through shared preset definitions.
    - First-run onboarding and notification permission recovery are implemented.
    - Quick timer presets and configurable long-break mode are implemented.
@@ -145,7 +146,7 @@ Important git/worktree note:
    - App icon polish is implemented across generated platform icon assets.
    - Broader platform metadata cleanup is implemented for web, iOS, macOS, Linux, and Windows templates.
    - Android/iOS store listing copy and screenshots still need product decisions before release.
-   - Device testing for notification permission and scheduling behavior.
+   - Device testing for exact alarms, battery restrictions, reboot restore, and notification delivery remains required.
 
 4. Dependency cleanup.
    - Unused countdown dependency has been removed; continue watching for unused packages as features change.

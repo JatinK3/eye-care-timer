@@ -6,6 +6,29 @@ import 'package:timezone/timezone.dart' as tz;
 
 enum NotificationPermissionStatus { unknown, allowed, disabled, unsupported }
 
+enum ExactAlarmStatus { unknown, allowed, disabled, unsupported }
+
+enum BatteryOptimizationStatus {
+  unknown,
+  unrestricted,
+  restricted,
+  unsupported,
+}
+
+class NotificationReliabilityStatus {
+  final NotificationPermissionStatus permission;
+  final ExactAlarmStatus exactAlarms;
+  final BatteryOptimizationStatus batteryOptimization;
+  final bool hasPendingPhaseReminder;
+
+  const NotificationReliabilityStatus({
+    this.permission = NotificationPermissionStatus.unknown,
+    this.exactAlarms = ExactAlarmStatus.unknown,
+    this.batteryOptimization = BatteryOptimizationStatus.unknown,
+    this.hasPendingPhaseReminder = false,
+  });
+}
+
 class NotificationService {
   static const int _phaseReminderId = 1001;
   static const String _channelId = 'eye_care_timer_phase_reminders';
@@ -115,16 +138,67 @@ class NotificationService {
     return NotificationPermissionStatus.unsupported;
   }
 
-  Future<bool> openNotificationSettings() async {
-    if (kIsWeb) {
-      return false;
-    }
+  Future<NotificationReliabilityStatus> reliabilityStatus() async {
+    return NotificationReliabilityStatus(
+      permission: await permissionStatus(),
+      exactAlarms: await exactAlarmStatus(),
+      batteryOptimization: await batteryOptimizationStatus(),
+      hasPendingPhaseReminder: await hasPendingPhaseReminder(),
+    );
+  }
 
+  Future<ExactAlarmStatus> exactAlarmStatus() async {
+    if (kIsWeb) return ExactAlarmStatus.unsupported;
+    await initialize();
+    final android = _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android == null) return ExactAlarmStatus.unsupported;
+    final allowed = await android.canScheduleExactNotifications();
+    return allowed == true
+        ? ExactAlarmStatus.allowed
+        : ExactAlarmStatus.disabled;
+  }
+
+  Future<bool> requestExactAlarmPermission() async {
+    if (kIsWeb) return false;
+    await initialize();
+    return await _notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.requestExactAlarmsPermission() ??
+        false;
+  }
+
+  Future<BatteryOptimizationStatus> batteryOptimizationStatus() async {
+    if (kIsWeb) return BatteryOptimizationStatus.unsupported;
     try {
-      return await _settingsChannel.invokeMethod<bool>(
-            'openNotificationSettings',
-          ) ??
-          false;
+      final ignored = await _settingsChannel.invokeMethod<bool>(
+        'isBatteryOptimizationIgnored',
+      );
+      if (ignored == null) return BatteryOptimizationStatus.unsupported;
+      return ignored
+          ? BatteryOptimizationStatus.unrestricted
+          : BatteryOptimizationStatus.restricted;
+    } on PlatformException {
+      return BatteryOptimizationStatus.unsupported;
+    } on MissingPluginException {
+      return BatteryOptimizationStatus.unsupported;
+    }
+  }
+
+  Future<bool> openBatteryOptimizationSettings() =>
+      _openSystemSettings('openBatteryOptimizationSettings');
+
+  Future<bool> openNotificationSettings() =>
+      _openSystemSettings('openNotificationSettings');
+
+  Future<bool> _openSystemSettings(String method) async {
+    if (kIsWeb) return false;
+    try {
+      return await _settingsChannel.invokeMethod<bool>(method) ?? false;
     } on PlatformException {
       return false;
     } on MissingPluginException {
@@ -132,7 +206,18 @@ class NotificationService {
     }
   }
 
-  Future<void> scheduleWorkCompleteReminder(Duration delay) {
+  Future<bool> hasPendingPhaseReminder() async {
+    if (kIsWeb) return false;
+    await initialize();
+    try {
+      final pending = await _notificationsPlugin.pendingNotificationRequests();
+      return pending.any((request) => request.id == _phaseReminderId);
+    } on PlatformException {
+      return false;
+    }
+  }
+
+  Future<bool> scheduleWorkCompleteReminder(Duration delay) {
     return _schedulePhaseReminder(
       delay: delay,
       title: 'Time for an eye break',
@@ -141,7 +226,7 @@ class NotificationService {
     );
   }
 
-  Future<void> scheduleBreakCompleteReminder(Duration delay) {
+  Future<bool> scheduleBreakCompleteReminder(Duration delay) {
     return _schedulePhaseReminder(
       delay: delay,
       title: 'Break complete',
@@ -156,39 +241,56 @@ class NotificationService {
     }
 
     await initialize();
-    await _notificationsPlugin.cancel(_phaseReminderId);
+    try {
+      await _notificationsPlugin.cancel(_phaseReminderId);
+    } on PlatformException catch (error) {
+      debugPrint('Unable to cancel phase reminder: $error');
+    }
   }
 
-  Future<void> _schedulePhaseReminder({
+  Future<bool> _schedulePhaseReminder({
     required Duration delay,
     required String title,
     required String body,
     required String payload,
   }) async {
     if (kIsWeb || delay <= Duration.zero) {
-      return;
+      return false;
     }
 
     await initialize();
-    await _notificationsPlugin.cancel(_phaseReminderId);
-    await _notificationsPlugin.zonedSchedule(
-      _phaseReminderId,
-      title,
-      body,
-      tz.TZDateTime.now(tz.local).add(delay),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: _channelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
+    try {
+      await _notificationsPlugin.cancel(_phaseReminderId);
+      final exactAlarmsAllowed =
+          await exactAlarmStatus() == ExactAlarmStatus.allowed;
+      await _notificationsPlugin.zonedSchedule(
+        _phaseReminderId,
+        title,
+        body,
+        tz.TZDateTime.now(tz.local).add(delay),
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channelId,
+            _channelName,
+            channelDescription: _channelDescription,
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+          macOS: DarwinNotificationDetails(),
         ),
-        iOS: DarwinNotificationDetails(),
-        macOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      payload: payload,
-    );
+        androidScheduleMode: exactAlarmsAllowed
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: payload,
+      );
+      return await hasPendingPhaseReminder();
+    } on PlatformException catch (error) {
+      debugPrint('Unable to schedule phase reminder: $error');
+      return false;
+    } on ArgumentError catch (error) {
+      debugPrint('Unable to schedule phase reminder: $error');
+      return false;
+    }
   }
 }

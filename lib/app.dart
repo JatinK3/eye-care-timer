@@ -31,6 +31,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   Map<String, int> _history = <String, int>{};
   NotificationPermissionStatus _notificationPermissionStatus =
       NotificationPermissionStatus.unknown;
+  ExactAlarmStatus _exactAlarmStatus = ExactAlarmStatus.unknown;
+  BatteryOptimizationStatus _batteryOptimizationStatus =
+      BatteryOptimizationStatus.unknown;
   bool _hasCompletedOnboarding = false;
   bool _isLoadingSettings = true;
 
@@ -44,20 +47,24 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
 
   Future<void> _initializeNotifications() async {
     await _notificationService.initialize();
-    await _refreshNotificationPermissionStatus();
+    await _refreshNotificationReliabilityStatus();
+  }
+
+  Future<NotificationReliabilityStatus>
+  _refreshNotificationReliabilityStatus() async {
+    final status = await _notificationService.reliabilityStatus();
+    if (!mounted) return status;
+    setState(() {
+      _notificationPermissionStatus = status.permission;
+      _exactAlarmStatus = status.exactAlarms;
+      _batteryOptimizationStatus = status.batteryOptimization;
+    });
+    return status;
   }
 
   Future<NotificationPermissionStatus>
   _refreshNotificationPermissionStatus() async {
-    final status = await _notificationService.permissionStatus();
-    if (!mounted) {
-      return status;
-    }
-
-    setState(() {
-      _notificationPermissionStatus = status;
-    });
-    return status;
+    return (await _refreshNotificationReliabilityStatus()).permission;
   }
 
   Future<void> _requestNotificationPermissions() async {
@@ -82,7 +89,14 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
 
   Future<void> _openNotificationSettings() async {
     await _notificationService.openNotificationSettings();
-    await _refreshNotificationPermissionStatus();
+  }
+
+  Future<void> _requestExactAlarmPermission() async {
+    await _notificationService.requestExactAlarmPermission();
+  }
+
+  Future<void> _openBatteryOptimizationSettings() async {
+    await _notificationService.openBatteryOptimizationSettings();
   }
 
   Future<void> _loadSettings() async {
@@ -290,6 +304,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           autoRunCycleLimit: _settings.autoRunCycleLimit,
           notificationsEnabled: _settings.notificationsEnabled,
           notificationPermissionStatus: _notificationPermissionStatus,
+          exactAlarmStatus: _exactAlarmStatus,
+          batteryOptimizationStatus: _batteryOptimizationStatus,
           hapticsEnabled: _settings.hapticsEnabled,
           soundEnabled: _settings.soundEnabled,
           canChangeDurations: canChangeDurations,
@@ -303,8 +319,10 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           setHapticsEnabled: _setHapticsEnabled,
           setSoundEnabled: _setSoundEnabled,
           openNotificationSettings: _openNotificationSettings,
-          refreshNotificationPermissionStatus:
-              _refreshNotificationPermissionStatus,
+          refreshNotificationReliabilityStatus:
+              _refreshNotificationReliabilityStatus,
+          requestExactAlarmPermission: _requestExactAlarmPermission,
+          openBatteryOptimizationSettings: _openBatteryOptimizationSettings,
           openHistory: _openHistory,
           resetStreak: _resetStreakCount,
         ),

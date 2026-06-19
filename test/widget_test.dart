@@ -35,14 +35,26 @@ class FakeNotificationService extends NotificationService {
   }
 
   @override
-  Future<void> scheduleWorkCompleteReminder(Duration delay) async {
-    workReminderCount++;
+  Future<NotificationReliabilityStatus> reliabilityStatus() async {
+    permissionStatusCheckCount++;
+    return NotificationReliabilityStatus(
+      permission: status,
+      exactAlarms: ExactAlarmStatus.allowed,
+      batteryOptimization: BatteryOptimizationStatus.unrestricted,
+    );
   }
 
   @override
-  Future<void> scheduleBreakCompleteReminder(Duration delay) async {
+  Future<bool> scheduleWorkCompleteReminder(Duration delay) async {
+    workReminderCount++;
+    return true;
+  }
+
+  @override
+  Future<bool> scheduleBreakCompleteReminder(Duration delay) async {
     breakReminderCount++;
     lastBreakReminderDelay = delay;
+    return true;
   }
 
   @override
@@ -444,11 +456,14 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(find.text('Notifications'), 200);
-    await tester.drag(find.byType(ListView), const Offset(0, -140));
+    final notificationsToggle = find.widgetWithText(
+      SwitchListTile,
+      'Notifications',
+    );
+    await tester.scrollUntilVisible(notificationsToggle, 200);
     await tester.pumpAndSettle();
     expect(find.text('Notifications'), findsOneWidget);
-    await tester.tap(find.widgetWithText(SwitchListTile, 'Notifications'));
+    await tester.tap(notificationsToggle);
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Timer alerts are off'), findsOneWidget);

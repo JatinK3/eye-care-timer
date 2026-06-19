@@ -541,12 +541,12 @@ class _TimerHomePageState extends State<TimerHomePage>
     );
   }
 
-  Future<void> _schedulePhaseReminder(
+  Future<bool> _schedulePhaseReminder(
     int durationSeconds, {
     required bool isBreak,
   }) {
     if (!widget.notificationsEnabled) {
-      return Future<void>.value();
+      return Future<bool>.value(false);
     }
 
     final delay = Duration(seconds: durationSeconds);
