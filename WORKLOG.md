@@ -5,7 +5,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 ## Tasks
 
 ### Prioritized Backlog
-1. [ ] **Break Warning, Fade-to-Black & Postpone Policy**: Implement a pre-break warning notification/overlay, a smooth fade-to-black transition before the break starts, and a configurable skip/postpone settings policy in Flutter and Android.
+1. [x] **Break Warning, Fade-to-Black & Postpone Policy**: Implement a pre-break warning notification/overlay, a smooth fade-to-black transition before the break starts, and a configurable skip/postpone settings policy in Flutter and Android.
 2. [ ] **Smart Idle & Fullscreen App Detection**: Detect when the user is playing a game, watching a video in fullscreen, or actively presenting, and delay/postpone the break overlay to avoid interrupting important tasks.
 3. [ ] **Linux Desktop Background Support**: Build a Linux background runner with tray controls and launch-at-login support.
 4. [ ] **Android Reboot Survival**: Ensure the foreground service and exact alarms are correctly re-registered and scheduled upon system reboot.
@@ -31,7 +31,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Add an Android foreground service and exact-deadline bridge that owns the phase deadline while BlinkKind is backgrounded (built above; still needs device validation and overlay-launch wiring).
   - [x] Add persisted Off, Gentle, and Strict break-screen modes with an emergency press-and-hold exit.
   - [x] Build a responsive black full-screen break surface with countdown, eye exercise, progress, and accessibility semantics.
-  - [ ] Add pre-break warning, fade-to-black transition, and configurable skip/postpone policy.
+  - [x] Add pre-break warning, fade-to-black transition, and configurable skip/postpone policy.
   - [ ] Test Android 10-15 plus Pixel, Samsung, and Xiaomi-style background restrictions where devices are available.
   - [ ] Enter and restore immersive system UI safely on iOS while BlinkKind is active.
   - [ ] Add Linux desktop background runtime with tray controls and launch-at-login support.
@@ -123,6 +123,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Implemented pre-break warning, fade-to-black screen transition, and configurable Skip/Postpone setting policies. Displays a warning overlay when the work countdown is <= 10s that progressively darkens/fades to black. Supports customizable Skip/Postpone toggles and a dropdown for Postpone duration (1m, 2m, 5m, 10m) in Gentle mode. Fully handles skip and postpone actions across Flutter and Android native foreground services/background overlay controllers.
 
 - Implemented Immersive Focus Mode: tapping the timer dial hides unnecessary UI elements (app bar, settings, daily goal/streak metrics, and phase info), hides system overlays using `SystemUiMode.immersiveSticky`, and defaults to a pure black AMOLED power-saving background. Added a customized landscape layout that presents the timer dial and controls side-by-side. Added corresponding widget tests and confirmed all tests pass.
 
