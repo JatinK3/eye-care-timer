@@ -4,6 +4,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Tasks
 
+- [x] Implement user-requested Immersive Focus Mode (tapping the timer dial toggles a clean, fullscreen AMOLED-friendly countdown UI, and supports a customized horizontal landscape desk clock layout).
 - [ ] BUG: Timer does not run on real (RTC) time while backgrounded (unified with the foreground-service roadmap item below).
   - Symptom: closing/minimizing the app or locking the screen freezes the work and break countdown at its current value; it only advances when the app is reopened. A 20s break sits at 20s and "runs" on reopen instead of being already over.
   - Diagnosis: resume/launch reconciliation already existed and was correct, but it only ran on `AppLifecycleState.resumed`. The visible countdown is `AnimationController`-driven, which the OS freezes while backgrounded, and there was no native owner advancing the deadline off-screen. The resume path also started a fresh full phase instead of accounting for elapsed time, and only advanced one boundary.
@@ -115,6 +116,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Implemented Immersive Focus Mode: tapping the timer dial hides unnecessary UI elements (app bar, settings, daily goal/streak metrics, and phase info), hides system overlays using `SystemUiMode.immersiveSticky`, and defaults to a pure black AMOLED power-saving background. Added a customized landscape layout that presents the timer dial and controls side-by-side. Added corresponding widget tests and confirmed all tests pass.
 
 - Extended the Android deadline owner across automatic work/break cycles with the same cycle-limit and long-break semantics as Flutter, persisted native recovery state, delayed-boundary fast-forward, and stale-alarm protection.
 
