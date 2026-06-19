@@ -1,19 +1,35 @@
-import "package:flutter/foundation.dart";
-import "package:flutter/services.dart";
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import "../models/timer_settings.dart";
+import '../features/timer/desktop_break_overlay.dart';
+import '../models/timer_settings.dart';
+import 'desktop_integration_service.dart';
 
 enum OverlayPermissionStatus { unknown, allowed, disabled, unsupported }
 
 class BreakOverlayService {
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   static const MethodChannel _channel = MethodChannel(
     "blinkkind/break_overlay",
   );
 
+  Route? _activeRoute;
+
   bool get _isSupported =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
+  bool get _isSupportedOnDesktop =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.windows);
+
   Future<OverlayPermissionStatus> permissionStatus() async {
+    if (_isSupportedOnDesktop) return OverlayPermissionStatus.allowed;
     if (!_isSupported) return OverlayPermissionStatus.unsupported;
     try {
       final allowed = await _channel.invokeMethod<bool>(
@@ -30,17 +46,34 @@ class BreakOverlayService {
     }
   }
 
-  Future<bool> openPermissionSettings() =>
-      _invokeBoolean("openOverlayPermissionSettings");
+  Future<bool> openPermissionSettings() async {
+    if (_isSupportedOnDesktop) return true;
+    return _invokeBoolean("openOverlayPermissionSettings");
+  }
 
-  Future<bool> showPreview() => _invokeBoolean("showOverlayPreview");
+  Future<bool> showPreview() async {
+    if (_isSupportedOnDesktop) {
+      return showBreakOverlay(durationSeconds: 10, breakMode: BreakMode.gentle);
+    }
+    return _invokeBoolean("showOverlayPreview");
+  }
 
-  Future<bool> stopPreview() => _invokeBoolean("stopOverlayPreview");
+  Future<bool> stopPreview() async {
+    if (_isSupportedOnDesktop) {
+      return stopBreakOverlay();
+    }
+    return _invokeBoolean("stopOverlayPreview");
+  }
 
   Future<bool> showBreakOverlay({
     required int durationSeconds,
     required BreakMode breakMode,
   }) async {
+    if (_isSupportedOnDesktop) {
+      await DesktopIntegrationService.instance.showBreakOverlay(true);
+      _pushBreakOverlayRoute(durationSeconds, breakMode);
+      return true;
+    }
     if (!_isSupported) return false;
     try {
       return await _channel.invokeMethod<bool>("showBreakOverlay", {
@@ -55,7 +88,49 @@ class BreakOverlayService {
     }
   }
 
-  Future<bool> stopBreakOverlay() => _invokeBoolean("stopBreakOverlay");
+  Future<bool> stopBreakOverlay() async {
+    if (_isSupportedOnDesktop) {
+      await DesktopIntegrationService.instance.showBreakOverlay(false);
+      _popBreakOverlayRoute();
+      return true;
+    }
+    return _invokeBoolean("stopBreakOverlay");
+  }
+
+  void _pushBreakOverlayRoute(int durationSeconds, BreakMode breakMode) {
+    final navigator = navigatorKey.currentState;
+    if (navigator == null) return;
+
+    if (_activeRoute != null) {
+      navigator.removeRoute(_activeRoute!);
+      _activeRoute = null;
+    }
+
+    _activeRoute = PageRouteBuilder<void>(
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return DesktopBreakOverlay(
+          initialDurationSeconds: durationSeconds,
+          breakMode: breakMode,
+          onDismiss: () {
+            unawaited(stopBreakOverlay());
+          },
+        );
+      },
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+    );
+
+    navigator.push(_activeRoute!);
+  }
+
+  void _popBreakOverlayRoute() {
+    final navigator = navigatorKey.currentState;
+    if (navigator != null && _activeRoute != null) {
+      navigator.removeRoute(_activeRoute!);
+      _activeRoute = null;
+    }
+  }
 
   Future<bool> _invokeBoolean(String method) async {
     if (!_isSupported) return false;

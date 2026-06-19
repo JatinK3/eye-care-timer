@@ -444,6 +444,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     final seedColor = ColorPresets.seedColor(_settings.colorPreset);
 
     return MaterialApp(
+      navigatorKey: BreakOverlayService.navigatorKey,
       title: 'BlinkKind: Eye Break Timer',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

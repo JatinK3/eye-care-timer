@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/timer_settings.dart';
 import '../../services/break_overlay_service.dart';
+import '../../services/desktop_integration_service.dart';
 import '../../services/notification_service.dart';
 import '../../theme/color_presets.dart';
 
@@ -151,6 +152,7 @@ class _SettingsPageState extends State<SettingsPage>
   late int _autoRunCycleLimit;
   late BreakMode _breakMode;
   bool _isTestingReminder = false;
+  bool _launchAtStartup = false;
 
   @override
   void initState() {
@@ -163,6 +165,19 @@ class _SettingsPageState extends State<SettingsPage>
     _autoRunEnabled = widget.autoRunEnabled;
     _autoRunCycleLimit = widget.autoRunCycleLimit;
     _breakMode = widget.breakMode;
+    _loadDesktopSettings();
+  }
+
+  Future<void> _loadDesktopSettings() async {
+    if (DesktopIntegrationService.instance.isSupported) {
+      final isEnabled = await DesktopIntegrationService.instance
+          .isLaunchAtStartupEnabled();
+      if (mounted) {
+        setState(() {
+          _launchAtStartup = isEnabled;
+        });
+      }
+    }
   }
 
   @override
@@ -809,6 +824,33 @@ class _SettingsPageState extends State<SettingsPage>
                 ),
             ],
           ),
+          if (DesktopIntegrationService.instance.isSupported) ...[
+            const SizedBox(height: 16),
+            _Section(
+              title: 'Desktop Options',
+              children: [
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: const Icon(Icons.rocket_launch_outlined),
+                  title: const Text('Launch at Startup'),
+                  subtitle: const Text(
+                    'Start BlinkKind automatically when you log in',
+                  ),
+                  value: _launchAtStartup,
+                  onChanged: (value) async {
+                    await DesktopIntegrationService.instance.setLaunchAtStartup(
+                      value,
+                    );
+                    final isEnabled = await DesktopIntegrationService.instance
+                        .isLaunchAtStartupEnabled();
+                    setState(() {
+                      _launchAtStartup = isEnabled;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 16),
           _Section(
             title: 'Progress',

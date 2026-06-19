@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../models/timer_session.dart';
 import '../../models/timer_settings.dart';
 import '../../services/break_overlay_service.dart';
+import '../../services/desktop_controls_controller.dart';
 import '../../services/notification_service.dart';
 import '../../services/timer_background_service.dart';
 import '../../theme/color_presets.dart';
@@ -134,6 +136,7 @@ class _TimerHomePageState extends State<TimerHomePage>
   DateTime? _phaseEndsAt;
 
   late final TimerBackgroundService _backgroundService;
+  StreamSubscription<DesktopCommand>? _desktopCommandSubscription;
 
   @override
   void initState() {
@@ -171,6 +174,7 @@ class _TimerHomePageState extends State<TimerHomePage>
                 _pulseController.forward();
               }
             });
+            _updateDesktopState();
           })
           ..addStatusListener((status) {
             if (status == AnimationStatus.completed) {
@@ -197,6 +201,42 @@ class _TimerHomePageState extends State<TimerHomePage>
         });
 
     _restoreInitialSession();
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.linux ||
+            defaultTargetPlatform == TargetPlatform.macOS ||
+            defaultTargetPlatform == TargetPlatform.windows)) {
+      _desktopCommandSubscription = DesktopControlsController.instance.commands
+          .listen((command) {
+            if (!mounted) return;
+            switch (command) {
+              case DesktopCommand.pause:
+                if (_isRunning && !_isPaused) {
+                  _pauseOrResume();
+                }
+                break;
+              case DesktopCommand.resume:
+                if (_isPaused || !_isRunning) {
+                  if (!_isRunning) {
+                    _startWorkTimer();
+                  } else {
+                    _pauseOrResume();
+                  }
+                }
+                break;
+              case DesktopCommand.skipBreak:
+                if (_isRunning && _isBreak) {
+                  _skipBreak();
+                }
+                break;
+              case DesktopCommand.postponeBreak:
+                if (_isRunning && _isBreak) {
+                  _postponeBreak();
+                }
+                break;
+            }
+          });
+      _updateDesktopState();
+    }
   }
 
   @override
@@ -237,6 +277,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     if (_isFocusMode) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
+    _desktopCommandSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _phaseTransitionTimer?.cancel();
     _animationController.dispose();
@@ -442,6 +483,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     } else {
       unawaited(widget.breakOverlayService?.stopBreakOverlay());
     }
+    _updateDesktopState();
   }
 
   bool _shouldContinueAutoRun() {
@@ -529,11 +571,13 @@ class _TimerHomePageState extends State<TimerHomePage>
     } else {
       unawaited(widget.breakOverlayService?.stopBreakOverlay());
     }
+    _updateDesktopState();
   }
 
   void _startWorkTimer() {
     _autoRunCompletedCycles = 0;
     _startTimer(_workDurationSeconds);
+    _updateDesktopState();
   }
 
   void _pauseOrResume() {
@@ -560,6 +604,7 @@ class _TimerHomePageState extends State<TimerHomePage>
         if (_remainingSeconds <= 5) _pulseController.forward();
       }
     });
+    _updateDesktopState();
   }
 
   void _cancelReminders() {
@@ -571,6 +616,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     if (!_isBreak || !_isRunning) return;
     _animationController.stop();
     _onPhaseComplete();
+    _updateDesktopState();
   }
 
   void _postponeBreak() {
@@ -591,6 +637,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     });
     _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: false);
     _saveActiveSession(remainingSeconds: _remainingSeconds);
+    _updateDesktopState();
   }
 
   void _cancelTimer() {
@@ -614,6 +661,7 @@ class _TimerHomePageState extends State<TimerHomePage>
       _animationController.reset();
     });
     widget.clearSession();
+    _updateDesktopState();
   }
 
   void _stopTimerCleanup({bool resetPulse = false}) {
@@ -1401,5 +1449,23 @@ class _TimerHomePageState extends State<TimerHomePage>
         ],
       ),
     );
+  }
+
+  void _updateDesktopState() {
+    if (kIsWeb) return;
+    if (defaultTargetPlatform == TargetPlatform.linux ||
+        defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.windows) {
+      DesktopControlsController.instance.updateState(
+        DesktopTimerState(
+          isRunning: _isRunning,
+          isPaused: _isPaused,
+          isBreak: _isBreak,
+          remainingSeconds: _remainingSeconds,
+          allowPostpone: widget.allowPostpone,
+          postponeDurationMinutes: widget.postponeDurationSeconds ~/ 60,
+        ),
+      );
+    }
   }
 }
