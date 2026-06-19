@@ -811,4 +811,28 @@ void main() {
     expect(notificationService.breakReminderCount, 0);
     expect(find.text('Break'), findsNothing);
   });
+
+  testWidgets(
+    'BlinkKind app enters and exits focus mode when timer dial is tapped',
+    (WidgetTester tester) async {
+      await pumpBlinkKindApp(tester);
+
+      expect(find.byIcon(Icons.settings), findsOneWidget);
+      expect(find.textContaining('Daily goal'), findsOneWidget);
+
+      await tester.tap(find.text('20:00'));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.settings), findsNothing);
+      expect(find.textContaining('Daily goal'), findsNothing);
+      expect(find.text('Tap dial to exit focus mode'), findsOneWidget);
+
+      await tester.tap(find.text('20:00'));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.settings), findsOneWidget);
+      expect(find.textContaining('Daily goal'), findsOneWidget);
+      expect(find.text('Tap dial to exit focus mode'), findsNothing);
+    },
+  );
 }
