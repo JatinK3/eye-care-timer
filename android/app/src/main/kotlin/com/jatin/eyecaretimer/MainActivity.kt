@@ -12,6 +12,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val notificationSettingsChannel = "eye_care_timer/notification_settings"
     private val breakOverlayChannel = "blinkkind/break_overlay"
+    private val timerBackgroundChannel = "blinkkind/timer_background"
     private val reminderChannelId = "blinkkind_phase_reminders_v2"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -41,6 +42,28 @@ class MainActivity : FlutterActivity() {
                     result.success(BreakOverlayController.showPreview(this))
                 "stopOverlayPreview" ->
                     result.success(BreakOverlayController.hide())
+                else -> result.notImplemented()
+            }
+        }
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            timerBackgroundChannel,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "startPhase" -> {
+                    val deadline = (call.argument<Number>("phaseEndsAtMillis"))?.toLong() ?: 0L
+                    val isBreak = call.argument<Boolean>("isBreak") ?: false
+                    if (deadline > 0L) {
+                        TimerForegroundService.start(this, deadline, isBreak)
+                    } else {
+                        TimerForegroundService.stop(this)
+                    }
+                    result.success(true)
+                }
+                "stopPhase" -> {
+                    TimerForegroundService.stop(this)
+                    result.success(true)
+                }
                 else -> result.notImplemented()
             }
         }

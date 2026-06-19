@@ -6,6 +6,10 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <!-- Keeps the work/break deadline accurate while BlinkKind is backgrounded -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     
     <application
         android:label="BlinkKind: Eye Break Timer"
@@ -33,6 +37,21 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Owns the active timer phase deadline while backgrounded -->
+        <service
+            android:name=".TimerForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps the eye-break work and break timer deadline accurate while the app is backgrounded or the screen is locked."/>
+        </service>
+
+        <!-- Fires at the exact phase deadline, even during Doze -->
+        <receiver
+            android:name=".PhaseDeadlineReceiver"
+            android:exported="false"/>
+
         <!-- Receivers for Flutter Local Notifications -->
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
