@@ -4,6 +4,16 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Tasks
 
+- [ ] Build immersive full-screen break mode (current priority).
+  - [ ] Extract timer phase events from the home-screen presentation so break UI can be launched by platform services.
+  - [ ] Add persisted Off, Gentle, and Strict break-screen modes with an emergency press-and-hold exit.
+  - [ ] Build a responsive black full-screen break surface with countdown, eye exercise, progress, and accessibility semantics.
+  - [ ] Enter and restore immersive system UI safely on Android/iOS while BlinkKind is active.
+  - [ ] Add Linux-first desktop background runtime with tray controls and launch-at-login support.
+  - [ ] Add borderless always-on-top desktop break windows and validate X11/Wayland behavior.
+  - [ ] Cover every connected desktop monitor during enforced breaks.
+  - [ ] Add pre-break warning, fade-to-black transition, and configurable skip/postpone policy.
+  - [ ] Add smart idle and existing-fullscreen detection after the enforced overlay is stable.
 - [x] Improve notification sound reliability.
   - [x] Migrate Android reminders to a fresh explicitly audible channel.
   - [x] Make foreground sound and system notification sound responsibilities clear.

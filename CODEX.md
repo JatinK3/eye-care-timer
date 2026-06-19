@@ -129,6 +129,30 @@ Important git/worktree note:
 
 - `pubspec.lock` was already modified before `CODEX.md` was created, and dependency work later updated it further through `flutter pub add shared_preferences`.
 
+## Priority Direction: Immersive Break Mode
+
+The next major feature is a Safe Eyes-style break experience that temporarily replaces visible screen content with a black, minimal countdown surface. Safe Eyes validates strict breaks, exercise prompts, multi-display coverage, notifications, and smart pause as useful desktop patterns. BlinkKind will implement the concept with explicit safety and platform boundaries.
+
+Implementation decisions:
+
+- Modes: `Off` keeps the current timer, `Gentle` allows skip or postpone, and `Strict` hides routine dismissal while retaining an emergency press-and-hold exit. Strict mode must never disable operating-system escape shortcuts or accessibility controls.
+- Break surface: true black background, centered remaining time, one short eye-care instruction, restrained progress, optional sound, and no decorative cards. It must fit phones, tablets, desktop windows, landscape, and large text.
+- Transition: show a configurable pre-break warning, then fade to black and enter the break surface. Restore system UI, focus, window state, and the timer state exactly once when the break ends or is safely dismissed.
+- Architecture: timer phase transitions must emit presentation-independent events. A dedicated break presentation service will choose in-app immersive UI or native desktop windows without duplicating timer logic.
+- Desktop priority: Linux first, then Windows and macOS. The desktop app needs tray operation and launch-at-login before an overlay can be dependable while the main window is closed. Enforced breaks then use borderless, always-on-top windows and expand to all connected displays. X11 and Wayland require separate validation because compositors may restrict focus and topmost behavior.
+- Android: immersive full-screen mode is reliable while BlinkKind is foregrounded. Covering other apps requires sensitive overlay or full-screen-intent capabilities and is not part of the default store-safe implementation. Background users receive the audible high-priority reminder and can enter the break screen.
+- iOS: immersive break UI is available only while BlinkKind is active; iOS does not permit apps to cover other applications or force themselves foreground.
+- Safety: calls, alarms, lock screen, accessibility navigation, and an emergency exit must remain usable. The feature is habit enforcement, not device lockout.
+
+Creative follow-ups after the core overlay is stable:
+
+- Exercise rotation: distance focus, deliberate blinking, shoulder release, posture reset, and hydration prompts.
+- A two-stage warning curtain: a subtle edge flash followed by the full black break if work continues.
+- Smart pause based on idle time so time already spent away from the device counts toward eye rest.
+- Meeting, presentation, game, and media awareness with user-controlled defer rules.
+- Strictness insights that report completed, skipped, and postponed breaks without shaming language.
+- Optional low-distraction ambient themes that remain near-black and never undermine the purpose of looking away.
+
 ## Remaining Roadmap
 
 1. Product feature expansion.
