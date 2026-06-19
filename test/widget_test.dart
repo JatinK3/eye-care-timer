@@ -5,9 +5,33 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:eyeapptimer/app.dart';
+import 'package:eyeapptimer/services/break_overlay_service.dart';
 import 'package:eyeapptimer/services/notification_service.dart';
 import 'package:eyeapptimer/services/preferences_service.dart';
 import 'package:eyeapptimer/models/work_session_record.dart';
+
+class FakeBreakOverlayService extends BreakOverlayService {
+  OverlayPermissionStatus status;
+  int openSettingsCount = 0;
+  int previewCount = 0;
+
+  FakeBreakOverlayService({this.status = OverlayPermissionStatus.allowed});
+
+  @override
+  Future<OverlayPermissionStatus> permissionStatus() async => status;
+
+  @override
+  Future<bool> openPermissionSettings() async {
+    openSettingsCount++;
+    return true;
+  }
+
+  @override
+  Future<bool> showPreview() async {
+    previewCount++;
+    return status == OverlayPermissionStatus.allowed;
+  }
+}
 
 class FakeNotificationService extends NotificationService {
   NotificationPermissionStatus status;
@@ -88,10 +112,15 @@ Future<FakeNotificationService> pumpBlinkKindApp(
   WidgetTester tester, {
   NotificationPermissionStatus permissionStatus =
       NotificationPermissionStatus.allowed,
+  FakeBreakOverlayService? breakOverlayService,
 }) async {
   final notificationService = FakeNotificationService(status: permissionStatus);
+  final overlayService = breakOverlayService ?? FakeBreakOverlayService();
   await tester.pumpWidget(
-    BlinkKindApp(notificationService: notificationService),
+    BlinkKindApp(
+      notificationService: notificationService,
+      breakOverlayService: overlayService,
+    ),
   );
   await tester.pump();
   await tester.pump();
@@ -346,6 +375,54 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('05:00'), findsOneWidget);
+  });
+
+  testWidgets('settings launches the break overlay preview', (
+    WidgetTester tester,
+  ) async {
+    final overlayService = FakeBreakOverlayService();
+    await pumpBlinkKindApp(tester, breakOverlayService: overlayService);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    final previewButton = find.byTooltip('Preview break overlay');
+    await tester.scrollUntilVisible(previewButton, 200);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Display over other apps'), findsOneWidget);
+    expect(find.text('Allowed on this device'), findsOneWidget);
+
+    await tester.tap(previewButton);
+    await tester.pumpAndSettle();
+
+    expect(overlayService.previewCount, 1);
+  });
+
+  testWidgets('settings opens the overlay permission screen', (
+    WidgetTester tester,
+  ) async {
+    final overlayService = FakeBreakOverlayService(
+      status: OverlayPermissionStatus.disabled,
+    );
+    await pumpBlinkKindApp(tester, breakOverlayService: overlayService);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    final allowButton = find.widgetWithText(TextButton, 'Allow');
+    await tester.scrollUntilVisible(allowButton, 200);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Permission required for enforced breaks'),
+      findsOneWidget,
+    );
+
+    await tester.tap(allowButton);
+    await tester.pumpAndSettle();
+
+    expect(overlayService.openSettingsCount, 1);
   });
 
   testWidgets('settings configures automatic schedule cycles', (

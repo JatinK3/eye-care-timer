@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/break_overlay_service.dart';
 import '../../services/notification_service.dart';
 import '../../theme/color_presets.dart';
 
@@ -19,6 +20,7 @@ class SettingsPage extends StatefulWidget {
   final NotificationPermissionStatus notificationPermissionStatus;
   final ExactAlarmStatus exactAlarmStatus;
   final BatteryOptimizationStatus batteryOptimizationStatus;
+  final OverlayPermissionStatus overlayPermissionStatus;
   final bool hapticsEnabled;
   final bool soundEnabled;
   final bool canChangeDurations;
@@ -45,6 +47,10 @@ class SettingsPage extends StatefulWidget {
   refreshNotificationReliabilityStatus;
   final Future<void> Function() requestExactAlarmPermission;
   final Future<void> Function() openBatteryOptimizationSettings;
+  final Future<void> Function() openOverlayPermissionSettings;
+  final Future<bool> Function() showOverlayPreview;
+  final Future<OverlayPermissionStatus> Function()
+  refreshOverlayPermissionStatus;
   final void Function(BuildContext context) openHistory;
   final VoidCallback resetStreak;
 
@@ -65,6 +71,7 @@ class SettingsPage extends StatefulWidget {
     required this.notificationPermissionStatus,
     required this.exactAlarmStatus,
     required this.batteryOptimizationStatus,
+    required this.overlayPermissionStatus,
     required this.hapticsEnabled,
     required this.soundEnabled,
     required this.canChangeDurations,
@@ -83,6 +90,9 @@ class SettingsPage extends StatefulWidget {
     required this.refreshNotificationReliabilityStatus,
     required this.requestExactAlarmPermission,
     required this.openBatteryOptimizationSettings,
+    required this.openOverlayPermissionSettings,
+    required this.showOverlayPreview,
+    required this.refreshOverlayPermissionStatus,
     required this.openHistory,
     required this.resetStreak,
   });
@@ -114,6 +124,7 @@ class _SettingsPageState extends State<SettingsPage>
   late NotificationPermissionStatus _permissionStatus;
   late ExactAlarmStatus _exactAlarmStatus;
   late BatteryOptimizationStatus _batteryOptimizationStatus;
+  late OverlayPermissionStatus _overlayPermissionStatus;
   late bool _autoRunEnabled;
   late int _autoRunCycleLimit;
   bool _isTestingReminder = false;
@@ -125,6 +136,7 @@ class _SettingsPageState extends State<SettingsPage>
     _permissionStatus = widget.notificationPermissionStatus;
     _exactAlarmStatus = widget.exactAlarmStatus;
     _batteryOptimizationStatus = widget.batteryOptimizationStatus;
+    _overlayPermissionStatus = widget.overlayPermissionStatus;
     _autoRunEnabled = widget.autoRunEnabled;
     _autoRunCycleLimit = widget.autoRunCycleLimit;
   }
@@ -143,6 +155,9 @@ class _SettingsPageState extends State<SettingsPage>
         widget.batteryOptimizationStatus) {
       _batteryOptimizationStatus = widget.batteryOptimizationStatus;
     }
+    if (oldWidget.overlayPermissionStatus != widget.overlayPermissionStatus) {
+      _overlayPermissionStatus = widget.overlayPermissionStatus;
+    }
   }
 
   @override
@@ -154,18 +169,29 @@ class _SettingsPageState extends State<SettingsPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _refreshReliability();
+      _refreshSystemStatuses();
     }
   }
 
-  Future<void> _refreshReliability() async {
-    final status = await widget.refreshNotificationReliabilityStatus();
+  Future<void> _refreshSystemStatuses() async {
+    final notificationStatus = await widget
+        .refreshNotificationReliabilityStatus();
+    final overlayStatus = await widget.refreshOverlayPermissionStatus();
     if (!mounted) return;
     setState(() {
-      _permissionStatus = status.permission;
-      _exactAlarmStatus = status.exactAlarms;
-      _batteryOptimizationStatus = status.batteryOptimization;
+      _permissionStatus = notificationStatus.permission;
+      _exactAlarmStatus = notificationStatus.exactAlarms;
+      _batteryOptimizationStatus = notificationStatus.batteryOptimization;
+      _overlayPermissionStatus = overlayStatus;
     });
+  }
+
+  Future<void> _showOverlayPreview() async {
+    final shown = await widget.showOverlayPreview();
+    if (!mounted || shown) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Allow display over other apps first.')),
+    );
   }
 
   Future<void> _showTestReminder() async {
@@ -341,6 +367,49 @@ class _SettingsPageState extends State<SettingsPage>
             ],
           ),
           const SizedBox(height: 16),
+          if (_overlayPermissionStatus !=
+              OverlayPermissionStatus.unsupported) ...[
+            _Section(
+              title: 'Break screen',
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    _overlayPermissionStatus == OverlayPermissionStatus.allowed
+                        ? Icons.layers_outlined
+                        : Icons.layers_clear_outlined,
+                  ),
+                  title: const Text('Display over other apps'),
+                  subtitle: Text(_overlayPermissionLabel()),
+                  trailing:
+                      _overlayPermissionStatus ==
+                          OverlayPermissionStatus.disabled
+                      ? TextButton(
+                          onPressed: widget.openOverlayPermissionSettings,
+                          child: const Text('Allow'),
+                        )
+                      : null,
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.fullscreen),
+                  title: const Text('Preview break screen'),
+                  subtitle: const Text('Show a 10-second black overlay'),
+                  trailing: IconButton(
+                    onPressed:
+                        _overlayPermissionStatus ==
+                            OverlayPermissionStatus.allowed
+                        ? _showOverlayPreview
+                        : null,
+                    icon: const Icon(Icons.play_arrow),
+                    tooltip: 'Preview break overlay',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
           _Section(
             title: 'Appearance',
             children: [
@@ -714,6 +783,16 @@ class _SettingsPageState extends State<SettingsPage>
       NotificationPermissionStatus.unsupported =>
         'Status unavailable on this platform',
       NotificationPermissionStatus.unknown => 'Checking system permission',
+    };
+  }
+
+  String _overlayPermissionLabel() {
+    return switch (_overlayPermissionStatus) {
+      OverlayPermissionStatus.allowed => 'Allowed on this device',
+      OverlayPermissionStatus.disabled =>
+        'Permission required for enforced breaks',
+      OverlayPermissionStatus.unknown => 'Checking overlay permission',
+      OverlayPermissionStatus.unsupported => 'Unavailable on this platform',
     };
   }
 }

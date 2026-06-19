@@ -11,6 +11,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val notificationSettingsChannel = "eye_care_timer/notification_settings"
+    private val breakOverlayChannel = "blinkkind/break_overlay"
     private val reminderChannelId = "blinkkind_phase_reminders_v2"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -25,6 +26,42 @@ class MainActivity : FlutterActivity() {
                 "isBatteryOptimizationIgnored" -> result.success(isBatteryOptimizationIgnored())
                 "openBatteryOptimizationSettings" -> result.success(openBatteryOptimizationSettings())
                 else -> result.notImplemented()
+            }
+        }
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            breakOverlayChannel,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "overlayPermissionStatus" ->
+                    result.success(BreakOverlayController.canDraw(this))
+                "openOverlayPermissionSettings" ->
+                    result.success(openOverlayPermissionSettings())
+                "showOverlayPreview" ->
+                    result.success(BreakOverlayController.showPreview(this))
+                "stopOverlayPreview" ->
+                    result.success(BreakOverlayController.hide())
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun openOverlayPermissionSettings(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+        return try {
+            startActivity(
+                Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName"),
+                ),
+            )
+            true
+        } catch (_: Exception) {
+            try {
+                startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
+                true
+            } catch (_: Exception) {
+                false
             }
         }
     }

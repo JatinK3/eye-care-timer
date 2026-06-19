@@ -26,17 +26,19 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 ## Current Structure
 
 - `lib/main.dart`: App entrypoint only.
-- `lib/app.dart`: Top-level `MaterialApp`, theme/preset state, startup loading, persistence coordination, and notification service injection.
+- `lib/app.dart`: Top-level `MaterialApp`, theme/preset state, startup loading, persistence coordination, and notification and break-overlay service injection.
 - `lib/features/timer/timer_home_page.dart`: Main timer UI, countdown state, lifecycle reconciliation, color preset rendering, and notification scheduling hooks.
 - `lib/models/timer_settings.dart`: Persisted timer settings model and defaults, including color preset, notification, feedback, long-break, automatic-cycle, and daily goal preferences.
 - `lib/theme/color_presets.dart`: Shared preset names, seed colors, swatches, timer gradients, and progress colors.
-- `lib/features/settings/settings_page.dart`: Dedicated settings UI for durations, theme, presets, reminder permission recovery, automatic-cycle controls, progress history entry point, and streak reset.
+- `lib/features/settings/settings_page.dart`: Dedicated settings UI for durations, theme, presets, reminder permission recovery, automatic-cycle controls, Android break-overlay permission and preview controls, progress history entry point, and streak reset.
 - `lib/features/onboarding/onboarding_page.dart`: First-run 20-20-20 explanation and reminder permission entry point.
 - `lib/features/history/history_page.dart`: Range-based daily history, monthly and goal metrics, week-over-week trend, recent completed-session detail, and confirmed activity clearing.
 - `lib/models/work_session_record.dart`: Deduplicated completed work-session record with completion time and configured focus duration.
 - `lib/models/timer_session.dart`: Persisted active/paused timer session state and automatic-run cycle progress for launch restore.
 - `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, bounded completed-session history, daily goal, notification preference, feedback preferences, automatic-cycle settings, and active timer session.
 - `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, system settings recovery hooks, exact-alarm capability checks, battery optimization diagnostics, explicit audible-channel creation, test-reminder support, verified phase reminder scheduling with inexact fallback, and cancellation.
+- `lib/services/break_overlay_service.dart`: Android overlay permission status and native preview method-channel wrapper with safe unsupported-platform behavior.
+- `android/app/src/main/kotlin/com/jatin/eyecaretimer/BreakOverlayController.kt`: Process-scoped native black overlay preview, 10-second countdown, and immediate close handling.
 - `test/widget_test.dart`: Widget smoke, persistence load, timer controls, automatic-cycle restore/limits, settings/history navigation, notification fake, and cancel-transition regression tests.
 - `WORKLOG.md`: Ordered roadmap and completion log.
 
@@ -60,6 +62,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - The main timer shows daily goal progress and a goal-reached state when completed breaks meet the configured goal.
 - Settings includes History ranges for 7 days, 30 days, and all active days, plus current-month totals, goal completion rate, best day, weekly trend, recent completed sessions, and confirmed activity clearing.
 - Settings shows notification permission, precise-alarm capability, Android battery optimization status, direct reminder-channel sound settings, and a test reminder action. The optional in-app sound toggle is separate from system notification audio.
+- On Android, Settings also reports display-over-other-apps permission and can launch a native 10-second black break-screen preview with a countdown and close action. This preview is not connected to timer phases yet.
 - Light/dark theme toggle and `Pastel`, `Calm Blue`, `Forest`, `Rose`, `Graphite`, and `Sunrise` presets are available.
 - The app theme seed, settings swatches, timer gradients, and timer progress color now come from the same preset source.
 - UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification and feedback toggle UX, contrast-safe dark-mode primary buttons, calmer text, and tighter card radius.
@@ -93,6 +96,7 @@ Android manifest includes notification-related permissions and receivers:
 - `RECEIVE_BOOT_COMPLETED`
 - `VIBRATE`
 - `SCHEDULE_EXACT_ALARM`
+- `SYSTEM_ALERT_WINDOW`
 - `ScheduledNotificationReceiver`
 - `ScheduledNotificationBootReceiver`
 - `FlutterLocalNotificationsReceiver`
@@ -120,7 +124,7 @@ Commands run after the current implementation:
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 24 tests.
+- `flutter test`: passing, 26 tests.
 - `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
 - `flutter build web`: passing; generated `build/web`.
 - Android device UI verification was not run in this shell because `adb` is unavailable.
@@ -140,7 +144,7 @@ Implementation decisions:
 - Transition: show a configurable pre-break warning, then fade to black and enter the break surface. Restore system UI, focus, window state, and the timer state exactly once when the break ends or is safely dismissed.
 - Architecture: timer phase transitions must emit presentation-independent events. A dedicated break presentation service will choose in-app immersive UI or native desktop windows without duplicating timer logic.
 - Platform priority: prove Android overlay permission and manual overlay behavior first, integrate it with the timer second, then implement Linux, Windows, and macOS desktop enforcement. Desktop still requires tray operation and launch-at-login before overlays can be dependable while the main window is closed. X11 and Wayland require separate validation because compositors may restrict focus and topmost behavior.
-- Android: BlinkKind will request `SYSTEM_ALERT_WINDOW` as an explicit opt-in and use `TYPE_APPLICATION_OVERLAY` to cover other apps during breaks. The first deliverable is a 10-second manual preview with permission status, grant/recovery actions, rotation handling, and emergency dismissal. Timer integration follows only after physical-device validation. Android Go devices may reject overlay permission, and system bars or lock-screen content may remain system-controlled.
+- Android: BlinkKind will request `SYSTEM_ALERT_WINDOW` as an explicit opt-in and use `TYPE_APPLICATION_OVERLAY` to cover other apps during breaks. The 10-second manual preview is implemented with permission status, grant/recovery actions, a native countdown, and immediate dismissal. Rotation, system-bar, lock-screen, call, and cross-app behavior still require physical-device validation; timer integration follows that validation. Android Go devices may reject overlay permission, and system bars or lock-screen content may remain system-controlled.
 - iOS: immersive break UI is available only while BlinkKind is active; iOS does not permit apps to cover other applications or force themselves foreground.
 - Android runtime: start the overlay-owning foreground service while BlinkKind is visible, persist absolute phase deadlines, use a visible service notification, and keep the existing exact notification as fallback if the service or overlay is unavailable. Android 14+ foreground-service type requirements and Android 15 background-start ordering must be tested explicitly.
 - Safety: calls, alarms, lock screen, accessibility navigation, and an emergency exit must remain usable. The feature is habit enforcement, not device lockout.

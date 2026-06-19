@@ -5,7 +5,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 ## Tasks
 
 - [ ] Build immersive full-screen break mode (current priority).
-  - [ ] Build an Android overlay permission and 10-second manual preview spike before timer integration.
+  - [x] Build an Android overlay permission and 10-second manual preview spike before timer integration.
   - [ ] Validate the preview above other apps, system bars, lock screen, rotation, calls, and emergency dismissal on a physical device.
   - [ ] Extract timer phase events from the home-screen presentation so break UI can be launched by platform services.
   - [ ] Add an Android foreground service and exact-deadline bridge that owns overlay lifetime while BlinkKind is backgrounded.
@@ -103,6 +103,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Added Android display-over-other-apps permission handling and a native 10-second black break overlay preview with Settings controls, countdown, and immediate dismissal. Physical-device behavior remains the next validation task.
 
 - Migrated reminders to an explicitly audible alarm-category channel, separated in-app sound copy, and added test-reminder and channel-sound settings actions.
 

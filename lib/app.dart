@@ -9,6 +9,7 @@ import 'features/timer/timer_home_page.dart';
 import 'models/timer_session.dart';
 import 'models/timer_settings.dart';
 import 'models/work_session_record.dart';
+import 'services/break_overlay_service.dart';
 import 'services/notification_service.dart';
 import 'services/preferences_service.dart';
 import 'theme/color_presets.dart';
@@ -16,8 +17,13 @@ import 'theme/color_presets.dart';
 /// Top-level app that owns ThemeMode and color preset state.
 class BlinkKindApp extends StatefulWidget {
   final NotificationService? notificationService;
+  final BreakOverlayService? breakOverlayService;
 
-  const BlinkKindApp({super.key, this.notificationService});
+  const BlinkKindApp({
+    super.key,
+    this.notificationService,
+    this.breakOverlayService,
+  });
 
   @override
   State<BlinkKindApp> createState() => _BlinkKindAppState();
@@ -26,6 +32,7 @@ class BlinkKindApp extends StatefulWidget {
 class _BlinkKindAppState extends State<BlinkKindApp> {
   final PreferencesService _preferencesService = PreferencesService();
   late final NotificationService _notificationService;
+  late final BreakOverlayService _breakOverlayService;
 
   TimerSettings _settings = const TimerSettings.defaults();
   TimerSession _session = const TimerSession.idle();
@@ -36,6 +43,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   ExactAlarmStatus _exactAlarmStatus = ExactAlarmStatus.unknown;
   BatteryOptimizationStatus _batteryOptimizationStatus =
       BatteryOptimizationStatus.unknown;
+  OverlayPermissionStatus _overlayPermissionStatus =
+      OverlayPermissionStatus.unknown;
   bool _hasCompletedOnboarding = false;
   bool _isLoadingSettings = true;
 
@@ -43,7 +52,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   void initState() {
     super.initState();
     _notificationService = widget.notificationService ?? NotificationService();
+    _breakOverlayService = widget.breakOverlayService ?? BreakOverlayService();
     unawaited(_initializeNotifications());
+    unawaited(_refreshOverlayPermissionStatus());
     unawaited(_loadSettings());
   }
 
@@ -87,6 +98,22 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       await _notificationService.cancelPhaseReminder();
       await _refreshNotificationPermissionStatus();
     }
+  }
+
+  Future<OverlayPermissionStatus> _refreshOverlayPermissionStatus() async {
+    final status = await _breakOverlayService.permissionStatus();
+    if (mounted) {
+      setState(() => _overlayPermissionStatus = status);
+    }
+    return status;
+  }
+
+  Future<void> _openOverlayPermissionSettings() async {
+    await _breakOverlayService.openPermissionSettings();
+  }
+
+  Future<bool> _showOverlayPreview() {
+    return _breakOverlayService.showPreview();
   }
 
   Future<void> _openNotificationSettings() async {
@@ -337,6 +364,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           notificationPermissionStatus: _notificationPermissionStatus,
           exactAlarmStatus: _exactAlarmStatus,
           batteryOptimizationStatus: _batteryOptimizationStatus,
+          overlayPermissionStatus: _overlayPermissionStatus,
           hapticsEnabled: _settings.hapticsEnabled,
           soundEnabled: _settings.soundEnabled,
           canChangeDurations: canChangeDurations,
@@ -349,6 +377,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           setNotificationsEnabled: _setNotificationsEnabled,
           setHapticsEnabled: _setHapticsEnabled,
           setSoundEnabled: _setSoundEnabled,
+          openOverlayPermissionSettings: _openOverlayPermissionSettings,
+          showOverlayPreview: _showOverlayPreview,
+          refreshOverlayPermissionStatus: _refreshOverlayPermissionStatus,
           openNotificationSettings: _openNotificationSettings,
           openReminderChannelSettings: _openReminderChannelSettings,
           showTestReminder: _showTestReminder,
