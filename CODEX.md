@@ -32,9 +32,10 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/theme/color_presets.dart`: Shared preset names, seed colors, swatches, timer gradients, and progress colors.
 - `lib/features/settings/settings_page.dart`: Dedicated settings UI for durations, theme, presets, reminder permission recovery, automatic-cycle controls, progress history entry point, and streak reset.
 - `lib/features/onboarding/onboarding_page.dart`: First-run 20-20-20 explanation and reminder permission entry point.
-- `lib/features/history/history_page.dart`: Seven-day break history, best-day summary, goal streak summary, and history reset UI.
+- `lib/features/history/history_page.dart`: Range-based daily history, monthly and goal metrics, week-over-week trend, recent completed-session detail, and confirmed activity clearing.
+- `lib/models/work_session_record.dart`: Deduplicated completed work-session record with completion time and configured focus duration.
 - `lib/models/timer_session.dart`: Persisted active/paused timer session state and automatic-run cycle progress for launch restore.
-- `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, daily goal, notification preference, feedback preferences, automatic-cycle settings, and active timer session.
+- `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, bounded completed-session history, daily goal, notification preference, feedback preferences, automatic-cycle settings, and active timer session.
 - `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, system settings recovery hooks, exact-alarm capability checks, battery optimization diagnostics, verified phase reminder scheduling with inexact fallback, and cancellation.
 - `test/widget_test.dart`: Widget smoke, persistence load, timer controls, automatic-cycle restore/limits, settings/history navigation, notification fake, and cancel-transition regression tests.
 - `WORKLOG.md`: Ordered roadmap and completion log.
@@ -54,10 +55,10 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - The timer stores an in-memory phase deadline and reconciles remaining time when the app resumes.
 - Active timer sessions are persisted so running and paused work/break phases can restore after app restart.
 - Expired restored work sessions advance into the remaining break time, or return idle if both work and break would already be complete.
-- Theme mode, color preset, work duration, break duration, long-break settings, automatic-cycle settings and current run progress, daily streak, seven-day history source data, daily goal, notification preference, haptic/sound preferences, and active timer session are persisted.
+- Theme mode, color preset, work duration, break duration, long-break settings, automatic-cycle settings and current run progress, daily streak, daily history aggregates, completed-session records, daily goal, notification preference, haptic/sound preferences, and active timer session are persisted.
 - Daily streak resets when the saved streak date is not today.
 - The main timer shows daily goal progress and a goal-reached state when completed breaks meet the configured goal.
-- Settings includes a History screen with best day, current goal streak, last seven days, and reset history actions.
+- Settings includes History ranges for 7 days, 30 days, and all active days, plus current-month totals, goal completion rate, best day, weekly trend, recent completed sessions, and confirmed activity clearing.
 - Settings shows notification permission, precise-alarm capability, and Android battery optimization status with recovery actions that refresh after returning from system settings.
 - Light/dark theme toggle and `Pastel`, `Calm Blue`, `Forest`, `Rose`, `Graphite`, and `Sunrise` presets are available.
 - The app theme seed, settings swatches, timer gradients, and timer progress color now come from the same preset source.
@@ -119,9 +120,10 @@ Commands run after the current implementation:
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 22 tests.
+- `flutter test`: passing, 23 tests.
 - `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
 - `flutter build web`: passing; generated `build/web`.
+- Android device UI verification was not run in this shell because `adb` is unavailable.
 
 Important git/worktree note:
 
@@ -130,7 +132,7 @@ Important git/worktree note:
 ## Remaining Roadmap
 
 1. Product feature expansion.
-   - Streak/history screen is implemented with a seven-day summary and reset action.
+   - History is implemented with bounded session records, range controls, monthly totals, goal rate, weekly trend, recent session detail, and safe clearing.
    - Notification permission, exact-alarm, pending-reminder, and battery optimization diagnostics are implemented.
    - More visual presets are implemented through shared preset definitions.
    - First-run onboarding and notification permission recovery are implemented.
@@ -139,7 +141,8 @@ Important git/worktree note:
 
 2. Stronger background/session restore.
    - Active session restore is implemented for launch and app resume.
-   - Future pass: consider persisted session history/audit trail if streak analytics grow.
+   - Completed work sessions are persisted and deduplicated; daily aggregates remain backward compatible for existing users.
+   - Future pass: consider export and optional cancelled-session tracking if deeper analytics are required.
 
 3. Store readiness.
    - Product branding is implemented as `BlinkKind: Eye Break Timer`; existing technical package and application identifiers are intentionally retained for compatibility.

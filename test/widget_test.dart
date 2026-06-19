@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:eyeapptimer/app.dart';
 import 'package:eyeapptimer/services/notification_service.dart';
 import 'package:eyeapptimer/services/preferences_service.dart';
+import 'package:eyeapptimer/models/work_session_record.dart';
 
 class FakeNotificationService extends NotificationService {
   NotificationPermissionStatus status;
@@ -529,6 +530,12 @@ void main() {
       PreferencesService.streakDateKey: todayKey(),
       PreferencesService.streakCountKey: 3,
       PreferencesService.dailyGoalKey: 6,
+      PreferencesService.workSessionHistoryKey: jsonEncode([
+        WorkSessionRecord.completed(
+          completedAt: DateTime.now(),
+          durationSeconds: 1200,
+        ).toJson(),
+      ]),
     });
 
     await pumpBlinkKindApp(tester);
@@ -543,12 +550,39 @@ void main() {
 
     expect(find.text('History'), findsOneWidget);
     expect(find.text('Best day'), findsOneWidget);
-    expect(find.text('Goal streak'), findsOneWidget);
+    expect(find.text('Goal rate'), findsOneWidget);
+    expect(find.text('This month'), findsOneWidget);
+    expect(find.text('7-day trend'), findsOneWidget);
+    expect(find.text('30 days'), findsOneWidget);
     expect(find.text('Last 7 days'), findsOneWidget);
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Yesterday'), findsOneWidget);
     expect(find.text('3 / 6'), findsOneWidget);
-    expect(find.text('6 breaks'), findsOneWidget);
+    expect(find.text('6 cycles'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Recent completed sessions'),
+      300,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Focused for 20 min'), findsOneWidget);
+  });
+
+  testWidgets('completed work persists a session record', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 1,
+    });
+
+    await pumpBlinkKindApp(tester);
+    await tester.tap(find.text('Start'));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    final records = await PreferencesService().loadWorkSessionHistory();
+    expect(records, hasLength(1));
+    expect(records.single.durationSeconds, 1);
   });
 
   testWidgets('long break mode restores into a longer break after interval', (

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/timer_session.dart';
 import '../models/timer_settings.dart';
+import '../models/work_session_record.dart';
 
 class PreferencesService {
   static const String workDurationSecondsKey = 'workDurationSeconds';
@@ -24,6 +25,7 @@ class PreferencesService {
   static const String autoRunCycleLimitKey = 'autoRunCycleLimit';
   static const String onboardingCompletedKey = 'onboardingCompleted';
   static const String dailyHistoryKey = 'dailyHistory';
+  static const String workSessionHistoryKey = 'workSessionHistory';
   static const String sessionIsActiveKey = 'sessionIsActive';
   static const String sessionIsBreakKey = 'sessionIsBreak';
   static const String sessionIsPausedKey = 'sessionIsPaused';
@@ -83,6 +85,50 @@ class PreferencesService {
     return _historyFromPrefs(prefs);
   }
 
+  Future<List<WorkSessionRecord>> loadWorkSessionHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawRecords = prefs.getString(workSessionHistoryKey);
+    if (rawRecords == null || rawRecords.isEmpty) {
+      return <WorkSessionRecord>[];
+    }
+
+    try {
+      final decoded = jsonDecode(rawRecords);
+      if (decoded is! List<dynamic>) return <WorkSessionRecord>[];
+      final records = <WorkSessionRecord>[];
+      for (final item in decoded) {
+        if (item is! Map<String, dynamic>) continue;
+        try {
+          records.add(WorkSessionRecord.fromJson(item));
+        } on Object {
+          continue;
+        }
+      }
+      records.sort((a, b) => b.completedAt.compareTo(a.completedAt));
+      return records;
+    } on FormatException {
+      return <WorkSessionRecord>[];
+    }
+  }
+
+  Future<List<WorkSessionRecord>> saveCompletedWorkSession(
+    WorkSessionRecord record,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final records = await loadWorkSessionHistory();
+    records.removeWhere((existing) => existing.id == record.id);
+    records.insert(0, record);
+    const maximumRecords = 500;
+    final retained = records.length > maximumRecords
+        ? records.sublist(0, maximumRecords)
+        : records;
+    await prefs.setString(
+      workSessionHistoryKey,
+      jsonEncode(retained.map((item) => item.toJson()).toList()),
+    );
+    return retained;
+  }
+
   Future<void> saveHistoryCount(String dateKey, int count) async {
     final prefs = await SharedPreferences.getInstance();
     await _saveHistoryCount(prefs, dateKey, count);
@@ -91,6 +137,7 @@ class PreferencesService {
   Future<void> clearHistory() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(dailyHistoryKey);
+    await prefs.remove(workSessionHistoryKey);
   }
 
   Future<bool> loadOnboardingCompleted() async {

@@ -8,10 +8,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Use exact Android alarms when available with an inexact fallback.
   - [x] Verify pending phase reminders and contain scheduling failures.
   - [x] Surface notification permission, exact-alarm, and battery restriction diagnostics with recovery actions.
-- [ ] Improve history and insights.
-  - [ ] Persist session-level completion records.
-  - [ ] Add monthly totals, goal completion rate, and trend summaries.
-  - [ ] Add history range controls and clear all recorded activity safely.
+- [x] Improve history and insights.
+  - [x] Persist session-level completion records.
+  - [x] Add monthly totals, goal completion rate, and trend summaries.
+  - [x] Add history range controls and clear all recorded activity safely.
 - [x] Create worklog and capture the ordered roadmap.
 - [x] Rename the product to BlinkKind: Eye Break Timer across runtime UI and platform metadata while preserving technical identifiers.
 - [x] Fix current project health.
@@ -86,6 +86,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Added deduplicated completed-session history with 7-day/30-day/all ranges, monthly and goal insights, weekly trend comparison, recent session detail, and confirmed activity clearing.
 
 - Added resilient reminder scheduling with exact-alarm fallback, pending-reminder verification, and Android battery/alarm diagnostics with recovery actions.
 

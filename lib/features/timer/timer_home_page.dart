@@ -31,6 +31,8 @@ class TimerHomePage extends StatefulWidget {
   final void Function(int workDurationSeconds, int breakDurationSeconds)
   saveDurations;
   final void Function(int streakCount) saveStreakCount;
+  final void Function(DateTime completedAt, int durationSeconds)
+  saveCompletedWorkSession;
   final void Function(bool enabled) setNotificationsEnabled;
   final void Function(TimerSession session) saveSession;
   final VoidCallback clearSession;
@@ -58,6 +60,7 @@ class TimerHomePage extends StatefulWidget {
     required this.toggleTheme,
     required this.saveDurations,
     required this.saveStreakCount,
+    required this.saveCompletedWorkSession,
     required this.setNotificationsEnabled,
     required this.saveSession,
     required this.clearSession,
@@ -342,6 +345,10 @@ class _TimerHomePageState extends State<TimerHomePage>
       _autoRunCompletedCycles = session.completedAutoRunCycles + 1;
     });
     widget.saveStreakCount(_streakCount);
+    widget.saveCompletedWorkSession(
+      phaseEndsAt,
+      session.initialDurationSeconds,
+    );
 
     final overdueSeconds = DateTime.now().difference(phaseEndsAt).inSeconds;
     final remainingBreakSeconds =
@@ -475,6 +482,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     }
 
     final completedBreakPhase = _isBreak;
+    final completedPhaseAt = _phaseEndsAt ?? DateTime.now();
     _phaseStartedAt = null;
     _phaseEndsAt = null;
     unawaited(widget.notificationService.cancelPhaseReminder());
@@ -519,6 +527,7 @@ class _TimerHomePageState extends State<TimerHomePage>
         _autoRunCompletedCycles++;
       });
       widget.saveStreakCount(_streakCount);
+      widget.saveCompletedWorkSession(completedPhaseAt, _initialDuration);
       _startTimer(
         _breakDurationForCompletedCycle(completedCycles),
         isBreak: true,
