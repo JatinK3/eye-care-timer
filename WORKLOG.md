@@ -8,7 +8,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 1. [x] **Break Warning, Fade-to-Black & Postpone Policy**: Implement a pre-break warning notification/overlay, a smooth fade-to-black transition before the break starts, and a configurable skip/postpone settings policy in Flutter and Android.
 2. [ ] **Smart Idle & Fullscreen App Detection**: Detect when the user is playing a game, watching a video in fullscreen, or actively presenting, and delay/postpone the break overlay to avoid interrupting important tasks.
 3. [ ] **Linux Desktop Background Support**: Build a Linux background runner with tray controls and launch-at-login support.
-4. [ ] **Android Reboot Survival**: Ensure the foreground service and exact alarms are correctly re-registered and scheduled upon system reboot.
+4. [x] **Android Reboot Survival**: Ensure the foreground service and exact alarms are correctly re-registered and scheduled upon system reboot.
 
 ### Detailed Tasks
 - [x] Implement user-requested Immersive Focus Mode (tapping the timer dial toggles a clean, fullscreen AMOLED-friendly countdown UI, and supports a customized horizontal landscape desk clock layout).
@@ -22,7 +22,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Continue automatic work/break cycles natively while Flutter is suspended, including cycle limits, long-break cadence, delayed-alarm fast-forward, persisted process-death recovery, and stale-alarm rejection.
   - [x] Android 17 emulator baseline: foreground service and exact alarm registered, cross-app overlay launched at the work deadline, rotation survived, configured break auto-dismissed, and the service cleaned up.
   - [ ] Physical-device validation: background, screen-lock, Doze, app-killed, multi-cycle auto-run, device clock change, and notifications-disabled paths on Pixel/Samsung/Xiaomi-style restrictions. Required to actually close this bug.
-  - [ ] Native reboot rescheduling and audible reminders for later native-only cycle boundaries. Force-stopped apps cannot restart themselves by Android design.
+  - [x] Native reboot rescheduling and audible reminders for later native-only cycle boundaries. Force-stopped apps cannot restart themselves by Android design.
   - [x] Wire the deadline alarm to launch the immersive break overlay (fullScreenIntent) rather than only a tappable notification (depends on the break-surface UI below).
 - [ ] Build immersive full-screen break mode (current priority).
   - [x] Build an Android overlay permission and 10-second manual preview spike before timer integration.
@@ -123,6 +123,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Implemented Android reboot survival: Added a native `BootReceiver` (`BroadcastReceiver`) listening for system boot broadcasts (`BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, and quickboot actions) to automatically restore `TimerForegroundService` and exact alarms if a timer session was active prior to system shutdown. Exposed internal control methods in `TimerForegroundService` (`handleComplete`, `presentCurrentPhase`, `resumeCurrentPhase`, and `saveState`) to resolve package visibility compilation issues.
 
 - Implemented pre-break warning, fade-to-black screen transition, and configurable Skip/Postpone setting policies. Displays a warning overlay when the work countdown is <= 10s that progressively darkens/fades to black. Supports customizable Skip/Postpone toggles and a dropdown for Postpone duration (1m, 2m, 5m, 10m) in Gentle mode. Fully handles skip and postpone actions across Flutter and Android native foreground services/background overlay controllers.
 
