@@ -150,7 +150,7 @@ class TimerForegroundService : Service() {
         }
     }
 
-    private fun handleComplete(expectedDeadline: Long) {
+    fun handleComplete(expectedDeadline: Long) {
         if (expectedDeadline > 0L && expectedDeadline != deadlineMillis) {
             // A previous alarm was already queued when Flutter changed phase.
             resumeCurrentPhase()
@@ -217,7 +217,7 @@ class TimerForegroundService : Service() {
         }
     }
 
-    private fun presentCurrentPhase() {
+    fun presentCurrentPhase() {
         if (isBreak && breakMode != "off") {
             val seconds = secondsRemaining().coerceAtLeast(1L).coerceAtMost(Int.MAX_VALUE.toLong())
             BreakOverlayController.show(
@@ -234,7 +234,7 @@ class TimerForegroundService : Service() {
         }
     }
 
-    private fun resumeCurrentPhase() {
+    fun resumeCurrentPhase() {
         handler.removeCallbacks(tick)
         if (deadlineMillis <= System.currentTimeMillis()) {
             handleComplete(deadlineMillis)
@@ -431,7 +431,7 @@ class TimerForegroundService : Service() {
         return getSharedPreferences(STATE_PREFERENCES, Context.MODE_PRIVATE)
     }
 
-    private fun saveState() {
+    fun saveState() {
         statePreferences().edit()
             .putLong(EXTRA_DEADLINE, deadlineMillis)
             .putBoolean(EXTRA_IS_BREAK, isBreak)
