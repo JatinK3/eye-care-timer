@@ -4,16 +4,20 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Tasks
 
-- [ ] BUG: Timer does not run on real (RTC) time while backgrounded.
-  - Closing the app or minimizing it to background pauses the work timer at its current state instead of advancing with wall-clock time.
-  - The break timer behaves the same way: while the app is minimized or the screen is locked it does not run automatically. It freezes at the set break duration (e.g. 20s) and only starts counting down once the app is reopened.
-  - Root cause: the countdown is driven by an in-app ticker rather than reconciled against an absolute RTC deadline, so timer/break state desyncs from real elapsed time whenever the app is not in the foreground.
-  - Goal: drive both work and break phases from absolute wall-clock deadlines (and/or platform alarms/foreground service) so elapsed time stays correct across background, minimize, and screen-lock, with state reconciled on resume.
+- [ ] BUG: Timer does not run on real (RTC) time while backgrounded (unified with the foreground-service roadmap item below).
+  - Symptom: closing/minimizing the app or locking the screen freezes the work and break countdown at its current value; it only advances when the app is reopened. A 20s break sits at 20s and "runs" on reopen instead of being already over.
+  - Diagnosis: resume/launch reconciliation already existed and was correct, but it only ran on `AppLifecycleState.resumed`. The visible countdown is `AnimationController`-driven, which the OS freezes while backgrounded, and there was no native owner advancing the deadline off-screen. The resume path also started a fresh full phase instead of accounting for elapsed time, and only advanced one boundary.
+  - [x] Replace the launch/resume reconciliation with one pure, unit-tested `projectPhase` fast-forward (`lib/features/timer/phase_schedule.dart`) that crosses every elapsed work/break boundary, records completed work, advances the streak/auto-run counters, and lands on the phase that should be active now. Both `_restoreInitialSession` and `_syncTimerWithClock` route through it.
+  - [x] Clamp backward clock jumps and never report a non-positive remaining for a live phase.
+  - [x] Add `TimerSession.toJson`/`fromJson` so the session is a single serializable source of truth across the platform boundary.
+  - [x] Add an Android foreground service (`TimerForegroundService`) + exact `AlarmManager` deadline owner (`PhaseDeadlineReceiver`) + `blinkkind/timer_background` MethodChannel bridge + Dart `TimerBackgroundService`, wired into start/pause/resume/cancel/idle/projection. Code complete and compiles; the audible cue stays with flutter_local_notifications to avoid double alerts.
+  - [ ] Physical-device validation: background, screen-lock, Doze, app-killed, multi-cycle auto-run, device clock change, and notifications-disabled paths on Pixel/Samsung/Xiaomi-style restrictions. Required to actually close this bug.
+  - [ ] Wire the deadline alarm to launch the immersive break overlay (fullScreenIntent) rather than only a tappable notification (depends on the break-surface UI below).
 - [ ] Build immersive full-screen break mode (current priority).
   - [x] Build an Android overlay permission and 10-second manual preview spike before timer integration.
   - [ ] Validate the preview above other apps, system bars, lock screen, rotation, calls, and emergency dismissal on a physical device.
   - [ ] Extract timer phase events from the home-screen presentation so break UI can be launched by platform services.
-  - [ ] Add an Android foreground service and exact-deadline bridge that owns overlay lifetime while BlinkKind is backgrounded.
+  - [x] Add an Android foreground service and exact-deadline bridge that owns the phase deadline while BlinkKind is backgrounded (built above; still needs device validation and overlay-launch wiring).
   - [ ] Add persisted Off, Gentle, and Strict break-screen modes with an emergency press-and-hold exit.
   - [ ] Build a responsive black full-screen break surface with countdown, eye exercise, progress, and accessibility semantics.
   - [ ] Add pre-break warning, fade-to-black transition, and configurable skip/postpone policy.
@@ -108,6 +112,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Reworked background timing onto a single wall-clock source of truth: a pure, unit-tested `projectPhase` fast-forward that catches up across every elapsed work/break boundary on launch and resume, plus an Android foreground service plus exact-alarm deadline owner and MethodChannel bridge. Dart fixes are tested and the native owner compiles; on-device validation across OEM background restrictions remains.
+
+- Migrated the Android app to Flutter's built-in Kotlin (removed the standalone Kotlin Gradle Plugin and `kotlinOptions`, added a top-level `kotlin {}` block).
 
 - Added Android display-over-other-apps permission handling and a native 10-second black break overlay preview with Settings controls, countdown, and immediate dismissal. Physical-device behavior remains the next validation task.
 
