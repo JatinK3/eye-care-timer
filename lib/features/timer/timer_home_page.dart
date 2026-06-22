@@ -7,6 +7,7 @@ import 'package:system_idle/system_idle.dart';
 
 import '../../models/timer_session.dart';
 import '../../models/timer_settings.dart';
+import '../../models/timer_event_record.dart';
 import '../../services/break_overlay_service.dart';
 import '../../services/desktop_controls_controller.dart';
 import '../../services/notification_service.dart';
@@ -43,6 +44,7 @@ class TimerHomePage extends StatefulWidget {
   final void Function(int streakCount) saveStreakCount;
   final void Function(DateTime completedAt, int durationSeconds)
   saveCompletedWorkSession;
+  final void Function(TimerEventRecord record) saveTimerEventRecord;
   final void Function(bool enabled) setNotificationsEnabled;
   final void Function(TimerSession session) saveSession;
   final VoidCallback clearSession;
@@ -84,6 +86,7 @@ class TimerHomePage extends StatefulWidget {
     required this.saveDurations,
     required this.saveStreakCount,
     required this.saveCompletedWorkSession,
+    required this.saveTimerEventRecord,
     required this.setNotificationsEnabled,
     required this.saveSession,
     required this.clearSession,
@@ -718,6 +721,12 @@ class TimerHomePageState extends State<TimerHomePage>
   void _skipBreak() {
     if (!_isBreak || !_isRunning) return;
     _animationController.stop();
+    widget.saveTimerEventRecord(TimerEventRecord(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      timestamp: DateTime.now(),
+      type: TimerEventType.breakSkipped,
+      durationSeconds: 0,
+    ));
     _onPhaseComplete();
     _updateDesktopState();
   }
@@ -727,10 +736,17 @@ class TimerHomePageState extends State<TimerHomePage>
     _animationController.stop();
     _playChime();
     _pulseController.stop();
+    final postponeSeconds = widget.postponeDurationSeconds;
+    widget.saveTimerEventRecord(TimerEventRecord(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      timestamp: DateTime.now(),
+      type: TimerEventType.breakPostponed,
+      durationSeconds: postponeSeconds,
+    ));
     setState(() {
       _isBreak = false;
       _phaseOpacity = 1.0;
-      _initialDuration = widget.postponeDurationSeconds;
+      _initialDuration = postponeSeconds;
       _remainingSeconds = _initialDuration;
       _phaseStartedAt = DateTime.now();
       _phaseEndsAt = _phaseStartedAt!.add(Duration(seconds: _initialDuration));
@@ -751,6 +767,17 @@ class TimerHomePageState extends State<TimerHomePage>
     _cancelReminders();
     unawaited(_backgroundService.stopPhase());
     unawaited(widget.breakOverlayService?.stopBreakOverlay());
+    if (!_isBreak) {
+      final elapsed = _initialDuration - _remainingSeconds;
+      if (elapsed > 0) {
+        widget.saveTimerEventRecord(TimerEventRecord(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          timestamp: DateTime.now(),
+          type: TimerEventType.workCancelled,
+          durationSeconds: elapsed,
+        ));
+      }
+    }
     setState(() {
       _isRunning = false;
       _isPaused = false;
@@ -790,6 +817,26 @@ class TimerHomePageState extends State<TimerHomePage>
       final bgStreakCount = bgSession['streakCount'] as int;
       final bgCompletedAutoRunCycles =
           bgSession['completedAutoRunCycles'] as int;
+      final pendingEvents = bgSession['pendingEvents'] as List<dynamic>?;
+      if (pendingEvents != null) {
+        for (final event in pendingEvents) {
+          if (event is Map<dynamic, dynamic>) {
+            final typeStr = event['type'] as String;
+            final timestamp = event['timestamp'] as int;
+            final durationSeconds = event['durationSeconds'] as int;
+            final type = TimerEventType.values.firstWhere(
+              (e) => e.name == typeStr,
+              orElse: () => TimerEventType.workCompleted,
+            );
+            widget.saveTimerEventRecord(TimerEventRecord(
+              id: timestamp.toString(),
+              timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp),
+              type: type,
+              durationSeconds: durationSeconds,
+            ));
+          }
+        }
+      }
 
       setState(() {
         _isBreak = bgIsBreak;
@@ -882,6 +929,12 @@ class TimerHomePageState extends State<TimerHomePage>
       });
       widget.saveStreakCount(_streakCount);
       widget.saveCompletedWorkSession(completedPhaseAt, _initialDuration);
+      widget.saveTimerEventRecord(TimerEventRecord(
+        id: completedPhaseAt.millisecondsSinceEpoch.toString(),
+        timestamp: completedPhaseAt,
+        type: TimerEventType.workCompleted,
+        durationSeconds: _initialDuration,
+      ));
       _startTimer(
         _breakDurationForCompletedCycle(completedCycles),
         isBreak: true,

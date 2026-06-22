@@ -9,6 +9,7 @@ import 'package:eyeapptimer/services/break_overlay_service.dart';
 import 'package:eyeapptimer/services/notification_service.dart';
 import 'package:eyeapptimer/services/preferences_service.dart';
 import 'package:eyeapptimer/models/work_session_record.dart';
+import 'package:eyeapptimer/models/timer_event_record.dart';
 import 'package:eyeapptimer/features/timer/timer_home_page.dart';
 
 class FakeBreakOverlayService extends BreakOverlayService {
@@ -955,4 +956,90 @@ void main() {
       'Starry',
     );
   });
+
+  testWidgets('completed work persists a TimerEventRecord', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 1,
+    });
+
+    await pumpBlinkKindApp(tester);
+    await tester.tap(find.text('Start'));
+    await tester.pump(); // Start callback runs here
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    final records = await PreferencesService().loadTimerEventHistory();
+    expect(records, isNotEmpty);
+    expect(records.any((r) => r.type == TimerEventType.workCompleted), isTrue);
+  });
+
+  testWidgets('cancelling active work persists a TimerEventRecord', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 20 * 60,
+    });
+
+    await pumpBlinkKindApp(tester);
+    await tester.tap(find.text('Start'));
+    await tester.pump(); // Start callback runs here
+    await tester.pump(const Duration(seconds: 5)); // Ticks countdown so elapsed > 0
+    await tester.tap(find.text('Cancel'));
+    await tester.pump();
+
+    final records = await PreferencesService().loadTimerEventHistory();
+    expect(records, isNotEmpty);
+    expect(records.any((r) => r.type == TimerEventType.workCancelled), isTrue);
+  });
+
+  testWidgets('skipping a break persists a TimerEventRecord', (tester) async {
+    final now = DateTime.now();
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.sessionIsActiveKey: true,
+      PreferencesService.sessionIsBreakKey: true,
+      PreferencesService.sessionIsPausedKey: false,
+      PreferencesService.sessionInitialDurationSecondsKey: 20,
+      PreferencesService.sessionRemainingSecondsKey: 20,
+      PreferencesService.sessionPhaseStartedAtKey: now.millisecondsSinceEpoch,
+      PreferencesService.sessionPhaseEndsAtKey:
+          now.add(const Duration(seconds: 20)).millisecondsSinceEpoch,
+    });
+
+    await pumpBlinkKindApp(tester);
+    expect(find.text('Skip'), findsOneWidget);
+    await tester.tap(find.text('Skip'));
+    await tester.pump();
+
+    final records = await PreferencesService().loadTimerEventHistory();
+    expect(records, isNotEmpty);
+    expect(records.any((r) => r.type == TimerEventType.breakSkipped), isTrue);
+  });
+
+  testWidgets('postponing a break persists a TimerEventRecord', (tester) async {
+    final now = DateTime.now();
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.sessionIsActiveKey: true,
+      PreferencesService.sessionIsBreakKey: true,
+      PreferencesService.sessionIsPausedKey: false,
+      PreferencesService.sessionInitialDurationSecondsKey: 20,
+      PreferencesService.sessionRemainingSecondsKey: 20,
+      PreferencesService.sessionPhaseStartedAtKey: now.millisecondsSinceEpoch,
+      PreferencesService.sessionPhaseEndsAtKey:
+          now.add(const Duration(seconds: 20)).millisecondsSinceEpoch,
+      PreferencesService.allowPostponeKey: true,
+    });
+
+    await pumpBlinkKindApp(tester);
+    expect(find.text('Postpone'), findsOneWidget);
+    await tester.tap(find.text('Postpone'));
+    await tester.pump();
+
+    final records = await PreferencesService().loadTimerEventHistory();
+    expect(records, isNotEmpty);
+    expect(records.any((r) => r.type == TimerEventType.breakPostponed), isTrue);
+  });
 }
+

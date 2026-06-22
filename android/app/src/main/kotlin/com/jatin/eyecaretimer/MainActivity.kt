@@ -103,6 +103,8 @@ class MainActivity : FlutterActivity() {
                 "getBackgroundSession" -> {
                     val service = TimerForegroundService.activeService
                     if (service != null) {
+                        val events = service.pendingEvents.toList()
+                        service.pendingEvents.clear()
                         result.success(mapOf(
                             "isActive" to true,
                             "isBreak" to service.isBreak,
@@ -115,7 +117,8 @@ class MainActivity : FlutterActivity() {
                             "longBreakDurationSeconds" to service.longBreakDurationSeconds,
                             "longBreakEveryCycles" to service.longBreakEveryCycles,
                             "autoRunEnabled" to service.autoRunEnabled,
-                            "autoRunCycleLimit" to service.autoRunCycleLimit
+                            "autoRunCycleLimit" to service.autoRunCycleLimit,
+                            "pendingEvents" to events
                         ))
                     } else {
                         result.success(null)

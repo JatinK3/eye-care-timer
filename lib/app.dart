@@ -11,6 +11,7 @@ import 'features/settings/settings_page.dart';
 import 'features/timer/timer_home_page.dart';
 import 'models/timer_session.dart';
 import 'models/timer_settings.dart';
+import 'models/timer_event_record.dart';
 import 'models/work_session_record.dart';
 import 'services/break_overlay_service.dart';
 import 'services/notification_service.dart';
@@ -68,6 +69,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   TimerSession _session = const TimerSession.idle();
   Map<String, int> _history = <String, int>{};
   List<WorkSessionRecord> _workSessionHistory = <WorkSessionRecord>[];
+  List<TimerEventRecord> _timerEventHistory = <TimerEventRecord>[];
   NotificationPermissionStatus _notificationPermissionStatus =
       NotificationPermissionStatus.unknown;
   ExactAlarmStatus _exactAlarmStatus = ExactAlarmStatus.unknown;
@@ -227,6 +229,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     final history = await _preferencesService.loadHistory();
     final workSessionHistory = await _preferencesService
         .loadWorkSessionHistory();
+    final timerEventHistory = await _preferencesService
+        .loadTimerEventHistory();
     final hasCompletedOnboarding = await _preferencesService
         .loadOnboardingCompleted();
     if (!mounted) {
@@ -238,6 +242,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       _session = session;
       _history = history;
       _workSessionHistory = workSessionHistory;
+      _timerEventHistory = timerEventHistory;
       _hasCompletedOnboarding = hasCompletedOnboarding;
       _isLoadingSettings = false;
     });
@@ -425,10 +430,23 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveCompletedWorkSession(record));
   }
 
+  void _saveTimerEventRecord(TimerEventRecord record) {
+    setState(() {
+      final updated = List<TimerEventRecord>.from(_timerEventHistory)
+        ..removeWhere((existing) => existing.id == record.id)
+        ..insert(0, record);
+      _timerEventHistory = updated.length > 1000
+          ? updated.sublist(0, 1000)
+          : updated;
+    });
+    unawaited(_preferencesService.saveTimerEventRecord(record));
+  }
+
   void _resetHistory() {
     setState(() {
       _history = <String, int>{};
       _workSessionHistory = <WorkSessionRecord>[];
+      _timerEventHistory = <TimerEventRecord>[];
       _settings = _settings.copyWith(streakCount: 0);
     });
     unawaited(_preferencesService.clearHistory());
@@ -465,6 +483,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
         builder: (_) => HistoryPage(
           history: _history,
           workSessions: _workSessionHistory,
+          timerEvents: _timerEventHistory,
           dailyGoal: _settings.dailyGoal,
           resetHistory: _resetHistory,
         ),
@@ -599,6 +618,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
               saveDurations: _saveDurations,
               saveStreakCount: _saveStreakCount,
               saveCompletedWorkSession: _saveCompletedWorkSession,
+              saveTimerEventRecord: _saveTimerEventRecord,
               setNotificationsEnabled: _setNotificationsEnabled,
               saveSession: _saveSession,
               clearSession: _clearSession,

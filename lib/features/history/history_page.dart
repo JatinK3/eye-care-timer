@@ -1,6 +1,9 @@
+import "dart:convert";
 import "dart:math" as math;
 import "package:flutter/material.dart";
+import "package:flutter/services.dart";
 
+import "../../models/timer_event_record.dart";
 import "../../models/work_session_record.dart";
 
 enum HistoryRange { sevenDays, thirtyDays, all }
@@ -8,6 +11,7 @@ enum HistoryRange { sevenDays, thirtyDays, all }
 class HistoryPage extends StatefulWidget {
   final Map<String, int> history;
   final List<WorkSessionRecord> workSessions;
+  final List<TimerEventRecord> timerEvents;
   final int dailyGoal;
   final VoidCallback resetHistory;
 
@@ -15,6 +19,7 @@ class HistoryPage extends StatefulWidget {
     super.key,
     required this.history,
     required this.workSessions,
+    required this.timerEvents,
     required this.dailyGoal,
     required this.resetHistory,
   });
@@ -26,6 +31,7 @@ class HistoryPage extends StatefulWidget {
 class _HistoryPageState extends State<HistoryPage> {
   late Map<String, int> _history;
   late List<WorkSessionRecord> _workSessions;
+  late List<TimerEventRecord> _timerEvents;
   HistoryRange _range = HistoryRange.sevenDays;
 
   @override
@@ -33,12 +39,23 @@ class _HistoryPageState extends State<HistoryPage> {
     super.initState();
     _history = Map<String, int>.from(widget.history);
     _workSessions = List<WorkSessionRecord>.from(widget.workSessions);
+    _timerEvents = List<TimerEventRecord>.from(widget.timerEvents);
   }
 
   @override
   Widget build(BuildContext context) {
     final dates = _datesForRange();
     final rangeSessions = _sessionsForRange();
+    final rangeEvents = _eventsForRange();
+
+    final completedWorkCount =
+        rangeEvents.where((e) => e.type == TimerEventType.workCompleted).length;
+    final cancelledWorkCount =
+        rangeEvents.where((e) => e.type == TimerEventType.workCancelled).length;
+    final skippedBreakCount =
+        rangeEvents.where((e) => e.type == TimerEventType.breakSkipped).length;
+    final postponedBreakCount =
+        rangeEvents.where((e) => e.type == TimerEventType.breakPostponed).length;
 
     // Calculate range-specific statistics
     final goalDays = dates
@@ -131,6 +148,40 @@ class _HistoryPageState extends State<HistoryPage> {
           ),
           const SizedBox(height: 16),
 
+          // Insights Card
+          _HistorySection(
+            title: "Productivity Insights",
+            child: Column(
+              children: [
+                _InsightRow(
+                  label: "Completed Focus Sessions",
+                  value: "$completedWorkCount",
+                  icon: Icons.check_circle_outline,
+                  color: Colors.green,
+                ),
+                _InsightRow(
+                  label: "Cancelled Sessions",
+                  value: "$cancelledWorkCount",
+                  icon: Icons.cancel_outlined,
+                  color: Colors.red,
+                ),
+                _InsightRow(
+                  label: "Skipped Breaks",
+                  value: "$skippedBreakCount",
+                  icon: Icons.skip_next_outlined,
+                  color: Colors.orange,
+                ),
+                _InsightRow(
+                  label: "Postponed Breaks",
+                  value: "$postponedBreakCount",
+                  icon: Icons.snooze_outlined,
+                  color: Colors.blue,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Daily Logs List
           _HistorySection(
             title: _rangeTitle(),
@@ -170,6 +221,53 @@ class _HistoryPageState extends State<HistoryPage> {
                         )
                         .toList(),
                   ),
+          ),
+          const SizedBox(height: 24),
+
+          // Export Card
+          _HistorySection(
+            title: "Export Activity Data",
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Export your focus sessions and break activity events to CSV or JSON format. The data will be copied to your clipboard.",
+                  style: TextStyle(fontSize: 13, height: 1.4),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () => _exportToClipboard(context, isCsv: true),
+                        icon: const Icon(Icons.description_outlined),
+                        label: const Text("Copy CSV"),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () => _exportToClipboard(context, isCsv: false),
+                        icon: const Icon(Icons.code_outlined),
+                        label: const Text("Copy JSON"),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -357,6 +455,94 @@ class _HistoryPageState extends State<HistoryPage> {
 
   String _durationLabel(int seconds) =>
       seconds < 60 ? "$seconds sec" : "${seconds ~/ 60} min";
+
+  Iterable<TimerEventRecord> _eventsForRange() {
+    if (_range == HistoryRange.all) return _timerEvents;
+    final days = _range == HistoryRange.sevenDays ? 7 : 30;
+    final cutoff = _startOfDay(
+      DateTime.now(),
+    ).subtract(Duration(days: days - 1));
+    return _timerEvents.where(
+      (record) => !record.timestamp.isBefore(cutoff),
+    );
+  }
+
+  void _exportToClipboard(BuildContext context, {required bool isCsv}) {
+    final String content;
+    final String formatName;
+    if (isCsv) {
+      content = _generateCSV(_workSessions, _timerEvents);
+      formatName = "CSV";
+    } else {
+      content = _generateJSON(_workSessions, _timerEvents);
+      formatName = "JSON";
+    }
+
+    Clipboard.setData(ClipboardData(text: content));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("$formatName copied to clipboard!")),
+    );
+  }
+
+  String _generateCSV(List<WorkSessionRecord> workSessions, List<TimerEventRecord> events) {
+    final buffer = StringBuffer();
+    buffer.writeln("Event Type,Timestamp,Duration (seconds)");
+    for (final event in events) {
+      final type = event.type.name;
+      final date = event.timestamp.toIso8601String();
+      final duration = event.durationSeconds;
+      buffer.writeln("$type,$date,$duration");
+    }
+    return buffer.toString();
+  }
+
+  String _generateJSON(List<WorkSessionRecord> workSessions, List<TimerEventRecord> events) {
+    final Map<String, dynamic> exportData = {
+      "exportDate": DateTime.now().toIso8601String(),
+      "completedWorkSessions": workSessions.map((s) => s.toJson()).toList(),
+      "timerEvents": events.map((e) => e.toJson()).toList(),
+    };
+    return const JsonEncoder.withIndent('  ').convert(exportData);
+  }
+}
+
+class _InsightRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _InsightRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _MetricRow extends StatelessWidget {

@@ -5,9 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/timer_session.dart';
 import '../models/timer_settings.dart';
+import '../models/timer_event_record.dart';
 import '../models/work_session_record.dart';
 
 class PreferencesService {
+  static const String timerEventsHistoryKey = 'timerEventsHistory';
   static const String workDurationSecondsKey = 'workDurationSeconds';
   static const String breakDurationSecondsKey = 'breakDurationSeconds';
   static const String themeModeKey = 'themeMode';
@@ -148,6 +150,50 @@ class PreferencesService {
     return retained;
   }
 
+  Future<List<TimerEventRecord>> loadTimerEventHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawRecords = prefs.getString(timerEventsHistoryKey);
+    if (rawRecords == null || rawRecords.isEmpty) {
+      return <TimerEventRecord>[];
+    }
+
+    try {
+      final decoded = jsonDecode(rawRecords);
+      if (decoded is! List<dynamic>) return <TimerEventRecord>[];
+      final records = <TimerEventRecord>[];
+      for (final item in decoded) {
+        if (item is! Map<String, dynamic>) continue;
+        try {
+          records.add(TimerEventRecord.fromJson(item));
+        } on Object {
+          continue;
+        }
+      }
+      records.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      return records;
+    } on FormatException {
+      return <TimerEventRecord>[];
+    }
+  }
+
+  Future<List<TimerEventRecord>> saveTimerEventRecord(
+    TimerEventRecord record,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final records = await loadTimerEventHistory();
+    records.removeWhere((existing) => existing.id == record.id);
+    records.insert(0, record);
+    const maximumRecords = 1000;
+    final retained = records.length > maximumRecords
+        ? records.sublist(0, maximumRecords)
+        : records;
+    await prefs.setString(
+      timerEventsHistoryKey,
+      jsonEncode(retained.map((item) => item.toJson()).toList()),
+    );
+    return retained;
+  }
+
   Future<void> saveHistoryCount(String dateKey, int count) async {
     final prefs = await SharedPreferences.getInstance();
     await _saveHistoryCount(prefs, dateKey, count);
@@ -157,6 +203,7 @@ class PreferencesService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(dailyHistoryKey);
     await prefs.remove(workSessionHistoryKey);
+    await prefs.remove(timerEventsHistoryKey);
   }
 
   Future<bool> loadOnboardingCompleted() async {

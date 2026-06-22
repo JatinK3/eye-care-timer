@@ -49,6 +49,7 @@ class TimerForegroundService : Service() {
     var smartIdleEnabled = true
     var isScreenOffPaused = false
     var pausedRemainingSeconds = 0L
+    val pendingEvents = mutableListOf<Map<String, Any>>()
 
     private val screenStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -173,6 +174,11 @@ class TimerForegroundService : Service() {
 
     private fun handleSkipBreak() {
         if (isBreak) {
+            pendingEvents.add(mapOf(
+                "type" to "breakSkipped",
+                "timestamp" to System.currentTimeMillis(),
+                "durationSeconds" to 0
+            ))
             deadlineMillis = System.currentTimeMillis()
             handleComplete(deadlineMillis)
         }
@@ -182,6 +188,11 @@ class TimerForegroundService : Service() {
         if (isBreak) {
             BreakOverlayController.hide()
             isBreak = false
+            pendingEvents.add(mapOf(
+                "type" to "breakPostponed",
+                "timestamp" to System.currentTimeMillis(),
+                "durationSeconds" to postponeDurationSeconds
+            ))
             deadlineMillis = System.currentTimeMillis() + postponeDurationSeconds * 1000L
             saveState()
             presentCurrentPhase()
@@ -296,6 +307,12 @@ class TimerForegroundService : Service() {
             deadlineMillis = now + postponeTime
             saveState()
 
+            pendingEvents.add(mapOf(
+                "type" to "breakPostponed",
+                "timestamp" to System.currentTimeMillis(),
+                "durationSeconds" to postponeDurationSeconds
+            ))
+
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val notification = baseBuilder()
                 .setContentTitle("Eye break postponed")
@@ -345,6 +362,11 @@ class TimerForegroundService : Service() {
         if (duration <= 0) {
             return false
         }
+        pendingEvents.add(mapOf(
+            "type" to "workCompleted",
+            "timestamp" to System.currentTimeMillis(),
+            "durationSeconds" to workDurationSeconds
+        ))
         isBreak = true
         deadlineMillis += duration * 1000L
         return true
