@@ -14,6 +14,7 @@ import '../../services/notification_service.dart';
 import '../../services/system_ui_service.dart';
 import '../../services/timer_background_service.dart';
 import '../../theme/color_presets.dart';
+import 'break_guides.dart';
 import 'phase_schedule.dart';
 
 /// Home page with all timer logic and UI.
@@ -1443,6 +1444,36 @@ class TimerHomePageState extends State<TimerHomePage>
                               const SizedBox(height: 16),
                             ],
                             timerDial,
+                            // Guided break modes: show the interactive guide
+                            // below the dial when on break.
+                            if (_isBreak &&
+                                _isRunning &&
+                                !_isPaused) ...[
+                              if (widget.breakVisualizerStyle ==
+                                      'EyeExercise' ||
+                                  widget.breakVisualizerStyle ==
+                                      'BoxBreathing') ...[
+                                const SizedBox(height: 16),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 280,
+                                    maxHeight: 280,
+                                  ),
+                                  child: widget.breakVisualizerStyle ==
+                                          'EyeExercise'
+                                      ? EyeExerciseDotGuide(
+                                          remainingSeconds: _remainingSeconds,
+                                          totalDurationSeconds:
+                                              _initialDuration,
+                                        )
+                                      : BoxBreathingGuide(
+                                          remainingSeconds: _remainingSeconds,
+                                          totalDurationSeconds:
+                                              _initialDuration,
+                                        ),
+                                ),
+                              ],
+                            ],
                             const SizedBox(height: 20),
                             actionButtons,
                             const SizedBox(height: 16),

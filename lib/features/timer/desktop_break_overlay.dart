@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../models/timer_settings.dart';
 import '../../services/desktop_controls_controller.dart';
+import 'break_guides.dart';
 
 class DesktopBreakOverlay extends StatefulWidget {
   final int initialDurationSeconds;
@@ -159,6 +160,16 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
         backgroundColor: const Color(0xFF020205),
         body: _StarrySkyBackground(child: content),
       );
+    } else if (widget.breakVisualizerStyle == 'EyeExercise') {
+      return Scaffold(
+        backgroundColor: const Color(0xFF020D10),
+        body: content,
+      );
+    } else if (widget.breakVisualizerStyle == 'BoxBreathing') {
+      return Scaffold(
+        backgroundColor: const Color(0xFF07070F),
+        body: content,
+      );
     }
 
     return Scaffold(
@@ -168,6 +179,52 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   }
 
   Widget _buildBreakCard(BuildContext context) {
+    final style = widget.breakVisualizerStyle;
+
+    // Full-screen guided modes — no card, just the guide + controls
+    if (style == 'EyeExercise' || style == 'BoxBreathing') {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 340,
+                    maxHeight: 340,
+                  ),
+                  child: style == 'EyeExercise'
+                      ? EyeExerciseDotGuide(
+                          remainingSeconds: _remainingSeconds,
+                          totalDurationSeconds: widget.initialDurationSeconds,
+                        )
+                      : BoxBreathingGuide(
+                          remainingSeconds: _remainingSeconds,
+                          totalDurationSeconds: widget.initialDurationSeconds,
+                        ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              style == 'EyeExercise'
+                  ? 'Eye Exercise Break'
+                  : 'Box Breathing Break',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white54,
+                    letterSpacing: 1.0,
+                  ),
+            ),
+            const SizedBox(height: 24),
+            _buildBreakActions(context),
+            const SizedBox(height: 32),
+          ],
+        ),
+      );
+    }
+
     final theme = Theme.of(context);
     final textStyle = theme.textTheme;
     final showBreathingGuide = widget.breakVisualizerStyle == 'Breathing';
@@ -242,99 +299,105 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           ] else ...[
             const SizedBox(height: 32),
           ],
-          if (widget.breakMode == BreakMode.gentle) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white70,
-                    side: const BorderSide(color: Colors.white30),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                  ),
-                  onPressed: () {
-                    DesktopControlsController.instance.triggerCommand(
-                      DesktopCommand.postponeBreak,
-                    );
-                    widget.onDismiss();
-                  },
-                  icon: const Icon(Icons.snooze),
-                  label: const Text('Postpone'),
-                ),
-                const SizedBox(width: 24),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.cyan,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                  ),
-                  onPressed: () {
-                    DesktopControlsController.instance.triggerCommand(
-                      DesktopCommand.skipBreak,
-                    );
-                    widget.onDismiss();
-                  },
-                  icon: const Icon(Icons.skip_next),
-                  label: const Text('Skip'),
-                ),
-              ],
-            ),
-          ] else if (widget.breakMode == BreakMode.strict) ...[
-            GestureDetector(
-              onTapDown: (_) => _startHoldingExit(),
-              onTapUp: (_) => _stopHoldingExit(),
-              onTapCancel: () => _stopHoldingExit(),
-              child: Column(
-                children: [
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(
-                        width: 80,
-                        height: 80,
-                        child: CircularProgressIndicator(
-                          value: _holdProgress,
-                          strokeWidth: 6,
-                          color: Colors.redAccent,
-                          backgroundColor: Colors.white10,
-                        ),
-                      ),
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.power_settings_new,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Press and hold to exit',
-                    style: TextStyle(
-                      color: Colors.redAccent,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          _buildBreakActions(context),
         ],
       ),
     );
+  }
+
+  /// Shared action buttons used by both the classic card and guided-mode layouts.
+  Widget _buildBreakActions(BuildContext context) {
+    if (widget.breakMode == BreakMode.gentle) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white70,
+              side: const BorderSide(color: Colors.white30),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 16,
+              ),
+            ),
+            onPressed: () {
+              DesktopControlsController.instance.triggerCommand(
+                DesktopCommand.postponeBreak,
+              );
+              widget.onDismiss();
+            },
+            icon: const Icon(Icons.snooze),
+            label: const Text('Postpone'),
+          ),
+          const SizedBox(width: 24),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.cyan,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 16,
+              ),
+            ),
+            onPressed: () {
+              DesktopControlsController.instance.triggerCommand(
+                DesktopCommand.skipBreak,
+              );
+              widget.onDismiss();
+            },
+            icon: const Icon(Icons.skip_next),
+            label: const Text('Skip'),
+          ),
+        ],
+      );
+    } else if (widget.breakMode == BreakMode.strict) {
+      return GestureDetector(
+        onTapDown: (_) => _startHoldingExit(),
+        onTapUp: (_) => _stopHoldingExit(),
+        onTapCancel: () => _stopHoldingExit(),
+        child: Column(
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: CircularProgressIndicator(
+                    value: _holdProgress,
+                    strokeWidth: 6,
+                    color: Colors.redAccent,
+                    backgroundColor: Colors.white10,
+                  ),
+                ),
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.power_settings_new,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Press and hold to exit',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
 

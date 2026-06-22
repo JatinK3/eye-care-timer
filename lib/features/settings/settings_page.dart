@@ -547,6 +547,14 @@ class _SettingsPageState extends State<SettingsPage>
                           child: Text('Calm Breathing'),
                         ),
                         DropdownMenuItem(
+                          value: 'BoxBreathing',
+                          child: Text('Box Breathing (4-4-4-4)'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'EyeExercise',
+                          child: Text('Eye Exercises'),
+                        ),
+                        DropdownMenuItem(
                           value: 'Ambient',
                           child: Text('Ambient Flow'),
                         ),
