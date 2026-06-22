@@ -1016,7 +1016,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = widget.isDark;
+    final isDark = widget.isDark || _isFocusMode;
     final textColor = isDark ? _textColorDark : _textColorLight;
     final ringBgColor = isDark
         ? _ringBackgroundColorDark
@@ -1030,23 +1030,46 @@ class TimerHomePageState extends State<TimerHomePage>
       progressColor,
     );
 
-    return Scaffold(
-      appBar: _isFocusMode
-          ? null
-          : AppBar(
-              title: const Text('BlinkKind'),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.settings),
-                  onPressed: () =>
-                      widget.openSettings(context, _canChangeSettings),
-                  tooltip: 'Settings',
-                ),
-              ],
+    final systemOverlayStyle = SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+    );
+
+    final theme = Theme.of(context);
+    final effectiveTheme = _isFocusMode
+        ? ThemeData.dark().copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: ColorPresets.swatchColor(widget.colorPreset, true),
             ),
-      body: Stack(
+          )
+        : theme;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: systemOverlayStyle,
+      child: Theme(
+        data: effectiveTheme,
+        child: Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: _isFocusMode
+              ? null
+              : AppBar(
+                  title: const Text('BlinkKind'),
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  systemOverlayStyle: systemOverlayStyle,
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.settings),
+                      onPressed: () =>
+                          widget.openSettings(context, _canChangeSettings),
+                      tooltip: 'Settings',
+                    ),
+                  ],
+                ),
+          body: Stack(
         children: [
           RepaintBoundary(
             child: Container(
@@ -1504,7 +1527,9 @@ class TimerHomePageState extends State<TimerHomePage>
           ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 
   void _updateDesktopState() {
