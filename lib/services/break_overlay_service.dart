@@ -52,7 +52,9 @@ class BreakOverlayService {
   }
 
   Future<bool> showPreview({String breakVisualizerStyle = 'Breathing'}) async {
-    if (_isSupportedOnDesktop) {
+    final bool isAppInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+
+    if (_isSupportedOnDesktop || isAppInForeground) {
       return showBreakOverlay(
         durationSeconds: 10,
         breakMode: BreakMode.gentle,
@@ -63,7 +65,9 @@ class BreakOverlayService {
   }
 
   Future<bool> stopPreview() async {
-    if (_isSupportedOnDesktop) {
+    final bool isAppInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+
+    if (_isSupportedOnDesktop || isAppInForeground) {
       return stopBreakOverlay();
     }
     return _invokeBoolean("stopOverlayPreview");
@@ -74,11 +78,20 @@ class BreakOverlayService {
     required BreakMode breakMode,
     String breakVisualizerStyle = 'Breathing',
   }) async {
+    final bool isAppInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+
     if (_isSupportedOnDesktop) {
       await DesktopIntegrationService.instance.showBreakOverlay(true);
       _pushBreakOverlayRoute(durationSeconds, breakMode, breakVisualizerStyle);
       return true;
     }
+
+    if (isAppInForeground) {
+      unawaited(_invokeBoolean("stopBreakOverlay"));
+      _pushBreakOverlayRoute(durationSeconds, breakMode, breakVisualizerStyle);
+      return true;
+    }
+
     if (!_isSupported) return false;
     try {
       return await _channel.invokeMethod<bool>("showBreakOverlay", {
@@ -99,6 +112,7 @@ class BreakOverlayService {
       _popBreakOverlayRoute();
       return true;
     }
+    _popBreakOverlayRoute();
     return _invokeBoolean("stopBreakOverlay");
   }
 
