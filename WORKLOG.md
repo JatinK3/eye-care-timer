@@ -207,4 +207,19 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - Fixed status bar background seaming by setting extendBodyBehindAppBar to true and applying transparent status bar overlay, and resolved contrast issues in dark immersive focus mode by applying a dark theme copy and forcing light status bar icons.
 - Prevented showing the fullscreen break overlay on mobile (both native overlay window and Flutter route) when the app is in the foreground, allowing it to behave like a standard Pomodoro break timer interface where the countdown is shown on the home page itself. Configured app lifecycle changes to automatically trigger the native overlay if the user backgrounds the app mid-break.
 
+- Added two new interactive guided break modes (`lib/features/timer/break_guides.dart`):
+  - **Eye Exercise Dot Tracker**: an animated glowing dot cycles through 5 eye-muscle exercises (side sweep, vertical sweep, figure-8 lemniscate, zoom pulse, corner diagonals) with instructional labels. Each exercise runs for 8 s and advances automatically for the full break duration.
+  - **Box Breathing Guide (4-4-4-4)**: a glowing square whose sides light up progressively during Inhale → Hold → Exhale → Hold phases; color-coded per phase with a per-phase countdown counter in the center.
+  - Both guides embedded in `DesktopBreakOverlay` (full-screen, dedicated dark backgrounds) and in `TimerHomePage` portrait layout (inline below the timer dial during in-app breaks).
+  - Settings dropdown now exposes "Eye Exercises" and "Box Breathing (4-4-4-4)" alongside the existing Calm Breathing / Ambient Flow / Starry Sky options.
+  - Classic card action buttons extracted into a shared `_buildBreakActions()` helper to eliminate duplication between classic and guided layout paths.
+  - All 55 widget tests passing.
 
+- Applied **Inter** as the global minimalist typeface across the entire app for a clean, iOS-like feel:
+  - Added `google_fonts: ^6.2.1` dependency; set `allowRuntimeFetching = false` in `main.dart` so fonts load instantly from bundled assets with no network dependency.
+  - Defined a full 13-role `_buildTextTheme()` in `app.dart`: display sizes use `w200–w300` with tight negative letter-spacing (−1.5 pt at displayLarge, tapering to 0 at body), body/label use `w400–w500` with neutral tracking — the exact combination that gives the crisp, geometric iOS-like typography feel.
+  - Applied the theme to both `ThemeData` (light) and `darkTheme` in `MaterialApp`.
+  - Removed all wide positive `letterSpacing` overrides (1.0, 1.2, 1.5, 2.0) from `break_guides.dart` and `desktop_break_overlay.dart` that caused the "chunky/funky" look.
+  - Switched countdown digit weight from `w700` (bold) to `w300` throughout — Inter's thin tabular figures at display sizes read as premium and minimal.
+  - Replaced every raw `TextStyle()` across the UI with `theme.textTheme.X?.copyWith(...)` equivalents: timer dial counter, status badge, focus-mode tap hint (×2), breathing instruction label, hold-to-exit label, history export description, daily goal counter, onboarding feature item titles.
+  - All 55 tests passing; `dart analyze lib/` reports no issues.
