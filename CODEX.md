@@ -187,7 +187,7 @@ Creative follow-ups after the core overlay is stable:
 ## Remaining Roadmap
 
 1. Product feature expansion.
-   - History is implemented with bounded session records, range controls, monthly totals, goal rate, weekly trend, recent session detail, and safe clearing.
+   - History is implemented with bounded session records, range controls, an animated activity bar chart, goal rate, longest consistency streak, peak productive hour, total focus duration, recent session detail, and safe clearing.
    - Notification permission, exact-alarm, pending-reminder, battery optimization, channel-sound settings, and test-reminder diagnostics are implemented.
    - More visual presets are implemented through shared preset definitions.
    - First-run onboarding and notification permission recovery are implemented.

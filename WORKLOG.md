@@ -202,3 +202,6 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - Added widget coverage for notification scheduling and cancellation through a fake service.
 - Added lifecycle resume reconciliation so the timer catches up from its phase deadline after backgrounding.
 - Polished the timer UI controls, copy, settings card, ring contrast, and color preset sheet.
+- Implemented three break visualizer styles (Calm Breathing, Ambient Flow, and Starry Sky) for the desktop break overlay and settings selection.
+- Redesigned the history and insights page to feature an animated activity bar chart and range-specific metrics (longest streak, average focus duration, peak hour, etc.).
+
