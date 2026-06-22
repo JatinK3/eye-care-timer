@@ -205,6 +205,9 @@ class _TimerHomePageState extends State<TimerHomePage>
         });
 
     _restoreInitialSession();
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      unawaited(_syncTimerWithClock());
+    }
     if (!kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.linux ||
             defaultTargetPlatform == TargetPlatform.macOS ||
