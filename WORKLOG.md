@@ -40,9 +40,12 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Add pre-break warning, fade-to-black transition, and configurable skip/postpone policy.
   - [ ] Test Android 10-15 plus Pixel, Samsung, and Xiaomi-style background restrictions where devices are available.
   - [ ] Enter and restore immersive system UI safely on iOS while BlinkKind is active.
-  - [ ] Add Linux desktop background runtime with tray controls and launch-at-login support.
-  - [ ] Add borderless always-on-top desktop break windows, X11/Wayland validation, and multi-monitor coverage.
-  - [ ] Add smart idle and existing-fullscreen detection after enforced overlays are stable.
+  - [x] Add Linux desktop background runtime with tray controls and launch-at-login support (`desktop_integration_service.dart`; tray menu, window-to-tray, autostart).
+  - [x] Add borderless always-on-top desktop break windows with multi-monitor coverage.
+    - Break overlay now spans every monitor: `computeDisplaySpan` (`lib/features/timer/display_layout.dart`, pure + unit-tested) unions all displays from `screen_retriever`, one borderless always-on-top window is stretched across the union via `setBounds`, and the break card is replicated/centered on each physical screen so no uncovered display remains.
+    - Single-monitor and Wayland sessions keep the original single-monitor fullscreen path (Wayland forbids absolute global window positioning); X11 multi-monitor takes the spanning path.
+    - [ ] On-device validation still open: real X11 multi-monitor spanning, Wayland fallback, mixed-DPI per-monitor centering. (Linux native build currently blocked locally by a missing `system_tray` system dep — `libayatana-appindicator3-dev`.)
+  - [x] Add smart idle and existing-fullscreen detection after enforced overlays are stable (screen-off pause + immersion/DND postpone in `TimerForegroundService.kt`; "Smart Pause & Postpone" setting).
 - [x] Improve notification sound reliability.
   - [x] Migrate Android reminders to a fresh explicitly audible channel.
   - [x] Make foreground sound and system notification sound responsibilities clear.
@@ -129,6 +132,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Added multi-monitor coverage for the desktop break overlay. Previously `setFullScreen(true)` only darkened one monitor, so a second screen stayed usable during a break. Now a pure, unit-tested `computeDisplaySpan` (`lib/features/timer/display_layout.dart`) unions all displays reported by `screen_retriever`, a single borderless always-on-top window is stretched across that union with `setBounds`, and `DesktopBreakOverlay` replicates the break card centered on each monitor. Single-monitor and Wayland sessions fall back to the original fullscreen path (Wayland blocks absolute global positioning), and the window's prior bounds/title-bar are restored when the break ends. Verified with `flutter analyze` (clean) and `flutter test` (49 passing, incl. 7 new geometry tests); Linux native build is blocked locally only by the pre-existing `system_tray` dependency on `libayatana-appindicator3-dev`.
 
 - Improved Android UI smoothness by isolating timer animation rebuilds, containing gradient and dial repaints, reducing desktop synchronization frequency, using lighter mobile transitions and scroll physics, and explicitly enabling Impeller. Confirmed the release pipeline with an Android release APK build.
 

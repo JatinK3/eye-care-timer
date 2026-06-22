@@ -29,6 +29,8 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/app.dart`: Top-level `MaterialApp`, theme/preset state, startup loading, persistence coordination, and notification and break-overlay service injection.
 - `lib/features/timer/timer_home_page.dart`: Main timer UI, countdown state, phase-event orchestration, lifecycle reconciliation, overlay lifecycle, native deadline-owner synchronization, and notification scheduling hooks.
 - `lib/features/timer/phase_schedule.dart`: Pure wall-clock phase projection used to fast-forward restored/backgrounded sessions across every elapsed work and break boundary.
+- `lib/features/timer/display_layout.dart`: Pure desktop display-union geometry used to span a break window across multiple monitors and translate each monitor into window-local coordinates.
+- `lib/features/timer/desktop_break_overlay.dart`: Desktop break surface that renders once for fullscreen fallback or replicates centered break content across every monitor in a spanning window.
 - `lib/models/timer_settings.dart`: Persisted timer settings model and defaults, including color preset, notification, feedback, long-break, automatic-cycle, daily goal, and Off/Gentle/Strict break-screen preferences.
 - `lib/theme/color_presets.dart`: Shared preset names, seed colors, swatches, timer gradients, and progress colors.
 - `lib/features/settings/settings_page.dart`: Dedicated settings UI for durations, theme, presets, reminder permission recovery, automatic-cycle controls, Android break-overlay permission and preview controls, progress history entry point, and streak reset.
@@ -39,11 +41,13 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, bounded completed-session history, daily goal, notification preference, feedback preferences, automatic-cycle settings, and active timer session.
 - `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, system settings recovery hooks, exact-alarm capability checks, battery optimization diagnostics, explicit audible-channel creation, test-reminder support, verified phase reminder scheduling with inexact fallback, and cancellation.
 - `lib/services/break_overlay_service.dart`: Android overlay permission, preview, active break display, and dismissal MethodChannel wrapper with safe unsupported-platform behavior.
+- `lib/services/desktop_integration_service.dart`: Desktop tray, launch-at-login, window lifecycle, and X11 multi-monitor break-window spanning with restoration of the previous window state.
 - `lib/services/timer_background_service.dart`: Dart bridge that sends the active deadline, complete cadence settings, streak, and automatic-run counters to the Android foreground service.
 - `android/app/src/main/kotlin/com/jatin/eyecaretimer/BreakOverlayController.kt`: Process-scoped native full-screen break overlay with preview, Gentle/Strict behavior, exercise rotation, countdown, and emergency press-and-hold exit.
 - `android/app/src/main/kotlin/com/jatin/eyecaretimer/TimerForegroundService.kt`: Persisted native cadence owner for exact phase deadlines, delayed-boundary fast-forward, automatic cycle limits, long-break cadence, ongoing status, process recovery, and background overlays.
 - `android/app/src/main/kotlin/com/jatin/eyecaretimer/PhaseDeadlineReceiver.kt`: Exact-alarm receiver that restores the cadence owner when needed and includes the expected deadline so stale broadcasts are rejected.
 - `test/phase_schedule_test.dart`: Unit coverage for multi-boundary wall-clock phase projection and clock-change handling.
+- `test/display_layout_test.dart`: Unit coverage for empty, invalid, offset, horizontal, and vertical multi-monitor display geometry.
 - `test/timer_session_test.dart`: Timer session platform-serialization coverage.
 - `test/widget_test.dart`: Widget smoke, persistence load, timer controls, automatic-cycle restore/limits, break-mode settings, settings/history navigation, notification fake, and transition regression tests.
 - `WORKLOG.md`: Ordered roadmap and completion log.
@@ -75,6 +79,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification and feedback toggle UX, contrast-safe dark-mode primary buttons, calmer text, and tighter card radius.
 - The home countdown isolates per-frame work in `AnimatedBuilder` subtrees for the dial and warning curtain. Repaint boundaries keep the static gradient and surrounding controls out of timer repaints, while desktop timer state updates only when the displayed second changes.
 - Android explicitly enables Impeller. Android/iOS use Cupertino-style page transitions and bouncing scroll physics for a lighter, consistent mobile interaction feel.
+- On desktop, break mode uses a borderless always-on-top window. X11 multi-monitor sessions span the union of all displays and center a break surface on each monitor; single-monitor and Wayland sessions use fullscreen fallback because Wayland does not permit reliable absolute global window positioning.
 
 ## Dependencies
 
@@ -140,11 +145,12 @@ Commands run after the current implementation:
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 42 tests.
+- `flutter test`: passing, 49 tests.
 - `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
 - `flutter build apk --release`: passing with AOT compilation and tree-shaking; generated `build/app/outputs/flutter-apk/app-release.apk` (49.5 MB).
 - `flutter build web`: passing; generated `build/web`.
 - Android 17 emulator baseline passed for service/alarm registration, cross-app overlay launch at a background work deadline, rotation survival, automatic break dismissal, and service cleanup. This does not replace Android 10-15/OEM physical-device testing.
+- Multi-monitor display geometry is covered by seven unit tests. Real X11 multi-monitor, Wayland fallback, and mixed-DPI positioning still require hardware validation; the local Linux build also requires `libayatana-appindicator3-dev` for the existing `system_tray` dependency.
 
 Important git/worktree note:
 

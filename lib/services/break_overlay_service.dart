@@ -106,11 +106,14 @@ class BreakOverlayService {
       _activeRoute = null;
     }
 
+    final monitorRects = DesktopIntegrationService.instance.breakMonitorRects;
+
     _activeRoute = PageRouteBuilder<void>(
       pageBuilder: (context, animation, secondaryAnimation) {
         return DesktopBreakOverlay(
           initialDurationSeconds: durationSeconds,
           breakMode: breakMode,
+          monitorRects: monitorRects,
           onDismiss: () {
             unawaited(stopBreakOverlay());
           },

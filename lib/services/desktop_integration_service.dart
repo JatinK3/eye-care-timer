@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' show Rect;
 import 'package:flutter/foundation.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
+import 'package:screen_retriever/screen_retriever.dart';
 import 'package:system_tray/system_tray.dart';
 import 'package:window_manager/window_manager.dart';
+import '../features/timer/display_layout.dart';
 import 'desktop_controls_controller.dart';
 
 class DesktopIntegrationService extends WindowListener {
@@ -15,6 +18,15 @@ class DesktopIntegrationService extends WindowListener {
   final Menu _menu = Menu();
   bool _isInitialized = false;
   bool _isBreakActive = false;
+
+  List<Rect> _breakMonitorRects = const [];
+  Rect? _savedWindowBounds;
+  bool _spanningActive = false;
+
+  /// Per-monitor rectangles (in the overlay window's local coordinate space) to
+  /// replicate break content onto every screen while a multi-monitor break is
+  /// active. Empty when the overlay is a single-monitor fullscreen window.
+  List<Rect> get breakMonitorRects => List.unmodifiable(_breakMonitorRects);
 
   bool get isSupported =>
       !kIsWeb &&
@@ -221,14 +233,110 @@ class DesktopIntegrationService extends WindowListener {
     if (!isSupported) return;
     if (show) {
       _isBreakActive = true;
-      await windowManager.setAlwaysOnTop(true);
-      await windowManager.setFullScreen(true);
-      await windowManager.show();
-      await windowManager.focus();
+      await _enterBreakWindow();
     } else {
       _isBreakActive = false;
-      await windowManager.setFullScreen(false);
-      await windowManager.setAlwaysOnTop(false);
+      await _exitBreakWindow();
     }
+  }
+
+  Future<void> _enterBreakWindow() async {
+    final span = await _computeDisplaySpan();
+    await windowManager.setAlwaysOnTop(true);
+
+    if (span != null && span.isMultiMonitor && _canSpanDisplays()) {
+      try {
+        _savedWindowBounds = await windowManager.getBounds();
+        await windowManager.setBounds(span.windowBounds);
+        _breakMonitorRects = span.monitorRects;
+        _spanningActive = true;
+        // Cosmetic only: hide the window chrome over the break. Best-effort so
+        // a platform without title-bar control still gets a covering overlay.
+        try {
+          await windowManager.setSkipTaskbar(true);
+          await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+        } catch (e) {
+          debugPrint('Could not hide window chrome for break overlay: $e');
+        }
+        await windowManager.show();
+        await windowManager.focus();
+        return;
+      } catch (e) {
+        debugPrint(
+          'Multi-monitor break span failed; falling back to fullscreen: $e',
+        );
+        _spanningActive = false;
+        _breakMonitorRects = const [];
+        _savedWindowBounds = null;
+      }
+    }
+
+    // Single-monitor, Wayland, or fallback path: fullscreen on the current
+    // monitor (original behavior).
+    _breakMonitorRects = const [];
+    await windowManager.setFullScreen(true);
+    await windowManager.show();
+    await windowManager.focus();
+  }
+
+  Future<void> _exitBreakWindow() async {
+    if (_spanningActive) {
+      _spanningActive = false;
+      try {
+        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+        await windowManager.setSkipTaskbar(false);
+        final saved = _savedWindowBounds;
+        if (saved != null) {
+          await windowManager.setBounds(saved);
+        }
+      } catch (e) {
+        debugPrint('Failed to restore window after break overlay: $e');
+      }
+      _savedWindowBounds = null;
+    } else {
+      await windowManager.setFullScreen(false);
+    }
+    _breakMonitorRects = const [];
+    await windowManager.setAlwaysOnTop(false);
+  }
+
+  Future<DisplaySpan?> _computeDisplaySpan() async {
+    try {
+      final displays = await screenRetriever.getAllDisplays();
+      final bounds = <DisplayBounds>[];
+      for (final d in displays) {
+        final position = d.visiblePosition;
+        if (position == null) continue;
+        final size = d.visibleSize ?? d.size;
+        bounds.add(
+          DisplayBounds(
+            left: position.dx,
+            top: position.dy,
+            width: size.width,
+            height: size.height,
+          ),
+        );
+      }
+      return computeDisplaySpan(bounds);
+    } catch (e) {
+      debugPrint('Failed to enumerate displays for break overlay: $e');
+      return null;
+    }
+  }
+
+  bool _canSpanDisplays() {
+    // Wayland does not let a client position itself at absolute global
+    // coordinates, so a single window cannot reliably cover other monitors.
+    // Fall back to single-monitor fullscreen there.
+    if (Platform.isLinux) {
+      final sessionType = Platform.environment['XDG_SESSION_TYPE']
+          ?.toLowerCase();
+      final waylandDisplay = Platform.environment['WAYLAND_DISPLAY'];
+      final isWayland =
+          sessionType == 'wayland' ||
+          (waylandDisplay != null && waylandDisplay.isNotEmpty);
+      if (isWayland) return false;
+    }
+    return true;
   }
 }
