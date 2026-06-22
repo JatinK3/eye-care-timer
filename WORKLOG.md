@@ -204,4 +204,6 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - Polished the timer UI controls, copy, settings card, ring contrast, and color preset sheet.
 - Implemented three break visualizer styles (Calm Breathing, Ambient Flow, and Starry Sky) for the desktop break overlay and settings selection.
 - Redesigned the history and insights page to feature an animated activity bar chart and range-specific metrics (longest streak, average focus duration, peak hour, etc.).
+- Fixed status bar background seaming by setting extendBodyBehindAppBar to true and applying transparent status bar overlay, and resolved contrast issues in dark immersive focus mode by applying a dark theme copy and forcing light status bar icons.
+
 
