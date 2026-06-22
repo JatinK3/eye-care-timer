@@ -18,10 +18,12 @@ class SettingsPage extends StatefulWidget {
   final bool allowPostpone;
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
+  final String breakVisualizerStyle;
   final void Function(bool) setAllowSkip;
   final void Function(bool) setAllowPostpone;
   final void Function(int) setPostponeDurationSeconds;
   final void Function(bool) setSmartIdleEnabled;
+  final void Function(String) setBreakVisualizerStyle;
   final bool notificationsEnabled;
   final bool longBreakEnabled;
   final int longBreakDurationSeconds;
@@ -90,10 +92,12 @@ class SettingsPage extends StatefulWidget {
     required this.allowPostpone,
     required this.postponeDurationSeconds,
     required this.smartIdleEnabled,
+    required this.breakVisualizerStyle,
     required this.setAllowSkip,
     required this.setAllowPostpone,
     required this.setPostponeDurationSeconds,
     required this.setSmartIdleEnabled,
+    required this.setBreakVisualizerStyle,
     required this.notificationPermissionStatus,
     required this.exactAlarmStatus,
     required this.batteryOptimizationStatus,
@@ -513,10 +517,45 @@ class _SettingsPageState extends State<SettingsPage>
                     secondary: const Icon(Icons.psychology_outlined),
                     title: const Text('Smart Pause & Postpone'),
                     subtitle: const Text(
-                      'Pause on screen-off; delay breaks for games or videos',
+                      'Pause on screen-off / system idle; delay breaks for games or videos',
                     ),
                     value: widget.smartIdleEnabled,
                     onChanged: widget.setSmartIdleEnabled,
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.style_outlined),
+                    title: const Text('Break visualizer style'),
+                    subtitle: const Text('Choose ambient effect during breaks'),
+                    trailing: DropdownButton<String>(
+                      value: widget.breakVisualizerStyle,
+                      underline: const SizedBox(),
+                      dropdownColor: Theme.of(context).cardColor,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                      onChanged: (String? val) {
+                        if (val != null) {
+                          widget.setBreakVisualizerStyle(val);
+                        }
+                      },
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'Breathing',
+                          child: Text('Calm Breathing'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Ambient',
+                          child: Text('Ambient Flow'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Starry',
+                          child: Text('Starry Sky'),
+                        ),
+                      ],
+                    ),
                   ),
                   // Usage Access permission tile — only shown when smart idle is
                   // on and the user hasn't yet granted the permission.

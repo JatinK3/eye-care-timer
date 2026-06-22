@@ -380,6 +380,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveSmartIdleEnabled(enabled));
   }
 
+  void _setBreakVisualizerStyle(String style) {
+    setState(() {
+      _settings = _settings.copyWith(breakVisualizerStyle: style);
+    });
+    unawaited(_preferencesService.saveBreakVisualizerStyle(style));
+  }
+
   void _saveSession(TimerSession session) {
     setState(() {
       _session = session;
@@ -486,10 +493,12 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           allowPostpone: _settings.allowPostpone,
           postponeDurationSeconds: _settings.postponeDurationSeconds,
           smartIdleEnabled: _settings.smartIdleEnabled,
+          breakVisualizerStyle: _settings.breakVisualizerStyle,
           setAllowSkip: _setAllowSkip,
           setAllowPostpone: _setAllowPostpone,
           setPostponeDurationSeconds: _setPostponeDurationSeconds,
           setSmartIdleEnabled: _setSmartIdleEnabled,
+          setBreakVisualizerStyle: _setBreakVisualizerStyle,
           notificationsEnabled: _settings.notificationsEnabled,
           notificationPermissionStatus: _notificationPermissionStatus,
           exactAlarmStatus: _exactAlarmStatus,
@@ -582,6 +591,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
               allowPostpone: _settings.allowPostpone,
               postponeDurationSeconds: _settings.postponeDurationSeconds,
               smartIdleEnabled: _settings.smartIdleEnabled,
+              breakVisualizerStyle: _settings.breakVisualizerStyle,
               initialSession: _session,
               openSettings: _openSettings,
               setPreset: _setPreset,

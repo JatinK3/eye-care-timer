@@ -51,9 +51,13 @@ class BreakOverlayService {
     return _invokeBoolean("openOverlayPermissionSettings");
   }
 
-  Future<bool> showPreview() async {
+  Future<bool> showPreview({String breakVisualizerStyle = 'Breathing'}) async {
     if (_isSupportedOnDesktop) {
-      return showBreakOverlay(durationSeconds: 10, breakMode: BreakMode.gentle);
+      return showBreakOverlay(
+        durationSeconds: 10,
+        breakMode: BreakMode.gentle,
+        breakVisualizerStyle: breakVisualizerStyle,
+      );
     }
     return _invokeBoolean("showOverlayPreview");
   }
@@ -68,10 +72,11 @@ class BreakOverlayService {
   Future<bool> showBreakOverlay({
     required int durationSeconds,
     required BreakMode breakMode,
+    String breakVisualizerStyle = 'Breathing',
   }) async {
     if (_isSupportedOnDesktop) {
       await DesktopIntegrationService.instance.showBreakOverlay(true);
-      _pushBreakOverlayRoute(durationSeconds, breakMode);
+      _pushBreakOverlayRoute(durationSeconds, breakMode, breakVisualizerStyle);
       return true;
     }
     if (!_isSupported) return false;
@@ -97,7 +102,11 @@ class BreakOverlayService {
     return _invokeBoolean("stopBreakOverlay");
   }
 
-  void _pushBreakOverlayRoute(int durationSeconds, BreakMode breakMode) {
+  void _pushBreakOverlayRoute(
+    int durationSeconds,
+    BreakMode breakMode,
+    String breakVisualizerStyle,
+  ) {
     final navigator = navigatorKey.currentState;
     if (navigator == null) return;
 
@@ -114,6 +123,7 @@ class BreakOverlayService {
           initialDurationSeconds: durationSeconds,
           breakMode: breakMode,
           monitorRects: monitorRects,
+          breakVisualizerStyle: breakVisualizerStyle,
           onDismiss: () {
             unawaited(stopBreakOverlay());
           },

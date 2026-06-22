@@ -52,6 +52,7 @@ class TimerHomePage extends StatefulWidget {
   final bool allowPostpone;
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
+  final String breakVisualizerStyle;
 
   const TimerHomePage({
     super.key,
@@ -75,6 +76,7 @@ class TimerHomePage extends StatefulWidget {
     required this.allowPostpone,
     required this.postponeDurationSeconds,
     required this.smartIdleEnabled,
+    required this.breakVisualizerStyle,
     this.breakOverlayService,
     required this.openSettings,
     required this.setPreset,
@@ -559,6 +561,7 @@ class TimerHomePageState extends State<TimerHomePage>
         widget.breakOverlayService?.showBreakOverlay(
           durationSeconds: projection.remainingSeconds,
           breakMode: widget.breakMode,
+          breakVisualizerStyle: widget.breakVisualizerStyle,
         ),
       );
     } else {

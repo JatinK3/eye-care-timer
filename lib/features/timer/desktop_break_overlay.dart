@@ -8,11 +8,8 @@ class DesktopBreakOverlay extends StatefulWidget {
   final int initialDurationSeconds;
   final BreakMode breakMode;
   final VoidCallback onDismiss;
-
-  /// Per-monitor rectangles in this window's local coordinate space. When the
-  /// overlay window spans multiple monitors, the break card is replicated and
-  /// centered within each one. Empty for a single-monitor fullscreen overlay.
   final List<Rect> monitorRects;
+  final String breakVisualizerStyle;
 
   const DesktopBreakOverlay({
     super.key,
@@ -20,6 +17,7 @@ class DesktopBreakOverlay extends StatefulWidget {
     required this.breakMode,
     required this.onDismiss,
     this.monitorRects = const [],
+    this.breakVisualizerStyle = 'Breathing',
   });
 
   @override
@@ -131,42 +129,61 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   @override
   Widget build(BuildContext context) {
     final rects = widget.monitorRects;
-    // Spanning multiple monitors: paint a black backdrop across the whole
-    // window and center an identical break card within each physical screen so
-    // the user cannot simply look at an uncovered display.
+    
+    Widget content;
+    // Spanning multiple monitors: paint backdrop across the whole window
+    // and center an identical break card within each physical screen.
     if (rects.length > 1) {
+      content = Stack(
+        fit: StackFit.expand,
+        children: [
+          for (final rect in rects)
+            Positioned.fromRect(
+              rect: rect,
+              child: Center(child: _buildBreakCard(context)),
+            ),
+        ],
+      );
+    } else {
+      content = SafeArea(child: Center(child: _buildBreakCard(context)));
+    }
+
+    if (widget.breakVisualizerStyle == 'Ambient' ||
+        widget.breakVisualizerStyle == 'Breathing') {
       return Scaffold(
         backgroundColor: Colors.black,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            for (final rect in rects)
-              Positioned.fromRect(
-                rect: rect,
-                child: Center(child: _buildBreakCard(context)),
-              ),
-          ],
-        ),
+        body: _AmbientBackground(child: content),
+      );
+    } else if (widget.breakVisualizerStyle == 'Starry') {
+      return Scaffold(
+        backgroundColor: const Color(0xFF020205),
+        body: _StarrySkyBackground(child: content),
       );
     }
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(child: Center(child: _buildBreakCard(context))),
+      body: content,
     );
   }
 
   Widget _buildBreakCard(BuildContext context) {
     final theme = Theme.of(context);
     final textStyle = theme.textTheme;
+    final showBreathingGuide = widget.breakVisualizerStyle == 'Breathing';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.visibility_outlined, color: Colors.cyan, size: 64),
-          const SizedBox(height: 32),
+          if (showBreathingGuide)
+            _BreathingGuideCircle(remainingSeconds: _remainingSeconds)
+          else ...[
+            const Icon(Icons.visibility_outlined, color: Colors.cyan, size: 64),
+            const SizedBox(height: 32),
+          ],
+          const SizedBox(height: 16),
           Text(
             'Time to rest your eyes',
             style: textStyle.headlineMedium?.copyWith(
@@ -196,31 +213,35 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
             ),
           ),
           const SizedBox(height: 48),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 150,
-                height: 150,
-                child: CircularProgressIndicator(
-                  value: widget.initialDurationSeconds > 0
-                      ? _remainingSeconds / widget.initialDurationSeconds
-                      : 0.0,
-                  strokeWidth: 8,
-                  color: Colors.cyan,
-                  backgroundColor: Colors.white12,
+          if (!showBreathingGuide) ...[
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 150,
+                  height: 150,
+                  child: CircularProgressIndicator(
+                    value: widget.initialDurationSeconds > 0
+                        ? _remainingSeconds / widget.initialDurationSeconds
+                        : 0.0,
+                    strokeWidth: 8,
+                    color: Colors.cyan,
+                    backgroundColor: Colors.white12,
+                  ),
                 ),
-              ),
-              Text(
-                _formatDuration(_remainingSeconds),
-                style: textStyle.displaySmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                Text(
+                  _formatDuration(_remainingSeconds),
+                  style: textStyle.displaySmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 64),
+              ],
+            ),
+            const SizedBox(height: 64),
+          ] else ...[
+            const SizedBox(height: 32),
+          ],
           if (widget.breakMode == BreakMode.gentle) ...[
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -313,6 +334,335 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _AmbientBackground extends StatefulWidget {
+  final Widget child;
+  const _AmbientBackground({required this.child});
+
+  @override
+  State<_AmbientBackground> createState() => _AmbientBackgroundState();
+}
+
+class _AmbientBackgroundState extends State<_AmbientBackground>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 15),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        final color1 = Color.lerp(
+          const Color(0xFF05050F),
+          const Color(0xFF0C1030),
+          t,
+        )!;
+        final color2 = Color.lerp(
+          const Color(0xFF081820),
+          const Color(0xFF150825),
+          t,
+        )!;
+
+        final alignment1 = Alignment(
+          math.sin(t * 2 * math.pi) * 0.5,
+          math.cos(t * 2 * math.pi) * 0.5,
+        );
+        final alignment2 = Alignment(
+          math.cos(t * 2 * math.pi + math.pi) * 0.6,
+          math.sin(t * 2 * math.pi + math.pi) * 0.6,
+        );
+
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF020205),
+          ),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: alignment1,
+                      radius: 1.5,
+                      colors: [
+                        color1.withValues(alpha: 0.4),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: alignment2,
+                      radius: 1.5,
+                      colors: [
+                        color2.withValues(alpha: 0.35),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              ?child,
+            ],
+          ),
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
+class _StarrySkyBackground extends StatefulWidget {
+  final Widget child;
+  const _StarrySkyBackground({required this.child});
+
+  @override
+  State<_StarrySkyBackground> createState() => _StarrySkyBackgroundState();
+}
+
+class _StarrySkyBackgroundState extends State<_StarrySkyBackground>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<_Star> _stars = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final random = math.Random();
+    for (int i = 0; i < 35; i++) {
+      _stars.add(
+        _Star(
+          x: random.nextDouble(),
+          y: random.nextDouble(),
+          size: random.nextDouble() * 2.2 + 0.6,
+          speed: random.nextDouble() * 0.015 + 0.005,
+          opacity: random.nextDouble() * 0.5 + 0.2,
+        ),
+      );
+    }
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        for (final star in _stars) {
+          star.y -= star.speed * 0.005;
+          if (star.y < 0) {
+            star.y = 1.0;
+            star.x = math.Random().nextDouble();
+          }
+        }
+
+        return CustomPaint(
+          painter: _StarPainter(_stars),
+          child: child,
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
+class _Star {
+  double x;
+  double y;
+  final double size;
+  final double speed;
+  final double opacity;
+
+  _Star({
+    required this.x,
+    required this.y,
+    required this.size,
+    required this.speed,
+    required this.opacity,
+  });
+}
+
+class _StarPainter extends CustomPainter {
+  final List<_Star> stars;
+  _StarPainter(this.stars);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    for (final star in stars) {
+      paint.color = Colors.white.withValues(alpha: star.opacity);
+      canvas.drawCircle(
+        Offset(star.x * size.width, star.y * size.height),
+        star.size,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _BreathingGuideCircle extends StatefulWidget {
+  final int remainingSeconds;
+  const _BreathingGuideCircle({required this.remainingSeconds});
+
+  @override
+  State<_BreathingGuideCircle> createState() => _BreathingGuideCircleState();
+}
+
+class _BreathingGuideCircleState extends State<_BreathingGuideCircle>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 16),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  String _formatDuration(int totalSeconds) {
+    final m = totalSeconds ~/ 60;
+    final s = totalSeconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final value = _controller.value * 16.0;
+        double scale = 1.0;
+        String instruction = "Hold";
+        Color ringColor = Colors.cyan.withValues(alpha: 0.3);
+
+        if (value < 4.0) {
+          final t = value / 4.0;
+          scale = 1.0 + (t * 0.3);
+          instruction = "Breathe In";
+          ringColor = Color.lerp(
+            Colors.cyan.withValues(alpha: 0.3),
+            Colors.cyanAccent.withValues(alpha: 0.8),
+            t,
+          )!;
+        } else if (value < 8.0) {
+          scale = 1.3;
+          instruction = "Hold";
+          ringColor = Colors.cyanAccent.withValues(alpha: 0.8);
+        } else if (value < 12.0) {
+          final t = (value - 8.0) / 4.0;
+          scale = 1.3 - (t * 0.3);
+          instruction = "Breathe Out";
+          ringColor = Color.lerp(
+            Colors.cyanAccent.withValues(alpha: 0.8),
+            Colors.teal.withValues(alpha: 0.4),
+            t,
+          )!;
+        } else {
+          scale = 1.0;
+          instruction = "Hold";
+          ringColor = Colors.teal.withValues(alpha: 0.4);
+        }
+
+        return SizedBox(
+          width: 220,
+          height: 220,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Shimmer outer breathing ring
+              Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: ringColor.withValues(alpha: 0.04),
+                    border: Border.all(
+                      color: ringColor,
+                      width: 4,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: ringColor.withValues(alpha: 0.2),
+                        blurRadius: 15 * scale,
+                        spreadRadius: 1 * scale,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Inner text
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _formatDuration(widget.remainingSeconds),
+                    style: theme.textTheme.displaySmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    instruction,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

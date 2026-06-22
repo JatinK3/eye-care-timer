@@ -28,7 +28,7 @@ class FakeBreakOverlayService extends BreakOverlayService {
   }
 
   @override
-  Future<bool> showPreview() async {
+  Future<bool> showPreview({String breakVisualizerStyle = 'Breathing'}) async {
     previewCount++;
     return status == OverlayPermissionStatus.allowed;
   }
@@ -925,5 +925,29 @@ void main() {
 
     // Verify it resumed
     expect(find.text('Pause'), findsOneWidget);
+  });
+
+  testWidgets('settings updates break visualizer style', (
+    WidgetTester tester,
+  ) async {
+    await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Break visualizer style'), 200);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Calm Breathing'), findsOneWidget);
+
+    await tester.tap(find.text('Calm Breathing'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Starry Sky').last);
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(
+      prefs.getString(PreferencesService.breakVisualizerStyleKey),
+      'Starry',
+    );
   });
 }

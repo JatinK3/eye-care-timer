@@ -29,6 +29,7 @@ class PreferencesService {
   static const String allowPostponeKey = 'allowPostpone';
   static const String postponeDurationSecondsKey = 'postponeDurationSeconds';
   static const String smartIdleEnabledKey = 'smartIdleEnabled';
+  static const String breakVisualizerStyleKey = 'breakVisualizerStyle';
   static const String dailyHistoryKey = 'dailyHistory';
   static const String workSessionHistoryKey = 'workSessionHistory';
   static const String sessionIsActiveKey = 'sessionIsActive';
@@ -92,6 +93,9 @@ class PreferencesService {
       smartIdleEnabled:
           prefs.getBool(smartIdleEnabledKey) ??
           TimerSettings.defaultSmartIdleEnabled,
+      breakVisualizerStyle:
+          prefs.getString(breakVisualizerStyleKey) ??
+          TimerSettings.defaultBreakVisualizerStyle,
     );
   }
 
@@ -308,6 +312,11 @@ class PreferencesService {
   Future<void> saveSmartIdleEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(smartIdleEnabledKey, enabled);
+  }
+
+  Future<void> saveBreakVisualizerStyle(String style) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(breakVisualizerStyleKey, style);
   }
 
   Future<void> saveStreakCount(int streakCount) async {
