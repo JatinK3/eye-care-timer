@@ -697,17 +697,22 @@ void main() {
     await tester.tap(historyTile);
     await tester.pumpAndSettle();
 
-    expect(find.text('History'), findsOneWidget);
-    expect(find.text('Best day'), findsOneWidget);
+    expect(find.text('History & Insights'), findsOneWidget);
+    expect(find.text('Longest streak'), findsOneWidget);
     expect(find.text('Goal rate'), findsOneWidget);
-    expect(find.text('This month'), findsOneWidget);
-    expect(find.text('7-day trend'), findsOneWidget);
+    expect(find.text('Focus duration'), findsOneWidget);
+    expect(find.text('Peak focus hour'), findsOneWidget);
     expect(find.text('30 days'), findsOneWidget);
-    expect(find.text('Last 7 days'), findsOneWidget);
-    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('20m'), findsOneWidget);
+
+    final logsTitle = find.text('Last 7 days logs');
+    await tester.scrollUntilVisible(logsTitle, 300);
+    await tester.pumpAndSettle();
+
+    expect(logsTitle, findsOneWidget);
+    expect(find.text('Today'), findsAtLeastNWidgets(1));
     expect(find.text('Yesterday'), findsOneWidget);
     expect(find.text('3 / 6'), findsOneWidget);
-    expect(find.text('6 cycles'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Recent completed sessions'),

@@ -1,3 +1,4 @@
+import "dart:math" as math;
 import "package:flutter/material.dart";
 
 import "../../models/work_session_record.dart";
@@ -37,67 +38,100 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   Widget build(BuildContext context) {
     final dates = _datesForRange();
-    final best = _bestEntry();
+    final rangeSessions = _sessionsForRange();
+
+    // Calculate range-specific statistics
     final goalDays = dates
         .where((date) => (_history[_dateKey(date)] ?? 0) >= widget.dailyGoal)
         .length;
     final goalRate = dates.isEmpty
         ? 0
         : ((goalDays / dates.length) * 100).round();
-    final recentSessions = _sessionsForRange().take(10);
+
+    final totalFocusSeconds = rangeSessions.fold<int>(0, (sum, record) => sum + record.durationSeconds);
+    final longestStreak = _longestGoalStreak(dates);
+    final peakHour = _peakFocusHour(rangeSessions);
+
+    final recentSessions = rangeSessions.take(10);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("History")),
+      appBar: AppBar(
+        title: const Text("History & Insights"),
+        elevation: 0,
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
+          // Range Switcher
+          Center(
+            child: SegmentedButton<HistoryRange>(
+              segments: const [
+                ButtonSegment(
+                  value: HistoryRange.sevenDays,
+                  label: Text("7 days"),
+                ),
+                ButtonSegment(
+                  value: HistoryRange.thirtyDays,
+                  label: Text("30 days"),
+                ),
+                ButtonSegment(
+                  value: HistoryRange.all,
+                  label: Text("All"),
+                ),
+              ],
+              selected: {_range},
+              onSelectionChanged: (selection) =>
+                  setState(() => _range = selection.first),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Visual Activity Chart
+          _HistorySection(
+            title: "Daily Activity Pattern",
+            child: dates.isEmpty
+                ? const _EmptyMessage("No activity recorded in this range")
+                : _ActivityBarChart(
+                    dates: dates,
+                    history: _history,
+                    dailyGoal: widget.dailyGoal,
+                  ),
+          ),
+          const SizedBox(height: 16),
+
+          // Range Specific Statistics Cards Grid
           _MetricRow(
             first: _MetricCard(
-              icon: Icons.calendar_month_outlined,
-              label: "This month",
-              value: "${_currentMonthTotal()} cycles",
-              detail: _monthLabel(DateTime.now()),
+              icon: Icons.access_time_outlined,
+              label: "Focus duration",
+              value: _formatTotalFocusTime(totalFocusSeconds),
+              detail: "${rangeSessions.length} total sessions",
             ),
             second: _MetricCard(
               icon: Icons.track_changes_outlined,
               label: "Goal rate",
               value: "$goalRate%",
-              detail: "$goalDays of ${dates.length} days",
+              detail: "$goalDays of ${dates.length} days met",
             ),
           ),
           const SizedBox(height: 12),
           _MetricRow(
             first: _MetricCard(
-              icon: Icons.emoji_events_outlined,
-              label: "Best day",
-              value: best == null ? "0 cycles" : "${best.value} cycles",
-              detail: best?.key ?? "No history yet",
+              icon: Icons.bolt_outlined,
+              label: "Longest streak",
+              value: "$longestStreak days",
+              detail: "Consecutive goal days",
             ),
             second: _MetricCard(
-              icon: Icons.trending_up_outlined,
-              label: "7-day trend",
-              value: _trendValue(),
-              detail: _trendDetail(),
+              icon: Icons.star_outline,
+              label: "Peak focus hour",
+              value: peakHour,
+              detail: "Most active time",
             ),
           ),
           const SizedBox(height: 16),
-          SegmentedButton<HistoryRange>(
-            segments: const [
-              ButtonSegment(
-                value: HistoryRange.sevenDays,
-                label: Text("7 days"),
-              ),
-              ButtonSegment(
-                value: HistoryRange.thirtyDays,
-                label: Text("30 days"),
-              ),
-              ButtonSegment(value: HistoryRange.all, label: Text("All")),
-            ],
-            selected: {_range},
-            onSelectionChanged: (selection) =>
-                setState(() => _range = selection.first),
-          ),
-          const SizedBox(height: 16),
+
+          // Daily Logs List
           _HistorySection(
             title: _rangeTitle(),
             child: dates.isEmpty
@@ -115,6 +149,8 @@ class _HistoryPageState extends State<HistoryPage> {
                   ),
           ),
           const SizedBox(height: 16),
+
+          // Recent Completed Sessions
           _HistorySection(
             title: "Recent completed sessions",
             child: recentSessions.isEmpty
@@ -135,14 +171,23 @@ class _HistoryPageState extends State<HistoryPage> {
                         .toList(),
                   ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
+
+          // Clear History Action Button
           OutlinedButton.icon(
             onPressed: _history.isEmpty && _workSessions.isEmpty
                 ? null
                 : _confirmResetHistory,
             icon: const Icon(Icons.delete_outline),
             label: const Text("Clear activity history"),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
           ),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -161,13 +206,12 @@ class _HistoryPageState extends State<HistoryPage> {
         (index) => today.subtract(Duration(days: index)),
       );
     }
-    final dates =
-        _history.keys
-            .map(DateTime.tryParse)
-            .whereType<DateTime>()
-            .map(_startOfDay)
-            .toList()
-          ..sort((a, b) => b.compareTo(a));
+    final dates = _history.keys
+        .map(DateTime.tryParse)
+        .whereType<DateTime>()
+        .map(_startOfDay)
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
     return dates;
   }
 
@@ -182,45 +226,63 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  MapEntry<String, int>? _bestEntry() {
-    if (_history.isEmpty) return null;
-    return _history.entries.reduce(
-      (best, entry) => entry.value > best.value ? entry : best,
-    );
+  int _longestGoalStreak(List<DateTime> rangeDates) {
+    if (rangeDates.isEmpty) return 0;
+
+    final end = _startOfDay(DateTime.now());
+    final start = switch (_range) {
+      HistoryRange.sevenDays => end.subtract(const Duration(days: 6)),
+      HistoryRange.thirtyDays => end.subtract(const Duration(days: 29)),
+      HistoryRange.all => rangeDates.last,
+    };
+
+    int currentStreak = 0;
+    int maxStreak = 0;
+
+    final daysCount = end.difference(start).inDays + 1;
+    for (int i = 0; i < daysCount; i++) {
+      final date = start.add(Duration(days: i));
+      final count = _history[_dateKey(date)] ?? 0;
+      if (widget.dailyGoal > 0 && count >= widget.dailyGoal) {
+        currentStreak++;
+        if (currentStreak > maxStreak) {
+          maxStreak = currentStreak;
+        }
+      } else {
+        currentStreak = 0;
+      }
+    }
+    return maxStreak;
   }
 
-  int _currentMonthTotal() {
-    final now = DateTime.now();
-    return _history.entries.fold(0, (total, entry) {
-      final date = DateTime.tryParse(entry.key);
-      return date != null && date.year == now.year && date.month == now.month
-          ? total + entry.value
-          : total;
-    });
+  String _peakFocusHour(Iterable<WorkSessionRecord> sessions) {
+    if (sessions.isEmpty) return "N/A";
+    final hourCounts = <int, int>{};
+    for (final session in sessions) {
+      final hour = session.completedAt.hour;
+      hourCounts[hour] = (hourCounts[hour] ?? 0) + 1;
+    }
+    final peakHour = hourCounts.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+    final endHour = (peakHour + 1) % 24;
+    String formatHour(int h) {
+      final suffix = h >= 12 ? "PM" : "AM";
+      final displayH = h == 0 ? 12 : (h > 12 ? h - 12 : h);
+      return "$displayH $suffix";
+    }
+    return "${formatHour(peakHour)} - ${formatHour(endHour)}";
   }
 
-  int _weekTotal(int startDaysAgo) {
-    final today = _startOfDay(DateTime.now());
-    return List.generate(7, (index) => startDaysAgo + index).fold(
-      0,
-      (total, daysAgo) =>
-          total +
-          (_history[_dateKey(today.subtract(Duration(days: daysAgo)))] ?? 0),
-    );
-  }
-
-  String _trendValue() {
-    final difference = _weekTotal(0) - _weekTotal(7);
-    return difference > 0 ? "+$difference" : "$difference";
-  }
-
-  String _trendDetail() {
-    final current = _weekTotal(0);
-    final previous = _weekTotal(7);
-    if (current == previous) return "Same as previous week";
-    return current > previous
-        ? "More than previous week"
-        : "Fewer than previous week";
+  String _formatTotalFocusTime(int totalSeconds) {
+    if (totalSeconds < 60) {
+      return "${totalSeconds}s";
+    }
+    if (totalSeconds < 3600) {
+      return "${totalSeconds ~/ 60}m";
+    }
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    if (minutes == 0) return "${hours}h";
+    return "${hours}h ${minutes}m";
   }
 
   Future<void> _confirmResetHistory() async {
@@ -262,10 +324,10 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   String _rangeTitle() => switch (_range) {
-    HistoryRange.sevenDays => "Last 7 days",
-    HistoryRange.thirtyDays => "Last 30 days",
-    HistoryRange.all => "All active days",
-  };
+        HistoryRange.sevenDays => "Last 7 days logs",
+        HistoryRange.thirtyDays => "Last 30 days logs",
+        HistoryRange.all => "All active days logs",
+      };
 
   String _friendlyDateLabel(DateTime date) {
     final difference = _startOfDay(
@@ -287,32 +349,14 @@ class _HistoryPageState extends State<HistoryPage> {
     final hour = date.hour == 0
         ? 12
         : date.hour > 12
-        ? date.hour - 12
-        : date.hour;
+            ? date.hour - 12
+            : date.hour;
     final minute = date.minute.toString().padLeft(2, "0");
     return "$hour:$minute ${date.hour >= 12 ? "PM" : "AM"}";
   }
 
   String _durationLabel(int seconds) =>
       seconds < 60 ? "$seconds sec" : "${seconds ~/ 60} min";
-
-  String _monthLabel(DateTime date) {
-    const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-    return "${months[date.month - 1]} ${date.year}";
-  }
 }
 
 class _MetricRow extends StatelessWidget {
@@ -322,13 +366,13 @@ class _MetricRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Expanded(child: first),
-      const SizedBox(width: 12),
-      Expanded(child: second),
-    ],
-  );
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: first),
+          const SizedBox(width: 12),
+          Expanded(child: second),
+        ],
+      );
 }
 
 class _MetricCard extends StatelessWidget {
@@ -345,29 +389,39 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-    elevation: 1,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    child: Padding(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon),
-          const SizedBox(height: 10),
-          Text(label, style: Theme.of(context).textTheme.labelMedium),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                detail,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    ),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
-          Text(detail, style: Theme.of(context).textTheme.bodySmall),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }
 
 class _HistorySection extends StatelessWidget {
@@ -377,25 +431,26 @@ class _HistorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-    elevation: 1,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              child,
+            ],
           ),
-          const SizedBox(height: 8),
-          child,
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }
 
 class _EmptyMessage extends StatelessWidget {
@@ -404,9 +459,17 @@ class _EmptyMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 20),
-    child: Center(child: Text(message, textAlign: TextAlign.center)),
-  );
+        padding: const EdgeInsets.symmetric(vertical: 30),
+        child: Center(
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ),
+      );
 }
 
 class _HistoryRow extends StatelessWidget {
@@ -433,20 +496,299 @@ class _HistoryRow extends StatelessWidget {
               Expanded(child: Text(label)),
               Text(
                 "$count / $dailyGoal",
-                style: const TextStyle(fontWeight: FontWeight.w700),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(width: 8),
               Icon(
                 goalReached ? Icons.check_circle : Icons.radio_button_unchecked,
                 size: 18,
-                color: goalReached ? Colors.green : null,
+                color: goalReached
+                    ? Colors.green
+                    : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          LinearProgressIndicator(value: progress),
+          LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              goalReached
+                  ? Colors.green
+                  : Theme.of(context).colorScheme.primary,
+            ),
+          ),
         ],
       ),
     );
+  }
+}
+
+class _ActivityBarChart extends StatefulWidget {
+  final List<DateTime> dates;
+  final Map<String, int> history;
+  final int dailyGoal;
+
+  const _ActivityBarChart({
+    required this.dates,
+    required this.history,
+    required this.dailyGoal,
+  });
+
+  @override
+  State<_ActivityBarChart> createState() => _ActivityBarChartState();
+}
+
+class _ActivityBarChartState extends State<_ActivityBarChart> {
+  int? _selectedIndex;
+
+  @override
+  void didUpdateWidget(covariant _ActivityBarChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.dates.length != oldWidget.dates.length) {
+      _selectedIndex = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.dates.isEmpty) return const SizedBox();
+
+    final chronologicalDates = widget.dates.reversed.toList();
+    final counts = chronologicalDates.map((d) {
+      final key = _dateKey(d);
+      return widget.history[key] ?? 0;
+    }).toList();
+
+    final maxCount = counts.fold<int>(
+      widget.dailyGoal,
+      (prev, element) => element > prev ? element : prev,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_selectedIndex != null && _selectedIndex! < chronologicalDates.length) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _fullDateLabel(chronologicalDates[_selectedIndex!]),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                Text(
+                  "${counts[_selectedIndex!]} cycles / goal: ${widget.dailyGoal}",
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        Container(
+          height: 180,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              // Y-Axis Labels
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text("$maxCount", style: Theme.of(context).textTheme.labelSmall),
+                  if (widget.dailyGoal > 0 && widget.dailyGoal < maxCount)
+                    Text(
+                      "${widget.dailyGoal}",
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  Text("0", style: Theme.of(context).textTheme.labelSmall),
+                ],
+              ),
+              const SizedBox(width: 8),
+              // Chart Area
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final chartHeight = constraints.maxHeight - 24;
+                    final goalRatio = maxCount > 0 ? widget.dailyGoal / maxCount : 0.0;
+                    final goalY = chartHeight * (1 - goalRatio);
+
+                    final barWidth = widget.dates.length > 7 ? 24.0 : 36.0;
+                    final spacing = widget.dates.length > 7 ? 8.0 : 16.0;
+
+                    Widget buildBar(int index) {
+                      final date = chronologicalDates[index];
+                      final count = counts[index];
+                      final ratio = maxCount > 0 ? count / maxCount : 0.0;
+                      final barHeight = chartHeight * ratio;
+                      final isGoalReached = widget.dailyGoal > 0 && count >= widget.dailyGoal;
+                      final isSelected = _selectedIndex == index;
+
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedIndex = isSelected ? null : index;
+                          });
+                        },
+                        behavior: HitTestBehavior.opaque,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TweenAnimationBuilder<double>(
+                              tween: Tween<double>(
+                                begin: 0.0,
+                                end: math.max(2.0, barHeight),
+                              ),
+                              duration: const Duration(milliseconds: 400),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, value, child) {
+                                return Container(
+                                  width: barWidth,
+                                  height: value,
+                                  decoration: BoxDecoration(
+                                    gradient: isGoalReached
+                                        ? LinearGradient(
+                                            colors: [
+                                              Colors.green,
+                                              Colors.green.withValues(alpha: 0.8),
+                                            ],
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                          )
+                                        : LinearGradient(
+                                            colors: [
+                                              Theme.of(context).colorScheme.primary,
+                                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                                            ],
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                          ),
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: (isGoalReached ? Colors.green : Theme.of(context).colorScheme.primary).withValues(alpha: 0.4),
+                                              blurRadius: 8,
+                                              spreadRadius: 2,
+                                            )
+                                          ]
+                                        : null,
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 6),
+                            SizedBox(
+                              width: barWidth,
+                              child: Text(
+                                _shortDateLabel(date),
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: isSelected
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                      fontWeight: isSelected ? FontWeight.bold : null,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return Stack(
+                      children: [
+                        // Goal Line (Dashed)
+                        if (widget.dailyGoal > 0)
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            top: goalY,
+                            child: Row(
+                              children: List.generate(
+                                40,
+                                (i) => Expanded(
+                                  child: Container(
+                                    height: 1,
+                                    color: i % 2 == 0
+                                        ? (Colors.green).withValues(alpha: 0.4)
+                                        : Colors.transparent,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        // Bars
+                        Positioned.fill(
+                          child: widget.dates.length > 7
+                              ? SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: List.generate(chronologicalDates.length, (index) {
+                                        return Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: spacing / 2),
+                                          child: buildBar(index),
+                                        );
+                                      }),
+                                    ),
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: List.generate(chronologicalDates.length, (index) {
+                                    return buildBar(index);
+                                  }),
+                                ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _dateKey(DateTime date) {
+    final year = date.year.toString().padLeft(4, "0");
+    final month = date.month.toString().padLeft(2, "0");
+    final day = date.day.toString().padLeft(2, "0");
+    return "$year-$month-$day";
+  }
+
+  String _shortDateLabel(DateTime date) {
+    if (widget.dates.length <= 7) {
+      const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      return weekdays[date.weekday - 1];
+    }
+    return "${date.day}";
+  }
+
+  String _fullDateLabel(DateTime date) {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    return "${weekdays[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}";
   }
 }
