@@ -9,6 +9,7 @@ import '../../models/timer_settings.dart';
 import '../../services/break_overlay_service.dart';
 import '../../services/desktop_controls_controller.dart';
 import '../../services/notification_service.dart';
+import '../../services/system_ui_service.dart';
 import '../../services/timer_background_service.dart';
 import '../../theme/color_presets.dart';
 import 'phase_schedule.dart';
@@ -118,6 +119,7 @@ class _TimerHomePageState extends State<TimerHomePage>
   bool _isBreak = false;
   bool _isCancelled = false;
   bool _isFocusMode = false;
+  final SystemUiService _systemUiService = const SystemUiService();
 
   late int _streakCount;
 
@@ -277,7 +279,7 @@ class _TimerHomePageState extends State<TimerHomePage>
   @override
   void dispose() {
     if (_isFocusMode) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      unawaited(_systemUiService.setFocusModeEnabled(false));
     }
     _desktopCommandSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
@@ -290,18 +292,23 @@ class _TimerHomePageState extends State<TimerHomePage>
   void _toggleFocusMode() {
     setState(() {
       _isFocusMode = !_isFocusMode;
-      if (_isFocusMode) {
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-      } else {
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      }
     });
+    unawaited(_systemUiService.setFocusModeEnabled(_isFocusMode));
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _syncTimerWithClock();
+      if (_isFocusMode) {
+        unawaited(_systemUiService.setFocusModeEnabled(true));
+      }
+    } else if (_isFocusMode &&
+        (state == AppLifecycleState.inactive ||
+            state == AppLifecycleState.paused ||
+            state == AppLifecycleState.hidden ||
+            state == AppLifecycleState.detached)) {
+      unawaited(_systemUiService.setFocusModeEnabled(false));
     }
   }
 

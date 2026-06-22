@@ -40,6 +40,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/models/timer_session.dart`: Serializable active/paused timer session state and automatic-run cycle progress shared by persistence and platform synchronization.
 - `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, bounded completed-session history, daily goal, notification preference, feedback preferences, automatic-cycle settings, and active timer session.
 - `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, system settings recovery hooks, exact-alarm capability checks, battery optimization diagnostics, explicit audible-channel creation, test-reminder support, verified phase reminder scheduling with inexact fallback, and cancellation.
+- `lib/services/system_ui_service.dart`: Cross-platform focus-mode system chrome coordinator with an iOS MethodChannel bridge and Flutter fallback.
 - `lib/services/break_overlay_service.dart`: Android overlay permission, preview, active break display, and dismissal MethodChannel wrapper with safe unsupported-platform behavior.
 - `lib/services/desktop_integration_service.dart`: Desktop tray, launch-at-login, window lifecycle, and X11 multi-monitor break-window spanning with restoration of the previous window state.
 - `lib/services/timer_background_service.dart`: Dart bridge that sends the active deadline, complete cadence settings, streak, and automatic-run counters to the Android foreground service.
@@ -79,6 +80,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification and feedback toggle UX, contrast-safe dark-mode primary buttons, calmer text, and tighter card radius.
 - The home countdown isolates per-frame work in `AnimatedBuilder` subtrees for the dial and warning curtain. Repaint boundaries keep the static gradient and surrounding controls out of timer repaints, while desktop timer state updates only when the displayed second changes.
 - Android explicitly enables Impeller. Android/iOS use Cupertino-style page transitions and bouncing scroll physics for a lighter, consistent mobile interaction feel.
+- iOS focus mode uses manual Flutter overlay hiding plus a native `ImmersiveFlutterViewController` to hide the status bar and home indicator and defer edge gestures. It restores chrome on focus exit, disposal, or app deactivation and reapplies immersion on resume.
 - On desktop, break mode uses a borderless always-on-top window. X11 multi-monitor sessions span the union of all displays and center a break surface on each monitor; single-monitor and Wayland sessions use fullscreen fallback because Wayland does not permit reliable absolute global window positioning.
 
 ## Dependencies
@@ -151,6 +153,7 @@ Current results:
 - `flutter build web`: passing; generated `build/web`.
 - Android 17 emulator baseline passed for service/alarm registration, cross-app overlay launch at a background work deadline, rotation survival, automatic break dismissal, and service cleanup. This does not replace Android 10-15/OEM physical-device testing.
 - Multi-monitor display geometry is covered by seven unit tests. Real X11 multi-monitor, Wayland fallback, and mixed-DPI positioning still require hardware validation; the local Linux build also requires `libayatana-appindicator3-dev` for the existing `system_tray` dependency.
+- The iOS immersive bridge cannot be compiled on this Linux host. Dart analysis and focus-mode widget coverage pass; native build and physical iPhone/iPad lifecycle validation remain open.
 
 Important git/worktree note:
 
@@ -168,7 +171,7 @@ Implementation decisions:
 - Architecture: timer phase transitions must emit presentation-independent events. A dedicated break presentation service will choose in-app immersive UI or native desktop windows without duplicating timer logic.
 - Platform priority: prove Android overlay permission and manual overlay behavior first, integrate it with the timer second, then implement Linux, Windows, and macOS desktop enforcement. Desktop still requires tray operation and launch-at-login before overlays can be dependable while the main window is closed. X11 and Wayland require separate validation because compositors may restrict focus and topmost behavior.
 - Android: BlinkKind requests `SYSTEM_ALERT_WINDOW` as an explicit opt-in and uses `TYPE_APPLICATION_OVERLAY` to cover other apps during breaks. The manual preview and timer-triggered overlays are implemented. Rotation, system-bar, lock-screen, call, cross-app, Doze, process-death, and OEM behavior still require physical-device validation. Android Go devices may reject overlay permission, and system bars or lock-screen content may remain system-controlled.
-- iOS: immersive break UI is available only while BlinkKind is active; iOS does not permit apps to cover other applications or force themselves foreground.
+- iOS: immersive break UI is available only while BlinkKind is active; iOS does not permit apps to cover other applications or force themselves foreground. The in-app immersive system UI implementation is complete; native compilation and rotation, app-switching, interruption, and restoration behavior still require macOS/Xcode and physical iPhone/iPad validation.
 - Android runtime: the foreground service receives a full cadence snapshot, persists it separately from Flutter session state, shows a silent ongoing notification, and advances exact/inexact deadline alarms across native work/break cycles while Flutter is suspended. It mirrors cycle limits and long-break cadence, restores after ordinary process death, fast-forwards delayed delivery, and rejects stale alarms. Flutter remains authoritative and reconciles elapsed boundaries on resume. Reboot rescheduling, later native-only audible reminders, Android 14+ foreground-service requirements, Android 15+ background-start ordering, and OEM restrictions remain open; Android force-stop intentionally prevents self-restart.
 - Safety: calls, alarms, lock screen, accessibility navigation, and an emergency exit must remain usable. The feature is habit enforcement, not device lockout.
 

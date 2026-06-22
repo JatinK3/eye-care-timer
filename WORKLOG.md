@@ -30,7 +30,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [ ] Physical-device validation: background, screen-lock, Doze, app-killed, multi-cycle auto-run, device clock change, and notifications-disabled paths on Pixel/Samsung/Xiaomi-style restrictions. Required to actually close this bug.
   - [x] Native reboot rescheduling and audible reminders for later native-only cycle boundaries. Force-stopped apps cannot restart themselves by Android design.
   - [x] Wire the deadline alarm to launch the immersive break overlay (fullScreenIntent) rather than only a tappable notification (depends on the break-surface UI below).
-- [ ] Build immersive full-screen break mode (current priority).
+- [x] Build immersive full-screen break mode (platform implementations complete; hardware validation remains below).
   - [x] Build an Android overlay permission and 10-second manual preview spike before timer integration.
   - [ ] Validate the preview above other apps, system bars, lock screen, rotation, calls, and emergency dismissal on a physical device.
   - [x] Extract timer phase events from the home-screen presentation so break UI can be launched by platform services.
@@ -39,7 +39,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Build a responsive black full-screen break surface with countdown, eye exercise, progress, and accessibility semantics.
   - [x] Add pre-break warning, fade-to-black transition, and configurable skip/postpone policy.
   - [ ] Test Android 10-15 plus Pixel, Samsung, and Xiaomi-style background restrictions where devices are available.
-  - [ ] Enter and restore immersive system UI safely on iOS while BlinkKind is active.
+  - [x] Enter and restore immersive system UI safely on iOS while BlinkKind is active.
+    - Flutter uses manual overlay hiding on iOS and a native `ImmersiveFlutterViewController` hides the status bar/home indicator and defers edge gestures. Chrome is restored on focus exit, disposal, and inactive/background lifecycle states, then reapplied on resume.
+    - [ ] Validate status-bar/home-indicator restoration, rotation, app switching, and interruption behavior on a physical iPhone/iPad using a macOS/Xcode build.
   - [x] Add Linux desktop background runtime with tray controls and launch-at-login support (`desktop_integration_service.dart`; tray menu, window-to-tray, autostart).
   - [x] Add borderless always-on-top desktop break windows with multi-monitor coverage.
     - Break overlay now spans every monitor: `computeDisplaySpan` (`lib/features/timer/display_layout.dart`, pure + unit-tested) unions all displays from `screen_retriever`, one borderless always-on-top window is stretched across the union via `setBounds`, and the break card is replicated/centered on each physical screen so no uncovered display remains.
@@ -132,6 +134,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Implemented lifecycle-safe iOS immersive focus UI. A dedicated Dart system-UI service selects iOS manual overlay hiding, while `ImmersiveFlutterViewController` controls status-bar visibility, home-indicator auto-hide, and edge-gesture deferral through a MethodChannel. Focus mode restores system chrome when the app becomes inactive, exits focus, or disposes, and reapplies it on resume. `flutter analyze` is clean and all 49 Flutter tests pass; native compilation and physical-device behavior still require macOS/Xcode.
 
 - Added multi-monitor coverage for the desktop break overlay. Previously `setFullScreen(true)` only darkened one monitor, so a second screen stayed usable during a break. Now a pure, unit-tested `computeDisplaySpan` (`lib/features/timer/display_layout.dart`) unions all displays reported by `screen_retriever`, a single borderless always-on-top window is stretched across that union with `setBounds`, and `DesktopBreakOverlay` replicates the break card centered on each monitor. Single-monitor and Wayland sessions fall back to the original fullscreen path (Wayland blocks absolute global positioning), and the window's prior bounds/title-bar are restored when the break ends. Verified with `flutter analyze` (clean) and `flutter test` (49 passing, incl. 7 new geometry tests); Linux native build is blocked locally only by the pre-existing `system_tray` dependency on `libayatana-appindicator3-dev`.
 
