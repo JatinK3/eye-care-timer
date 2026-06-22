@@ -9,6 +9,7 @@ import 'package:eyeapptimer/services/break_overlay_service.dart';
 import 'package:eyeapptimer/services/notification_service.dart';
 import 'package:eyeapptimer/services/preferences_service.dart';
 import 'package:eyeapptimer/models/work_session_record.dart';
+import 'package:eyeapptimer/features/timer/timer_home_page.dart';
 
 class FakeBreakOverlayService extends BreakOverlayService {
   OverlayPermissionStatus status;
@@ -892,5 +893,37 @@ void main() {
     await tester.tap(finder);
     await tester.pumpAndSettle();
     expect(prefs.getBool(PreferencesService.smartIdleEnabledKey), true);
+  });
+
+  testWidgets('desktop idle detection triggers smart pause and resume', (
+    WidgetTester tester,
+  ) async {
+    await pumpBlinkKindApp(tester);
+
+    // Start timer
+    await tester.tap(find.text('Start'));
+    await tester.pump();
+
+    // Verify it is running
+    expect(find.text('Pause'), findsOneWidget);
+
+    // Retrieve state and trigger system idle state manually
+    final state = tester.state<TimerHomePageState>(find.byType(TimerHomePage));
+    state.handleDesktopIdleChange(true);
+    await tester.pump();
+
+    // Verify it smart-paused
+    expect(find.text('Idle Paused'), findsOneWidget);
+    expect(
+      find.textContaining('Paused automatically because you were away.'),
+      findsOneWidget,
+    );
+
+    // Trigger system active state manually
+    state.handleDesktopIdleChange(false);
+    await tester.pump();
+
+    // Verify it resumed
+    expect(find.text('Pause'), findsOneWidget);
   });
 }

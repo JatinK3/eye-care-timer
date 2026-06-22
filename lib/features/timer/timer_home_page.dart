@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:system_idle/system_idle.dart';
 
 import '../../models/timer_session.dart';
 import '../../models/timer_settings.dart';
@@ -89,10 +90,10 @@ class TimerHomePage extends StatefulWidget {
   });
 
   @override
-  State<TimerHomePage> createState() => _TimerHomePageState();
+  State<TimerHomePage> createState() => TimerHomePageState();
 }
 
-class _TimerHomePageState extends State<TimerHomePage>
+class TimerHomePageState extends State<TimerHomePage>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   // -------------------- Styling --------------------
   final double _ringStrokeWidth = 12.0;
@@ -119,6 +120,7 @@ class _TimerHomePageState extends State<TimerHomePage>
   bool _isBreak = false;
   bool _isCancelled = false;
   bool _isFocusMode = false;
+  bool _isSystemIdlePaused = false;
   final SystemUiService _systemUiService = const SystemUiService();
 
   late int _streakCount;
@@ -139,6 +141,7 @@ class _TimerHomePageState extends State<TimerHomePage>
 
   late final TimerBackgroundService _backgroundService;
   StreamSubscription<DesktopCommand>? _desktopCommandSubscription;
+  StreamSubscription<bool>? _desktopIdleSubscription;
 
   @override
   void initState() {
@@ -212,6 +215,7 @@ class _TimerHomePageState extends State<TimerHomePage>
         (defaultTargetPlatform == TargetPlatform.linux ||
             defaultTargetPlatform == TargetPlatform.macOS ||
             defaultTargetPlatform == TargetPlatform.windows)) {
+      _initDesktopIdleDetection();
       _desktopCommandSubscription = DesktopControlsController.instance.commands
           .listen((command) {
             if (!mounted) return;
@@ -284,6 +288,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     if (_isFocusMode) {
       unawaited(_systemUiService.setFocusModeEnabled(false));
     }
+    _desktopIdleSubscription?.cancel();
     _desktopCommandSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _phaseTransitionTimer?.cancel();
@@ -312,6 +317,70 @@ class _TimerHomePageState extends State<TimerHomePage>
             state == AppLifecycleState.hidden ||
             state == AppLifecycleState.detached)) {
       unawaited(_systemUiService.setFocusModeEnabled(false));
+    }
+  }
+
+  void _initDesktopIdleDetection() {
+    if (kIsWeb) return;
+    if (defaultTargetPlatform != TargetPlatform.linux &&
+        defaultTargetPlatform != TargetPlatform.macOS &&
+        defaultTargetPlatform != TargetPlatform.windows) {
+      return;
+    }
+
+    try {
+      final systemIdle = SystemIdle.forPlatform();
+      unawaited(() async {
+        await systemIdle.initialize();
+        if (!mounted) return;
+        if (systemIdle.isSupported) {
+          _desktopIdleSubscription = systemIdle
+              .onIdleChanged(idleDuration: const Duration(seconds: 60))
+              .listen((isIdle) {
+            if (!mounted) return;
+            handleDesktopIdleChange(isIdle);
+          });
+        }
+      }());
+    } catch (e) {
+      debugPrint('Failed to initialize desktop idle detection: $e');
+    }
+  }
+
+  void handleDesktopIdleChange(bool isIdle) {
+    if (!widget.smartIdleEnabled) return;
+    if (!_isRunning || _isBreak) return;
+
+    if (isIdle) {
+      if (!_isPaused && !_isSystemIdlePaused) {
+        setState(() {
+          _isSystemIdlePaused = true;
+          _animationController.stop();
+          _pulseController.stop();
+          _phaseStartedAt = null;
+          _phaseEndsAt = null;
+          _saveActiveSession(isPaused: true);
+          _cancelReminders();
+          unawaited(_backgroundService.stopPhase());
+        });
+        _updateDesktopState();
+      }
+    } else {
+      if (_isSystemIdlePaused) {
+        setState(() {
+          _isSystemIdlePaused = false;
+          _phaseStartedAt = DateTime.now();
+          _phaseEndsAt = _phaseStartedAt!.add(
+            Duration(seconds: _remainingSeconds),
+          );
+          _animationController.forward();
+          _saveActiveSession();
+          unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
+          _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
+          if (_remainingSeconds <= 5) _pulseController.forward();
+        });
+        _updateDesktopState();
+      }
     }
   }
 
@@ -560,6 +629,7 @@ class _TimerHomePageState extends State<TimerHomePage>
       _isBreak = isBreak;
       _isRunning = true;
       _isPaused = false;
+      _isSystemIdlePaused = false;
       _isCancelled = false;
       _phaseOpacity = 1.0;
       _phaseStartedAt = DateTime.now();
@@ -596,6 +666,7 @@ class _TimerHomePageState extends State<TimerHomePage>
     if (!_isRunning) return;
     setState(() {
       _isPaused = !_isPaused;
+      _isSystemIdlePaused = false;
       if (_isPaused) {
         _animationController.stop();
         _pulseController.stop();
@@ -664,6 +735,7 @@ class _TimerHomePageState extends State<TimerHomePage>
       _isRunning = false;
       _isPaused = false;
       _isBreak = false;
+      _isSystemIdlePaused = false;
       _phaseOpacity = 1.0;
       _phaseStartedAt = null;
       _phaseEndsAt = null;
@@ -857,6 +929,9 @@ class _TimerHomePageState extends State<TimerHomePage>
     if (_isPaused) {
       return 'Paused';
     }
+    if (_isSystemIdlePaused) {
+      return 'Idle Paused';
+    }
     return _isBreak ? 'Break' : 'Work';
   }
 
@@ -866,6 +941,9 @@ class _TimerHomePageState extends State<TimerHomePage>
     }
     if (_isPaused) {
       return _isBreak ? 'Break paused' : 'Work paused';
+    }
+    if (_isSystemIdlePaused) {
+      return _isBreak ? 'Break paused' : 'Work paused (Idle)';
     }
     return _isBreak
         ? 'Break Time - look 20 ft away'
@@ -878,6 +956,9 @@ class _TimerHomePageState extends State<TimerHomePage>
     }
     if (_isPaused) {
       return 'Resume when you are ready to continue.';
+    }
+    if (_isSystemIdlePaused) {
+      return 'Paused automatically because you were away.';
     }
     return _isBreak
         ? 'Relax your focus and blink naturally.'
@@ -1431,7 +1512,7 @@ class _TimerHomePageState extends State<TimerHomePage>
       DesktopControlsController.instance.updateState(
         DesktopTimerState(
           isRunning: _isRunning,
-          isPaused: _isPaused,
+          isPaused: _isPaused || _isSystemIdlePaused,
           isBreak: _isBreak,
           remainingSeconds: _remainingSeconds,
           allowPostpone: widget.allowPostpone,
