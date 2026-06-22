@@ -54,12 +54,17 @@ class BreakOverlayService {
   Future<bool> showPreview({String breakVisualizerStyle = 'Breathing'}) async {
     final bool isAppInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
 
-    if (_isSupportedOnDesktop || isAppInForeground) {
+    if (_isSupportedOnDesktop) {
       return showBreakOverlay(
         durationSeconds: 10,
         breakMode: BreakMode.gentle,
         breakVisualizerStyle: breakVisualizerStyle,
       );
+    }
+
+    if (isAppInForeground) {
+      _pushBreakOverlayRoute(10, BreakMode.gentle, breakVisualizerStyle);
+      return true;
     }
     return _invokeBoolean("showOverlayPreview");
   }
@@ -88,7 +93,6 @@ class BreakOverlayService {
 
     if (isAppInForeground) {
       unawaited(_invokeBoolean("stopBreakOverlay"));
-      _pushBreakOverlayRoute(durationSeconds, breakMode, breakVisualizerStyle);
       return true;
     }
 

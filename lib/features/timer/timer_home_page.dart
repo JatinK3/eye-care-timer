@@ -313,12 +313,29 @@ class TimerHomePageState extends State<TimerHomePage>
       if (_isFocusMode) {
         unawaited(_systemUiService.setFocusModeEnabled(true));
       }
-    } else if (_isFocusMode &&
-        (state == AppLifecycleState.inactive ||
-            state == AppLifecycleState.paused ||
-            state == AppLifecycleState.hidden ||
-            state == AppLifecycleState.detached)) {
-      unawaited(_systemUiService.setFocusModeEnabled(false));
+    } else {
+      if (_isFocusMode &&
+          (state == AppLifecycleState.inactive ||
+              state == AppLifecycleState.paused ||
+              state == AppLifecycleState.hidden ||
+              state == AppLifecycleState.detached)) {
+        unawaited(_systemUiService.setFocusModeEnabled(false));
+      }
+
+      // If we are backgrounding the app during an active running break, trigger the native overlay
+      if (_isRunning &&
+          _isBreak &&
+          !_isPaused &&
+          (state == AppLifecycleState.paused ||
+              state == AppLifecycleState.inactive)) {
+        unawaited(
+          widget.breakOverlayService?.showBreakOverlay(
+            durationSeconds: _remainingSeconds,
+            breakMode: widget.breakMode,
+            breakVisualizerStyle: widget.breakVisualizerStyle,
+          ),
+        );
+      }
     }
   }
 
