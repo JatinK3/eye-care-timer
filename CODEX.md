@@ -179,7 +179,7 @@ Creative follow-ups after the core overlay is stable:
 
 - Exercise rotation: distance focus, deliberate blinking, shoulder release, posture reset, and hydration prompts.
 - A two-stage warning curtain: a subtle edge flash followed by the full black break if work continues.
-- Smart pause based on idle time so time already spent away from the device counts toward eye rest.
+ - Smart pause based on idle time is implemented on Android (via screen-off state) and desktop (Windows/Linux/macOS via system-wide inactivity detection using system_idle) so that time spent away from the device pauses the active countdown.
 - Meeting, presentation, game, and media awareness with user-controlled defer rules.
 - Strictness insights that report completed, skipped, and postponed breaks without shaming language.
 - Optional low-distraction ambient themes that remain near-black and never undermine the purpose of looking away.
