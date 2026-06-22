@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'features/history/history_page.dart';
@@ -15,6 +17,32 @@ import 'services/notification_service.dart';
 import 'services/permissions_service.dart';
 import 'services/preferences_service.dart';
 import 'theme/color_presets.dart';
+
+const PageTransitionsTheme _smoothPageTransitionsTheme = PageTransitionsTheme(
+  builders: <TargetPlatform, PageTransitionsBuilder>{
+    TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+    TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+    TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+    TargetPlatform.fuchsia: ZoomPageTransitionsBuilder(),
+    TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+    TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+  },
+);
+
+class _BlinkKindScrollBehavior extends MaterialScrollBehavior {
+  const _BlinkKindScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    final platform = getPlatform(context);
+    if (platform == TargetPlatform.android || platform == TargetPlatform.iOS) {
+      return const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      );
+    }
+    return super.getScrollPhysics(context);
+  }
+}
 
 /// Top-level app that owns ThemeMode and color preset state.
 class BlinkKindApp extends StatefulWidget {
@@ -112,7 +140,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   Future<void> _maybeShowNotificationRationale() async {
     if (!mounted) return;
     // Only relevant on Android 13+ (API 33)
-    if (!Platform.isAndroid) return;
+    if (kIsWeb || !Platform.isAndroid) return;
     final status = await _notificationService.permissionStatus();
     if (status == NotificationPermissionStatus.disabled) {
       final navigator = BreakOverlayService.navigatorKey.currentContext;
@@ -122,8 +150,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
         builder: (ctx) => AlertDialog(
           title: const Text('Enable notifications?'),
           content: const Text(
-            'BlinkKind uses notifications to remind you when your eye break '  
-            'is about to start. Without this permission the reminder '  
+            'BlinkKind uses notifications to remind you when your eye break '
+            'is about to start. Without this permission the reminder '
             'will only appear while the app is open.\n\n'
             'You can change this at any time in Settings.',
           ),
@@ -507,10 +535,12 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       navigatorKey: BreakOverlayService.navigatorKey,
       title: 'BlinkKind: Eye Break Timer',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: const _BlinkKindScrollBehavior(),
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
         colorScheme: ColorScheme.fromSeed(seedColor: seedColor),
+        pageTransitionsTheme: _smoothPageTransitionsTheme,
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
@@ -519,6 +549,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           seedColor: seedColor,
           brightness: Brightness.dark,
         ),
+        pageTransitionsTheme: _smoothPageTransitionsTheme,
       ),
       themeMode: _settings.themeMode,
       home: _isLoadingSettings

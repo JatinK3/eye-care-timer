@@ -73,6 +73,8 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Light/dark theme toggle and `Pastel`, `Calm Blue`, `Forest`, `Rose`, `Graphite`, and `Sunrise` presets are available.
 - The app theme seed, settings swatches, timer gradients, and timer progress color now come from the same preset source.
 - UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification and feedback toggle UX, contrast-safe dark-mode primary buttons, calmer text, and tighter card radius.
+- The home countdown isolates per-frame work in `AnimatedBuilder` subtrees for the dial and warning curtain. Repaint boundaries keep the static gradient and surrounding controls out of timer repaints, while desktop timer state updates only when the displayed second changes.
+- Android explicitly enables Impeller. Android/iOS use Cupertino-style page transitions and bouncing scroll physics for a lighter, consistent mobile interaction feel.
 
 ## Dependencies
 
@@ -121,23 +123,26 @@ Android build toolchain maintenance:
 - Android Gradle Plugin: `8.11.1`.
 - Kotlin Gradle Plugin: `2.2.20`.
 - `android/gradle.properties` includes Flutter migrator flags for `android.builtInKotlin=false` and `android.newDsl=false`.
+- `AndroidManifest.xml` explicitly opts into Flutter's Impeller renderer for Android.
 
 ## Current Audit Findings
 
-Last audit date: 2026-06-19.
+Last audit date: 2026-06-22.
 
 Commands run after the current implementation:
 
 - `flutter analyze`
 - `flutter test`
 - `flutter build apk --debug`
+- `flutter build apk --release`
 - `flutter build web`
 
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 39 tests.
+- `flutter test`: passing, 42 tests.
 - `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
+- `flutter build apk --release`: passing with AOT compilation and tree-shaking; generated `build/app/outputs/flutter-apk/app-release.apk` (49.5 MB).
 - `flutter build web`: passing; generated `build/web`.
 - Android 17 emulator baseline passed for service/alarm registration, cross-app overlay launch at a background work deadline, rotation survival, automatic break dismissal, and service cleanup. This does not replace Android 10-15/OEM physical-device testing.
 

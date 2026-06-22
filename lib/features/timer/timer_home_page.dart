@@ -164,17 +164,19 @@ class _TimerHomePageState extends State<TimerHomePage>
     _progressAnimation =
         Tween<double>(begin: 1.0, end: 0.0).animate(_animationController)
           ..addListener(() {
-            setState(() {
-              _remainingSeconds = (_initialDuration * _progressAnimation.value)
-                  .ceil();
-
+            // Update remaining seconds and pulse trigger without setState —
+            // only fields that non-animation widgets need to read.
+            final nextRemaining = (_initialDuration * _progressAnimation.value)
+                .ceil();
+            if (nextRemaining != _remainingSeconds) {
+              _remainingSeconds = nextRemaining;
               if (_remainingSeconds <= 5 &&
                   !_pulseController.isAnimating &&
                   _isRunning) {
                 _pulseController.forward();
               }
-            });
-            _updateDesktopState();
+              _updateDesktopState();
+            }
           })
           ..addStatusListener((status) {
             if (status == AnimationStatus.completed) {
@@ -832,16 +834,6 @@ class _TimerHomePageState extends State<TimerHomePage>
     }
   }
 
-  String _formattedTime(int seconds) {
-    if (seconds >= 60) {
-      final m = seconds ~/ 60;
-      final s = seconds % 60;
-      return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-    } else {
-      return seconds.toString();
-    }
-  }
-
   bool get _canChangeSettings => !_isRunning;
 
   LinearGradient _backgroundGradientFromPreset(String preset, bool isDark) {
@@ -944,16 +936,6 @@ class _TimerHomePageState extends State<TimerHomePage>
       progressColor,
     );
 
-    final showWarningOverlay =
-        _isRunning &&
-        !_isBreak &&
-        !_isPaused &&
-        _remainingSeconds <= 10 &&
-        _remainingSeconds > 0;
-    final warningOpacity = showWarningOverlay
-        ? ((10 - _remainingSeconds) / 10.0).clamp(0.0, 1.0)
-        : 0.0;
-
     return Scaffold(
       appBar: _isFocusMode
           ? null
@@ -972,444 +954,440 @@ class _TimerHomePageState extends State<TimerHomePage>
             ),
       body: Stack(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: _isFocusMode ? Colors.black : null,
-              gradient: _isFocusMode
-                  ? null
-                  : _backgroundGradientFromPreset(widget.colorPreset, isDark),
-            ),
-            child: SafeArea(
-              child: Center(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isLandscape =
-                        MediaQuery.of(context).orientation ==
-                        Orientation.landscape;
-                    final double size = isLandscape
-                        ? (constraints.maxHeight - 48).clamp(160.0, 260.0)
-                        : (constraints.maxWidth - 48).clamp(220.0, 320.0);
+          RepaintBoundary(
+            child: Container(
+              decoration: BoxDecoration(
+                color: _isFocusMode ? Colors.black : null,
+                gradient: _isFocusMode
+                    ? null
+                    : _backgroundGradientFromPreset(widget.colorPreset, isDark),
+              ),
+              child: SafeArea(
+                child: Center(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isLandscape =
+                          MediaQuery.of(context).orientation ==
+                          Orientation.landscape;
+                      final double size = isLandscape
+                          ? (constraints.maxHeight - 48).clamp(160.0, 260.0)
+                          : (constraints.maxWidth - 48).clamp(220.0, 320.0);
 
-                    final timerDial = GestureDetector(
-                      onTap: _toggleFocusMode,
-                      behavior: HitTestBehavior.opaque,
-                      child: ScaleTransition(
-                        scale: _pulseAnimation,
-                        child: SizedBox(
-                          width: size,
-                          height: size,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                width: size * 0.92,
-                                height: size * 0.92,
-                                child: CircularProgressIndicator(
-                                  value: 1.0,
-                                  strokeWidth: _ringStrokeWidth,
-                                  color: ringBgColor,
+                      final timerDial = _AnimatedTimerDial(
+                        size: size,
+                        progressAnimation: _progressAnimation,
+                        pulseAnimation: _pulseAnimation,
+                        initialDuration: _initialDuration,
+                        statusLabel: _statusLabel,
+                        textColor: textColor,
+                        ringBackgroundColor: ringBgColor,
+                        progressColor: progressColor,
+                        strokeWidth: _ringStrokeWidth,
+                        isLandscape: isLandscape,
+                        onTap: _toggleFocusMode,
+                      );
+
+                      final actionButtons = Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 12,
+                        runSpacing: 8,
+                        children: [
+                          if (!_isRunning)
+                            ElevatedButton.icon(
+                              onPressed: _startWorkTimer,
+                              icon: const Icon(Icons.play_arrow),
+                              label: const Text('Start'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: progressColor,
+                                foregroundColor: primaryButtonForeground,
+                                elevation: isDark ? 3 : 1,
+                                shadowColor: Colors.black54,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isLandscape ? 16 : 22,
+                                  vertical: isLandscape ? 8 : 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              SizedBox(
-                                width: size * 0.92,
-                                height: size * 0.92,
-                                child: CircularProgressIndicator(
-                                  value: _progressAnimation.value,
-                                  strokeWidth: _ringStrokeWidth,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    progressColor,
-                                  ),
-                                  backgroundColor: Colors.transparent,
+                            )
+                          else ...[
+                            ElevatedButton.icon(
+                              onPressed: _pauseOrResume,
+                              icon: Icon(
+                                _isPaused ? Icons.play_arrow : Icons.pause,
+                              ),
+                              label: Text(_isPaused ? 'Resume' : 'Pause'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isDark
+                                    ? Colors.white24
+                                    : Colors.black87,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isLandscape ? 16 : 20,
+                                  vertical: isLandscape ? 8 : 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    _formattedTime(_remainingSeconds),
-                                    style: TextStyle(
-                                      fontSize: isLandscape ? 28 : 36,
-                                      fontWeight: FontWeight.w700,
-                                      color: textColor,
+                            ),
+                            if (_isBreak && !_isPaused) ...[
+                              if (widget.allowSkip)
+                                ElevatedButton.icon(
+                                  onPressed: _skipBreak,
+                                  icon: const Icon(Icons.skip_next),
+                                  label: const Text('Skip'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green.shade600,
+                                    foregroundColor: Colors.white,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: isLandscape ? 16 : 20,
+                                      vertical: isLandscape ? 8 : 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _statusLabel,
-                                    style: TextStyle(
-                                      fontSize: isLandscape ? 11 : 14,
-                                      color: textColor.withValues(alpha: 0.75),
+                                ),
+                              if (widget.allowPostpone)
+                                ElevatedButton.icon(
+                                  onPressed: _postponeBreak,
+                                  icon: const Icon(Icons.snooze),
+                                  label: const Text('Postpone'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.orange.shade700,
+                                    foregroundColor: Colors.white,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: isLandscape ? 16 : 20,
+                                      vertical: isLandscape ? 8 : 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
                             ],
-                          ),
-                        ),
-                      ),
-                    );
-
-                    final actionButtons = Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 12,
-                      runSpacing: 8,
-                      children: [
-                        if (!_isRunning)
-                          ElevatedButton.icon(
-                            onPressed: _startWorkTimer,
-                            icon: const Icon(Icons.play_arrow),
-                            label: const Text('Start'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: progressColor,
-                              foregroundColor: primaryButtonForeground,
-                              elevation: isDark ? 3 : 1,
-                              shadowColor: Colors.black54,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isLandscape ? 16 : 22,
-                                vertical: isLandscape ? 8 : 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          )
-                        else ...[
-                          ElevatedButton.icon(
-                            onPressed: _pauseOrResume,
-                            icon: Icon(
-                              _isPaused ? Icons.play_arrow : Icons.pause,
-                            ),
-                            label: Text(_isPaused ? 'Resume' : 'Pause'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isDark
-                                  ? Colors.white24
-                                  : Colors.black87,
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isLandscape ? 16 : 20,
-                                vertical: isLandscape ? 8 : 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                          if (_isBreak && !_isPaused) ...[
-                            if (widget.allowSkip)
-                              ElevatedButton.icon(
-                                onPressed: _skipBreak,
-                                icon: const Icon(Icons.skip_next),
-                                label: const Text('Skip'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green.shade600,
-                                  foregroundColor: Colors.white,
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: isLandscape ? 16 : 20,
-                                    vertical: isLandscape ? 8 : 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                              ),
-                            if (widget.allowPostpone)
-                              ElevatedButton.icon(
-                                onPressed: _postponeBreak,
-                                icon: const Icon(Icons.snooze),
-                                label: const Text('Postpone'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.orange.shade700,
-                                  foregroundColor: Colors.white,
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: isLandscape ? 16 : 20,
-                                    vertical: isLandscape ? 8 : 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                              ),
                           ],
-                        ],
-                        OutlinedButton.icon(
-                          onPressed: _isRunning ? _cancelTimer : null,
-                          icon: const Icon(Icons.stop),
-                          label: const Text('Cancel'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: isDark
-                                ? Colors.red.shade200
-                                : Colors.red.shade700,
-                            side: BorderSide(color: Colors.red.shade300),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isLandscape ? 14 : 18,
-                              vertical: isLandscape ? 8 : 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                          OutlinedButton.icon(
+                            onPressed: _isRunning ? _cancelTimer : null,
+                            icon: const Icon(Icons.stop),
+                            label: const Text('Cancel'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: isDark
+                                  ? Colors.red.shade200
+                                  : Colors.red.shade700,
+                              side: BorderSide(color: Colors.red.shade300),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isLandscape ? 14 : 18,
+                                vertical: isLandscape ? 8 : 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    );
+                        ],
+                      );
 
-                    if (isLandscape) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            timerDial,
-                            const SizedBox(width: 32),
-                            Expanded(
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (!_isFocusMode) ...[
-                                      AnimatedOpacity(
-                                        opacity: _phaseOpacity,
-                                        duration: const Duration(
-                                          milliseconds: 400,
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            Text(
-                                              _phaseTitle,
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.titleLarge,
-                                              textAlign: TextAlign.center,
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              _phaseSubtitle,
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodyMedium,
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                    ],
-                                    actionButtons,
-                                    const SizedBox(height: 12),
-                                    if (!_isFocusMode) ...[
-                                      Text(
-                                        _timerModeSummary,
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodyMedium,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Daily goal: $_streakCount / ${widget.dailyGoal} breaks',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        _streakCount >= widget.dailyGoal
-                                            ? 'Goal reached for today'
-                                            : 'Streak today: $_streakCount cycles',
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodyMedium,
-                                      ),
-                                    ] else ...[
-                                      Opacity(
-                                        opacity: 0.35,
-                                        child: Text(
-                                          'Tap dial to exit focus mode',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: textColor,
+                      if (isLandscape) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              timerDial,
+                              const SizedBox(width: 32),
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      if (!_isFocusMode) ...[
+                                        AnimatedOpacity(
+                                          opacity: _phaseOpacity,
+                                          duration: const Duration(
+                                            milliseconds: 400,
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Text(
+                                                _phaseTitle,
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.titleLarge,
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                _phaseSubtitle,
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodyMedium,
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    // Portrait Layout
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 20,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (!_isFocusMode) ...[
-                            AnimatedOpacity(
-                              opacity: _phaseOpacity,
-                              duration: const Duration(milliseconds: 400),
-                              child: Column(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: progressColor.withValues(
-                                        alpha: 0.14,
-                                      ),
-                                      borderRadius: BorderRadius.circular(999),
-                                      border: Border.all(
-                                        color: progressColor.withValues(
-                                          alpha: 0.35,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          _statusIcon,
-                                          size: 16,
-                                          color: progressColor,
-                                        ),
-                                        const SizedBox(width: 6),
+                                        const SizedBox(height: 12),
+                                      ],
+                                      actionButtons,
+                                      const SizedBox(height: 12),
+                                      if (!_isFocusMode) ...[
                                         Text(
-                                          _statusLabel,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            color: progressColor,
+                                          _timerModeSummary,
+                                          textAlign: TextAlign.center,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Daily goal: $_streakCount / ${widget.dailyGoal} breaks',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _streakCount >= widget.dailyGoal
+                                              ? 'Goal reached for today'
+                                              : 'Streak today: $_streakCount cycles',
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium,
+                                        ),
+                                      ] else ...[
+                                        Opacity(
+                                          opacity: 0.35,
+                                          child: Text(
+                                            'Tap dial to exit focus mode',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: textColor,
+                                            ),
                                           ),
                                         ),
                                       ],
-                                    ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    _phaseTitle,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleLarge,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _phaseSubtitle,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodyMedium,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                          timerDial,
-                          const SizedBox(height: 20),
-                          actionButtons,
-                          const SizedBox(height: 16),
-                          if (!_isFocusMode) ...[
-                            Opacity(
-                              opacity: 0.95,
-                              child: Text(
-                                _timerModeSummary,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Daily goal: $_streakCount / ${widget.dailyGoal} breaks',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _streakCount >= widget.dailyGoal
-                                  ? 'Goal reached for today'
-                                  : 'Streak today: $_streakCount cycles',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ] else ...[
-                            Opacity(
-                              opacity: 0.35,
-                              child: Text(
-                                'Tap dial to exit focus mode',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: textColor,
                                 ),
                               ),
-                            ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      // Portrait Layout
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 20,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (!_isFocusMode) ...[
+                              AnimatedOpacity(
+                                opacity: _phaseOpacity,
+                                duration: const Duration(milliseconds: 400),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: progressColor.withValues(
+                                          alpha: 0.14,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                        border: Border.all(
+                                          color: progressColor.withValues(
+                                            alpha: 0.35,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            _statusIcon,
+                                            size: 16,
+                                            color: progressColor,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            _statusLabel,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              color: progressColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      _phaseTitle,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleLarge,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _phaseSubtitle,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            timerDial,
+                            const SizedBox(height: 20),
+                            actionButtons,
+                            const SizedBox(height: 16),
+                            if (!_isFocusMode) ...[
+                              Opacity(
+                                opacity: 0.95,
+                                child: Text(
+                                  _timerModeSummary,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Daily goal: $_streakCount / ${widget.dailyGoal} breaks',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _streakCount >= widget.dailyGoal
+                                    ? 'Goal reached for today'
+                                    : 'Streak today: $_streakCount cycles',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ] else ...[
+                              Opacity(
+                                opacity: 0.35,
+                                child: Text(
+                                  'Tap dial to exit focus mode',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: textColor,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
-                      ),
-                    );
-                  },
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
           ),
-          if (showWarningOverlay)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withValues(alpha: warningOpacity),
-                child: Center(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.visibility_off_outlined,
-                            size: 64,
-                            color: Colors.red.shade300.withValues(
-                              alpha: warningOpacity,
+          AnimatedBuilder(
+            animation: _progressAnimation,
+            builder: (context, child) {
+              final remainingSeconds =
+                  (_initialDuration * _progressAnimation.value).ceil();
+              final showWarningOverlay =
+                  _isRunning &&
+                  !_isBreak &&
+                  !_isPaused &&
+                  remainingSeconds <= 10 &&
+                  remainingSeconds > 0;
+              if (!showWarningOverlay) {
+                return const SizedBox.shrink();
+              }
+              final warningOpacity = ((10 - remainingSeconds) / 10.0).clamp(
+                0.0,
+                1.0,
+              );
+              return Positioned.fill(
+                child: Container(
+                  color: Colors.black.withValues(alpha: warningOpacity),
+                  child: Center(
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.visibility_off_outlined,
+                              size: 64,
+                              color: Colors.red.shade300.withValues(
+                                alpha: warningOpacity,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Eye break starting in $_remainingSeconds seconds',
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Prepare to look 20 feet away to rest your eyes',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(color: Colors.white70),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (widget.allowPostpone) ...[
-                                ElevatedButton.icon(
-                                  onPressed: _postponeBreak,
-                                  icon: const Icon(Icons.snooze),
-                                  label: Text(
-                                    'Postpone (${widget.postponeDurationSeconds ~/ 60}m)',
+                            const SizedBox(height: 16),
+                            Text(
+                              'Eye break starting in $remainingSeconds seconds',
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white24,
-                                    foregroundColor: Colors.white,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Prepare to look 20 feet away to rest your eyes',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(color: Colors.white70),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 24),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (widget.allowPostpone) ...[
+                                  ElevatedButton.icon(
+                                    onPressed: _postponeBreak,
+                                    icon: const Icon(Icons.snooze),
+                                    label: Text(
+                                      'Postpone (${widget.postponeDurationSeconds ~/ 60}m)',
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white24,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                ],
+                                OutlinedButton.icon(
+                                  onPressed: _cancelTimer,
+                                  icon: const Icon(Icons.close),
+                                  label: const Text('Cancel Timer'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.red.shade200,
+                                    side: BorderSide(
+                                      color: Colors.red.shade300,
+                                    ),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 12,
@@ -1419,33 +1397,17 @@ class _TimerHomePageState extends State<TimerHomePage>
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
                               ],
-                              OutlinedButton.icon(
-                                onPressed: _cancelTimer,
-                                icon: const Icon(Icons.close),
-                                label: const Text('Cancel Timer'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.red.shade200,
-                                  side: BorderSide(color: Colors.red.shade300),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -1467,5 +1429,113 @@ class _TimerHomePageState extends State<TimerHomePage>
         ),
       );
     }
+  }
+}
+
+class _AnimatedTimerDial extends StatelessWidget {
+  final double size;
+  final Animation<double> progressAnimation;
+  final Animation<double> pulseAnimation;
+  final int initialDuration;
+  final String statusLabel;
+  final Color textColor;
+  final Color ringBackgroundColor;
+  final Color progressColor;
+  final double strokeWidth;
+  final bool isLandscape;
+  final VoidCallback onTap;
+
+  const _AnimatedTimerDial({
+    required this.size,
+    required this.progressAnimation,
+    required this.pulseAnimation,
+    required this.initialDuration,
+    required this.statusLabel,
+    required this.textColor,
+    required this.ringBackgroundColor,
+    required this.progressColor,
+    required this.strokeWidth,
+    required this.isLandscape,
+    required this.onTap,
+  });
+
+  String _formattedTime(int seconds) {
+    if (seconds < 60) return seconds.toString();
+    final minutes = seconds ~/ 60;
+    final remainder = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${remainder.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dialSize = size * 0.92;
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: ScaleTransition(
+          scale: pulseAnimation,
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: AnimatedBuilder(
+              animation: progressAnimation,
+              child: SizedBox(
+                width: dialSize,
+                height: dialSize,
+                child: CircularProgressIndicator(
+                  value: 1.0,
+                  strokeWidth: strokeWidth,
+                  color: ringBackgroundColor,
+                ),
+              ),
+              builder: (context, backgroundRing) {
+                final remainingSeconds =
+                    (initialDuration * progressAnimation.value).ceil();
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    backgroundRing!,
+                    SizedBox(
+                      width: dialSize,
+                      height: dialSize,
+                      child: CircularProgressIndicator(
+                        value: progressAnimation.value,
+                        strokeWidth: strokeWidth,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          progressColor,
+                        ),
+                        backgroundColor: Colors.transparent,
+                      ),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _formattedTime(remainingSeconds),
+                          style: TextStyle(
+                            fontSize: isLandscape ? 28 : 36,
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          statusLabel,
+                          style: TextStyle(
+                            fontSize: isLandscape ? 11 : 14,
+                            color: textColor.withValues(alpha: 0.75),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

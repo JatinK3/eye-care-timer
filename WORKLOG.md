@@ -11,6 +11,12 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 4. [x] **Android Reboot Survival**: Ensure the foreground service and exact alarms are correctly re-registered and scheduled upon system reboot.
 
 ### Detailed Tasks
+- [x] Improve Android rendering smoothness and release readiness.
+  - Isolated per-frame countdown updates to the timer dial and warning curtain with `AnimatedBuilder` instead of rebuilding the full home screen.
+  - Added repaint boundaries around the static gradient surface and animated timer dial.
+  - Reduced desktop-state synchronization from every animation frame to once per displayed second.
+  - Added Cupertino-style mobile page transitions, bouncing mobile scroll physics, and explicit Android Impeller enablement.
+  - Verified the optimized code with analyzer, tests, and an Android release build before commit.
 - [x] Implement user-requested Immersive Focus Mode (tapping the timer dial toggles a clean, fullscreen AMOLED-friendly countdown UI, and supports a customized horizontal landscape desk clock layout).
 - [ ] BUG: Timer does not run on real (RTC) time while backgrounded (unified with the foreground-service roadmap item below).
   - Symptom: closing/minimizing the app or locking the screen freezes the work and break countdown at its current value; it only advances when the app is reopened. A 20s break sits at 20s and "runs" on reopen instead of being already over.
@@ -123,6 +129,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Improved Android UI smoothness by isolating timer animation rebuilds, containing gradient and dial repaints, reducing desktop synchronization frequency, using lighter mobile transitions and scroll physics, and explicitly enabling Impeller. Confirmed the release pipeline with an Android release APK build.
 
 - Implemented Linux Desktop Background Support: Integrated `system_tray`, `window_manager`, and `launch_at_startup` packages to support hiding the app window to the system tray, autostart configuration, dynamic tray menus (Pause, Resume, Skip, Postpone, Exit), and a full-screen, borderless, always-on-top desktop break overlay widget in Flutter with randomly rotated eye exercises.
 
