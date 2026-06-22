@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'features/history/history_page.dart';
 import 'features/onboarding/onboarding_page.dart';
@@ -29,6 +30,109 @@ const PageTransitionsTheme _smoothPageTransitionsTheme = PageTransitionsTheme(
     TargetPlatform.windows: ZoomPageTransitionsBuilder(),
   },
 );
+
+/// Builds a clean, minimalist Inter-based text theme on top of [base].
+/// Inter is geometric, highly legible, and gives the crisp iOS-like feel
+/// on Android without any decorative serifs or display flourishes.
+TextTheme _buildTextTheme(TextTheme base) {
+  return GoogleFonts.interTextTheme(base).copyWith(
+    // Display — very large hero numbers (timer countdown)
+    displayLarge: GoogleFonts.inter(
+      fontSize: 57,
+      fontWeight: FontWeight.w200,
+      letterSpacing: -1.5,
+      height: 1.1,
+    ),
+    displayMedium: GoogleFonts.inter(
+      fontSize: 45,
+      fontWeight: FontWeight.w200,
+      letterSpacing: -0.5,
+      height: 1.15,
+    ),
+    displaySmall: GoogleFonts.inter(
+      fontSize: 36,
+      fontWeight: FontWeight.w300,
+      letterSpacing: -0.5,
+      height: 1.2,
+    ),
+    // Headline — section titles, card headers
+    headlineLarge: GoogleFonts.inter(
+      fontSize: 32,
+      fontWeight: FontWeight.w300,
+      letterSpacing: -0.3,
+      height: 1.25,
+    ),
+    headlineMedium: GoogleFonts.inter(
+      fontSize: 28,
+      fontWeight: FontWeight.w400,
+      letterSpacing: -0.2,
+      height: 1.3,
+    ),
+    headlineSmall: GoogleFonts.inter(
+      fontSize: 24,
+      fontWeight: FontWeight.w400,
+      letterSpacing: -0.2,
+      height: 1.3,
+    ),
+    // Title — dialog titles, list section headers
+    titleLarge: GoogleFonts.inter(
+      fontSize: 22,
+      fontWeight: FontWeight.w500,
+      letterSpacing: -0.1,
+      height: 1.35,
+    ),
+    titleMedium: GoogleFonts.inter(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.1,
+      height: 1.4,
+    ),
+    titleSmall: GoogleFonts.inter(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.1,
+      height: 1.4,
+    ),
+    // Body — general readable text
+    bodyLarge: GoogleFonts.inter(
+      fontSize: 16,
+      fontWeight: FontWeight.w400,
+      letterSpacing: 0.0,
+      height: 1.5,
+    ),
+    bodyMedium: GoogleFonts.inter(
+      fontSize: 14,
+      fontWeight: FontWeight.w400,
+      letterSpacing: 0.0,
+      height: 1.5,
+    ),
+    bodySmall: GoogleFonts.inter(
+      fontSize: 12,
+      fontWeight: FontWeight.w400,
+      letterSpacing: 0.1,
+      height: 1.5,
+    ),
+    // Label — button labels, tags, captions
+    labelLarge: GoogleFonts.inter(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.1,
+      height: 1.4,
+    ),
+    labelMedium: GoogleFonts.inter(
+      fontSize: 12,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.4,
+      height: 1.4,
+    ),
+    labelSmall: GoogleFonts.inter(
+      fontSize: 11,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.4,
+      height: 1.4,
+    ),
+  );
+}
 
 class _BlinkKindScrollBehavior extends MaterialScrollBehavior {
   const _BlinkKindScrollBehavior();
@@ -568,6 +672,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
         useMaterial3: true,
         brightness: Brightness.light,
         colorScheme: ColorScheme.fromSeed(seedColor: seedColor),
+        textTheme: _buildTextTheme(ThemeData.light().textTheme),
         pageTransitionsTheme: _smoothPageTransitionsTheme,
       ),
       darkTheme: ThemeData(
@@ -577,6 +682,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           seedColor: seedColor,
           brightness: Brightness.dark,
         ),
+        textTheme: _buildTextTheme(ThemeData.dark().textTheme),
         pageTransitionsTheme: _smoothPageTransitionsTheme,
       ),
       themeMode: _settings.themeMode,

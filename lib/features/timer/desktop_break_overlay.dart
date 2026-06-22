@@ -212,9 +212,8 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               style == 'EyeExercise'
                   ? 'Eye Exercise Break'
                   : 'Box Breathing Break',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white54,
-                    letterSpacing: 1.0,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Colors.white38,
                   ),
             ),
             const SizedBox(height: 24),
@@ -245,7 +244,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
             'Time to rest your eyes',
             style: textStyle.headlineMedium?.copyWith(
               color: Colors.white70,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w400,
             ),
             textAlign: TextAlign.center,
           ),
@@ -290,7 +289,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
                   _formatDuration(_remainingSeconds),
                   style: textStyle.displaySmall?.copyWith(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w300,
                   ),
                 ),
               ],
@@ -386,11 +385,13 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Press and hold to exit',
-              style: TextStyle(
-                color: Colors.redAccent,
-                fontWeight: FontWeight.w500,
+            Builder(
+              builder: (context) => Text(
+                'Press and hold to exit',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
@@ -708,16 +709,15 @@ class _BreathingGuideCircleState extends State<_BreathingGuideCircle>
                     _formatDuration(widget.remainingSeconds),
                     style: theme.textTheme.displaySmall?.copyWith(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w300,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     instruction,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.0,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: Colors.white60,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],

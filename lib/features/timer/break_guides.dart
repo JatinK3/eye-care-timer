@@ -168,8 +168,7 @@ class _EyeExerciseDotGuideState extends State<EyeExerciseDotGuide>
                       _formatTime(widget.remainingSeconds),
                       style: theme.textTheme.displaySmall?.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
+                        fontWeight: FontWeight.w300,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -322,8 +321,7 @@ class _BoxBreathingGuideState extends State<BoxBreathingGuide>
                       _formatTime(widget.remainingSeconds),
                       style: theme.textTheme.headlineSmall?.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w300,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -331,8 +329,7 @@ class _BoxBreathingGuideState extends State<BoxBreathingGuide>
                       phaseLabel,
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: phaseColor,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 4),

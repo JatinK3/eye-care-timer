@@ -232,7 +232,6 @@ class _HistoryPageState extends State<HistoryPage> {
               children: [
                 const Text(
                   "Export your focus sessions and break activity events to CSV or JSON format. The data will be copied to your clipboard.",
-                  style: TextStyle(fontSize: 13, height: 1.4),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -682,7 +681,7 @@ class _HistoryRow extends StatelessWidget {
               Expanded(child: Text(label)),
               Text(
                 "$count / $dailyGoal",
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 8),
               Icon(

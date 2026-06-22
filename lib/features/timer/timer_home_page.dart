@@ -1354,8 +1354,9 @@ class TimerHomePageState extends State<TimerHomePage>
                                           opacity: 0.35,
                                           child: Text(
                                             'Tap dial to exit focus mode',
-                                            style: TextStyle(
-                                              fontSize: 11,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall?.copyWith(
                                               color: textColor,
                                             ),
                                           ),
@@ -1414,8 +1415,10 @@ class TimerHomePageState extends State<TimerHomePage>
                                           const SizedBox(width: 6),
                                           Text(
                                             _statusLabel,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w700,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.labelLarge?.copyWith(
+                                              fontWeight: FontWeight.w600,
                                               color: progressColor,
                                             ),
                                           ),
@@ -1504,8 +1507,9 @@ class TimerHomePageState extends State<TimerHomePage>
                                 opacity: 0.35,
                                 child: Text(
                                   'Tap dial to exit focus mode',
-                                  style: TextStyle(
-                                    fontSize: 12,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall?.copyWith(
                                     color: textColor,
                                   ),
                                 ),
@@ -1733,18 +1737,17 @@ class _AnimatedTimerDial extends StatelessWidget {
                       children: [
                         Text(
                           _formattedTime(remainingSeconds),
-                          style: TextStyle(
-                            fontSize: isLandscape ? 28 : 36,
-                            fontWeight: FontWeight.w700,
+                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                            fontSize: isLandscape ? 28 : null,
+                            fontWeight: FontWeight.w300,
                             color: textColor,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           statusLabel,
-                          style: TextStyle(
-                            fontSize: isLandscape ? 11 : 14,
-                            color: textColor.withValues(alpha: 0.75),
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: textColor.withValues(alpha: 0.65),
                           ),
                         ),
                       ],
