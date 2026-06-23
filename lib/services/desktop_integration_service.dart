@@ -316,7 +316,13 @@ class DesktopIntegrationService extends WindowListener {
 
   Future<void> _enterBreakWindow() async {
     final span = await _computeDisplaySpan();
-    await windowManager.setAlwaysOnTop(true);
+
+    // Show, restore, and focus the window first to map it to the desktop
+    await windowManager.show();
+    if (await windowManager.isMinimized()) {
+      await windowManager.restore();
+    }
+    await windowManager.focus();
 
     if (span != null && span.isMultiMonitor && _canSpanDisplays()) {
       try {
@@ -324,15 +330,15 @@ class DesktopIntegrationService extends WindowListener {
         await windowManager.setBounds(span.windowBounds);
         _breakMonitorRects = span.monitorRects;
         _spanningActive = true;
-        // Cosmetic only: hide the window chrome over the break. Best-effort so
-        // a platform without title-bar control still gets a covering overlay.
+        
+        // Always apply always-on-top and skipTaskbar AFTER window mapping
+        await windowManager.setAlwaysOnTop(true);
         try {
           await windowManager.setSkipTaskbar(true);
           await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
         } catch (e) {
           debugPrint('Could not hide window chrome for break overlay: $e');
         }
-        await windowManager.show();
         await windowManager.focus();
         return;
       } catch (e) {
@@ -345,11 +351,10 @@ class DesktopIntegrationService extends WindowListener {
       }
     }
 
-    // Single-monitor, Wayland, or fallback path: fullscreen on the current
-    // monitor (original behavior).
+    // Single-monitor, Wayland, or fallback path: fullscreen on the current monitor
     _breakMonitorRects = const [];
     await windowManager.setFullScreen(true);
-    await windowManager.show();
+    await windowManager.setAlwaysOnTop(true);
     await windowManager.focus();
   }
 
@@ -399,17 +404,15 @@ class DesktopIntegrationService extends WindowListener {
   }
 
   bool _canSpanDisplays() {
-    // Wayland does not let a client position itself at absolute global
+    // Wayland does not let a native client position itself at absolute global
     // coordinates, so a single window cannot reliably cover other monitors.
-    // Fall back to single-monitor fullscreen there.
+    // However, by default Flutter Linux apps run via X11/Xwayland backend unless
+    // GDK_BACKEND=wayland is set, which supports absolute coordinate spanning.
     if (Platform.isLinux) {
-      final sessionType = Platform.environment['XDG_SESSION_TYPE']
-          ?.toLowerCase();
-      final waylandDisplay = Platform.environment['WAYLAND_DISPLAY'];
-      final isWayland =
-          sessionType == 'wayland' ||
-          (waylandDisplay != null && waylandDisplay.isNotEmpty);
-      if (isWayland) return false;
+      final gdkBackend = Platform.environment['GDK_BACKEND']?.toLowerCase();
+      if (gdkBackend == 'wayland') {
+        return false;
+      }
     }
     return true;
   }

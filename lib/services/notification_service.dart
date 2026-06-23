@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -46,6 +49,11 @@ class NotificationService {
 
   Future<void> cancelPreBreakWarningReminder() async {
     if (kIsWeb) {
+      return;
+    }
+    if (Platform.isLinux) {
+      _linuxWarningTimer?.cancel();
+      _linuxWarningTimer = null;
       return;
     }
 
@@ -98,12 +106,19 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin;
   bool _isInitialized = false;
 
+  Timer? _linuxPhaseTimer;
+  Timer? _linuxWarningTimer;
+
   NotificationService({FlutterLocalNotificationsPlugin? notificationsPlugin})
     : _notificationsPlugin =
           notificationsPlugin ?? FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
     if (_isInitialized || kIsWeb) {
+      return;
+    }
+    if (!kIsWeb && Platform.isLinux) {
+      _isInitialized = true;
       return;
     }
 
@@ -160,6 +175,9 @@ class NotificationService {
     if (kIsWeb) {
       return NotificationPermissionStatus.unsupported;
     }
+    if (Platform.isLinux) {
+      return NotificationPermissionStatus.allowed;
+    }
 
     await initialize();
 
@@ -210,6 +228,7 @@ class NotificationService {
 
   Future<ExactAlarmStatus> exactAlarmStatus() async {
     if (kIsWeb) return ExactAlarmStatus.unsupported;
+    if (Platform.isLinux) return ExactAlarmStatus.allowed;
     await initialize();
     final android = _notificationsPlugin
         .resolvePlatformSpecificImplementation<
@@ -235,6 +254,7 @@ class NotificationService {
 
   Future<BatteryOptimizationStatus> batteryOptimizationStatus() async {
     if (kIsWeb) return BatteryOptimizationStatus.unsupported;
+    if (Platform.isLinux) return BatteryOptimizationStatus.unrestricted;
     try {
       final ignored = await _settingsChannel.invokeMethod<bool>(
         'isBatteryOptimizationIgnored',
@@ -272,6 +292,9 @@ class NotificationService {
 
   Future<bool> hasPendingPhaseReminder() async {
     if (kIsWeb) return false;
+    if (Platform.isLinux) {
+      return _linuxPhaseTimer != null && _linuxPhaseTimer!.isActive;
+    }
     await initialize();
     try {
       final pending = await _notificationsPlugin.pendingNotificationRequests();
@@ -283,6 +306,18 @@ class NotificationService {
 
   Future<bool> showTestReminder() async {
     if (kIsWeb) return false;
+    if (Platform.isLinux) {
+      try {
+        await Process.run('notify-send', [
+          'BlinkKind test reminder',
+          'If you heard this, phase reminder sound is ready.',
+        ]);
+        return true;
+      } catch (e) {
+        debugPrint('Failed to send Linux notification: $e');
+        return false;
+      }
+    }
     await initialize();
     if (await permissionStatus() != NotificationPermissionStatus.allowed) {
       return false;
@@ -324,6 +359,11 @@ class NotificationService {
     if (kIsWeb) {
       return;
     }
+    if (Platform.isLinux) {
+      _linuxPhaseTimer?.cancel();
+      _linuxPhaseTimer = null;
+      return;
+    }
 
     await initialize();
     try {
@@ -342,6 +382,20 @@ class NotificationService {
   }) async {
     if (kIsWeb || delay <= Duration.zero) {
       return false;
+    }
+    if (Platform.isLinux) {
+      if (id == _preBreakWarningReminderId) {
+        _linuxWarningTimer?.cancel();
+        _linuxWarningTimer = Timer(delay, () {
+          Process.run('notify-send', [title, body]);
+        });
+      } else {
+        _linuxPhaseTimer?.cancel();
+        _linuxPhaseTimer = Timer(delay, () {
+          Process.run('notify-send', [title, body]);
+        });
+      }
+      return true;
     }
 
     await initialize();
