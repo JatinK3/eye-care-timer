@@ -27,6 +27,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Add an Android foreground service (`TimerForegroundService`) + exact `AlarmManager` deadline owner (`PhaseDeadlineReceiver`) + `blinkkind/timer_background` MethodChannel bridge + Dart `TimerBackgroundService`, wired into start/pause/resume/cancel/idle/projection.
   - [x] Continue automatic work/break cycles natively while Flutter is suspended, including cycle limits, long-break cadence, delayed-alarm fast-forward, persisted process-death recovery, and stale-alarm rejection.
   - [x] Android 17 emulator baseline: foreground service and exact alarm registered, cross-app overlay launched at the work deadline, rotation survived, configured break auto-dismissed, and the service cleaned up.
+  - [x] Fixed minimized/closed Activity overlay suppression: `TimerForegroundService` no longer treats foreground-service process importance as visible UI, and uses explicit `MainActivity` resumed-state tracking before suppressing the native break overlay.
   - [ ] Physical-device validation: background, screen-lock, Doze, app-killed, multi-cycle auto-run, device clock change, and notifications-disabled paths on Pixel/Samsung/Xiaomi-style restrictions. Required to actually close this bug.
   - [x] Native reboot rescheduling and audible reminders for later native-only cycle boundaries. Force-stopped apps cannot restart themselves by Android design.
   - [x] Wire the deadline alarm to launch the immersive break overlay (fullScreenIntent) rather than only a tappable notification (depends on the break-surface UI below).
@@ -134,6 +135,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Fixed Android minimized/closed break-overlay takeover. The native foreground service previously used process importance to decide whether BlinkKind was foregrounded, but the foreground service itself keeps the process in a foreground-importance state after the Activity is minimized or gone. `MainActivity` now records actual resumed visibility through `AppVisibility`, and `TimerForegroundService` launches the native overlay when a break starts while the Activity is not resumed.
 
 - Implemented lifecycle-safe iOS immersive focus UI. A dedicated Dart system-UI service selects iOS manual overlay hiding, while `ImmersiveFlutterViewController` controls status-bar visibility, home-indicator auto-hide, and edge-gesture deferral through a MethodChannel. Focus mode restores system chrome when the app becomes inactive, exits focus, or disposes, and reapplies it on resume. `flutter analyze` is clean and all 49 Flutter tests pass; native compilation and physical-device behavior still require macOS/Xcode.
 

@@ -18,6 +18,21 @@ class MainActivity : FlutterActivity() {
     private val permissionsChannel = "blinkkind/permissions"
     private val reminderChannelId = "blinkkind_phase_reminders_v2"
 
+    override fun onResume() {
+        super.onResume()
+        AppVisibility.isActivityResumed = true
+    }
+
+    override fun onPause() {
+        AppVisibility.isActivityResumed = false
+        super.onPause()
+    }
+
+    override fun onDestroy() {
+        AppVisibility.isActivityResumed = false
+        super.onDestroy()
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(

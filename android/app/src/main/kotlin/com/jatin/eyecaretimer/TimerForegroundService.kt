@@ -1,6 +1,5 @@
 package com.jatin.eyecaretimer
 
-import android.app.ActivityManager
 import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
@@ -388,21 +387,8 @@ class TimerForegroundService : Service() {
         }
     }
 
-    private fun isAppInForeground(context: Context): Boolean {
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager ?: return false
-        val appProcesses = activityManager.runningAppProcesses ?: return false
-        val packageName = context.packageName
-        for (appProcess in appProcesses) {
-            if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND &&
-                appProcess.processName == packageName) {
-                return true
-            }
-        }
-        return false
-    }
-
     fun presentCurrentPhase() {
-        if (isBreak && breakMode != "off" && !isAppInForeground(this)) {
+        if (isBreak && breakMode != "off" && !AppVisibility.isActivityResumed) {
             val seconds = secondsRemaining().coerceAtLeast(1L).coerceAtMost(Int.MAX_VALUE.toLong())
             BreakOverlayController.show(
                 context = this,
