@@ -228,8 +228,22 @@ if [ -f "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" ]; then
                 restarted=true
             fi
         done
+
+        # Restart running desktop application processes if detected
+        if pgrep -x eye_care_timer >/dev/null 2>&1; then
+            echo "Detected running BlinkKind application process (previously running)."
+            echo "Stopping running application..."
+            pkill -x eye_care_timer || true
+            sleep 1
+            echo "Restarting BlinkKind application..."
+            # Launch via gtk-launch to run it in user's graphical session independently of script terminal
+            gtk-launch blinkkind.desktop >/dev/null 2>&1 || gtk-launch blinkkind >/dev/null 2>&1 || (blinkkind >/dev/null 2>&1 &)
+            echo "✓ BlinkKind application restarted successfully."
+            restarted=true
+        fi
+
         if [ "$restarted" = false ]; then
-            echo "No active blinkkind/blinkind services detected. Skipping service restart."
+            echo "No active blinkkind/blinkind services or running app processes detected. Skipping restart."
         fi
     else
         echo "Skipping installation."
