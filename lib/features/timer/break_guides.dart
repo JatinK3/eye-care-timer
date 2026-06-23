@@ -182,21 +182,33 @@ class _EyeExerciseDotGuideState extends State<EyeExerciseDotGuide>
                     ),
                   ],
                 ),
-                // Moving dot
+                // Moving dot (crisp vector double-circle without shadows)
                 Transform.translate(
                   offset: dotOffset,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 50),
-                    width: dotRadius * 2,
-                    height: dotRadius * 2,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF00E5CC),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF00E5CC).withValues(alpha: 0.6),
-                          blurRadius: 18,
-                          spreadRadius: 4,
+                  child: SizedBox(
+                    width: dotRadius * 2.5,
+                    height: dotRadius * 2.5,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: dotRadius * 2.5,
+                          height: dotRadius * 2.5,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFF00E5CC).withValues(alpha: 0.3),
+                              width: 1.8,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: dotRadius * 1.4,
+                          height: dotRadius * 1.4,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFF00E5CC),
+                          ),
                         ),
                       ],
                     ),
@@ -394,28 +406,28 @@ class _BoxBreathingPainter extends CustomPainter {
     final startDist = phaseStartFraction * perimeter;
     final endDist = phaseEndFraction * perimeter;
 
-    // Draw active glow line
+    // Draw active path line (clean vector line without blurs)
     final activePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0
       ..color = color
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6);
+      ..strokeCap = StrokeCap.round;
 
     final path = _buildPerimeterPath(w, h, startDist, endDist);
     canvas.drawPath(path, activePaint);
 
-    // Solid dot at leading edge
+    // Solid dot at leading edge (clean double-circle vector without blurs)
     final dotPos = _perimeterPoint(w, h, endDist % perimeter);
-    final dotPaint = Paint()
-      ..color = color
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 10);
-    canvas.drawCircle(dotPos, 7, dotPaint);
-    canvas.drawCircle(
-      dotPos,
-      5,
-      Paint()..color = Colors.white,
-    );
+    
+    final outerDotPaint = Paint()
+      ..color = color.withValues(alpha: 0.3)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(dotPos, 9, outerDotPaint);
+
+    final innerDotPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(dotPos, 4.5, innerDotPaint);
   }
 
   Path _buildPerimeterPath(
