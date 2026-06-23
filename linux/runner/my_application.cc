@@ -19,13 +19,29 @@ G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 static std::vector<GtkWidget*> blocker_windows;
 static GtkWindow* main_window = nullptr;
 
-static void hide_blocker_windows() {
+static void hide_blocker_windows(bool was_hidden, bool was_minimized) {
   for (GtkWidget* window : blocker_windows) {
     if (GTK_IS_WIDGET(window)) {
       gtk_widget_destroy(window);
     }
   }
   blocker_windows.clear();
+
+  if (main_window != nullptr) {
+    // Exit fullscreen and reset keep-above
+    gtk_window_unfullscreen(main_window);
+    gtk_window_set_keep_above(main_window, FALSE);
+
+    if (was_hidden) {
+      gtk_widget_hide(GTK_WIDGET(main_window));
+    } else if (was_minimized) {
+      gtk_window_iconify(main_window);
+    } else {
+      // Ensure the window is shown and raised/focused on the screen
+      gtk_window_deiconify(main_window);
+      gtk_window_present(main_window);
+    }
+  }
 }
 
 static void show_blocker_windows(GtkApplication* app) {
@@ -188,7 +204,20 @@ static void my_application_activate(GApplication* application) {
           show_blocker_windows(GTK_APPLICATION(self));
           fl_method_call_respond_success(method_call, nullptr, nullptr);
         } else if (g_strcmp0(method, "hideBlockers") == 0) {
-          hide_blocker_windows();
+          FlValue* args = fl_method_call_get_args(method_call);
+          bool was_hidden = false;
+          bool was_minimized = false;
+          if (args != nullptr && fl_value_get_type(args) == FL_VALUE_TYPE_MAP) {
+            FlValue* val_hidden = fl_value_lookup_string(args, "wasHidden");
+            if (val_hidden != nullptr && fl_value_get_type(val_hidden) == FL_VALUE_TYPE_BOOL) {
+              was_hidden = fl_value_get_bool(val_hidden);
+            }
+            FlValue* val_minimized = fl_value_lookup_string(args, "wasMinimized");
+            if (val_minimized != nullptr && fl_value_get_type(val_minimized) == FL_VALUE_TYPE_BOOL) {
+              was_minimized = fl_value_get_bool(val_minimized);
+            }
+          }
+          hide_blocker_windows(was_hidden, was_minimized);
           fl_method_call_respond_success(method_call, nullptr, nullptr);
         } else {
           fl_method_call_respond_not_implemented(method_call, nullptr);
@@ -233,7 +262,7 @@ static void my_application_shutdown(GApplication* application) {
   //MyApplication* self = MY_APPLICATION(object);
 
   // Perform any actions required at application shutdown.
-  hide_blocker_windows();
+  hide_blocker_windows(false, false);
 
   G_APPLICATION_CLASS(my_application_parent_class)->shutdown(application);
 }
