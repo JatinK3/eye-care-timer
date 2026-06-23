@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/foundation.dart';
@@ -304,7 +305,20 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   }
 
   Future<bool> _showOverlayPreview() {
-    return _breakOverlayService.showPreview();
+    String resolvedStyle = _settings.breakVisualizerStyle;
+    if (resolvedStyle == 'Random') {
+      const styles = [
+        'Breathing',
+        'BoxBreathing',
+        'EyeExercise',
+        'Ambient',
+        'Starry',
+      ];
+      resolvedStyle = styles[math.Random().nextInt(styles.length)];
+    }
+    return _breakOverlayService.showPreview(
+      breakVisualizerStyle: resolvedStyle,
+    );
   }
 
   Future<void> _openNotificationSettings() async {

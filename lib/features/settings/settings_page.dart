@@ -543,6 +543,10 @@ class _SettingsPageState extends State<SettingsPage>
                       },
                       items: const [
                         DropdownMenuItem(
+                          value: 'Random',
+                          child: Text('Random/All'),
+                        ),
+                        DropdownMenuItem(
                           value: 'Breathing',
                           child: Text('Calm Breathing'),
                         ),

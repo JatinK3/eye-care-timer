@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -124,10 +125,25 @@ class TimerHomePageState extends State<TimerHomePage>
   bool _isRunning = false;
   bool _isPaused = false;
   bool _isBreak = false;
+  late String _activeBreakVisualizerStyle;
   bool _isCancelled = false;
   bool _isFocusMode = false;
   bool _isSystemIdlePaused = false;
   final SystemUiService _systemUiService = const SystemUiService();
+
+  String _resolveVisualizerStyle() {
+    if (widget.breakVisualizerStyle == 'Random') {
+      const styles = [
+        'Breathing',
+        'BoxBreathing',
+        'EyeExercise',
+        'Ambient',
+        'Starry',
+      ];
+      return styles[math.Random().nextInt(styles.length)];
+    }
+    return widget.breakVisualizerStyle;
+  }
 
   late int _streakCount;
 
@@ -165,6 +181,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _streakCount = widget.initialStreakCount;
     _initialDuration = _workDurationSeconds;
     _remainingSeconds = _initialDuration;
+    _activeBreakVisualizerStyle = widget.breakVisualizerStyle;
 
     // Main progress controller
     _animationController = AnimationController(
@@ -264,6 +281,11 @@ class TimerHomePageState extends State<TimerHomePage>
   @override
   void didUpdateWidget(covariant TimerHomePage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.breakVisualizerStyle != widget.breakVisualizerStyle) {
+      setState(() {
+        _activeBreakVisualizerStyle = _resolveVisualizerStyle();
+      });
+    }
     if (_isRunning) {
       return;
     }
@@ -341,7 +363,7 @@ class TimerHomePageState extends State<TimerHomePage>
           widget.breakOverlayService?.showBreakOverlay(
             durationSeconds: _remainingSeconds,
             breakMode: widget.breakMode,
-            breakVisualizerStyle: widget.breakVisualizerStyle,
+            breakVisualizerStyle: _activeBreakVisualizerStyle,
           ),
         );
       }
@@ -476,6 +498,9 @@ class TimerHomePageState extends State<TimerHomePage>
 
     setState(() {
       _isBreak = session.isBreak;
+      if (_isBreak) {
+        _activeBreakVisualizerStyle = _resolveVisualizerStyle();
+      }
       _isRunning = true;
       _isPaused = true;
       _isCancelled = false;
@@ -554,6 +579,9 @@ class TimerHomePageState extends State<TimerHomePage>
     );
     setState(() {
       _isBreak = projection.isBreak;
+      if (_isBreak) {
+        _activeBreakVisualizerStyle = _resolveVisualizerStyle();
+      }
       _isRunning = true;
       _isPaused = false;
       _isCancelled = false;
@@ -587,7 +615,7 @@ class TimerHomePageState extends State<TimerHomePage>
         widget.breakOverlayService?.showBreakOverlay(
           durationSeconds: projection.remainingSeconds,
           breakMode: widget.breakMode,
-          breakVisualizerStyle: widget.breakVisualizerStyle,
+          breakVisualizerStyle: _activeBreakVisualizerStyle,
         ),
       );
     } else {
@@ -656,6 +684,9 @@ class TimerHomePageState extends State<TimerHomePage>
     _cancelReminders();
     setState(() {
       _isBreak = isBreak;
+      if (isBreak) {
+        _activeBreakVisualizerStyle = _resolveVisualizerStyle();
+      }
       _isRunning = true;
       _isPaused = false;
       _isSystemIdlePaused = false;
@@ -677,6 +708,7 @@ class TimerHomePageState extends State<TimerHomePage>
         widget.breakOverlayService?.showBreakOverlay(
           durationSeconds: duration,
           breakMode: widget.breakMode,
+          breakVisualizerStyle: _activeBreakVisualizerStyle,
         ),
       );
     } else {
@@ -1457,9 +1489,9 @@ class TimerHomePageState extends State<TimerHomePage>
                             if (_isBreak &&
                                 _isRunning &&
                                 !_isPaused) ...[
-                              if (widget.breakVisualizerStyle ==
+                              if (_activeBreakVisualizerStyle ==
                                       'EyeExercise' ||
-                                  widget.breakVisualizerStyle ==
+                                  _activeBreakVisualizerStyle ==
                                       'BoxBreathing') ...[
                                 const SizedBox(height: 16),
                                 ConstrainedBox(
@@ -1467,7 +1499,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                     maxWidth: 280,
                                     maxHeight: 280,
                                   ),
-                                  child: widget.breakVisualizerStyle ==
+                                  child: _activeBreakVisualizerStyle ==
                                           'EyeExercise'
                                       ? EyeExerciseDotGuide(
                                           remainingSeconds: _remainingSeconds,

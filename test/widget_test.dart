@@ -957,6 +957,30 @@ void main() {
     );
   });
 
+  testWidgets('settings updates break visualizer style to Random', (
+    WidgetTester tester,
+  ) async {
+    await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Break visualizer style'), 200);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Calm Breathing'), findsOneWidget);
+
+    await tester.tap(find.text('Calm Breathing'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Random/All').last);
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(
+      prefs.getString(PreferencesService.breakVisualizerStyleKey),
+      'Random',
+    );
+  });
+
   testWidgets('completed work persists a TimerEventRecord', (tester) async {
     SharedPreferences.setMockInitialValues({
       PreferencesService.onboardingCompletedKey: true,
