@@ -7,6 +7,14 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$PROJECT_DIR/build/linux/x64/release/bundle"
 DIST_DIR="$PROJECT_DIR/dist"
 
+# Parse command line arguments (e.g., -y or --yes)
+AUTO_YES=false
+for arg in "$@"; do
+    if [ "$arg" = "-y" ] || [ "$arg" = "--yes" ]; then
+        AUTO_YES=true
+    fi
+done
+
 # Extract version from pubspec.yaml (e.g., version: 1.0.0+1 -> 1.0.0)
 VERSION=$(grep 'version: ' "$PROJECT_DIR/pubspec.yaml" | sed 's/version: //' | cut -d'+' -f1 | tr -d '[:space:]')
 if [ -z "$VERSION" ]; then
@@ -18,14 +26,18 @@ echo "Building BlinkKind version $VERSION..."
 echo "========================================="
 cd "$PROJECT_DIR"
 
-# Option to reset application states (only if running interactively)
-if [ -t 0 ]; then
+# Option to reset application states (only if running interactively or requested via -y)
+clear_state="n"
+if [ "$AUTO_YES" = true ]; then
+    clear_state="y"
+elif [ -t 0 ]; then
     read -p "Would you like to clear local user preferences/timer state (resets settings and history)? (y/N): " clear_state
-    if [[ "$clear_state" =~ ^[Yy]$ ]]; then
-        rm -rf "$HOME/.local/share/com.jatin.eyecaretimer"
-        rm -rf "$HOME/.local/share/com.example.eyeapptimer"
-        echo "✓ Local application state files deleted."
-    fi
+fi
+
+if [[ "$clear_state" =~ ^[Yy]$ ]]; then
+    rm -rf "$HOME/.local/share/com.jatin.eyecaretimer"
+    rm -rf "$HOME/.local/share/com.example.eyeapptimer"
+    echo "✓ Local application state files deleted."
 fi
 
 /home/jatin/development/flutter/bin/flutter clean
@@ -189,7 +201,13 @@ fi
 if [ -f "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" ]; then
     echo ""
     echo "========================================="
-    read -p "Would you like to install the generated DEB package now? (y/N): " install_deb
+    install_deb="n"
+    if [ "$AUTO_YES" = true ]; then
+        install_deb="y"
+    elif [ -t 0 ]; then
+        read -p "Would you like to install the generated DEB package now? (y/N): " install_deb
+    fi
+
     if [[ "$install_deb" =~ ^[Yy]$ ]]; then
         if dpkg-query -W -f='${Status}' blinkkind 2>/dev/null | grep -q "ok installed"; then
             echo "An older version of blinkkind is already installed. Removing it first for a clean install..."
