@@ -18,6 +18,11 @@ class DesktopIntegrationService extends WindowListener {
   final Menu _menu = Menu();
   bool _isInitialized = false;
   bool _isBreakActive = false;
+  bool? _lastIsBreak;
+  bool? _lastIsRunning;
+  bool? _lastIsPaused;
+  bool? _lastAllowPostpone;
+  int? _lastPostponeDurationMinutes;
 
   List<Rect> _breakMonitorRects = const [];
   Rect? _savedWindowBounds;
@@ -128,15 +133,69 @@ class DesktopIntegrationService extends WindowListener {
     if (!isSupported) return;
     _isBreakActive = state.isBreak;
     try {
+      // 1. Update the system tray tooltip dynamically with time remaining.
+      // This is updated on hover and does NOT recreate the context menu structure,
+      // avoiding any hover flickering issues.
+      final minutes = state.remainingSeconds ~/ 60;
+      final seconds = state.remainingSeconds % 60;
+      final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+      
+      String tooltipText;
+      if (state.isBreak) {
+        tooltipText = 'BlinkKind - On a Break ($timeStr remaining)';
+      } else if (state.isRunning) {
+        if (state.isPaused) {
+          tooltipText = 'BlinkKind - Paused ($timeStr remaining)';
+        } else {
+          tooltipText = 'BlinkKind - Next break in $timeStr';
+        }
+      } else {
+        tooltipText = 'BlinkKind - Timer Idle';
+      }
+      unawaited(_systemTray.setToolTip(tooltipText));
+
+      // 2. Only rebuild the context menu when the control states actually change.
+      if (_lastIsBreak == state.isBreak &&
+          _lastIsRunning == state.isRunning &&
+          _lastIsPaused == state.isPaused &&
+          _lastAllowPostpone == state.allowPostpone &&
+          _lastPostponeDurationMinutes == state.postponeDurationMinutes) {
+        return;
+      }
+
+      _lastIsBreak = state.isBreak;
+      _lastIsRunning = state.isRunning;
+      _lastIsPaused = state.isPaused;
+      _lastAllowPostpone = state.allowPostpone;
+      _lastPostponeDurationMinutes = state.postponeDurationMinutes;
+
       final List<MenuItemBase> items = [
         MenuItemLabel(label: 'Show BlinkKind', onClicked: (_) => _showWindow()),
         MenuSeparator(),
       ];
 
+      // Add dynamic, read-only Status item
+      String statusText;
+      if (state.isBreak) {
+        statusText = 'Status: On a Break';
+      } else if (state.isRunning) {
+        if (state.isPaused) {
+          statusText = 'Status: Paused';
+        } else {
+          statusText = 'Status: Working';
+        }
+      } else {
+        statusText = 'Status: Idle';
+      }
+      items.addAll([
+        MenuItemLabel(label: statusText, enabled: false),
+        MenuSeparator(),
+      ]);
+
       if (state.isBreak) {
         items.addAll([
           MenuItemLabel(
-            label: 'Break Active - Skip Break',
+            label: 'Skip Break',
             onClicked: (_) {
               DesktopControlsController.instance.triggerCommand(
                 DesktopCommand.skipBreak,
@@ -156,11 +215,48 @@ class DesktopIntegrationService extends WindowListener {
             ),
           ]);
         }
-      } else if (state.isRunning) {
-        if (state.isPaused) {
+      } else {
+        if (state.isRunning && !state.isPaused) {
           items.addAll([
             MenuItemLabel(
-              label: 'Resume Timer',
+              label: 'Take a Break Now',
+              onClicked: (_) {
+                DesktopControlsController.instance.triggerCommand(
+                  DesktopCommand.startBreak,
+                );
+              },
+            ),
+          ]);
+        }
+
+        if (state.isRunning) {
+          if (state.isPaused) {
+            items.addAll([
+              MenuItemLabel(
+                label: 'Resume Timer',
+                onClicked: (_) {
+                  DesktopControlsController.instance.triggerCommand(
+                    DesktopCommand.resume,
+                  );
+                },
+              ),
+            ]);
+          } else {
+            items.addAll([
+              MenuItemLabel(
+                label: 'Pause Timer',
+                onClicked: (_) {
+                  DesktopControlsController.instance.triggerCommand(
+                    DesktopCommand.pause,
+                  );
+                },
+              ),
+            ]);
+          }
+        } else {
+          items.addAll([
+            MenuItemLabel(
+              label: 'Start Timer',
               onClicked: (_) {
                 DesktopControlsController.instance.triggerCommand(
                   DesktopCommand.resume,
@@ -168,29 +264,7 @@ class DesktopIntegrationService extends WindowListener {
               },
             ),
           ]);
-        } else {
-          items.addAll([
-            MenuItemLabel(
-              label: 'Pause Timer',
-              onClicked: (_) {
-                DesktopControlsController.instance.triggerCommand(
-                  DesktopCommand.pause,
-                );
-              },
-            ),
-          ]);
         }
-      } else {
-        items.addAll([
-          MenuItemLabel(
-            label: 'Start Timer',
-            onClicked: (_) {
-              DesktopControlsController.instance.triggerCommand(
-                DesktopCommand.resume,
-              );
-            },
-          ),
-        ]);
       }
 
       items.addAll([

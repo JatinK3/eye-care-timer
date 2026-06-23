@@ -1,6 +1,6 @@
 import 'dart:async';
 
-enum DesktopCommand { pause, resume, skipBreak, postponeBreak }
+enum DesktopCommand { pause, resume, skipBreak, postponeBreak, startBreak }
 
 class DesktopTimerState {
   final bool isRunning;

@@ -250,6 +250,11 @@ class TimerHomePageState extends State<TimerHomePage>
                   _postponeBreak();
                 }
                 break;
+              case DesktopCommand.startBreak:
+                if (_isRunning && !_isBreak) {
+                  _startTimer(_breakDurationSeconds, isBreak: true);
+                }
+                break;
             }
           });
       _updateDesktopState();
