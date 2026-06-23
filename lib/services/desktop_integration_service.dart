@@ -19,6 +19,7 @@ class DesktopIntegrationService extends WindowListener {
   bool _isBreakActive = false;
   bool _isWindowHiddenToTray = false;
   bool _wasHiddenToTrayBeforeBreak = false;
+  bool _wasMinimizedBeforeBreak = false;
   bool? _lastIsBreak;
   bool? _lastIsRunning;
   bool? _lastIsPaused;
@@ -352,8 +353,10 @@ class DesktopIntegrationService extends WindowListener {
         _savedWindowBounds = await windowManager.getBounds();
         _wasMaximized = await windowManager.isMaximized();
       }
+      _wasMinimizedBeforeBreak = isMinimized;
     } catch (e) {
       debugPrint('Failed to get window bounds/state: $e');
+      _wasMinimizedBeforeBreak = false;
     }
 
     // 2. Show, restore, and focus the window first to map it to the desktop before doing layout changes
@@ -410,7 +413,70 @@ class DesktopIntegrationService extends WindowListener {
       debugPrint('Failed to hide native screen blockers: $e');
     }
 
-    // 2. Restore window decorations and exit fullscreen
+    // 2. If it was hidden to tray before the break, just hide it immediately!
+    if (_wasHiddenToTrayBeforeBreak) {
+      try {
+        await windowManager.hide();
+        _isWindowHiddenToTray = true;
+
+        // Clean up visual styles/states in the background while hidden
+        await windowManager.setFullScreen(false);
+        await windowManager.setAlwaysOnTop(false);
+        await windowManager.setSkipTaskbar(false);
+        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+
+        final saved = _savedWindowBounds;
+        if (saved != null) {
+          await windowManager.setBounds(saved);
+        } else {
+          await windowManager.setSize(const Size(1280, 720));
+        }
+        if (_wasMaximized) {
+          await windowManager.maximize();
+        }
+      } catch (e) {
+        debugPrint('Failed to hide/restore hidden window: $e');
+      }
+
+      _savedWindowBounds = null;
+      _wasMaximized = false;
+      _wasMinimizedBeforeBreak = false;
+      _breakMonitorRects = const [];
+      return;
+    }
+
+    // 3. If it was minimized before the break, minimize it immediately!
+    if (_wasMinimizedBeforeBreak) {
+      try {
+        await windowManager.minimize();
+
+        // Clean up visual styles/states in the background while minimized
+        await windowManager.setFullScreen(false);
+        await windowManager.setAlwaysOnTop(false);
+        await windowManager.setSkipTaskbar(false);
+        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+
+        final saved = _savedWindowBounds;
+        if (saved != null) {
+          await windowManager.setBounds(saved);
+        } else {
+          await windowManager.setSize(const Size(1280, 720));
+        }
+        if (_wasMaximized) {
+          await windowManager.maximize();
+        }
+      } catch (e) {
+        debugPrint('Failed to minimize/restore window: $e');
+      }
+
+      _savedWindowBounds = null;
+      _wasMaximized = false;
+      _wasMinimizedBeforeBreak = false;
+      _breakMonitorRects = const [];
+      return;
+    }
+
+    // 4. Otherwise (it was not hidden or minimized before break), restore window decorations and exit fullscreen on screen
     try {
       await windowManager.setFullScreen(false);
       await windowManager.setAlwaysOnTop(false);
@@ -430,15 +496,12 @@ class DesktopIntegrationService extends WindowListener {
       if (_wasMaximized) {
         await windowManager.maximize();
       }
-      if (_wasHiddenToTrayBeforeBreak) {
-        await windowManager.hide();
-        _isWindowHiddenToTray = true;
-      }
     } catch (e) {
       debugPrint('Failed to restore window bounds: $e');
     }
     _savedWindowBounds = null;
     _wasMaximized = false;
+    _wasMinimizedBeforeBreak = false;
     _breakMonitorRects = const [];
   }
 }
