@@ -213,7 +213,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Both guides embedded in `DesktopBreakOverlay` (full-screen, dedicated dark backgrounds) and in `TimerHomePage` portrait layout (inline below the timer dial during in-app breaks).
   - Settings dropdown now exposes "Eye Exercises" and "Box Breathing (4-4-4-4)" alongside the existing Calm Breathing / Ambient Flow / Starry Sky options.
   - Classic card action buttons extracted into a shared `_buildBreakActions()` helper to eliminate duplication between classic and guided layout paths.
-  - All 55 widget tests passing.
+  - All 57 tests passing (including new widget tests for the guided break mode animations and transitions).
 
 - Applied **Inter** as the global minimalist typeface across the entire app for a clean, iOS-like feel:
   - Added `google_fonts: ^6.2.1` dependency; set `allowRuntimeFetching = false` in `main.dart` so fonts load instantly from bundled assets with no network dependency.
@@ -222,4 +222,4 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Removed all wide positive `letterSpacing` overrides (1.0, 1.2, 1.5, 2.0) from `break_guides.dart` and `desktop_break_overlay.dart` that caused the "chunky/funky" look.
   - Switched countdown digit weight from `w700` (bold) to `w300` throughout — Inter's thin tabular figures at display sizes read as premium and minimal.
   - Replaced every raw `TextStyle()` across the UI with `theme.textTheme.X?.copyWith(...)` equivalents: timer dial counter, status badge, focus-mode tap hint (×2), breathing instruction label, hold-to-exit label, history export description, daily goal counter, onboarding feature item titles.
-  - All 55 tests passing; `dart analyze lib/` reports no issues.
+  - All 57 tests passing; `dart analyze lib/` reports no issues.
