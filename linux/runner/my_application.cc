@@ -41,7 +41,7 @@ static void hide_blocker_windows(bool was_hidden, bool was_minimized,
   blocker_windows.clear();
 
   if (main_window != nullptr) {
-    if (was_hidden) {
+    if (was_hidden || was_minimized) {
       // 1. Hide the window first to prevent any visual changes or mapping events
       gtk_widget_hide(GTK_WIDGET(main_window));
 
@@ -61,32 +61,6 @@ static void hide_blocker_windows(bool was_hidden, bool was_minimized,
       } else {
         gtk_window_unmaximize(main_window);
       }
-    } else if (was_minimized) {
-      // 1. Hide the window first to prevent any visual transitions or mapping events
-      gtk_widget_hide(GTK_WIDGET(main_window));
-
-      // 2. Restore all styles synchronously on the hidden window
-      gtk_window_unfullscreen(main_window);
-      gtk_window_set_keep_above(main_window, FALSE);
-      gtk_window_set_skip_taskbar_hint(main_window, FALSE);
-      gtk_window_set_decorated(main_window, TRUE);
-
-      // 3. Restore bounds and maximize state
-      if (has_saved_bounds) {
-        gtk_window_resize(main_window, (gint)width, (gint)height);
-        gtk_window_move(main_window, (gint)x, (gint)y);
-      }
-      if (was_maximized) {
-        gtk_window_maximize(main_window);
-      } else {
-        gtk_window_unmaximize(main_window);
-      }
-
-      // 4. Iconify the window while hidden so it transitions to minimized
-      gtk_window_iconify(main_window);
-
-      // 5. Present the window in its iconified state (shows in dock/taskbar as minimized)
-      gtk_widget_show(GTK_WIDGET(main_window));
     } else {
       // Normal restore (visible before break): Exit fullscreen and keep-above first, then present
       gtk_window_unfullscreen(main_window);

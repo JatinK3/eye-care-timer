@@ -424,9 +424,7 @@ class DesktopIntegrationService extends WindowListener {
 
     // 2. If it was hidden or minimized before the break, skip all window_manager calls to prevent the window manager from unhiding/mapping the window!
     if (_wasHiddenToTrayBeforeBreak || _wasMinimizedBeforeBreak) {
-      if (_wasHiddenToTrayBeforeBreak) {
-        _isWindowHiddenToTray = true;
-      }
+      _isWindowHiddenToTray = true;
       _savedWindowBounds = null;
       _wasMaximized = false;
       _wasMinimizedBeforeBreak = false;
