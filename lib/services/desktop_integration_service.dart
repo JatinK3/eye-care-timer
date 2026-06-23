@@ -406,38 +406,27 @@ class DesktopIntegrationService extends WindowListener {
   }
 
   Future<void> _exitBreakWindow() async {
-    // 1. Destroy native screen blockers on secondary displays
+    // 1. Destroy native screen blockers and restore main window hidden/minimized state in C++
     try {
-      await _overlayChannel.invokeMethod('hideBlockers');
+      await _overlayChannel.invokeMethod('hideBlockers', {
+        'wasHidden': _wasHiddenToTrayBeforeBreak,
+        'wasMinimized': _wasMinimizedBeforeBreak,
+        'hasSavedBounds': _savedWindowBounds != null,
+        'x': _savedWindowBounds?.left ?? 0.0,
+        'y': _savedWindowBounds?.top ?? 0.0,
+        'width': _savedWindowBounds?.width ?? 0.0,
+        'height': _savedWindowBounds?.height ?? 0.0,
+        'wasMaximized': _wasMaximized,
+      });
     } catch (e) {
       debugPrint('Failed to hide native screen blockers: $e');
     }
 
-    // 2. If it was hidden to tray before the break, just hide it immediately!
-    if (_wasHiddenToTrayBeforeBreak) {
-      try {
-        await windowManager.hide();
+    // 2. If it was hidden or minimized before the break, skip all window_manager calls to prevent the window manager from unhiding/mapping the window!
+    if (_wasHiddenToTrayBeforeBreak || _wasMinimizedBeforeBreak) {
+      if (_wasHiddenToTrayBeforeBreak) {
         _isWindowHiddenToTray = true;
-
-        // Clean up visual styles/states in the background while hidden
-        await windowManager.setFullScreen(false);
-        await windowManager.setAlwaysOnTop(false);
-        await windowManager.setSkipTaskbar(false);
-        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
-
-        final saved = _savedWindowBounds;
-        if (saved != null) {
-          await windowManager.setBounds(saved);
-        } else {
-          await windowManager.setSize(const Size(1280, 720));
-        }
-        if (_wasMaximized) {
-          await windowManager.maximize();
-        }
-      } catch (e) {
-        debugPrint('Failed to hide/restore hidden window: $e');
       }
-
       _savedWindowBounds = null;
       _wasMaximized = false;
       _wasMinimizedBeforeBreak = false;
@@ -445,38 +434,7 @@ class DesktopIntegrationService extends WindowListener {
       return;
     }
 
-    // 3. If it was minimized before the break, minimize it immediately!
-    if (_wasMinimizedBeforeBreak) {
-      try {
-        await windowManager.minimize();
-
-        // Clean up visual styles/states in the background while minimized
-        await windowManager.setFullScreen(false);
-        await windowManager.setAlwaysOnTop(false);
-        await windowManager.setSkipTaskbar(false);
-        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
-
-        final saved = _savedWindowBounds;
-        if (saved != null) {
-          await windowManager.setBounds(saved);
-        } else {
-          await windowManager.setSize(const Size(1280, 720));
-        }
-        if (_wasMaximized) {
-          await windowManager.maximize();
-        }
-      } catch (e) {
-        debugPrint('Failed to minimize/restore window: $e');
-      }
-
-      _savedWindowBounds = null;
-      _wasMaximized = false;
-      _wasMinimizedBeforeBreak = false;
-      _breakMonitorRects = const [];
-      return;
-    }
-
-    // 4. Otherwise (it was not hidden or minimized before break), restore window decorations and exit fullscreen on screen
+    // 3. Otherwise (visible before break), restore window decorations and exit fullscreen on screen
     try {
       await windowManager.setFullScreen(false);
       await windowManager.setAlwaysOnTop(false);

@@ -19,7 +19,20 @@ G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 static std::vector<GtkWidget*> blocker_windows;
 static GtkWindow* main_window = nullptr;
 
-static void hide_blocker_windows(bool was_hidden, bool was_minimized) {
+static double get_double_value(FlValue* value) {
+  if (value == nullptr) return 0.0;
+  FlValueType type = fl_value_get_type(value);
+  if (type == FL_VALUE_TYPE_FLOAT) {
+    return fl_value_get_float(value);
+  } else if (type == FL_VALUE_TYPE_INT) {
+    return (double)fl_value_get_int(value);
+  }
+  return 0.0;
+}
+
+static void hide_blocker_windows(bool was_hidden, bool was_minimized,
+                                 bool has_saved_bounds, double x, double y, double width, double height,
+                                 bool was_maximized) {
   for (GtkWidget* window : blocker_windows) {
     if (GTK_IS_WIDGET(window)) {
       gtk_widget_destroy(window);
@@ -28,15 +41,53 @@ static void hide_blocker_windows(bool was_hidden, bool was_minimized) {
   blocker_windows.clear();
 
   if (main_window != nullptr) {
-    // Exit fullscreen and reset keep-above
-    gtk_window_unfullscreen(main_window);
-    gtk_window_set_keep_above(main_window, FALSE);
-
     if (was_hidden) {
+      // 1. Hide the window first to prevent any visual changes or mapping events
       gtk_widget_hide(GTK_WIDGET(main_window));
+
+      // 2. Restore all styles synchronously on the hidden window
+      gtk_window_unfullscreen(main_window);
+      gtk_window_set_keep_above(main_window, FALSE);
+      gtk_window_set_skip_taskbar_hint(main_window, FALSE);
+      gtk_window_set_decorated(main_window, TRUE);
+
+      // 3. Restore bounds and maximize state
+      if (has_saved_bounds) {
+        gtk_window_resize(main_window, (gint)width, (gint)height);
+        gtk_window_move(main_window, (gint)x, (gint)y);
+      }
+      if (was_maximized) {
+        gtk_window_maximize(main_window);
+      } else {
+        gtk_window_unmaximize(main_window);
+      }
     } else if (was_minimized) {
+      // 1. Iconify the window first so it minimizes
       gtk_window_iconify(main_window);
+
+      // 2. Restore all styles synchronously on the minimized window
+      gtk_window_unfullscreen(main_window);
+      gtk_window_set_keep_above(main_window, FALSE);
+      gtk_window_set_skip_taskbar_hint(main_window, FALSE);
+      gtk_window_set_decorated(main_window, TRUE);
+
+      // 3. Restore bounds and maximize state
+      if (has_saved_bounds) {
+        gtk_window_resize(main_window, (gint)width, (gint)height);
+        gtk_window_move(main_window, (gint)x, (gint)y);
+      }
+      if (was_maximized) {
+        gtk_window_maximize(main_window);
+      } else {
+        gtk_window_unmaximize(main_window);
+      }
     } else {
+      // Normal restore (visible before break): Exit fullscreen and keep-above first, then present
+      gtk_window_unfullscreen(main_window);
+      gtk_window_set_keep_above(main_window, FALSE);
+      gtk_window_set_skip_taskbar_hint(main_window, FALSE);
+      gtk_window_set_decorated(main_window, TRUE);
+
       // Ensure the window is shown and raised/focused on the screen
       gtk_window_deiconify(main_window);
       gtk_window_present(main_window);
@@ -207,6 +258,13 @@ static void my_application_activate(GApplication* application) {
           FlValue* args = fl_method_call_get_args(method_call);
           bool was_hidden = false;
           bool was_minimized = false;
+          bool has_saved_bounds = false;
+          double x = 0.0;
+          double y = 0.0;
+          double width = 0.0;
+          double height = 0.0;
+          bool was_maximized = false;
+
           if (args != nullptr && fl_value_get_type(args) == FL_VALUE_TYPE_MAP) {
             FlValue* val_hidden = fl_value_lookup_string(args, "wasHidden");
             if (val_hidden != nullptr && fl_value_get_type(val_hidden) == FL_VALUE_TYPE_BOOL) {
@@ -216,8 +274,32 @@ static void my_application_activate(GApplication* application) {
             if (val_minimized != nullptr && fl_value_get_type(val_minimized) == FL_VALUE_TYPE_BOOL) {
               was_minimized = fl_value_get_bool(val_minimized);
             }
+            FlValue* val_has_bounds = fl_value_lookup_string(args, "hasSavedBounds");
+            if (val_has_bounds != nullptr && fl_value_get_type(val_has_bounds) == FL_VALUE_TYPE_BOOL) {
+              has_saved_bounds = fl_value_get_bool(val_has_bounds);
+            }
+            FlValue* val_x = fl_value_lookup_string(args, "x");
+            if (val_x != nullptr) {
+              x = get_double_value(val_x);
+            }
+            FlValue* val_y = fl_value_lookup_string(args, "y");
+            if (val_y != nullptr) {
+              y = get_double_value(val_y);
+            }
+            FlValue* val_w = fl_value_lookup_string(args, "width");
+            if (val_w != nullptr) {
+              width = get_double_value(val_w);
+            }
+            FlValue* val_h = fl_value_lookup_string(args, "height");
+            if (val_h != nullptr) {
+              height = get_double_value(val_h);
+            }
+            FlValue* val_max = fl_value_lookup_string(args, "wasMaximized");
+            if (val_max != nullptr && fl_value_get_type(val_max) == FL_VALUE_TYPE_BOOL) {
+              was_maximized = fl_value_get_bool(val_max);
+            }
           }
-          hide_blocker_windows(was_hidden, was_minimized);
+          hide_blocker_windows(was_hidden, was_minimized, has_saved_bounds, x, y, width, height, was_maximized);
           fl_method_call_respond_success(method_call, nullptr, nullptr);
         } else {
           fl_method_call_respond_not_implemented(method_call, nullptr);
@@ -262,7 +344,7 @@ static void my_application_shutdown(GApplication* application) {
   //MyApplication* self = MY_APPLICATION(object);
 
   // Perform any actions required at application shutdown.
-  hide_blocker_windows(false, false);
+  hide_blocker_windows(false, false, false, 0.0, 0.0, 0.0, 0.0, false);
 
   G_APPLICATION_CLASS(my_application_parent_class)->shutdown(application);
 }
