@@ -6,6 +6,7 @@ import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:system_tray/system_tray.dart';
 import 'package:window_manager/window_manager.dart';
+import '../features/timer/display_layout.dart';
 import 'desktop_controls_controller.dart';
 
 class DesktopIntegrationService extends WindowListener {
@@ -25,6 +26,8 @@ class DesktopIntegrationService extends WindowListener {
 
   List<Rect> _breakMonitorRects = const [];
   Rect? _savedWindowBounds;
+  bool _spanningActive = false;
+  bool _wasMaximized = false;
 
   /// Per-monitor rectangles (in the overlay window's local coordinate space) to
   /// replicate break content onto every screen while a multi-monitor break is
@@ -332,21 +335,54 @@ class DesktopIntegrationService extends WindowListener {
   }
 
   Future<void> _enterBreakWindow() async {
-    // 1. Save original bounds to restore after the break
+    // 1. Save original bounds and maximized state to restore after the break
     try {
       _savedWindowBounds = await windowManager.getBounds();
+      _wasMaximized = await windowManager.isMaximized();
     } catch (e) {
-      debugPrint('Failed to get window bounds: $e');
+      debugPrint('Failed to get window bounds/state: $e');
     }
 
-    // 2. Identify the active display where the user is currently working (cursor position)
+    // 2. Map and show the window first so it exists on the desktop server
+    await windowManager.show();
+    if (await windowManager.isMinimized()) {
+      await windowManager.restore();
+    }
+    await windowManager.focus();
+
+    // 3. Check if we can span multiple monitors
+    final span = await _computeDisplaySpan();
+    if (span != null && span.isMultiMonitor && _canSpanDisplays()) {
+      try {
+        if (_wasMaximized) {
+          await windowManager.unmaximize();
+        }
+        await windowManager.setBounds(span.windowBounds);
+        _breakMonitorRects = span.monitorRects;
+        _spanningActive = true;
+
+        await windowManager.setAlwaysOnTop(true);
+        await windowManager.setSkipTaskbar(true);
+        await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+        await windowManager.focus();
+        return;
+      } catch (e) {
+        debugPrint('Multi-monitor spanning failed, falling back to fullscreen: $e');
+        _spanningActive = false;
+        _breakMonitorRects = const [];
+      }
+    }
+
+    // 4. Single-monitor fullscreen fallback
+    _spanningActive = false;
+    _breakMonitorRects = const [];
+
     final activeDisplay = await _getActiveDisplay();
     if (activeDisplay != null) {
       final position = activeDisplay.visiblePosition;
       final size = activeDisplay.size;
       if (position != null) {
         try {
-          // Set the window bounds to cover the entire active monitor (borderless fullscreen)
           await windowManager.setBounds(Rect.fromLTWH(position.dx, position.dy, size.width, size.height));
         } catch (e) {
           debugPrint('Failed to set window bounds: $e');
@@ -354,42 +390,97 @@ class DesktopIntegrationService extends WindowListener {
       }
     }
 
-    // 3. Show, restore, and focus the window first to map it to the desktop
-    await windowManager.show();
-    if (await windowManager.isMinimized()) {
-      await windowManager.restore();
-    }
-    await windowManager.focus();
-
-    // 4. Force borderless visual styles, always-on-top, and fullscreen
-    _breakMonitorRects = const [];
     try {
       await windowManager.setAlwaysOnTop(true);
       await windowManager.setSkipTaskbar(true);
       await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
       await windowManager.setFullScreen(true);
     } catch (e) {
-      debugPrint('Failed to configure borderless overlay: $e');
+      debugPrint('Failed to configure fullscreen overlay: $e');
     }
     await windowManager.focus();
   }
 
   Future<void> _exitBreakWindow() async {
     try {
-      await windowManager.setFullScreen(false);
-      await windowManager.setAlwaysOnTop(false);
-      await windowManager.setSkipTaskbar(false);
-      await windowManager.setTitleBarStyle(TitleBarStyle.normal);
-      
-      // Restore the window back to its original monitor and bounds
-      final saved = _savedWindowBounds;
-      if (saved != null) {
-        await windowManager.setBounds(saved);
+      if (_spanningActive) {
+        _spanningActive = false;
+        await windowManager.setAlwaysOnTop(false);
+        await windowManager.setSkipTaskbar(false);
+        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+        
+        // Wait for the window manager to process the style change and frame the window
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        final saved = _savedWindowBounds;
+        if (saved != null) {
+          await windowManager.setBounds(saved);
+        }
+        if (_wasMaximized) {
+          await windowManager.maximize();
+        }
+      } else {
+        await windowManager.setFullScreen(false);
+        await windowManager.setAlwaysOnTop(false);
+        await windowManager.setSkipTaskbar(false);
+        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+
+        // Wait for the window manager to exit fullscreen and re-frame
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        final saved = _savedWindowBounds;
+        if (saved != null) {
+          await windowManager.setBounds(saved);
+        }
+        if (_wasMaximized) {
+          await windowManager.maximize();
+        }
       }
     } catch (e) {
       debugPrint('Failed to restore window bounds: $e');
     }
     _savedWindowBounds = null;
+    _wasMaximized = false;
     _breakMonitorRects = const [];
+  }
+
+  Future<DisplaySpan?> _computeDisplaySpan() async {
+    try {
+      final displays = await screenRetriever.getAllDisplays();
+      final bounds = <DisplayBounds>[];
+      for (final d in displays) {
+        final position = d.visiblePosition;
+        if (position == null) continue;
+        final size = d.size;
+        bounds.add(
+          DisplayBounds(
+            left: position.dx,
+            top: position.dy,
+            width: size.width,
+            height: size.height,
+          ),
+        );
+      }
+      return computeDisplaySpan(bounds);
+    } catch (e) {
+      debugPrint('Failed to enumerate displays for break overlay: $e');
+      return null;
+    }
+  }
+
+  bool _canSpanDisplays() {
+    // Wayland does not let a client position itself at absolute global
+    // coordinates, so a single window cannot reliably cover other monitors.
+    // Fall back to single-monitor fullscreen there.
+    if (Platform.isLinux) {
+      final sessionType = Platform.environment['XDG_SESSION_TYPE']
+          ?.toLowerCase();
+      final waylandDisplay = Platform.environment['WAYLAND_DISPLAY'];
+      final isWayland =
+          sessionType == 'wayland' ||
+          (waylandDisplay != null && waylandDisplay.isNotEmpty);
+      if (isWayland) return false;
+    }
+    return true;
   }
 }
