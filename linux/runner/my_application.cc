@@ -14,6 +14,85 @@ struct _MyApplication {
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
+#include <vector>
+
+static std::vector<GtkWidget*> blocker_windows;
+static GtkWindow* main_window = nullptr;
+
+static void hide_blocker_windows() {
+  for (GtkWidget* window : blocker_windows) {
+    if (GTK_IS_WIDGET(window)) {
+      gtk_widget_destroy(window);
+    }
+  }
+  blocker_windows.clear();
+}
+
+static void show_blocker_windows(GtkApplication* app) {
+  hide_blocker_windows();
+
+  GdkDisplay* display = gdk_display_get_default();
+  GdkScreen* screen = gdk_display_get_default_screen(display);
+  GdkSeat* seat = gdk_display_get_default_seat(display);
+  GdkDevice* pointer = gdk_seat_get_pointer(seat);
+  gint x, y;
+  gdk_device_get_position(pointer, nullptr, &x, &y);
+  GdkMonitor* active_monitor = gdk_display_get_monitor_at_point(display, x, y);
+
+  int num_monitors = gdk_display_get_n_monitors(display);
+  int active_monitor_idx = 0;
+  for (int i = 0; i < num_monitors; i++) {
+    GdkMonitor* monitor = gdk_display_get_monitor(display, i);
+    if (monitor == active_monitor) {
+      active_monitor_idx = i;
+      break;
+    }
+  }
+
+  // 1. Force the main Flutter window onto the active monitor's fullscreen state
+  if (main_window != nullptr) {
+    GdkRectangle geom;
+    gdk_monitor_get_geometry(active_monitor, &geom);
+    gtk_window_move(main_window, geom.x, geom.y);
+    gtk_window_fullscreen_on_monitor(main_window, screen, active_monitor_idx);
+    gtk_window_set_keep_above(main_window, TRUE);
+  }
+
+  // 2. Create native black blocker windows for all other monitors
+  for (int i = 0; i < num_monitors; i++) {
+    if (i == active_monitor_idx) {
+      continue;
+    }
+
+    GdkMonitor* monitor = gdk_display_get_monitor(display, i);
+
+    GtkWidget* window = gtk_application_window_new(app);
+    gtk_window_set_title(GTK_WINDOW(window), "BlinkKind - Take a Break");
+    
+    gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
+    gtk_window_set_decorated(GTK_WINDOW(window), FALSE);
+    gtk_window_set_skip_taskbar_hint(GTK_WINDOW(window), TRUE);
+    gtk_window_set_skip_pager_hint(GTK_WINDOW(window), TRUE);
+
+    GtkCssProvider* provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(provider, "window { background-color: #000000; }", -1, nullptr);
+    GtkStyleContext* context = gtk_widget_get_style_context(window);
+    gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref(provider);
+
+    GdkRectangle geom;
+    gdk_monitor_get_geometry(monitor, &geom);
+    gtk_window_move(GTK_WINDOW(window), geom.x, geom.y);
+    gtk_window_resize(GTK_WINDOW(window), geom.width, geom.height);
+
+    // Request fullscreen on this specific monitor
+    gtk_window_fullscreen_on_monitor(GTK_WINDOW(window), screen, i);
+
+    gtk_widget_show_all(window);
+    blocker_windows.push_back(window);
+  }
+}
+
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView *view)
 {
@@ -25,6 +104,7 @@ static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
+  main_window = window;
 
   // Use a header bar when running in GNOME as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
@@ -73,6 +153,31 @@ static void my_application_activate(GApplication* application) {
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 
+  FlEngine* engine = fl_view_get_engine(view);
+  g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
+  g_autoptr(FlMethodChannel) channel = fl_method_channel_new(
+      fl_engine_get_binary_messenger(engine),
+      "blinkkind/break_overlay",
+      FL_METHOD_CODEC(codec));
+  fl_method_channel_set_method_call_handler(
+      channel,
+      [](FlMethodChannel* channel, FlMethodCall* method_call, gpointer user_data) {
+        const gchar* method = fl_method_call_get_name(method_call);
+        MyApplication* self = MY_APPLICATION(user_data);
+
+        if (g_strcmp0(method, "showBlockers") == 0) {
+          show_blocker_windows(GTK_APPLICATION(self));
+          fl_method_call_respond_success(method_call, nullptr, nullptr);
+        } else if (g_strcmp0(method, "hideBlockers") == 0) {
+          hide_blocker_windows();
+          fl_method_call_respond_success(method_call, nullptr, nullptr);
+        } else {
+          fl_method_call_respond_not_implemented(method_call, nullptr);
+        }
+      },
+      self,
+      nullptr);
+
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
 
@@ -109,6 +214,7 @@ static void my_application_shutdown(GApplication* application) {
   //MyApplication* self = MY_APPLICATION(object);
 
   // Perform any actions required at application shutdown.
+  hide_blocker_windows();
 
   G_APPLICATION_CLASS(my_application_parent_class)->shutdown(application);
 }
