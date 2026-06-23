@@ -64,6 +64,7 @@ class SettingsPage extends StatefulWidget {
   final Future<void> Function() openBatteryOptimizationSettings;
   final Future<void> Function() openOverlayPermissionSettings;
   final Future<bool> Function() showOverlayPreview;
+  final Future<bool> Function() showRealBreakTest;
   final Future<OverlayPermissionStatus> Function()
   refreshOverlayPermissionStatus;
   final UsageAccessStatus usageAccessStatus;
@@ -122,6 +123,7 @@ class SettingsPage extends StatefulWidget {
     required this.openBatteryOptimizationSettings,
     required this.openOverlayPermissionSettings,
     required this.showOverlayPreview,
+    required this.showRealBreakTest,
     required this.refreshOverlayPermissionStatus,
     required this.usageAccessStatus,
     required this.refreshUsageAccessStatus,
@@ -248,6 +250,14 @@ class _SettingsPageState extends State<SettingsPage>
 
   Future<void> _showOverlayPreview() async {
     final shown = await widget.showOverlayPreview();
+    if (!mounted || shown) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Allow display over other apps first.')),
+    );
+  }
+
+  Future<void> _showRealBreakTest() async {
+    final shown = await widget.showRealBreakTest();
     if (!mounted || shown) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Allow display over other apps first.')),
@@ -465,6 +475,22 @@ class _SettingsPageState extends State<SettingsPage>
                         : null,
                     icon: const Icon(Icons.play_arrow),
                     tooltip: 'Preview break overlay',
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.timer),
+                  title: const Text('Test 20s break screen'),
+                  subtitle: const Text('Launch a real 20-second eye break'),
+                  trailing: IconButton(
+                    onPressed:
+                        _overlayPermissionStatus ==
+                            OverlayPermissionStatus.allowed
+                        ? _showRealBreakTest
+                        : null,
+                    icon: const Icon(Icons.play_arrow),
+                    tooltip: 'Test real break overlay',
                   ),
                 ),
                 const Divider(height: 1),

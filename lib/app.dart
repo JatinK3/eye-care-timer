@@ -321,6 +321,25 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     );
   }
 
+  Future<bool> _showRealBreakTest() {
+    String resolvedStyle = _settings.breakVisualizerStyle;
+    if (resolvedStyle == 'Random') {
+      const styles = [
+        'Breathing',
+        'BoxBreathing',
+        'EyeExercise',
+        'Ambient',
+        'Starry',
+      ];
+      resolvedStyle = styles[math.Random().nextInt(styles.length)];
+    }
+    return _breakOverlayService.showBreakOverlay(
+      durationSeconds: 20,
+      breakMode: _settings.breakMode,
+      breakVisualizerStyle: resolvedStyle,
+    );
+  }
+
   Future<void> _openNotificationSettings() async {
     await _notificationService.openNotificationSettings();
   }
@@ -658,6 +677,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           setSoundEnabled: _setSoundEnabled,
           openOverlayPermissionSettings: _openOverlayPermissionSettings,
           showOverlayPreview: _showOverlayPreview,
+          showRealBreakTest: _showRealBreakTest,
           refreshOverlayPermissionStatus: _refreshOverlayPermissionStatus,
           openNotificationSettings: _openNotificationSettings,
           openReminderChannelSettings: _openReminderChannelSettings,
