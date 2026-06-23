@@ -255,4 +255,5 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - Implemented silent background window restoration:
   - Added tracking of the window's minimized state (_wasMinimizedBeforeBreak) prior to the break overlay.
   - Modified the break exiting sequence to check if the window was minimized or closed to the system tray before the break started.
-  - If it was minimized/hidden, the app now directly minimizes/hides the window immediately on break exit and cleans up its fullscreen styles and bounds in the background, preventing the main timer UI from flashing or showing on the screen.
+  - Passed these parameters to C++ hideBlockers channel and implemented them directly in native GTK (`gtk_widget_hide` / `gtk_window_iconify` / `gtk_window_present`).
+  - This unminimizes, minimizes, or hides the main window instantly in GTK during the exit transition, enabling silent background restoration and preventing any main UI flashing.
