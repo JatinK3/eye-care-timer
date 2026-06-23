@@ -257,3 +257,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Modified the break exiting sequence to check if the window was minimized or closed to the system tray before the break started.
   - Passed these parameters to C++ hideBlockers channel and implemented them directly in native GTK (`gtk_widget_hide` / `gtk_window_iconify` / `gtk_window_present`).
   - This unminimizes, minimizes, or hides the main window instantly in GTK during the exit transition, enabling silent background restoration and preventing any main UI flashing.
+
+- Resolved window unfullscreening flicker and mapping issues on GTK exit transition:
+  - Restructured `hide_blocker_windows` in `my_application.cc` to hide (`gtk_widget_hide`) or minimize (`gtk_window_iconify`) the main window *first* before restoring style attributes (unfullscreen, decorated, keep-above, skip-taskbar).
+  - Passed saved window bounds (size, position, maximized state) to C++ to restore them synchronously while the window is hidden or minimized.
+  - This prevents window managers (such as Mutter/GNOME on Linux) from mapping or showing the window during style cleanup, ensuring silent restoration to the system tray/dock without any visual flicker or dashboard flashing.
+
