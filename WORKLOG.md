@@ -269,5 +269,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - This prevents the standard animation controller completion event and the desktop wall-clock `_phaseDeadlineTimer` callback from executing `_onPhaseComplete()` concurrently.
   - Restricted the lifecycle resume clock synchronization (`_syncTimerWithClock()`) to Android only in `didChangeAppLifecycleState`. Since desktop platforms continue executing Dart VM code in the background (and do not freeze), running clock synchronization on window state focus transitions was causing parallel phase projections and state corruption, starting a secondary 3-second break overlay.
 
+- Added real 20-second break test action:
+  - Added `Test 20s break screen` to the settings page, which triggers a full, real 20-second break overlay. This enables instant verification of the break layout, exercise animations, and exit window state transitions (minimizing or hiding silently to the system tray/dock).
+
+
 
 
