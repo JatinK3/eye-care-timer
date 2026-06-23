@@ -207,6 +207,18 @@ if [ -f "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" ]; then
             }
             echo "✓ Installation complete! You can run 'blinkkind' or find it in your Applications menu."
         fi
+
+        # Mandatory systemctl restart check if service is active
+        for svc in blinkkind blinkind; do
+            if systemctl is-active --quiet "$svc" 2>/dev/null; then
+                echo "Restarting system service: $svc..."
+                sudo systemctl restart "$svc"
+            fi
+            if systemctl --user is-active --quiet "$svc" 2>/dev/null; then
+                echo "Restarting user service: $svc..."
+                systemctl --user restart "$svc"
+            fi
+        done
     else
         echo "Skipping installation."
     fi
