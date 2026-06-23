@@ -223,3 +223,11 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Switched countdown digit weight from `w700` (bold) to `w300` throughout — Inter's thin tabular figures at display sizes read as premium and minimal.
   - Replaced every raw `TextStyle()` across the UI with `theme.textTheme.X?.copyWith(...)` equivalents: timer dial counter, status badge, focus-mode tap hint (×2), breathing instruction label, hold-to-exit label, history export description, daily goal counter, onboarding feature item titles.
   - All 57 tests passing; `dart analyze lib/` reports no issues.
+
+- Fixed Linux build and runtime crash:
+  - Switched to a standalone, native host-linked Flutter SDK instead of the sandboxed Snap SDK to resolve system library conflicts (AppIndicator and GLib mismatch under Ubuntu 24.04).
+  - Patched the cached `system_idle_linux` Wayland C protocol headers to use backwards-compatible APIs (`wl_proxy_marshal` / `wl_proxy_destroy` / `wl_proxy_marshal_constructor_versioned`).
+  - Enabled dynamic Google Fonts fetching (`allowRuntimeFetching = true` in `main.dart`) to avoid startup font exceptions.
+  - Created a Linux packaging script at `tool/package_linux.sh` to package release builds as `.deb` and `.rpm` files natively.
+  - Verified successful compilation and built the native `.deb` package at `dist/blinkkind_1.0.0_amd64.deb`.
+  - All 57 tests passing; `dart analyze lib/` reports no issues.
