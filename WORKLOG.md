@@ -260,7 +260,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 - Resolved window unfullscreening flicker and mapping issues on GTK exit transition:
   - Restructured `hide_blocker_windows` in `my_application.cc` to hide (`gtk_widget_hide`) or minimize (`gtk_window_iconify`) the main window *first* before restoring style attributes (unfullscreen, decorated, keep-above, skip-taskbar).
-  - Fixed the window manager minimization transition: under GNOME/Mutter, `gtk_window_iconify` is ignored if called on a fullscreen window. We now hide the window first (`gtk_widget_hide`), reset its fullscreen and decoration styles silently in the background, call `gtk_window_iconify` on the normal window while hidden, and then show it (`gtk_widget_show`) to map it directly into its minimized dock state without drawing the window on the desktop.
+  - Unified hidden and minimized exit paths: under GNOME/Mutter, mapping a window that was iconified (minimized) via `gtk_widget_show` forces it to deiconify and display on the desktop. To prevent this, both hidden and minimized windows are now hidden directly to the system tray (`gtk_widget_hide`), where their style attributes and bounds are restored silently in the background. The user can restore them seamlessly by clicking the system tray icon.
   - Passed saved window bounds (size, position, maximized state) to C++ to restore them synchronously while the window is hidden or minimized.
   - This prevents window managers (such as Mutter/GNOME on Linux) from mapping or showing the window during style cleanup, ensuring silent restoration to the system tray/dock without any visual flicker or dashboard flashing.
 
