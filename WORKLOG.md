@@ -263,3 +263,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Passed saved window bounds (size, position, maximized state) to C++ to restore them synchronously while the window is hidden or minimized.
   - This prevents window managers (such as Mutter/GNOME on Linux) from mapping or showing the window during style cleanup, ensuring silent restoration to the system tray/dock without any visual flicker or dashboard flashing.
 
+- Fixed Dart-side double-triggering phase completion race condition:
+  - Added guards (`_phaseEndsAt == null` and `!_isRunning`) to `_onPhaseComplete()` in `timer_home_page.dart`.
+  - This prevents the standard animation controller completion event and the desktop wall-clock `_phaseDeadlineTimer` callback from executing `_onPhaseComplete()` concurrently.
+  - Resolves the issue where completing a break phase would immediately queue a secondary phase completion, corrupting the window status state machine and starting a new 3-second break.
+
+
