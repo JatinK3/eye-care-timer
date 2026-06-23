@@ -266,6 +266,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - Fixed Dart-side double-triggering phase completion race condition:
   - Added guards (`_phaseEndsAt == null` and `!_isRunning`) to `_onPhaseComplete()` in `timer_home_page.dart`.
   - This prevents the standard animation controller completion event and the desktop wall-clock `_phaseDeadlineTimer` callback from executing `_onPhaseComplete()` concurrently.
-  - Resolves the issue where completing a break phase would immediately queue a secondary phase completion, corrupting the window status state machine and starting a new 3-second break.
+  - Restricted the lifecycle resume clock synchronization (`_syncTimerWithClock()`) to Android only in `didChangeAppLifecycleState`. Since desktop platforms continue executing Dart VM code in the background (and do not freeze), running clock synchronization on window state focus transitions was causing parallel phase projections and state corruption, starting a secondary 3-second break overlay.
+
 
 
