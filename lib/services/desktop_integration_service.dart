@@ -343,7 +343,7 @@ class DesktopIntegrationService extends WindowListener {
     final activeDisplay = await _getActiveDisplay();
     if (activeDisplay != null) {
       final position = activeDisplay.visiblePosition;
-      final size = activeDisplay.visibleSize ?? activeDisplay.size;
+      final size = activeDisplay.size;
       if (position != null) {
         try {
           // Set the window bounds to cover the entire active monitor (borderless fullscreen)
@@ -361,12 +361,13 @@ class DesktopIntegrationService extends WindowListener {
     }
     await windowManager.focus();
 
-    // 4. Force borderless visual styles and always-on-top
+    // 4. Force borderless visual styles, always-on-top, and fullscreen
     _breakMonitorRects = const [];
     try {
       await windowManager.setAlwaysOnTop(true);
       await windowManager.setSkipTaskbar(true);
       await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+      await windowManager.setFullScreen(true);
     } catch (e) {
       debugPrint('Failed to configure borderless overlay: $e');
     }
@@ -375,6 +376,7 @@ class DesktopIntegrationService extends WindowListener {
 
   Future<void> _exitBreakWindow() async {
     try {
+      await windowManager.setFullScreen(false);
       await windowManager.setAlwaysOnTop(false);
       await windowManager.setSkipTaskbar(false);
       await windowManager.setTitleBarStyle(TitleBarStyle.normal);
