@@ -27,7 +27,6 @@ class DesktopBreakOverlay extends StatefulWidget {
 
 class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   late int _remainingSeconds;
-  late double _rotationAngle;
   late String _currentExercise;
   StreamSubscription<DesktopTimerState>? _stateSubscription;
   Timer? _localTimer;
@@ -48,8 +47,6 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     _remainingSeconds = widget.initialDurationSeconds;
 
     final random = math.Random();
-    // Random rotation between -5 and +5 degrees
-    _rotationAngle = (random.nextDouble() * 10 - 5) * math.pi / 180;
     _currentExercise = _exercises[random.nextInt(_exercises.length)];
 
     // Listen to timer state changes to keep countdown synced
@@ -249,23 +246,16 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          Transform.rotate(
-            angle: _rotationAngle,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.cyan.withValues(alpha: 0.3)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              _currentExercise,
+              style: textStyle.headlineSmall?.copyWith(
+                color: Colors.cyanAccent,
+                fontWeight: FontWeight.w300,
+                height: 1.5,
               ),
-              child: Text(
-                _currentExercise,
-                style: textStyle.titleLarge?.copyWith(
-                  color: Colors.cyanAccent,
-                  height: 1.4,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              textAlign: TextAlign.center,
             ),
           ),
           const SizedBox(height: 48),
@@ -313,10 +303,11 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.white70,
-              side: const BorderSide(color: Colors.white30),
+              side: const BorderSide(color: Colors.white24),
+              shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 16,
+                horizontal: 28,
+                vertical: 14,
               ),
             ),
             onPressed: () {
@@ -331,11 +322,12 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           const SizedBox(width: 24),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.cyan,
-              foregroundColor: Colors.black,
+              backgroundColor: Colors.cyanAccent,
+              foregroundColor: Colors.black87,
+              shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 16,
+                horizontal: 28,
+                vertical: 14,
               ),
             ),
             onPressed: () {
@@ -678,7 +670,22 @@ class _BreathingGuideCircleState extends State<_BreathingGuideCircle>
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Shimmer outer breathing ring
+              // Outer wave ring (creates a clean expanding glow without shadows)
+              Transform.scale(
+                scale: scale * 1.15,
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: ringColor.withValues(alpha: 0.15),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              // Main breathing ring
               Transform.scale(
                 scale: scale,
                 child: Container(
@@ -686,18 +693,11 @@ class _BreathingGuideCircleState extends State<_BreathingGuideCircle>
                   height: 150,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: ringColor.withValues(alpha: 0.04),
+                    color: ringColor.withValues(alpha: 0.03),
                     border: Border.all(
                       color: ringColor,
-                      width: 4,
+                      width: 3.5,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: ringColor.withValues(alpha: 0.2),
-                        blurRadius: 15 * scale,
-                        spreadRadius: 1 * scale,
-                      ),
-                    ],
                   ),
                 ),
               ),
