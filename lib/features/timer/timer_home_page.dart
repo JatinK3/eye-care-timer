@@ -1730,6 +1730,7 @@ class TimerHomePageState extends State<TimerHomePage>
           remainingSeconds: _remainingSeconds,
           allowPostpone: widget.allowPostpone,
           postponeDurationMinutes: widget.postponeDurationSeconds ~/ 60,
+          initialDurationSeconds: _initialDuration,
         ),
       );
     }

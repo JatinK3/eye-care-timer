@@ -1,5 +1,7 @@
 import "dart:convert";
+import "dart:io";
 import "dart:math" as math;
+import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 
@@ -231,14 +233,50 @@ class _HistoryPageState extends State<HistoryPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "Export your focus sessions and break activity events to CSV or JSON format. The data will be copied to your clipboard.",
+                  "Export your focus sessions and break activity events. You can save them directly to your Downloads folder or copy them to your clipboard.",
                 ),
                 const SizedBox(height: 16),
+                if (!kIsWeb) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () => _exportToFile(context, isCsv: true),
+                          icon: const Icon(Icons.download_outlined),
+                          label: const Text("Save CSV"),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () => _exportToFile(context, isCsv: false),
+                          icon: const Icon(Icons.download_outlined),
+                          label: const Text("Save JSON"),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -481,6 +519,72 @@ class _HistoryPageState extends State<HistoryPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("$formatName copied to clipboard!")),
     );
+  }
+
+  Future<void> _exportToFile(BuildContext context, {required bool isCsv}) async {
+    try {
+      final String content = isCsv
+          ? _generateCSV(_workSessions, _timerEvents)
+          : _generateJSON(_workSessions, _timerEvents);
+
+      final extension = isCsv ? 'csv' : 'json';
+      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+      final fileName = 'blinkkind_history_$timestamp.$extension';
+      
+      String? dirPath;
+      if (!kIsWeb) {
+        if (Platform.isWindows) {
+          dirPath = Platform.environment['USERPROFILE'] != null
+              ? '${Platform.environment['USERPROFILE']}\\Downloads'
+              : null;
+        } else if (Platform.isLinux || Platform.isMacOS) {
+          dirPath = Platform.environment['HOME'] != null
+              ? '${Platform.environment['HOME']}/Downloads'
+              : null;
+        }
+      }
+
+      if (dirPath == null) {
+        throw Exception("Could not determine Downloads directory path");
+      }
+
+      final dir = Directory(dirPath);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsString(content);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Exported to file: $fileName"),
+          action: SnackBarAction(
+            label: "Open Folder",
+            onPressed: () {
+              _openFolder(dir.path);
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to export to file: $e")),
+      );
+    }
+  }
+
+  void _openFolder(String path) {
+    if (kIsWeb) return;
+    if (Platform.isLinux) {
+      Process.run('xdg-open', [path]);
+    } else if (Platform.isMacOS) {
+      Process.run('open', [path]);
+    } else if (Platform.isWindows) {
+      Process.run('explorer.exe', [path]);
+    }
   }
 
   String _generateCSV(List<WorkSessionRecord> workSessions, List<TimerEventRecord> events) {

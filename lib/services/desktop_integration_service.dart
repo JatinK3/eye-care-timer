@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:system_tray/system_tray.dart';
-import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 import 'desktop_controls_controller.dart';
 
@@ -155,6 +158,19 @@ class DesktopIntegrationService extends WindowListener {
         tooltipText = 'BlinkKind - Timer Idle';
       }
       unawaited(_systemTray.setToolTip(tooltipText));
+
+      String titleText = '';
+      if (state.isBreak) {
+        titleText = 'Break $timeStr';
+      } else if (state.isRunning) {
+        if (state.isPaused) {
+          titleText = 'Paused $timeStr';
+        } else {
+          titleText = timeStr;
+        }
+      }
+      unawaited(_systemTray.setTitle(titleText));
+      unawaited(_updateDynamicTrayIcon(state));
 
       // 2. Only rebuild the context menu when the control states actually change.
       if (_lastIsBreak == state.isBreak &&
@@ -459,5 +475,128 @@ class DesktopIntegrationService extends WindowListener {
     _wasMaximized = false;
     _wasMinimizedBeforeBreak = false;
     _breakMonitorRects = const [];
+  }
+
+  Future<void> _updateDynamicTrayIcon(DesktopTimerState state) async {
+    if (!isSupported) return;
+
+    try {
+      final width = 24.0;
+      final height = 24.0;
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, width, height));
+
+      // 1. Draw a dark circular background circle so it's readable on both dark/light panels.
+      final bgPaint = Paint()
+        ..color = const ui.Color(0xDD1E1E1E)
+        ..style = ui.PaintingStyle.fill;
+      canvas.drawCircle(Offset(width / 2, height / 2), (width / 2) - 1.0, bgPaint);
+
+      // 2. State specific colors and text
+      ui.Color ringColor;
+      String text = '';
+      double progress = 0.0;
+
+      if (state.isBreak) {
+        ringColor = Colors.greenAccent;
+        text = state.remainingSeconds.toString();
+        if (state.initialDurationSeconds > 0) {
+          progress = (state.remainingSeconds / state.initialDurationSeconds).clamp(0.0, 1.0);
+        }
+      } else if (state.isRunning) {
+        if (state.isPaused) {
+          ringColor = Colors.orangeAccent;
+          final mins = (state.remainingSeconds / 60).ceil();
+          text = mins.toString();
+        } else {
+          ringColor = Colors.cyanAccent;
+          final mins = (state.remainingSeconds / 60).ceil();
+          text = mins.toString();
+        }
+        if (state.initialDurationSeconds > 0) {
+          progress = (state.remainingSeconds / state.initialDurationSeconds).clamp(0.0, 1.0);
+        }
+      } else {
+        ringColor = Colors.grey;
+        text = '';
+      }
+
+      // 3. Draw progress ring
+      final ringPaint = Paint()
+        ..style = ui.PaintingStyle.stroke
+        ..strokeWidth = 2.0
+        ..strokeCap = ui.StrokeCap.round
+        ..color = ringColor.withValues(alpha: 0.25);
+      canvas.drawCircle(Offset(width / 2, height / 2), (width / 2) - 2.5, ringPaint);
+
+      if (progress > 0) {
+        final activeRingPaint = Paint()
+          ..style = ui.PaintingStyle.stroke
+          ..strokeWidth = 2.0
+          ..strokeCap = ui.StrokeCap.round
+          ..color = ringColor;
+        
+        canvas.drawArc(
+          Rect.fromCircle(center: Offset(width / 2, height / 2), radius: (width / 2) - 2.5),
+          -math.pi / 2,
+          2 * math.pi * progress,
+          false,
+          activeRingPaint,
+        );
+      }
+
+      // 4. Draw central remaining text or dot
+      if (text.isNotEmpty) {
+        final textPainter = TextPainter(
+          text: TextSpan(
+            text: text,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: text.length > 2 ? 8.0 : 10.0,
+              fontWeight: ui.FontWeight.bold,
+              height: 1.0,
+            ),
+          ),
+          textDirection: ui.TextDirection.ltr,
+        );
+        textPainter.layout();
+        textPainter.paint(
+          canvas,
+          Offset(
+            (width - textPainter.width) / 2,
+            (height - textPainter.height) / 2,
+          ),
+        );
+      } else {
+        canvas.drawCircle(
+          Offset(width / 2, height / 2),
+          3.0,
+          Paint()
+            ..color = ringColor
+            ..style = ui.PaintingStyle.fill,
+        );
+      }
+
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(width.toInt(), height.toInt());
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+
+      final pngBytes = byteData.buffer.asUint8List();
+
+      final String tempDir;
+      if (Platform.isWindows) {
+        tempDir = Platform.environment['TEMP'] ?? Platform.environment['TMP'] ?? '.';
+      } else {
+        tempDir = Platform.environment['TMPDIR'] ?? '/tmp';
+      }
+
+      final file = File('$tempDir/blinkkind_tray_icon.png');
+      await file.writeAsBytes(pngBytes, flush: true);
+
+      await _systemTray.setImage(file.path);
+    } catch (e) {
+      debugPrint('Failed to update dynamic tray icon: $e');
+    }
   }
 }

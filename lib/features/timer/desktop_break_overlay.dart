@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/timer_settings.dart';
 import '../../services/desktop_controls_controller.dart';
 import 'break_guides.dart';
@@ -33,6 +34,8 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   double _holdProgress = 0.0;
   Timer? _holdTimer;
   bool _hasDismissed = false;
+  final FocusNode _focusNode = FocusNode(debugLabel: 'DesktopBreakOverlayFocus');
+  bool _isSpacePressed = false;
 
   final List<String> _exercises = [
     "Look 20 feet away at something green.",
@@ -78,6 +81,12 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
         });
       });
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
   }
 
   @override
@@ -85,6 +94,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     _stateSubscription?.cancel();
     _localTimer?.cancel();
     _holdTimer?.cancel();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -132,6 +142,40 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
+  void _handleKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.escape) {
+        if (widget.breakMode == BreakMode.gentle) {
+          DesktopControlsController.instance.triggerCommand(
+            DesktopCommand.postponeBreak,
+          );
+          _dismiss();
+        }
+      } else if (event.logicalKey == LogicalKeyboardKey.space ||
+                 event.logicalKey == LogicalKeyboardKey.enter) {
+        if (widget.breakMode == BreakMode.gentle) {
+          DesktopControlsController.instance.triggerCommand(
+            DesktopCommand.skipBreak,
+          );
+          _dismiss();
+        } else if (widget.breakMode == BreakMode.strict &&
+                   event.logicalKey == LogicalKeyboardKey.space) {
+          if (!_isSpacePressed) {
+            _isSpacePressed = true;
+            _startHoldingExit();
+          }
+        }
+      }
+    } else if (event is KeyUpEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.space) {
+        if (widget.breakMode == BreakMode.strict && _isSpacePressed) {
+          _isSpacePressed = false;
+          _stopHoldingExit();
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final rects = widget.monitorRects;
@@ -154,32 +198,40 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
       content = SafeArea(child: Center(child: _buildBreakCard(context)));
     }
 
+    Widget overlayScaffold;
     if (widget.breakVisualizerStyle == 'Ambient' ||
         widget.breakVisualizerStyle == 'Breathing') {
-      return Scaffold(
+      overlayScaffold = Scaffold(
         backgroundColor: Colors.black,
         body: _AmbientBackground(child: content),
       );
     } else if (widget.breakVisualizerStyle == 'Starry') {
-      return Scaffold(
+      overlayScaffold = Scaffold(
         backgroundColor: const Color(0xFF020205),
         body: _StarrySkyBackground(child: content),
       );
     } else if (widget.breakVisualizerStyle == 'EyeExercise') {
-      return Scaffold(
+      overlayScaffold = Scaffold(
         backgroundColor: const Color(0xFF020D10),
         body: content,
       );
     } else if (widget.breakVisualizerStyle == 'BoxBreathing') {
-      return Scaffold(
+      overlayScaffold = Scaffold(
         backgroundColor: const Color(0xFF07070F),
+        body: content,
+      );
+    } else {
+      overlayScaffold = Scaffold(
+        backgroundColor: Colors.black,
         body: content,
       );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: content,
+    return KeyboardListener(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: _handleKeyEvent,
+      child: overlayScaffold,
     );
   }
 

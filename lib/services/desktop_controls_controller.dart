@@ -10,6 +10,8 @@ class DesktopTimerState {
   final bool allowPostpone;
   final int postponeDurationMinutes;
 
+  final int initialDurationSeconds;
+
   DesktopTimerState({
     required this.isRunning,
     required this.isPaused,
@@ -17,6 +19,7 @@ class DesktopTimerState {
     required this.remainingSeconds,
     this.allowPostpone = true,
     this.postponeDurationMinutes = 2,
+    this.initialDurationSeconds = 1200,
   });
 }
 
