@@ -7,8 +7,14 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$PROJECT_DIR/build/linux/x64/release/bundle"
 DIST_DIR="$PROJECT_DIR/dist"
 
+# Extract version from pubspec.yaml (e.g., version: 1.0.0+1 -> 1.0.0)
+VERSION=$(grep 'version: ' "$PROJECT_DIR/pubspec.yaml" | sed 's/version: //' | cut -d'+' -f1 | tr -d '[:space:]')
+if [ -z "$VERSION" ]; then
+    VERSION="1.0.0"
+fi
+
 echo "========================================="
-echo "Building Linux Release Bundle..."
+echo "Building BlinkKind version $VERSION..."
 echo "========================================="
 cd "$PROJECT_DIR"
 /home/jatin/development/flutter/bin/flutter clean
@@ -20,8 +26,9 @@ if [ ! -d "$BUILD_DIR" ]; then
     exit 1
 fi
 
-# Create distribution directory
+# Create distribution directory and clean old packages to ensure a fresh build
 mkdir -p "$DIST_DIR"
+rm -f "$DIST_DIR"/*.deb "$DIST_DIR"/*.rpm
 
 # ---------------------------------------------------------------------------
 # DEB Packaging
@@ -65,10 +72,10 @@ StartupNotify=true
 EOF
 chmod +x "$DEB_STAGE/usr/share/applications/blinkkind.desktop"
 
-# Create Debian control file
-cat << 'EOF' > "$DEB_STAGE/DEBIAN/control"
+# Create Debian control file (variable expansion enabled to insert $VERSION)
+cat << EOF > "$DEB_STAGE/DEBIAN/control"
 Package: blinkkind
-Version: 1.0.0
+Version: $VERSION
 Section: utils
 Priority: optional
 Architecture: amd64
@@ -79,8 +86,8 @@ Description: BlinkKind: Eye Break Timer
 EOF
 
 # Build Debian Package
-dpkg-deb --build "$DEB_STAGE" "$DIST_DIR/blinkkind_1.0.0_amd64.deb"
-echo "✓ DEB package created at: $DIST_DIR/blinkkind_1.0.0_amd64.deb"
+dpkg-deb --build "$DEB_STAGE" "$DIST_DIR/blinkkind_${VERSION}_amd64.deb"
+echo "✓ DEB package created at: $DIST_DIR/blinkkind_${VERSION}_amd64.deb"
 
 # ---------------------------------------------------------------------------
 # RPM Packaging
@@ -98,7 +105,7 @@ else
     mkdir -p "$RPM_BUILD_ROOT"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
     
     # Bundle compile outputs into source package
-    tar -czf "$RPM_BUILD_ROOT/SOURCES/blinkkind-1.0.0.tar.gz" -C "$BUILD_DIR" .
+    tar -czf "$RPM_BUILD_ROOT/SOURCES/blinkkind-${VERSION}.tar.gz" -C "$BUILD_DIR" .
     cp "$PROJECT_DIR/assets/app_icon.png" "$RPM_BUILD_ROOT/SOURCES/blinkkind.png"
     
     # Create desktop launcher file in SOURCES
@@ -114,10 +121,10 @@ Categories=Utility;
 StartupNotify=true
 EOF
 
-    # Create RPM Specification file
-    cat << 'EOF' > "$RPM_BUILD_ROOT/SPECS/blinkkind.spec"
+    # Create RPM Specification file (variable expansion enabled to insert $VERSION)
+    cat << EOF > "$RPM_BUILD_ROOT/SPECS/blinkkind.spec"
 Name:           blinkkind
-Version:        1.0.0
+Version:        $VERSION
 Release:        1%{?dist}
 Summary:        BlinkKind: Eye Break Timer
 License:        MIT
@@ -166,13 +173,13 @@ EOF
 fi
 
 # Optional installation step for DEB
-if [ -f "$DIST_DIR/blinkkind_1.0.0_amd64.deb" ]; then
+if [ -f "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" ]; then
     echo ""
     echo "========================================="
     read -p "Would you like to install the generated DEB package now? (y/N): " install_deb
     if [[ "$install_deb" =~ ^[Yy]$ ]]; then
-        echo "Installing blinkkind_1.0.0_amd64.deb..."
-        sudo dpkg -i "$DIST_DIR/blinkkind_1.0.0_amd64.deb" || {
+        echo "Installing blinkkind_${VERSION}_amd64.deb..."
+        sudo dpkg -i "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" || {
             echo "Installing missing dependencies..."
             sudo apt-get install -f -y
         }
