@@ -952,14 +952,14 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   void _onPhaseComplete() {
-    if (_isCancelled || !mounted) {
+    if (!_isRunning || _phaseEndsAt == null || _isCancelled || !mounted) {
       return;
     }
 
     _cancelPhaseDeadlineTimer();
 
     final completedBreakPhase = _isBreak;
-    final completedPhaseAt = _phaseEndsAt ?? DateTime.now();
+    final completedPhaseAt = _phaseEndsAt!;
     _phaseStartedAt = null;
     _phaseEndsAt = null;
     _cancelReminders();
