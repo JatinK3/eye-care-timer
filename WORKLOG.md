@@ -44,6 +44,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
     - Flutter uses manual overlay hiding on iOS and a native `ImmersiveFlutterViewController` hides the status bar/home indicator and defers edge gestures. Chrome is restored on focus exit, disposal, and inactive/background lifecycle states, then reapplied on resume.
     - [ ] Validate status-bar/home-indicator restoration, rotation, app switching, and interruption behavior on a physical iPhone/iPad using a macOS/Xcode build.
   - [x] Add Linux desktop background runtime with tray controls and launch-at-login support (`desktop_integration_service.dart`; tray menu, window-to-tray, autostart).
+    - [x] Fixed close-to-tray break takeover: desktop phases now use a wall-clock deadline timer so hidden windows still transition from work to break, and Linux GTK explicitly presents/deiconifies the main window before fullscreening it.
   - [x] Add borderless always-on-top desktop break windows with multi-monitor coverage.
     - Break overlay now spans every monitor: `computeDisplaySpan` (`lib/features/timer/display_layout.dart`, pure + unit-tested) unions all displays from `screen_retriever`, one borderless always-on-top window is stretched across the union via `setBounds`, and the break card is replicated/centered on each physical screen so no uncovered display remains.
     - Single-monitor and Wayland sessions keep the original single-monitor fullscreen path (Wayland forbids absolute global window positioning); X11 multi-monitor takes the spanning path.
@@ -135,6 +136,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
 ## Completed
+
+- Fixed Linux close-to-tray break takeover. Closing the Linux window hides it to tray, but the work-to-break transition previously depended on a Flutter animation status event that may not fire while hidden; desktop phases now also schedule a wall-clock deadline timer, and the GTK runner explicitly shows, deiconifies, presents, and fullscreen-targets the main window before creating secondary monitor blockers.
 
 - Fixed Android minimized/closed break-overlay takeover. The native foreground service previously used process importance to decide whether BlinkKind was foregrounded, but the foreground service itself keeps the process in a foreground-importance state after the Activity is minimized or gone. `MainActivity` now records actual resumed visibility through `AppVisibility`, and `TimerForegroundService` launches the native overlay when a break starts while the Activity is not resumed.
 

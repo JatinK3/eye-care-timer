@@ -49,13 +49,23 @@ static void show_blocker_windows(GtkApplication* app) {
     }
   }
 
-  // 1. Force the main Flutter window onto the active monitor's fullscreen state
+  // 1. Force the main Flutter window back from tray-hidden state and
+  // onto the active monitor's fullscreen state.
   if (main_window != nullptr) {
+    GtkWidget* main_widget = GTK_WIDGET(main_window);
+    gtk_widget_show_all(main_widget);
+    gtk_window_deiconify(main_window);
+    gtk_window_present(main_window);
+    while (gtk_events_pending()) {
+      gtk_main_iteration();
+    }
+
     GdkRectangle geom;
     gdk_monitor_get_geometry(active_monitor, &geom);
     gtk_window_move(main_window, geom.x, geom.y);
-    gtk_window_fullscreen_on_monitor(main_window, screen, active_monitor_idx);
     gtk_window_set_keep_above(main_window, TRUE);
+    gtk_window_fullscreen_on_monitor(main_window, screen, active_monitor_idx);
+    gtk_window_present(main_window);
   }
 
   // 2. Create native black blocker windows for all other monitors

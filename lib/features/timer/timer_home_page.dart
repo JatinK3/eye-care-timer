@@ -158,6 +158,7 @@ class TimerHomePageState extends State<TimerHomePage>
   // Phase text fade.
   double _phaseOpacity = 1.0;
   Timer? _phaseTransitionTimer;
+  Timer? _phaseDeadlineTimer;
   DateTime? _phaseStartedAt;
   DateTime? _phaseEndsAt;
 
@@ -325,6 +326,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _desktopCommandSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _phaseTransitionTimer?.cancel();
+    _cancelPhaseDeadlineTimer();
     _animationController.dispose();
     _pulseController.dispose();
     super.dispose();
@@ -407,6 +409,7 @@ class TimerHomePageState extends State<TimerHomePage>
           _isSystemIdlePaused = true;
           _animationController.stop();
           _pulseController.stop();
+          _cancelPhaseDeadlineTimer();
           _phaseStartedAt = null;
           _phaseEndsAt = null;
           _saveActiveSession(isPaused: true);
@@ -425,6 +428,7 @@ class TimerHomePageState extends State<TimerHomePage>
           );
           _animationController.forward();
           _saveActiveSession();
+          _schedulePhaseDeadlineTimer(_phaseEndsAt!);
           unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
           _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
           if (_remainingSeconds <= 5) _pulseController.forward();
@@ -553,6 +557,7 @@ class TimerHomePageState extends State<TimerHomePage>
       _phaseTransitionTimer?.cancel();
       _phaseTransitionTimer = null;
       _cancelReminders();
+      _cancelPhaseDeadlineTimer();
       unawaited(_backgroundService.stopPhase());
       unawaited(widget.breakOverlayService?.stopBreakOverlay());
       setState(() {
@@ -595,6 +600,7 @@ class TimerHomePageState extends State<TimerHomePage>
       );
     });
     _animationController.forward(from: progress);
+    _schedulePhaseDeadlineTimer(projection.phaseEndsAt!);
     if (persist) {
       _saveActiveSession(remainingSeconds: projection.remainingSeconds);
     }
@@ -665,6 +671,31 @@ class TimerHomePageState extends State<TimerHomePage>
     );
   }
 
+  bool get _usesDesktopDeadlineTimer =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.windows);
+
+  void _cancelPhaseDeadlineTimer() {
+    _phaseDeadlineTimer?.cancel();
+    _phaseDeadlineTimer = null;
+  }
+
+  void _schedulePhaseDeadlineTimer(DateTime phaseEndsAt) {
+    _cancelPhaseDeadlineTimer();
+    if (!_usesDesktopDeadlineTimer) return;
+    final scheduledPhaseEndsAt = phaseEndsAt;
+    final delay = scheduledPhaseEndsAt.difference(DateTime.now());
+    _phaseDeadlineTimer = Timer(delay.isNegative ? Duration.zero : delay, () {
+      if (!mounted || !_isRunning || _isPaused) return;
+      if (_phaseEndsAt != scheduledPhaseEndsAt) return;
+      _remainingSeconds = 0;
+      _animationController.stop();
+      _onPhaseComplete();
+    });
+  }
+
   double _progressFromRemaining({
     required int initialDurationSeconds,
     required int remainingSeconds,
@@ -680,6 +711,7 @@ class TimerHomePageState extends State<TimerHomePage>
   void _startTimer(int duration, {bool isBreak = false}) {
     _phaseTransitionTimer?.cancel();
     _phaseTransitionTimer = null;
+    _cancelPhaseDeadlineTimer();
     _stopTimerCleanup(resetPulse: true);
     _cancelReminders();
     setState(() {
@@ -701,6 +733,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
     _animationController.forward(from: 0.0);
     _saveActiveSession(remainingSeconds: duration);
+    _schedulePhaseDeadlineTimer(_phaseEndsAt!);
     unawaited(_schedulePhaseReminder(duration, isBreak: isBreak));
     _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: isBreak);
     if (isBreak && widget.breakMode != BreakMode.off) {
@@ -731,6 +764,7 @@ class TimerHomePageState extends State<TimerHomePage>
       if (_isPaused) {
         _animationController.stop();
         _pulseController.stop();
+        _cancelPhaseDeadlineTimer();
         _phaseStartedAt = null;
         _phaseEndsAt = null;
         _saveActiveSession(isPaused: true);
@@ -743,6 +777,7 @@ class TimerHomePageState extends State<TimerHomePage>
         );
         _animationController.forward();
         _saveActiveSession();
+        _schedulePhaseDeadlineTimer(_phaseEndsAt!);
         unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
         _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
         if (_remainingSeconds <= 5) _pulseController.forward();
@@ -794,6 +829,7 @@ class TimerHomePageState extends State<TimerHomePage>
     });
     _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: false);
     _saveActiveSession(remainingSeconds: _remainingSeconds);
+    _schedulePhaseDeadlineTimer(_phaseEndsAt!);
     _updateDesktopState();
   }
 
@@ -836,6 +872,7 @@ class TimerHomePageState extends State<TimerHomePage>
   void _stopTimerCleanup({bool resetPulse = false}) {
     _animationController.stop();
     _pulseController.stop();
+    _cancelPhaseDeadlineTimer();
     if (resetPulse) {
       _pulseController.reset();
     }
@@ -918,6 +955,8 @@ class TimerHomePageState extends State<TimerHomePage>
     if (_isCancelled || !mounted) {
       return;
     }
+
+    _cancelPhaseDeadlineTimer();
 
     final completedBreakPhase = _isBreak;
     final completedPhaseAt = _phaseEndsAt ?? DateTime.now();
