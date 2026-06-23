@@ -17,6 +17,17 @@ echo "========================================="
 echo "Building BlinkKind version $VERSION..."
 echo "========================================="
 cd "$PROJECT_DIR"
+
+# Option to reset application states (only if running interactively)
+if [ -t 0 ]; then
+    read -p "Would you like to clear local user preferences/timer state (resets settings and history)? (y/N): " clear_state
+    if [[ "$clear_state" =~ ^[Yy]$ ]]; then
+        rm -rf "$HOME/.local/share/com.jatin.eyecaretimer"
+        rm -rf "$HOME/.local/share/com.example.eyeapptimer"
+        echo "✓ Local application state files deleted."
+    fi
+fi
+
 /home/jatin/development/flutter/bin/flutter clean
 /home/jatin/development/flutter/bin/flutter build linux
 
