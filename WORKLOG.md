@@ -251,3 +251,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Guarded window bounds capturing to avoid saving zero or off-screen bounds when the window is hidden or minimized, utilizing a fallback size of 1280x720.
   - Eliminated UI flickering by preventing Dart-side route recreation when the break overlay is already active.
   - Optimized C++ blocker window management to check for active blockers and present them instead of destroying and recreating them on every state sync.
+
+- Implemented silent background window restoration:
+  - Added tracking of the window's minimized state (_wasMinimizedBeforeBreak) prior to the break overlay.
+  - Modified the break exiting sequence to check if the window was minimized or closed to the system tray before the break started.
+  - If it was minimized/hidden, the app now directly minimizes/hides the window immediately on break exit and cleans up its fullscreen styles and bounds in the background, preventing the main timer UI from flashing or showing on the screen.
