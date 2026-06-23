@@ -80,6 +80,7 @@ Terminal=false
 Type=Application
 Categories=Utility;
 StartupNotify=true
+StartupWMClass=com.jatin.eyecaretimer
 EOF
 chmod +x "$DEB_STAGE/usr/share/applications/blinkkind.desktop"
 
@@ -130,6 +131,7 @@ Terminal=false
 Type=Application
 Categories=Utility;
 StartupNotify=true
+StartupWMClass=com.jatin.eyecaretimer
 EOF
 
     # Create RPM Specification file (variable expansion enabled to insert $VERSION)
