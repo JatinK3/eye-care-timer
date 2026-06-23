@@ -309,6 +309,8 @@ class NotificationService {
     if (Platform.isLinux) {
       try {
         await Process.run('notify-send', [
+          '-a', 'BlinkKind',
+          '-i', 'blinkkind',
           'BlinkKind test reminder',
           'If you heard this, phase reminder sound is ready.',
         ]);
@@ -387,12 +389,22 @@ class NotificationService {
       if (id == _preBreakWarningReminderId) {
         _linuxWarningTimer?.cancel();
         _linuxWarningTimer = Timer(delay, () {
-          Process.run('notify-send', [title, body]);
+          Process.run('notify-send', [
+            '-a', 'BlinkKind',
+            '-i', 'blinkkind',
+            title,
+            body,
+          ]);
         });
       } else {
         _linuxPhaseTimer?.cancel();
         _linuxPhaseTimer = Timer(delay, () {
-          Process.run('notify-send', [title, body]);
+          Process.run('notify-send', [
+            '-a', 'BlinkKind',
+            '-i', 'blinkkind',
+            title,
+            body,
+          ]);
         });
       }
       return true;
