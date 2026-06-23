@@ -342,7 +342,9 @@ class TimerHomePageState extends State<TimerHomePage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _syncTimerWithClock();
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        _syncTimerWithClock();
+      }
       if (_isFocusMode) {
         unawaited(_systemUiService.setFocusModeEnabled(true));
       }
