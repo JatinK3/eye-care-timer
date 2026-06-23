@@ -165,6 +165,23 @@ EOF
     echo "✓ RPM package created in dist/ directory."
 fi
 
+# Optional installation step for DEB
+if [ -f "$DIST_DIR/blinkkind_1.0.0_amd64.deb" ]; then
+    echo ""
+    echo "========================================="
+    read -p "Would you like to install the generated DEB package now? (y/N): " install_deb
+    if [[ "$install_deb" =~ ^[Yy]$ ]]; then
+        echo "Installing blinkkind_1.0.0_amd64.deb..."
+        sudo dpkg -i "$DIST_DIR/blinkkind_1.0.0_amd64.deb" || {
+            echo "Installing missing dependencies..."
+            sudo apt-get install -f -y
+        }
+        echo "✓ Installation complete! You can run 'blinkkind' or find it in your Applications menu."
+    else
+        echo "Skipping installation."
+    fi
+fi
+
 echo ""
 echo "========================================="
 echo "Packaging Completed successfully!"
