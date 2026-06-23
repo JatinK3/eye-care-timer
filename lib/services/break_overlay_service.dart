@@ -129,8 +129,7 @@ class BreakOverlayService {
     if (navigator == null) return;
 
     if (_activeRoute != null) {
-      navigator.removeRoute(_activeRoute!);
-      _activeRoute = null;
+      return;
     }
 
     final monitorRects = DesktopIntegrationService.instance.breakMonitorRects;

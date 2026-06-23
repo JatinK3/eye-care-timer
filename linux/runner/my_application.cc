@@ -29,8 +29,6 @@ static void hide_blocker_windows() {
 }
 
 static void show_blocker_windows(GtkApplication* app) {
-  hide_blocker_windows();
-
   GdkDisplay* display = gdk_display_get_default();
   GdkScreen* screen = gdk_display_get_default_screen(display);
   GdkSeat* seat = gdk_display_get_default_seat(display);
@@ -66,6 +64,17 @@ static void show_blocker_windows(GtkApplication* app) {
     gtk_window_set_keep_above(main_window, TRUE);
     gtk_window_fullscreen_on_monitor(main_window, screen, active_monitor_idx);
     gtk_window_present(main_window);
+  }
+
+  // If blocker windows are already created, don't recreate them to avoid flickering.
+  // Just ensure they are on top.
+  if (!blocker_windows.empty()) {
+    for (GtkWidget* window : blocker_windows) {
+      if (GTK_IS_WINDOW(window)) {
+        gtk_window_present(GTK_WINDOW(window));
+      }
+    }
+    return;
   }
 
   // 2. Create native black blocker windows for all other monitors

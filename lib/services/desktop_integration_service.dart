@@ -344,15 +344,30 @@ class DesktopIntegrationService extends WindowListener {
     _wasHiddenToTrayBeforeBreak = _isWindowHiddenToTray;
     _isWindowHiddenToTray = false;
 
-    // 1. Save original bounds and maximized state to restore after the break
+    // 1. Save original bounds and maximized state to restore after the break (only if currently visible and not minimized)
     try {
-      _savedWindowBounds = await windowManager.getBounds();
-      _wasMaximized = await windowManager.isMaximized();
+      final isMinimized = await windowManager.isMinimized();
+      final isVisible = await windowManager.isVisible();
+      if (!isMinimized && isVisible) {
+        _savedWindowBounds = await windowManager.getBounds();
+        _wasMaximized = await windowManager.isMaximized();
+      }
     } catch (e) {
       debugPrint('Failed to get window bounds/state: $e');
     }
 
-    // 2. Identify the active display where the user is currently working (cursor position)
+    // 2. Show, restore, and focus the window first to map it to the desktop before doing layout changes
+    try {
+      await windowManager.show();
+      if (await windowManager.isMinimized()) {
+        await windowManager.restore();
+      }
+      await windowManager.focus();
+    } catch (e) {
+      debugPrint('Failed to show/restore window: $e');
+    }
+
+    // 3. Identify the active display where the user is currently working (cursor position) and set the window bounds
     final activeDisplay = await _getActiveDisplay();
     if (activeDisplay != null) {
       final position = activeDisplay.visiblePosition;
@@ -366,13 +381,6 @@ class DesktopIntegrationService extends WindowListener {
         }
       }
     }
-
-    // 3. Show, restore, and focus the window first to map it to the desktop
-    await windowManager.show();
-    if (await windowManager.isMinimized()) {
-      await windowManager.restore();
-    }
-    await windowManager.focus();
 
     // 4. Force fullscreen, borderless visual styles, and always-on-top
     _breakMonitorRects = const [];
@@ -415,6 +423,9 @@ class DesktopIntegrationService extends WindowListener {
       final saved = _savedWindowBounds;
       if (saved != null) {
         await windowManager.setBounds(saved);
+      } else {
+        await windowManager.setSize(const Size(1280, 720));
+        await windowManager.center();
       }
       if (_wasMaximized) {
         await windowManager.maximize();
