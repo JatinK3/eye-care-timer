@@ -211,12 +211,16 @@ if [ -f "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" ]; then
         # Mandatory systemctl restart check if service is active
         for svc in blinkkind blinkind; do
             if systemctl is-active --quiet "$svc" 2>/dev/null; then
+                echo "Detected active system service: $svc (previously running)"
                 echo "Restarting system service: $svc..."
                 sudo systemctl restart "$svc"
+                echo "✓ System service '$svc' restarted successfully."
             fi
             if systemctl --user is-active --quiet "$svc" 2>/dev/null; then
+                echo "Detected active user service: $svc (previously running)"
                 echo "Restarting user service: $svc..."
                 systemctl --user restart "$svc"
+                echo "✓ User service '$svc' restarted successfully."
             fi
         done
     else
