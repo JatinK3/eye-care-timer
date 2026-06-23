@@ -245,3 +245,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Used `gtk_window_fullscreen_on_monitor` to force the main Flutter window onto the active monitor, and spawned native black blocker windows targeting all other monitors.
   - This solves the issue of the break overlay appearing only on the primary display or failing on Wayland/X11 multi-monitor environments.
   - Package built, installed, and verified on-device.
+
+- Resolved window state mapping and multi-monitor flickering:
+  - Fixed a race condition on Linux where setBounds and setFullScreen were ignored when transitioning a hidden/minimized window into break overlay mode; mapping (show and restore) is now performed prior to style and bound changes.
+  - Guarded window bounds capturing to avoid saving zero or off-screen bounds when the window is hidden or minimized, utilizing a fallback size of 1280x720.
+  - Eliminated UI flickering by preventing Dart-side route recreation when the break overlay is already active.
+  - Optimized C++ blocker window management to check for active blockers and present them instead of destroying and recreating them on every state sync.
