@@ -178,12 +178,24 @@ if [ -f "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" ]; then
     echo "========================================="
     read -p "Would you like to install the generated DEB package now? (y/N): " install_deb
     if [[ "$install_deb" =~ ^[Yy]$ ]]; then
-        echo "Installing blinkkind_${VERSION}_amd64.deb..."
-        sudo dpkg -i "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" || {
-            echo "Installing missing dependencies..."
-            sudo apt-get install -f -y
-        }
-        echo "✓ Installation complete! You can run 'blinkkind' or find it in your Applications menu."
+        if dpkg-query -W -f='${Status}' blinkkind 2>/dev/null | grep -q "ok installed"; then
+            echo "An older version of blinkkind is already installed. Removing it first for a clean install..."
+            sudo dpkg -r blinkkind || true
+            echo "✓ Older version of blinkkind has been removed."
+            echo "Installing new version blinkkind_${VERSION}_amd64.deb..."
+            sudo dpkg -i "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" || {
+                echo "Installing missing dependencies..."
+                sudo apt-get install -f -y
+            }
+            echo "✓ Upgrade complete! Old version has been removed and the new version has been added."
+        else
+            echo "Installing blinkkind_${VERSION}_amd64.deb..."
+            sudo dpkg -i "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" || {
+                echo "Installing missing dependencies..."
+                sudo apt-get install -f -y
+            }
+            echo "✓ Installation complete! You can run 'blinkkind' or find it in your Applications menu."
+        fi
     else
         echo "Skipping installation."
     fi
