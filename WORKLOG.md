@@ -9,6 +9,11 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 2. [x] **Smart Idle & Fullscreen App Detection**: Detect when the user is playing a game, watching a video in fullscreen, or actively presenting, and delay/postpone the break overlay to avoid interrupting important tasks.
 3. [x] **Linux Desktop Background Support**: Build a Linux background runner with tray controls and launch-at-login support.
 4. [x] **Android Reboot Survival**: Ensure the foreground service and exact alarms are correctly re-registered and scheduled upon system reboot.
+5. [ ] **Keyboard Dismissal & Shortcuts (Desktop Focus)**: Support key bindings (Esc to postpone, Space/Enter to skip, or hold Space to trigger Strict exit countdown) on the break overlay.
+6. [ ] **Custom Gentle Audio Player (High UX Value)**: Bundle gentle chime assets (Tibetan bowl, chimes, birds chirps) and play them on break start/end instead of the default OS system beep.
+7. [ ] **Habit Reports & CSV Data Exporter**: Add a button on the History screen to export timer event history to a CSV file.
+8. [ ] **Live System Tray Dynamic Icon**: Update the system tray icon to show remaining focus time dynamically.
+
 
 ### Detailed Tasks
 - [x] Improve Android rendering smoothness and release readiness.
