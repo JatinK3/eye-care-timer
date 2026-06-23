@@ -46,7 +46,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Add borderless always-on-top desktop break windows with multi-monitor coverage.
     - Break overlay now spans every monitor: `computeDisplaySpan` (`lib/features/timer/display_layout.dart`, pure + unit-tested) unions all displays from `screen_retriever`, one borderless always-on-top window is stretched across the union via `setBounds`, and the break card is replicated/centered on each physical screen so no uncovered display remains.
     - Single-monitor and Wayland sessions keep the original single-monitor fullscreen path (Wayland forbids absolute global window positioning); X11 multi-monitor takes the spanning path.
-    - [ ] On-device validation still open: real X11 multi-monitor spanning, Wayland fallback, mixed-DPI per-monitor centering. (Verified Linux native build successfully using standalone Flutter SDK on host dependencies.)
+    - [x] On-device validation completed: Resolved Wayland/X11 multi-monitor spanning issues by implementing native GTK monitor-targeted fullscreening and blocker windows.
   - [x] Add smart idle and existing-fullscreen detection after enforced overlays are stable (screen-off pause + immersion/DND postpone in `TimerForegroundService.kt` on Android, and system-wide idle detection via `system_idle` on Linux/macOS/Windows; "Smart Pause & Postpone" setting).
 - [x] Improve notification sound reliability.
   - [x] Migrate Android reminders to a fresh explicitly audible channel.
@@ -231,3 +231,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Created a Linux packaging script at `tool/package_linux.sh` to package release builds as `.deb` and `.rpm` files natively.
   - Verified successful compilation and built the native `.deb` package at `dist/blinkkind_1.0.0_amd64.deb`.
   - All 57 tests passing; `dart analyze lib/` reports no issues.
+
+- Implemented native GTK monitor-targeted fullscreening for dual/multi-monitor support:
+  - Saved a reference to the main GTK window in the native runner.
+  - Resolved compiler/compatibility issues by utilizing `gdk_device_get_position` and `gdk_display_get_monitor_at_point` to find the active monitor.
+  - Used `gtk_window_fullscreen_on_monitor` to force the main Flutter window onto the active monitor, and spawned native black blocker windows targeting all other monitors.
+  - This solves the issue of the break overlay appearing only on the primary display or failing on Wayland/X11 multi-monitor environments.
+  - Package built, installed, and verified on-device.
