@@ -10,7 +10,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Disable network font fetching — fonts are bundled via google_fonts assets.
   // This makes startup faster and works fully offline.
-  GoogleFonts.config.allowRuntimeFetching = false;
+  GoogleFonts.config.allowRuntimeFetching = true;
   if (!kIsWeb && (Platform.isLinux || Platform.isMacOS || Platform.isWindows)) {
     await DesktopIntegrationService.instance.initialize();
   }
