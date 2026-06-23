@@ -17,6 +17,8 @@ class DesktopIntegrationService extends WindowListener {
   final Menu _menu = Menu();
   bool _isInitialized = false;
   bool _isBreakActive = false;
+  bool _isWindowHiddenToTray = false;
+  bool _wasHiddenToTrayBeforeBreak = false;
   bool? _lastIsBreak;
   bool? _lastIsRunning;
   bool? _lastIsPaused;
@@ -279,6 +281,7 @@ class DesktopIntegrationService extends WindowListener {
   }
 
   Future<void> _showWindow() async {
+    _isWindowHiddenToTray = false;
     await windowManager.show();
     await windowManager.focus();
   }
@@ -298,6 +301,7 @@ class DesktopIntegrationService extends WindowListener {
         await _showWindow();
         return;
       }
+      _isWindowHiddenToTray = true;
       await windowManager.hide();
     }
   }
@@ -337,6 +341,9 @@ class DesktopIntegrationService extends WindowListener {
   );
 
   Future<void> _enterBreakWindow() async {
+    _wasHiddenToTrayBeforeBreak = _isWindowHiddenToTray;
+    _isWindowHiddenToTray = false;
+
     // 1. Save original bounds and maximized state to restore after the break
     try {
       _savedWindowBounds = await windowManager.getBounds();
@@ -411,6 +418,10 @@ class DesktopIntegrationService extends WindowListener {
       }
       if (_wasMaximized) {
         await windowManager.maximize();
+      }
+      if (_wasHiddenToTrayBeforeBreak) {
+        await windowManager.hide();
+        _isWindowHiddenToTray = true;
       }
     } catch (e) {
       debugPrint('Failed to restore window bounds: $e');

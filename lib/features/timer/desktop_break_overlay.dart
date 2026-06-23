@@ -32,6 +32,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   Timer? _localTimer;
   double _holdProgress = 0.0;
   Timer? _holdTimer;
+  bool _hasDismissed = false;
 
   final List<String> _exercises = [
     "Look 20 feet away at something green.",
@@ -54,12 +55,12 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
       state,
     ) {
       if (!mounted) return;
-      if (state.isBreak) {
+      if (state.isBreak && state.remainingSeconds > 0) {
         setState(() {
           _remainingSeconds = state.remainingSeconds;
         });
       } else {
-        widget.onDismiss();
+        _dismiss();
       }
     });
 
@@ -67,13 +68,13 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     if (_remainingSeconds > 0) {
       _localTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (!mounted) return;
+        final nextRemaining = _remainingSeconds - 1;
+        if (nextRemaining <= 0) {
+          _dismiss();
+          return;
+        }
         setState(() {
-          if (_remainingSeconds > 0) {
-            _remainingSeconds--;
-          } else {
-            _localTimer?.cancel();
-            widget.onDismiss();
-          }
+          _remainingSeconds = nextRemaining;
         });
       });
     }
@@ -85,6 +86,13 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     _localTimer?.cancel();
     _holdTimer?.cancel();
     super.dispose();
+  }
+
+  void _dismiss() {
+    if (_hasDismissed) return;
+    _hasDismissed = true;
+    _localTimer?.cancel();
+    widget.onDismiss();
   }
 
   void _startHoldingExit() {
@@ -106,7 +114,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
         DesktopControlsController.instance.triggerCommand(
           DesktopCommand.skipBreak,
         );
-        widget.onDismiss();
+        _dismiss();
       }
     });
   }
@@ -314,7 +322,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               DesktopControlsController.instance.triggerCommand(
                 DesktopCommand.postponeBreak,
               );
-              widget.onDismiss();
+              _dismiss();
             },
             icon: const Icon(Icons.snooze),
             label: const Text('Postpone'),
@@ -334,7 +342,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               DesktopControlsController.instance.triggerCommand(
                 DesktopCommand.skipBreak,
               );
-              widget.onDismiss();
+              _dismiss();
             },
             icon: const Icon(Icons.skip_next),
             label: const Text('Skip'),

@@ -84,6 +84,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - iOS focus mode uses manual Flutter overlay hiding plus a native `ImmersiveFlutterViewController` to hide the status bar and home indicator and defer edge gestures. It restores chrome on focus exit, disposal, or app deactivation and reapplies immersion on resume.
 - On desktop, break mode uses a borderless always-on-top window. X11 multi-monitor sessions span the union of all displays and center a break surface on each monitor; single-monitor and Wayland sessions use fullscreen fallback because Wayland does not permit reliable absolute global window positioning.
 - On desktop, the close button hides the app to tray instead of exiting. Timer phases also schedule a desktop wall-clock deadline timer so hidden-to-tray windows still transition into the break phase even if Flutter animation frames are throttled. Linux native `showBlockers` explicitly shows/deiconifies/presents the main GTK window before monitor-targeted fullscreening.
+- Desktop break overlays use an immediately opaque route to avoid showing the underlying in-app break UI during presentation. Natural break completion explicitly stops the overlay and publishes idle desktop state. If the window was tray-hidden before the break, it is hidden back to tray after the break ends.
 
 ## Dependencies
 

@@ -995,7 +995,9 @@ class TimerHomePageState extends State<TimerHomePage>
           _animationController.reset();
           _pulseController.reset();
         });
+        unawaited(widget.breakOverlayService?.stopBreakOverlay());
         widget.clearSession();
+        _updateDesktopState();
         return;
       }
 

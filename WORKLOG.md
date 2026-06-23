@@ -45,6 +45,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
     - [ ] Validate status-bar/home-indicator restoration, rotation, app switching, and interruption behavior on a physical iPhone/iPad using a macOS/Xcode build.
   - [x] Add Linux desktop background runtime with tray controls and launch-at-login support (`desktop_integration_service.dart`; tray menu, window-to-tray, autostart).
     - [x] Fixed close-to-tray break takeover: desktop phases now use a wall-clock deadline timer so hidden windows still transition from work to break, and Linux GTK explicitly presents/deiconifies the main window before fullscreening it.
+    - [x] Fixed desktop break overlay lifecycle polish: natural break completion now publishes idle state and stops the overlay, the desktop break route is immediately opaque to prevent home-break UI flicker underneath it, and tray-hidden windows return to tray after the break.
   - [x] Add borderless always-on-top desktop break windows with multi-monitor coverage.
     - Break overlay now spans every monitor: `computeDisplaySpan` (`lib/features/timer/display_layout.dart`, pure + unit-tested) unions all displays from `screen_retriever`, one borderless always-on-top window is stretched across the union via `setBounds`, and the break card is replicated/centered on each physical screen so no uncovered display remains.
     - Single-monitor and Wayland sessions keep the original single-monitor fullscreen path (Wayland forbids absolute global window positioning); X11 multi-monitor takes the spanning path.

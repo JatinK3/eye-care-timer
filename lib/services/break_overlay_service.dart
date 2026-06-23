@@ -136,6 +136,9 @@ class BreakOverlayService {
     final monitorRects = DesktopIntegrationService.instance.breakMonitorRects;
 
     _activeRoute = PageRouteBuilder<void>(
+      opaque: true,
+      transitionDuration: Duration.zero,
+      reverseTransitionDuration: Duration.zero,
       pageBuilder: (context, animation, secondaryAnimation) {
         return DesktopBreakOverlay(
           initialDurationSeconds: durationSeconds,
@@ -147,9 +150,7 @@ class BreakOverlayService {
           },
         );
       },
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(opacity: animation, child: child);
-      },
+      transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
     );
 
     navigator.push(_activeRoute!);
