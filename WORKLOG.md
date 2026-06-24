@@ -143,6 +143,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Completed
 
+- Fixed Linux desktop window restoration tray mapping bug: deferred window style changes (such as unfullscreening, decorations, skipTaskbar) until the window is explicitly unminimized or shown via the tray menu. Only the native hiding (`gtk_widget_hide`) or native minimizing (`gtk_window_iconify`) is performed during break exits, preventing compositor/window manager (like GNOME/Mutter) state mapping events from unhiding or flashing the window on the desktop.
+
 - Implemented dynamic tray icon countdown and status progress rings, alongside platform-level system tray title displaying remaining focus time.
 
 - Implemented CSV and JSON file exports directly to the user's Downloads folder from the History & Insights screen, complete with dynamic OS directory mapping (Linux, macOS, and Windows) and folder-opening actions.
