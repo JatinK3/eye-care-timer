@@ -63,6 +63,9 @@ class DesktopIntegrationService extends WindowListener {
       unawaited(_updateTrayMenu(state));
     });
 
+    // 5. Initialize saved bounds
+    await _saveCurrentBounds();
+
     _isInitialized = true;
   }
 
@@ -332,13 +335,22 @@ class DesktopIntegrationService extends WindowListener {
     await _restoreWindowStylesIfNeeded();
   }
 
+  @override
+  void onWindowMove() {
+    unawaited(_saveCurrentBounds());
+  }
+
+  @override
+  void onWindowResize() {
+    unawaited(_saveCurrentBounds());
+  }
+
   Future<void> showBreakOverlay(bool show) async {
     if (!isSupported) return;
     if (show) {
       _isBreakActive = true;
       await _enterBreakWindow();
     } else {
-      _isBreakActive = false;
       await _exitBreakWindow();
     }
   }
@@ -458,6 +470,7 @@ class DesktopIntegrationService extends WindowListener {
       }
 
       _breakMonitorRects = const [];
+      _isBreakActive = false; // Safe to allow normal tracking now
       return;
     }
 
@@ -486,6 +499,9 @@ class DesktopIntegrationService extends WindowListener {
       debugPrint('Failed to restore window bounds: $e');
     }
 
+    // Let the window settle to prevent intermediate bounds from being saved
+    await Future.delayed(const Duration(milliseconds: 300));
+    _isBreakActive = false;
     _savedWindowBounds = null;
     _wasMaximized = false;
     _wasMinimizedBeforeBreak = false;
@@ -495,6 +511,7 @@ class DesktopIntegrationService extends WindowListener {
   Future<void> _restoreWindowStylesIfNeeded() async {
     if (_needsStyleRestoration) {
       _needsStyleRestoration = false;
+      _isBreakActive = true; // Prevent bounds saving during transition
       try {
         await windowManager.setFullScreen(false);
         await windowManager.setAlwaysOnTop(false);
@@ -517,10 +534,29 @@ class DesktopIntegrationService extends WindowListener {
       } catch (e) {
         debugPrint('Failed to restore window bounds: $e');
       }
+
+      await Future.delayed(const Duration(milliseconds: 300));
+      _isBreakActive = false;
       _savedWindowBounds = null;
       _wasMaximized = false;
       _wasMinimizedBeforeBreak = false;
       _breakMonitorRects = const [];
+    }
+  }
+
+  Future<void> _saveCurrentBounds() async {
+    if (_isBreakActive || _needsStyleRestoration) return;
+    try {
+      final isMinimized = await windowManager.isMinimized();
+      final isVisible = await windowManager.isVisible();
+      final isFullScreen = await windowManager.isFullScreen();
+      final isMaximized = await windowManager.isMaximized();
+      if (!isMinimized && isVisible && !isFullScreen) {
+        _savedWindowBounds = await windowManager.getBounds();
+        _wasMaximized = isMaximized;
+      }
+    } catch (e) {
+      debugPrint('Failed to save current window bounds: $e');
     }
   }
 
