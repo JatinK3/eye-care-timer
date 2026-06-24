@@ -25,6 +25,9 @@ class TimerSettings {
   static const int defaultWorkHoursEndMinute = 0;
   static const String defaultWorkDays = '1,2,3,4,5';
   static const bool defaultNaturalBreakCreditEnabled = true;
+  static const bool defaultAmoledDarkEnabled = false;
+  static const String defaultCustomAccentColorHex = '#009688';
+  static const bool defaultUseSystemAccent = false;
 
   final int workDurationSeconds;
   final int breakDurationSeconds;
@@ -56,6 +59,9 @@ class TimerSettings {
   final int workHoursEndMinute;
   final String workDays;
   final bool naturalBreakCreditEnabled;
+  final bool amoledDarkEnabled;
+  final String customAccentColorHex;
+  final bool useSystemAccent;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -88,6 +94,9 @@ class TimerSettings {
     required this.workHoursEndMinute,
     required this.workDays,
     required this.naturalBreakCreditEnabled,
+    required this.amoledDarkEnabled,
+    required this.customAccentColorHex,
+    required this.useSystemAccent,
   });
 
   const TimerSettings.defaults()
@@ -120,7 +129,10 @@ class TimerSettings {
       workHoursEndHour = defaultWorkHoursEndHour,
       workHoursEndMinute = defaultWorkHoursEndMinute,
       workDays = defaultWorkDays,
-      naturalBreakCreditEnabled = defaultNaturalBreakCreditEnabled;
+      naturalBreakCreditEnabled = defaultNaturalBreakCreditEnabled,
+      amoledDarkEnabled = defaultAmoledDarkEnabled,
+      customAccentColorHex = defaultCustomAccentColorHex,
+      useSystemAccent = defaultUseSystemAccent;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -153,6 +165,9 @@ class TimerSettings {
     int? workHoursEndMinute,
     String? workDays,
     bool? naturalBreakCreditEnabled,
+    bool? amoledDarkEnabled,
+    String? customAccentColorHex,
+    bool? useSystemAccent,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -190,6 +205,9 @@ class TimerSettings {
       workDays: workDays ?? this.workDays,
       naturalBreakCreditEnabled:
           naturalBreakCreditEnabled ?? this.naturalBreakCreditEnabled,
+      amoledDarkEnabled: amoledDarkEnabled ?? this.amoledDarkEnabled,
+      customAccentColorHex: customAccentColorHex ?? this.customAccentColorHex,
+      useSystemAccent: useSystemAccent ?? this.useSystemAccent,
     );
   }
 }

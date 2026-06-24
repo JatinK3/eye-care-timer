@@ -54,6 +54,9 @@ class PreferencesService {
   static const String sessionPhaseEndsAtKey = 'sessionPhaseEndsAt';
   static const String sessionCompletedAutoRunCyclesKey =
       'sessionCompletedAutoRunCycles';
+  static const String amoledDarkEnabledKey = 'amoledDarkEnabled';
+  static const String customAccentColorHexKey = 'customAccentColorHex';
+  static const String useSystemAccentKey = 'useSystemAccent';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -138,6 +141,15 @@ class PreferencesService {
       naturalBreakCreditEnabled:
           prefs.getBool(naturalBreakCreditEnabledKey) ??
           TimerSettings.defaultNaturalBreakCreditEnabled,
+      amoledDarkEnabled:
+          prefs.getBool(amoledDarkEnabledKey) ??
+          TimerSettings.defaultAmoledDarkEnabled,
+      customAccentColorHex:
+          prefs.getString(customAccentColorHexKey) ??
+          TimerSettings.defaultCustomAccentColorHex,
+      useSystemAccent:
+          prefs.getBool(useSystemAccentKey) ??
+          TimerSettings.defaultUseSystemAccent,
     );
   }
 
@@ -334,6 +346,21 @@ class PreferencesService {
   Future<void> saveColorPreset(String colorPreset) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(colorPresetKey, colorPreset);
+  }
+
+  Future<void> saveAmoledDarkEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(amoledDarkEnabledKey, enabled);
+  }
+
+  Future<void> saveCustomAccentColorHex(String hex) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(customAccentColorHexKey, hex);
+  }
+
+  Future<void> saveUseSystemAccent(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(useSystemAccentKey, enabled);
   }
 
   Future<void> saveDailyGoal(int dailyGoal) async {

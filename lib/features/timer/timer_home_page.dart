@@ -68,11 +68,15 @@ class TimerHomePage extends StatefulWidget {
   final int workHoursEndMinute;
   final String workDays;
   final bool naturalBreakCreditEnabled;
+  final String customAccentColorHex;
+  final bool useSystemAccent;
 
   const TimerHomePage({
     super.key,
     required this.isDark,
     required this.colorPreset,
+    required this.customAccentColorHex,
+    required this.useSystemAccent,
     required this.initialWorkDurationSeconds,
     required this.initialBreakDurationSeconds,
     required this.initialStreakCount,
@@ -1478,7 +1482,7 @@ class TimerHomePageState extends State<TimerHomePage>
   bool get _canChangeSettings => !_isRunning;
 
   LinearGradient _backgroundGradientFromPreset(String preset, bool isDark) {
-    return ColorPresets.backgroundGradient(preset, isDark);
+    return ColorPresets.backgroundGradient(preset, isDark, customHex: widget.customAccentColorHex);
   }
 
   bool get _isSnoozed => _snoozeEndsAt != null && DateTime.now().isBefore(_snoozeEndsAt!);
@@ -1561,6 +1565,7 @@ class TimerHomePageState extends State<TimerHomePage>
       isBreak: isBreak,
       preset: preset,
       isDark: isDark,
+      customHex: widget.customAccentColorHex,
     );
   }
 
@@ -1620,7 +1625,7 @@ class TimerHomePageState extends State<TimerHomePage>
     final effectiveTheme = _isFocusMode
         ? ThemeData.dark().copyWith(
             colorScheme: ColorScheme.dark(
-              primary: ColorPresets.swatchColor(widget.colorPreset, true),
+              primary: ColorPresets.swatchColor(widget.colorPreset, true, customHex: widget.customAccentColorHex),
             ),
           )
         : theme;

@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 
 import 'features/history/history_page.dart';
 import 'features/onboarding/onboarding_page.dart';
@@ -430,6 +431,27 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveChimeStyle(style));
   }
 
+  void _setAmoledDarkEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(amoledDarkEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveAmoledDarkEnabled(enabled));
+  }
+
+  void _setCustomAccentColorHex(String hex) {
+    setState(() {
+      _settings = _settings.copyWith(customAccentColorHex: hex);
+    });
+    unawaited(_preferencesService.saveCustomAccentColorHex(hex));
+  }
+
+  void _setUseSystemAccent(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(useSystemAccent: enabled);
+    });
+    unawaited(_preferencesService.saveUseSystemAccent(enabled));
+  }
+
   void _setBlinkRemindersEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(blinkRemindersEnabled: enabled);
@@ -762,6 +784,12 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           saveLongBreakSettings: _saveLongBreakSettings,
           saveAutoRunSettings: _saveAutoRunSettings,
           setDailyGoal: _setDailyGoal,
+          amoledDarkEnabled: _settings.amoledDarkEnabled,
+          customAccentColorHex: _settings.customAccentColorHex,
+          useSystemAccent: _settings.useSystemAccent,
+          setAmoledDarkEnabled: _setAmoledDarkEnabled,
+          setCustomAccentColorHex: _setCustomAccentColorHex,
+          setUseSystemAccent: _setUseSystemAccent,
           setNotificationsEnabled: _setNotificationsEnabled,
           setHapticsEnabled: _setHapticsEnabled,
           setSoundEnabled: _setSoundEnabled,
@@ -785,86 +813,117 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
 
   @override
   Widget build(BuildContext context) {
-    final seedColor = ColorPresets.seedColor(_settings.colorPreset);
+    return DynamicColorBuilder(
+      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+        final seedColor = _settings.useSystemAccent
+            ? (lightDynamic?.primary ?? ColorPresets.seedColor(_settings.colorPreset, customHex: _settings.customAccentColorHex))
+            : ColorPresets.seedColor(_settings.colorPreset, customHex: _settings.customAccentColorHex);
 
-    return MaterialApp(
-      navigatorKey: BreakOverlayService.navigatorKey,
-      title: 'BlinkKind: Eye Break Timer',
-      debugShowCheckedModeBanner: false,
-      scrollBehavior: const _BlinkKindScrollBehavior(),
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(seedColor: seedColor),
-        textTheme: _buildTextTheme(ThemeData.light().textTheme),
-        pageTransitionsTheme: _smoothPageTransitionsTheme,
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: seedColor,
-          brightness: Brightness.dark,
-        ),
-        textTheme: _buildTextTheme(ThemeData.dark().textTheme),
-        pageTransitionsTheme: _smoothPageTransitionsTheme,
-      ),
-      themeMode: _settings.themeMode,
-      home: _isLoadingSettings
-          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-          : !_hasCompletedOnboarding
-          ? OnboardingPage(
-              notificationPermissionStatus: _notificationPermissionStatus,
-              continueToApp: () =>
-                  unawaited(_completeOnboarding(requestReminders: true)),
-              skipNotifications: () =>
-                  unawaited(_completeOnboarding(requestReminders: false)),
-            )
-          : TimerHomePage(
-              isDark: _settings.themeMode == ThemeMode.dark,
-              colorPreset: _settings.colorPreset,
-              initialWorkDurationSeconds: _settings.workDurationSeconds,
-              initialBreakDurationSeconds: _settings.breakDurationSeconds,
-              initialStreakCount: _settings.streakCount,
-              dailyGoal: _settings.dailyGoal,
-              longBreakEnabled: _settings.longBreakEnabled,
-              longBreakDurationSeconds: _settings.longBreakDurationSeconds,
-              longBreakEveryCycles: _settings.longBreakEveryCycles,
-              autoRunEnabled: _settings.autoRunEnabled,
-              autoRunCycleLimit: _settings.autoRunCycleLimit,
-              notificationsEnabled: _settings.notificationsEnabled,
-              hapticsEnabled: _settings.hapticsEnabled,
-              soundEnabled: _settings.soundEnabled,
-              chimeStyle: _settings.chimeStyle,
-              blinkRemindersEnabled: _settings.blinkRemindersEnabled,
-              blinkRemindersCadenceSeconds: _settings.blinkRemindersCadenceSeconds,
-              workHoursEnabled: _settings.workHoursEnabled,
-              workHoursStartHour: _settings.workHoursStartHour,
-              workHoursStartMinute: _settings.workHoursStartMinute,
-              workHoursEndHour: _settings.workHoursEndHour,
-              workHoursEndMinute: _settings.workHoursEndMinute,
-              workDays: _settings.workDays,
-              naturalBreakCreditEnabled: _settings.naturalBreakCreditEnabled,
-              breakMode: _settings.breakMode,
-              allowSkip: _settings.allowSkip,
-              allowPostpone: _settings.allowPostpone,
-              postponeDurationSeconds: _settings.postponeDurationSeconds,
-              smartIdleEnabled: _settings.smartIdleEnabled,
-              breakVisualizerStyle: _settings.breakVisualizerStyle,
-              initialSession: _session,
-              openSettings: _openSettings,
-              setPreset: _setPreset,
-              toggleTheme: _toggleTheme,
-              saveDurations: _saveDurations,
-              saveStreakCount: _saveStreakCount,
-              saveCompletedWorkSession: _saveCompletedWorkSession,
-              saveTimerEventRecord: _saveTimerEventRecord,
-              setNotificationsEnabled: _setNotificationsEnabled,
-              saveSession: _saveSession,
-              clearSession: _clearSession,
-              notificationService: _notificationService,
-              breakOverlayService: _breakOverlayService,
-            ),
+        ColorScheme lightColorScheme;
+        ColorScheme darkColorScheme;
+
+        if (_settings.useSystemAccent && lightDynamic != null && darkDynamic != null) {
+          lightColorScheme = lightDynamic;
+          darkColorScheme = darkDynamic;
+        } else {
+          lightColorScheme = ColorScheme.fromSeed(seedColor: seedColor);
+          darkColorScheme = ColorScheme.fromSeed(
+            seedColor: seedColor,
+            brightness: Brightness.dark,
+          );
+        }
+
+        // AMOLED modifications
+        if (_settings.amoledDarkEnabled) {
+          darkColorScheme = darkColorScheme.copyWith(
+            surface: Colors.black,
+          );
+        }
+
+        final isPlatformDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+        final isDarkTheme = _settings.themeMode == ThemeMode.dark ||
+            (_settings.themeMode == ThemeMode.system && isPlatformDark);
+
+        return MaterialApp(
+          navigatorKey: BreakOverlayService.navigatorKey,
+          title: 'BlinkKind: Eye Break Timer',
+          debugShowCheckedModeBanner: false,
+          scrollBehavior: const _BlinkKindScrollBehavior(),
+          theme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.light,
+            colorScheme: lightColorScheme,
+            textTheme: _buildTextTheme(ThemeData.light().textTheme),
+            pageTransitionsTheme: _smoothPageTransitionsTheme,
+          ),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.dark,
+            colorScheme: darkColorScheme,
+            scaffoldBackgroundColor: _settings.amoledDarkEnabled ? Colors.black : null,
+            textTheme: _buildTextTheme(ThemeData.dark().textTheme),
+            pageTransitionsTheme: _smoothPageTransitionsTheme,
+          ),
+          themeMode: _settings.themeMode,
+          home: _isLoadingSettings
+              ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+              : !_hasCompletedOnboarding
+              ? OnboardingPage(
+                  notificationPermissionStatus: _notificationPermissionStatus,
+                  continueToApp: () =>
+                      unawaited(_completeOnboarding(requestReminders: true)),
+                  skipNotifications: () =>
+                      unawaited(_completeOnboarding(requestReminders: false)),
+                )
+              : TimerHomePage(
+                  isDark: isDarkTheme,
+                  colorPreset: _settings.colorPreset,
+                  customAccentColorHex: _settings.customAccentColorHex,
+                  useSystemAccent: _settings.useSystemAccent,
+                  initialWorkDurationSeconds: _settings.workDurationSeconds,
+                  initialBreakDurationSeconds: _settings.breakDurationSeconds,
+                  initialStreakCount: _settings.streakCount,
+                  dailyGoal: _settings.dailyGoal,
+                  longBreakEnabled: _settings.longBreakEnabled,
+                  longBreakDurationSeconds: _settings.longBreakDurationSeconds,
+                  longBreakEveryCycles: _settings.longBreakEveryCycles,
+                  autoRunEnabled: _settings.autoRunEnabled,
+                  autoRunCycleLimit: _settings.autoRunCycleLimit,
+                  notificationsEnabled: _settings.notificationsEnabled,
+                  hapticsEnabled: _settings.hapticsEnabled,
+                  soundEnabled: _settings.soundEnabled,
+                  chimeStyle: _settings.chimeStyle,
+                  blinkRemindersEnabled: _settings.blinkRemindersEnabled,
+                  blinkRemindersCadenceSeconds: _settings.blinkRemindersCadenceSeconds,
+                  workHoursEnabled: _settings.workHoursEnabled,
+                  workHoursStartHour: _settings.workHoursStartHour,
+                  workHoursStartMinute: _settings.workHoursStartMinute,
+                  workHoursEndHour: _settings.workHoursEndHour,
+                  workHoursEndMinute: _settings.workHoursEndMinute,
+                  workDays: _settings.workDays,
+                  naturalBreakCreditEnabled: _settings.naturalBreakCreditEnabled,
+                  breakMode: _settings.breakMode,
+                  allowSkip: _settings.allowSkip,
+                  allowPostpone: _settings.allowPostpone,
+                  postponeDurationSeconds: _settings.postponeDurationSeconds,
+                  smartIdleEnabled: _settings.smartIdleEnabled,
+                  breakVisualizerStyle: _settings.breakVisualizerStyle,
+                  initialSession: _session,
+                  openSettings: _openSettings,
+                  setPreset: _setPreset,
+                  toggleTheme: _toggleTheme,
+                  saveDurations: _saveDurations,
+                  saveStreakCount: _saveStreakCount,
+                  saveCompletedWorkSession: _saveCompletedWorkSession,
+                  saveTimerEventRecord: _saveTimerEventRecord,
+                  setNotificationsEnabled: _setNotificationsEnabled,
+                  saveSession: _saveSession,
+                  clearSession: _clearSession,
+                  notificationService: _notificationService,
+                  breakOverlayService: _breakOverlayService,
+                ),
+        );
+      },
     );
   }
 }

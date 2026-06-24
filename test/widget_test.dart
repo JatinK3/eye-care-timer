@@ -374,6 +374,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Settings'), findsOneWidget);
+
+    await tester.tap(find.text('General Schedule'));
+    await tester.pumpAndSettle();
+
     expect(find.text('Work duration'), findsOneWidget);
 
     await tester.tap(find.text('20 min'));
@@ -396,8 +400,13 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
+    final categoryHeader = find.text('Break Screen & Behavior');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
     final previewButton = find.byTooltip('Preview break overlay');
-    await tester.scrollUntilVisible(previewButton, 200);
+    await tester.scrollUntilVisible(previewButton, 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
     expect(find.text('Display over other apps'), findsOneWidget);
@@ -420,9 +429,14 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
+    final categoryHeader = find.text('Break Screen & Behavior');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
     // Scroll until the unique overlay 'Allow' button is visible.
     final allowButton = find.byKey(const ValueKey('overlay_allow_button'));
-    await tester.scrollUntilVisible(allowButton, 200);
+    await tester.scrollUntilVisible(allowButton, 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
     expect(find.text('Permission required for enforced breaks'), findsOneWidget);
@@ -441,7 +455,13 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Auto run'), 200);
+
+    final categoryHeader = find.text('Auto Run & Long Breaks');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Run schedule automatically'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
     await tester.tap(
@@ -465,7 +485,13 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Break screen'), 200);
+
+    final categoryHeader = find.text('Break Screen & Behavior');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Break screen mode'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
     expect(find.text('Gentle'), findsOneWidget);
@@ -485,6 +511,11 @@ void main() {
     await pumpBlinkKindApp(tester);
 
     await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    final categoryHeader = find.text('General Schedule');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('25 / 5'));
@@ -527,10 +558,14 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(find.text('Feedback'), 200);
+    final categoryHeader = find.text('Notifications & Sounds');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
     await tester.pumpAndSettle();
 
-    expect(find.text('Feedback'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Haptics'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+
     expect(find.text('Haptics'), findsOneWidget);
     expect(find.text('In-app sound'), findsOneWidget);
   });
@@ -540,15 +575,21 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
+
+    final categoryHeader = find.text('Notifications & Sounds');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
     final channelSettings = find.byTooltip('Notification sound settings');
-    await tester.scrollUntilVisible(channelSettings, 300);
+    await tester.scrollUntilVisible(channelSettings, 300, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     await tester.tap(channelSettings);
     await tester.pumpAndSettle();
     expect(notificationService.openChannelSettingsCount, 1);
 
     final testReminder = find.byTooltip('Send test reminder');
-    await tester.scrollUntilVisible(testReminder, 100);
+    await tester.scrollUntilVisible(testReminder, 100, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     await tester.tap(testReminder);
     await tester.pumpAndSettle();
@@ -568,13 +609,18 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
+    final categoryHeader = find.text('Theme & Appearance');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
     final pastelFinder = find.text('Pastel');
-    await tester.scrollUntilVisible(pastelFinder, 100);
+    await tester.scrollUntilVisible(pastelFinder, 100, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
     expect(pastelFinder, findsOneWidget);
     expect(find.text('Calm Blue'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Sunrise'), 200);
+    await tester.scrollUntilVisible(find.text('Sunrise'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
     expect(find.text('Forest'), findsOneWidget);
@@ -607,11 +653,16 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
+    final categoryHeader = find.text('Notifications & Sounds');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
     final notificationsToggle = find.widgetWithText(
       SwitchListTile,
       'Notifications',
     );
-    await tester.scrollUntilVisible(notificationsToggle, 200);
+    await tester.scrollUntilVisible(notificationsToggle, 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     expect(find.text('Notifications'), findsOneWidget);
     await tester.tap(notificationsToggle);
@@ -631,7 +682,13 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Permission status'), 200);
+
+    final categoryHeader = find.text('Notifications & Sounds');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Permission status'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
     expect(find.text('Permission status'), findsOneWidget);
@@ -652,8 +709,13 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Daily goal'), 200);
-    await tester.drag(find.byType(ListView), const Offset(0, -140));
+
+    final categoryHeader = find.text('General Schedule');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Daily goal'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('6'));
@@ -692,8 +754,14 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
+
+    final categoryHeader = find.text('General Schedule');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
     final historyTile = find.widgetWithText(ListTile, 'History');
-    await tester.scrollUntilVisible(historyTile, 300);
+    await tester.scrollUntilVisible(historyTile, 300, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     await tester.tap(historyTile);
     await tester.pumpAndSettle();
@@ -707,7 +775,7 @@ void main() {
     expect(find.text('20m'), findsOneWidget);
 
     final logsTitle = find.text('Last 7 days logs');
-    await tester.scrollUntilVisible(logsTitle, 300);
+    await tester.scrollUntilVisible(logsTitle, 300, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
     expect(logsTitle, findsOneWidget);
@@ -718,6 +786,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Recent completed sessions'),
       300,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
     expect(find.text('Focused for 20 min'), findsOneWidget);
@@ -883,8 +952,13 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
+    final categoryHeader = find.text('Break Screen & Behavior');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
     final finder = find.text('Smart Pause & Postpone');
-    await tester.scrollUntilVisible(finder, 200);
+    await tester.scrollUntilVisible(finder, 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     expect(finder, findsOneWidget);
 
@@ -940,7 +1014,13 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Break visualizer style'), 200);
+
+    final categoryHeader = find.text('Break Screen & Behavior');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Break visualizer style'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
     expect(find.text('Calm Breathing'), findsOneWidget);
@@ -964,7 +1044,13 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Break visualizer style'), 200);
+
+    final categoryHeader = find.text('Break Screen & Behavior');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Break visualizer style'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
     expect(find.text('Calm Breathing'), findsOneWidget);

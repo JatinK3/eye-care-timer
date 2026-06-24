@@ -8,9 +8,24 @@ class ColorPresets {
     'Rose',
     'Graphite',
     'Sunrise',
+    'Custom',
   ];
 
-  static Color seedColor(String preset) {
+  static Color _parseHexColor(String hex) {
+    try {
+      final buffer = StringBuffer();
+      if (hex.length == 6 || hex.length == 7) buffer.write('ff');
+      buffer.write(hex.replaceFirst('#', ''));
+      return Color(int.parse(buffer.toString(), radix: 16));
+    } catch (e) {
+      return Colors.teal;
+    }
+  }
+
+  static Color seedColor(String preset, {String? customHex}) {
+    if (preset == 'Custom' && customHex != null) {
+      return _parseHexColor(customHex);
+    }
     return switch (preset) {
       'Calm Blue' => Colors.blue,
       'Forest' => Colors.green,
@@ -21,7 +36,10 @@ class ColorPresets {
     };
   }
 
-  static Color swatchColor(String preset, bool isDark) {
+  static Color swatchColor(String preset, bool isDark, {String? customHex}) {
+    if (preset == 'Custom' && customHex != null) {
+      return _parseHexColor(customHex);
+    }
     return switch (preset) {
       'Calm Blue' => isDark ? Colors.lightBlueAccent.shade100 : Colors.blue,
       'Forest' => isDark ? Colors.lightGreenAccent.shade100 : Colors.green,
@@ -32,7 +50,25 @@ class ColorPresets {
     };
   }
 
-  static LinearGradient backgroundGradient(String preset, bool isDark) {
+  static LinearGradient backgroundGradient(String preset, bool isDark, {String? customHex}) {
+    if (preset == 'Custom' && customHex != null) {
+      final color = _parseHexColor(customHex);
+      if (isDark) {
+        final darkColor = HSLColor.fromColor(color).withLightness(0.06).withSaturation(0.2).toColor();
+        return LinearGradient(
+          colors: <Color>[darkColor, const Color(0xFF0A0A0A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      } else {
+        final lightColor = HSLColor.fromColor(color).withLightness(0.96).withSaturation(0.25).toColor();
+        return LinearGradient(
+          colors: <Color>[lightColor, Colors.white],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      }
+    }
     return switch (preset) {
       'Calm Blue' =>
         isDark
@@ -113,10 +149,11 @@ class ColorPresets {
     required bool isBreak,
     required String preset,
     required bool isDark,
+    String? customHex,
   }) {
     if (isBreak) {
       return isDark ? Colors.lightGreenAccent.shade100 : Colors.green;
     }
-    return swatchColor(preset, isDark);
+    return swatchColor(preset, isDark, customHex: customHex);
   }
 }
