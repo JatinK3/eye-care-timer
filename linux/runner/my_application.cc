@@ -18,16 +18,6 @@ G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
 static std::vector<GtkWidget*> blocker_windows;
 
-static double get_double_value(FlValue* value) {
-  if (value == nullptr) return 0.0;
-  FlValueType type = fl_value_get_type(value);
-  if (type == FL_VALUE_TYPE_FLOAT) {
-    return fl_value_get_float(value);
-  } else if (type == FL_VALUE_TYPE_INT) {
-    return (double)fl_value_get_int(value);
-  }
-  return 0.0;
-}
 
 static void hide_blocker_windows() {
   for (GtkWidget* window : blocker_windows) {
