@@ -17,7 +17,6 @@ G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 #include <vector>
 
 static std::vector<GtkWidget*> blocker_windows;
-static GtkWindow* main_window = nullptr;
 
 static double get_double_value(FlValue* value) {
   if (value == nullptr) return 0.0;
@@ -30,42 +29,13 @@ static double get_double_value(FlValue* value) {
   return 0.0;
 }
 
-static void hide_blocker_windows(bool was_hidden, bool was_minimized,
-                                 bool has_saved_bounds, double x, double y, double width, double height,
-                                 bool was_maximized) {
-  (void)has_saved_bounds;
-  (void)x;
-  (void)y;
-  (void)width;
-  (void)height;
-  (void)was_maximized;
-
+static void hide_blocker_windows() {
   for (GtkWidget* window : blocker_windows) {
     if (GTK_IS_WIDGET(window)) {
       gtk_widget_destroy(window);
     }
   }
   blocker_windows.clear();
-
-  if (main_window != nullptr) {
-    if (was_hidden || was_minimized) {
-      if (was_hidden) {
-        gtk_widget_hide(GTK_WIDGET(main_window));
-      } else if (was_minimized) {
-        gtk_window_iconify(main_window);
-      }
-    } else {
-      // Normal restore (visible before break): Exit fullscreen and keep-above first, then present
-      gtk_window_unfullscreen(main_window);
-      gtk_window_set_keep_above(main_window, FALSE);
-      gtk_window_set_skip_taskbar_hint(main_window, FALSE);
-      gtk_window_set_decorated(main_window, TRUE);
-
-      // Ensure the window is shown and raised/focused on the screen
-      gtk_window_deiconify(main_window);
-      gtk_window_present(main_window);
-    }
-  }
 }
 
 static void show_blocker_windows(GtkApplication* app) {
@@ -87,25 +57,6 @@ static void show_blocker_windows(GtkApplication* app) {
     }
   }
 
-  // 1. Force the main Flutter window back from tray-hidden state and
-  // onto the active monitor's fullscreen state.
-  if (main_window != nullptr) {
-    GtkWidget* main_widget = GTK_WIDGET(main_window);
-    gtk_widget_show_all(main_widget);
-    gtk_window_deiconify(main_window);
-    gtk_window_present(main_window);
-    while (gtk_events_pending()) {
-      gtk_main_iteration();
-    }
-
-    GdkRectangle geom;
-    gdk_monitor_get_geometry(active_monitor, &geom);
-    gtk_window_move(main_window, geom.x, geom.y);
-    gtk_window_set_keep_above(main_window, TRUE);
-    gtk_window_fullscreen_on_monitor(main_window, screen, active_monitor_idx);
-    gtk_window_present(main_window);
-  }
-
   // If blocker windows are already created, don't recreate them to avoid flickering.
   // Just ensure they are on top.
   if (!blocker_windows.empty()) {
@@ -117,7 +68,7 @@ static void show_blocker_windows(GtkApplication* app) {
     return;
   }
 
-  // 2. Create native black blocker windows for all other monitors
+  // Create native black blocker windows for all other monitors
   for (int i = 0; i < num_monitors; i++) {
     if (i == active_monitor_idx) {
       continue;
@@ -163,7 +114,6 @@ static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
-  main_window = window;
 
   // Use a header bar when running in GNOME as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
@@ -228,51 +178,7 @@ static void my_application_activate(GApplication* application) {
           show_blocker_windows(GTK_APPLICATION(self));
           fl_method_call_respond_success(method_call, nullptr, nullptr);
         } else if (g_strcmp0(method, "hideBlockers") == 0) {
-          FlValue* args = fl_method_call_get_args(method_call);
-          bool was_hidden = false;
-          bool was_minimized = false;
-          bool has_saved_bounds = false;
-          double x = 0.0;
-          double y = 0.0;
-          double width = 0.0;
-          double height = 0.0;
-          bool was_maximized = false;
-
-          if (args != nullptr && fl_value_get_type(args) == FL_VALUE_TYPE_MAP) {
-            FlValue* val_hidden = fl_value_lookup_string(args, "wasHidden");
-            if (val_hidden != nullptr && fl_value_get_type(val_hidden) == FL_VALUE_TYPE_BOOL) {
-              was_hidden = fl_value_get_bool(val_hidden);
-            }
-            FlValue* val_minimized = fl_value_lookup_string(args, "wasMinimized");
-            if (val_minimized != nullptr && fl_value_get_type(val_minimized) == FL_VALUE_TYPE_BOOL) {
-              was_minimized = fl_value_get_bool(val_minimized);
-            }
-            FlValue* val_has_bounds = fl_value_lookup_string(args, "hasSavedBounds");
-            if (val_has_bounds != nullptr && fl_value_get_type(val_has_bounds) == FL_VALUE_TYPE_BOOL) {
-              has_saved_bounds = fl_value_get_bool(val_has_bounds);
-            }
-            FlValue* val_x = fl_value_lookup_string(args, "x");
-            if (val_x != nullptr) {
-              x = get_double_value(val_x);
-            }
-            FlValue* val_y = fl_value_lookup_string(args, "y");
-            if (val_y != nullptr) {
-              y = get_double_value(val_y);
-            }
-            FlValue* val_w = fl_value_lookup_string(args, "width");
-            if (val_w != nullptr) {
-              width = get_double_value(val_w);
-            }
-            FlValue* val_h = fl_value_lookup_string(args, "height");
-            if (val_h != nullptr) {
-              height = get_double_value(val_h);
-            }
-            FlValue* val_max = fl_value_lookup_string(args, "wasMaximized");
-            if (val_max != nullptr && fl_value_get_type(val_max) == FL_VALUE_TYPE_BOOL) {
-              was_maximized = fl_value_get_bool(val_max);
-            }
-          }
-          hide_blocker_windows(was_hidden, was_minimized, has_saved_bounds, x, y, width, height, was_maximized);
+          hide_blocker_windows();
           fl_method_call_respond_success(method_call, nullptr, nullptr);
         } else {
           fl_method_call_respond_not_implemented(method_call, nullptr);
@@ -317,7 +223,7 @@ static void my_application_shutdown(GApplication* application) {
   //MyApplication* self = MY_APPLICATION(object);
 
   // Perform any actions required at application shutdown.
-  hide_blocker_windows(false, false, false, 0.0, 0.0, 0.0, 0.0, false);
+  hide_blocker_windows();
 
   G_APPLICATION_CLASS(my_application_parent_class)->shutdown(application);
 }
