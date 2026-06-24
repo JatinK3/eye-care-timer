@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
-import 'package:screen_retriever/screen_retriever.dart';
 import 'package:system_tray/system_tray.dart';
 import 'package:window_manager/window_manager.dart';
 import 'desktop_controls_controller.dart';
@@ -20,9 +19,6 @@ class DesktopIntegrationService extends WindowListener {
   final Menu _menu = Menu();
   bool _isInitialized = false;
   bool _isBreakActive = false;
-  bool _wasHiddenToTrayBeforeBreak = false;
-  bool _wasMinimizedBeforeBreak = false;
-  bool _needsStyleRestoration = false;
   bool? _lastIsBreak;
   bool? _lastIsRunning;
   bool? _lastIsPaused;
@@ -30,8 +26,6 @@ class DesktopIntegrationService extends WindowListener {
   int? _lastPostponeDurationMinutes;
 
   List<Rect> _breakMonitorRects = const [];
-  Rect? _savedWindowBounds;
-  bool _wasMaximized = false;
 
   /// Per-monitor rectangles (in the overlay window's local coordinate space) to
   /// replicate break content onto every screen while a multi-monitor break is
@@ -62,9 +56,6 @@ class DesktopIntegrationService extends WindowListener {
     DesktopControlsController.instance.states.listen((state) {
       unawaited(_updateTrayMenu(state));
     });
-
-    // 5. Initialize saved bounds
-    await _saveCurrentBounds();
 
     _isInitialized = true;
   }
@@ -301,7 +292,6 @@ class DesktopIntegrationService extends WindowListener {
   }
 
   Future<void> _showWindow() async {
-    await _restoreWindowStylesIfNeeded();
     await windowManager.show();
     await windowManager.focus();
   }
@@ -325,26 +315,6 @@ class DesktopIntegrationService extends WindowListener {
     }
   }
 
-  @override
-  void onWindowRestore() async {
-    await _restoreWindowStylesIfNeeded();
-  }
-
-  @override
-  void onWindowFocus() async {
-    await _restoreWindowStylesIfNeeded();
-  }
-
-  @override
-  void onWindowMove() {
-    unawaited(_saveCurrentBounds());
-  }
-
-  @override
-  void onWindowResize() {
-    unawaited(_saveCurrentBounds());
-  }
-
   Future<void> showBreakOverlay(bool show) async {
     if (!isSupported) return;
     if (show) {
@@ -355,209 +325,41 @@ class DesktopIntegrationService extends WindowListener {
     }
   }
 
-  Future<Display?> _getActiveDisplay() async {
-    try {
-      final cursorPoint = await screenRetriever.getCursorScreenPoint();
-      final displays = await screenRetriever.getAllDisplays();
-      for (final display in displays) {
-        final position = display.visiblePosition;
-        if (position == null) continue;
-        final size = display.visibleSize ?? display.size;
-        final rect = Rect.fromLTWH(position.dx, position.dy, size.width, size.height);
-        if (rect.contains(cursorPoint)) {
-          return display;
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to get active display: $e');
-    }
-    return null;
-  }
-
   static const MethodChannel _overlayChannel = MethodChannel(
     "blinkkind/break_overlay",
   );
 
+  /// Begins the desktop break. All main-window manipulation — forcing the
+  /// window up onto the active (cursor) monitor, fullscreening it to host the
+  /// Flutter break UI, and covering the other monitors with black blockers — is
+  /// delegated to the native GTK runner so it owns the window transform
+  /// end-to-end. This avoids the "dual-mapping" conflict that arose when both
+  /// window_manager (Dart) and GTK (native) fought over the same window, and
+  /// lets the runner restore the window synchronously on exit without
+  /// GNOME/Mutter flashing the UI back onto the desktop.
   Future<void> _enterBreakWindow() async {
-    bool isVisible = true;
-    bool isMinimized = false;
-    try {
-      isVisible = await windowManager.isVisible();
-      isMinimized = await windowManager.isMinimized();
-    } catch (e) {
-      debugPrint('Failed to query initial window state: $e');
-    }
-
-    _wasHiddenToTrayBeforeBreak = !isVisible;
-    _wasMinimizedBeforeBreak = isMinimized;
-
-    // 1. Save original bounds and maximized state to restore after the break (only if currently visible and not minimized)
-    if (!isMinimized && isVisible) {
-      try {
-        _savedWindowBounds = await windowManager.getBounds();
-        _wasMaximized = await windowManager.isMaximized();
-      } catch (e) {
-        debugPrint('Failed to get window bounds/state: $e');
-      }
-    }
-
-    // 2. Show, restore, and focus the window first to map it to the desktop before doing layout changes
-    try {
-      await windowManager.show();
-      if (await windowManager.isMinimized()) {
-        await windowManager.restore();
-      }
-      await windowManager.focus();
-    } catch (e) {
-      debugPrint('Failed to show/restore window: $e');
-    }
-
-    // 3. Identify the active display where the user is currently working (cursor position) and set the window bounds
-    final activeDisplay = await _getActiveDisplay();
-    if (activeDisplay != null) {
-      final position = activeDisplay.visiblePosition;
-      final size = activeDisplay.size;
-      if (position != null) {
-        try {
-          // Set the window bounds to cover the entire active monitor
-          await windowManager.setBounds(Rect.fromLTWH(position.dx, position.dy, size.width, size.height));
-        } catch (e) {
-          debugPrint('Failed to set window bounds: $e');
-        }
-      }
-    }
-
-    // 4. Force fullscreen, borderless visual styles, and always-on-top
     _breakMonitorRects = const [];
     try {
-      await windowManager.setAlwaysOnTop(true);
-      await windowManager.setSkipTaskbar(true);
-      await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
-      await windowManager.setFullScreen(true);
+      await _overlayChannel.invokeMethod('enterBreak');
     } catch (e) {
-      debugPrint('Failed to configure fullscreen overlay: $e');
-    }
-    await windowManager.focus();
-
-    // 5. Invoke native screen blockers to cover secondary displays (like safeeyes does)
-    try {
-      await _overlayChannel.invokeMethod('showBlockers');
-    } catch (e) {
-      debugPrint('Failed to show native screen blockers: $e');
+      debugPrint('Failed to enter native break window: $e');
     }
   }
 
+  /// Ends the desktop break. The native runner tears down the blockers and
+  /// returns the main window to exactly the state it was in before the break:
+  /// hidden back to the tray / its floating bounds, or restored on screen if it
+  /// was visible. A tray-bound window is unmapped *before* its fullscreen styles
+  /// are cleared, all in one synchronous native call, so the compositor never
+  /// re-maps and flashes the UI.
   Future<void> _exitBreakWindow() async {
-    // 1. Destroy native screen blockers
     try {
-      await _overlayChannel.invokeMethod('hideBlockers');
+      await _overlayChannel.invokeMethod('exitBreak');
     } catch (e) {
-      debugPrint('Failed to hide native screen blockers: $e');
+      debugPrint('Failed to exit native break window: $e');
     }
-
-    if (_wasHiddenToTrayBeforeBreak || _wasMinimizedBeforeBreak) {
-      _needsStyleRestoration = true;
-
-      // Stage A: Instantly hide or minimize the window to return to background
-      try {
-        if (_wasHiddenToTrayBeforeBreak) {
-          await windowManager.hide();
-        } else {
-          await windowManager.minimize();
-        }
-      } catch (e) {
-        debugPrint('Failed to hide/minimize window: $e');
-      }
-
-      _breakMonitorRects = const [];
-      _isBreakActive = false; // Safe to allow normal tracking now
-      return;
-    }
-
-    // Otherwise, the window was visible before the break. Restore it to the screen.
-    try {
-      await windowManager.setFullScreen(false);
-      await windowManager.setAlwaysOnTop(false);
-      await windowManager.setSkipTaskbar(false);
-      await windowManager.setTitleBarStyle(TitleBarStyle.normal);
-
-      await Future.delayed(const Duration(milliseconds: 200));
-
-      final saved = _savedWindowBounds;
-      if (saved != null) {
-        await windowManager.setBounds(saved);
-      } else {
-        await windowManager.setSize(const Size(1280, 720));
-        await windowManager.center();
-      }
-      if (_wasMaximized) {
-        await windowManager.maximize();
-      }
-      await windowManager.show();
-      await windowManager.focus();
-    } catch (e) {
-      debugPrint('Failed to restore window bounds: $e');
-    }
-
-    // Let the window settle to prevent intermediate bounds from being saved
-    await Future.delayed(const Duration(milliseconds: 300));
     _isBreakActive = false;
-    _savedWindowBounds = null;
-    _wasMaximized = false;
-    _wasMinimizedBeforeBreak = false;
     _breakMonitorRects = const [];
-  }
-
-  Future<void> _restoreWindowStylesIfNeeded() async {
-    if (_needsStyleRestoration) {
-      _needsStyleRestoration = false;
-      _isBreakActive = true; // Prevent bounds saving during transition
-      try {
-        await windowManager.setFullScreen(false);
-        await windowManager.setAlwaysOnTop(false);
-        await windowManager.setSkipTaskbar(false);
-        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
-
-        // Wait for the window manager to process the style change and frame the window
-        await Future.delayed(const Duration(milliseconds: 200));
-
-        final saved = _savedWindowBounds;
-        if (saved != null) {
-          await windowManager.setBounds(saved);
-        } else {
-          await windowManager.setSize(const Size(1280, 720));
-          await windowManager.center();
-        }
-        if (_wasMaximized) {
-          await windowManager.maximize();
-        }
-      } catch (e) {
-        debugPrint('Failed to restore window bounds: $e');
-      }
-
-      await Future.delayed(const Duration(milliseconds: 300));
-      _isBreakActive = false;
-      _savedWindowBounds = null;
-      _wasMaximized = false;
-      _wasMinimizedBeforeBreak = false;
-      _breakMonitorRects = const [];
-    }
-  }
-
-  Future<void> _saveCurrentBounds() async {
-    if (_isBreakActive || _needsStyleRestoration) return;
-    try {
-      final isMinimized = await windowManager.isMinimized();
-      final isVisible = await windowManager.isVisible();
-      final isFullScreen = await windowManager.isFullScreen();
-      final isMaximized = await windowManager.isMaximized();
-      if (!isMinimized && isVisible && !isFullScreen) {
-        _savedWindowBounds = await windowManager.getBounds();
-        _wasMaximized = isMaximized;
-      }
-    } catch (e) {
-      debugPrint('Failed to save current window bounds: $e');
-    }
   }
 
   Future<void> _updateDynamicTrayIcon(DesktopTimerState state) async {

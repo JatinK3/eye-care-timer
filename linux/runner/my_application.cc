@@ -18,8 +18,37 @@ G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
 static std::vector<GtkWidget*> blocker_windows;
 
+// The application's main Flutter window. Kept so the break overlay can transform
+// it (fullscreen on the active monitor) and restore it to its exact prior state
+// when the break ends, without GNOME/Mutter re-mapping a window that should stay
+// hidden in the tray.
+static GtkWindow* g_main_window = nullptr;
 
-static void hide_blocker_windows() {
+// Latest state from "window-state-event"; used to detect whether the main
+// window was minimized/maximized at the moment a break begins.
+static GdkWindowState g_main_window_state = static_cast<GdkWindowState>(0);
+
+// Pre-break snapshot of the main window, captured in enter_break and applied in
+// exit_break.
+static bool g_break_active = false;
+static bool g_restore_to_background = false;  // was hidden-to-tray or minimized
+static bool g_was_maximized = false;
+static bool g_have_saved_bounds = false;
+static int g_saved_x = 0;
+static int g_saved_y = 0;
+static int g_saved_w = 0;
+static int g_saved_h = 0;
+
+static gboolean on_main_window_state_event(GtkWidget* widget,
+                                           GdkEventWindowState* event,
+                                           gpointer user_data) {
+  (void)widget;
+  (void)user_data;
+  g_main_window_state = event->new_window_state;
+  return FALSE;
+}
+
+static void destroy_blocker_windows() {
   for (GtkWidget* window : blocker_windows) {
     if (GTK_IS_WIDGET(window)) {
       gtk_widget_destroy(window);
@@ -28,7 +57,46 @@ static void hide_blocker_windows() {
   blocker_windows.clear();
 }
 
-static void show_blocker_windows(GtkApplication* app) {
+// End a break: tear down the blockers and return the main window to exactly the
+// state it had before the break. Order matters on GNOME/Mutter: a window that
+// must go back to the tray is hidden (unmapped) FIRST and only then has its
+// fullscreen/always-on-top styles cleared, all synchronously within this call,
+// so the compositor never re-maps it and flashes the UI on screen.
+static void exit_break() {
+  destroy_blocker_windows();
+  g_break_active = false;
+
+  if (g_main_window == nullptr) {
+    return;
+  }
+
+  if (g_restore_to_background) {
+    gtk_widget_hide(GTK_WIDGET(g_main_window));
+    gtk_window_unfullscreen(g_main_window);
+    gtk_window_set_keep_above(g_main_window, FALSE);
+    if (g_have_saved_bounds) {
+      gtk_window_move(g_main_window, g_saved_x, g_saved_y);
+      gtk_window_resize(g_main_window, g_saved_w, g_saved_h);
+    }
+    // Stays hidden in the system tray; restored as a normal decorated window
+    // when the user clicks the tray icon.
+  } else {
+    gtk_window_unfullscreen(g_main_window);
+    gtk_window_set_keep_above(g_main_window, FALSE);
+    if (g_was_maximized) {
+      gtk_window_maximize(g_main_window);
+    } else if (g_have_saved_bounds) {
+      gtk_window_move(g_main_window, g_saved_x, g_saved_y);
+      gtk_window_resize(g_main_window, g_saved_w, g_saved_h);
+    }
+    gtk_window_present(g_main_window);
+  }
+}
+
+// Begin a break: snapshot the main window's current state, force it up onto the
+// active (cursor) monitor in fullscreen to host the Flutter break UI, then cover
+// every other monitor with a black blocker window.
+static void enter_break(GtkApplication* app) {
   GdkDisplay* display = gdk_display_get_default();
   GdkScreen* screen = gdk_display_get_default_screen(display);
   GdkSeat* seat = gdk_display_get_default_seat(display);
@@ -45,6 +113,44 @@ static void show_blocker_windows(GtkApplication* app) {
       active_monitor_idx = i;
       break;
     }
+  }
+
+  // Snapshot the original window state only on the first entry of a break so a
+  // re-trigger (postpone/idle) doesn't overwrite it with the mid-break state.
+  if (!g_break_active && g_main_window != nullptr) {
+    g_break_active = true;
+
+    GtkWidget* main_widget = GTK_WIDGET(g_main_window);
+    bool visible = gtk_widget_get_visible(main_widget);
+    bool minimized = (g_main_window_state & GDK_WINDOW_STATE_ICONIFIED) != 0;
+    bool maximized = (g_main_window_state & GDK_WINDOW_STATE_MAXIMIZED) != 0;
+
+    g_restore_to_background = (!visible) || minimized;
+    g_was_maximized = maximized;
+    g_have_saved_bounds = false;
+    if (visible && !minimized && !maximized) {
+      gtk_window_get_position(g_main_window, &g_saved_x, &g_saved_y);
+      gtk_window_get_size(g_main_window, &g_saved_w, &g_saved_h);
+      g_have_saved_bounds = true;
+    }
+  }
+
+  // Force the main window up onto the active monitor and fullscreen it so the
+  // Flutter break overlay renders there.
+  if (g_main_window != nullptr) {
+    gtk_widget_show(GTK_WIDGET(g_main_window));
+    gtk_window_deiconify(g_main_window);
+    gtk_window_present(g_main_window);
+    while (gtk_events_pending()) {
+      gtk_main_iteration();
+    }
+
+    GdkRectangle active_geom;
+    gdk_monitor_get_geometry(active_monitor, &active_geom);
+    gtk_window_move(g_main_window, active_geom.x, active_geom.y);
+    gtk_window_set_keep_above(g_main_window, TRUE);
+    gtk_window_fullscreen_on_monitor(g_main_window, screen, active_monitor_idx);
+    gtk_window_present(g_main_window);
   }
 
   // If blocker windows are already created, don't recreate them to avoid flickering.
@@ -134,6 +240,12 @@ static void my_application_activate(GApplication* application) {
 
   gtk_window_set_default_size(window, 1280, 720);
 
+  // Keep a reference to the main window and track its state so the break overlay
+  // can transform and restore it from the native side.
+  g_main_window = window;
+  g_signal_connect(window, "window-state-event",
+                   G_CALLBACK(on_main_window_state_event), nullptr);
+
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(project, self->dart_entrypoint_arguments);
 
@@ -164,11 +276,11 @@ static void my_application_activate(GApplication* application) {
         const gchar* method = fl_method_call_get_name(method_call);
         MyApplication* self = MY_APPLICATION(user_data);
 
-        if (g_strcmp0(method, "showBlockers") == 0) {
-          show_blocker_windows(GTK_APPLICATION(self));
+        if (g_strcmp0(method, "enterBreak") == 0) {
+          enter_break(GTK_APPLICATION(self));
           fl_method_call_respond_success(method_call, nullptr, nullptr);
-        } else if (g_strcmp0(method, "hideBlockers") == 0) {
-          hide_blocker_windows();
+        } else if (g_strcmp0(method, "exitBreak") == 0) {
+          exit_break();
           fl_method_call_respond_success(method_call, nullptr, nullptr);
         } else {
           fl_method_call_respond_not_implemented(method_call, nullptr);
@@ -213,7 +325,7 @@ static void my_application_shutdown(GApplication* application) {
   //MyApplication* self = MY_APPLICATION(object);
 
   // Perform any actions required at application shutdown.
-  hide_blocker_windows();
+  destroy_blocker_windows();
 
   G_APPLICATION_CLASS(my_application_parent_class)->shutdown(application);
 }

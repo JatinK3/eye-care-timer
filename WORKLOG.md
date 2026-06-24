@@ -12,13 +12,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 5. [x] **Keyboard Dismissal & Shortcuts (Desktop Focus)**: Support key bindings (Esc to postpone, Space/Enter to skip, or hold Space to trigger Strict exit countdown) on the break overlay.
 6. [ ] **Custom Gentle Audio Player (High UX Value)**: Bundle gentle chime assets (Tibetan bowl, chimes, birds chirps) and play them on break start/end instead of the default OS system beep.
 7. [x] **Habit Reports & CSV Data Exporter**: Add a button on the History screen to export timer event history to a CSV file.
-9. [ ] **Linux Window Restore after Break Bug**: Fix window not returning to its original tray-hidden or floating state and size after the break ends.
-   - **Symptom**: After the break timer finishes, the main window is not returned to its original state (e.g. tray-hidden, minimized, or floating bounds). The app display does not even scale down (it is stuck in fullscreen).
-   - **Context**: 
-     - Mutter/GNOME Shell on Linux triggers window mapping (show) requests when unfullscreening or updating titlebar decorations on a hidden/minimized window.
-     - To circumvent this, style updates were deferred until the window is restored (`onWindowRestore`, `onWindowFocus`, or `_showWindow`). However, this leads to the window staying in fullscreen mode (not scaling back to normal window sizes) or fails to hide back to the tray cleanly.
-     - Native C++ `my_application.cc` was simplified to only handle screen blocker windows, meaning Dart is solely responsible for main window state/bounds restoration.
-     - A robust fix needs to ensure the main window exits fullscreen and returns to the tray/minimized or correct floating bounds flawlessly.
+9. [x] **Linux Window Restore after Break Bug** — DONE (verified on-device; **do not modify this implementation**). The main window now returns silently to its original tray-hidden, minimized, or floating state and size after a break ends — no UI flash, no stuck-fullscreen. Fixed by making the native GTK runner the single owner of the main-window break transform/restore, so Dart no longer touches the window during a break. See the Completed section for the full rationale and the exact enter/exit sequence.
 
 ### Detailed Tasks
 - [x] Improve Android rendering smoothness and release readiness.
@@ -148,7 +142,14 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Completed
 
-- Fixed Linux desktop window restoration tray mapping bug: deferred window style changes (such as unfullscreening, decorations, skipTaskbar) until the window is explicitly unminimized or shown via the tray menu. Only the native hiding (`gtk_widget_hide`) or native minimizing (`gtk_window_iconify`) is performed during break exits, preventing compositor/window manager (like GNOME/Mutter) state mapping events from unhiding or flashing the window on the desktop.
+- Fixed the Linux "window restore after break" bug for good (backlog item #9) — verified on-device, **this implementation is final and must not be modified**. Made the native GTK runner (`linux/runner/my_application.cc`) the single owner of the main window during a break and removed the Dart `window_manager` transform/deferred-restore entirely, eliminating the long-standing "dual-mapping" conflict where both Dart and native code fought over the same window.
+  - New native `enterBreak`: snapshots the window's pre-break state — hidden-to-tray, minimized, maximized, or floating position/size (tracked via a `window-state-event` handler on the main `GtkWindow`) — then forces the window onto the active cursor monitor, fullscreens it to host the rich Flutter break UI, and blacks out the other monitors with blocker windows.
+  - New native `exitBreak`: restores the window to exactly that prior state. Crucially, a tray-bound/minimized window is hidden (`gtk_widget_hide`, unmapped) **first** and only **then** has its fullscreen/keep-above styles cleared, all within one synchronous native call — so GNOME/Mutter never gets a chance to re-map and flash the UI on screen. A window that was visible before the break is unfullscreened and presented back at its saved bounds (or re-maximized).
+  - This **supersedes the earlier Dart "deferred style restoration" approach** (the entry below), which left the window stuck fullscreen or flashed the UI open because the style changes crossed `await` boundaries that let Mutter map the window mid-transition.
+  - The Dart side (`desktop_integration_service.dart`) now simply invokes `enterBreak`/`exitBreak` over the `blinkkind/break_overlay` channel; the deferred-restore helpers, `screen_retriever` active-display lookup, saved-bounds tracking, and move/resize listeners were deleted. The rich Flutter break visuals (eye exercises, breathing guides, visualizers) are fully preserved.
+  - Verified via a clean release build through `tool/package_linux.sh` (native runner compiles with zero errors, `dist/blinkkind_1.0.0_amd64.deb` produced) and on-device confirmation that tray-hidden, minimized, and visible pre-break states all return silently with no flash.
+
+- Fixed Linux desktop window restoration tray mapping bug: deferred window style changes (such as unfullscreening, decorations, skipTaskbar) until the window is explicitly unminimized or shown via the tray menu. Only the native hiding (`gtk_widget_hide`) or native minimizing (`gtk_window_iconify`) is performed during break exits, preventing compositor/window manager (like GNOME/Mutter) state mapping events from unhiding or flashing the window on the desktop. _(Superseded by the native single-owner `enterBreak`/`exitBreak` fix above.)_
 
 - Implemented dynamic tray icon countdown and status progress rings, alongside platform-level system tray title displaying remaining focus time.
 
