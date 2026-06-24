@@ -35,6 +35,13 @@ class PreferencesService {
   static const String chimeStyleKey = 'chimeStyle';
   static const String blinkRemindersEnabledKey = 'blinkRemindersEnabled';
   static const String blinkRemindersCadenceSecondsKey = 'blinkRemindersCadenceSeconds';
+  static const String workHoursEnabledKey = 'workHoursEnabled';
+  static const String workHoursStartHourKey = 'workHoursStartHour';
+  static const String workHoursStartMinuteKey = 'workHoursStartMinute';
+  static const String workHoursEndHourKey = 'workHoursEndHour';
+  static const String workHoursEndMinuteKey = 'workHoursEndMinute';
+  static const String workDaysKey = 'workDays';
+  static const String naturalBreakCreditEnabledKey = 'naturalBreakCreditEnabled';
   static const String dailyHistoryKey = 'dailyHistory';
   static const String workSessionHistoryKey = 'workSessionHistory';
   static const String sessionIsActiveKey = 'sessionIsActive';
@@ -110,6 +117,27 @@ class PreferencesService {
       blinkRemindersCadenceSeconds:
           prefs.getInt(blinkRemindersCadenceSecondsKey) ??
           TimerSettings.defaultBlinkRemindersCadenceSeconds,
+      workHoursEnabled:
+          prefs.getBool(workHoursEnabledKey) ??
+          TimerSettings.defaultWorkHoursEnabled,
+      workHoursStartHour:
+          prefs.getInt(workHoursStartHourKey) ??
+          TimerSettings.defaultWorkHoursStartHour,
+      workHoursStartMinute:
+          prefs.getInt(workHoursStartMinuteKey) ??
+          TimerSettings.defaultWorkHoursStartMinute,
+      workHoursEndHour:
+          prefs.getInt(workHoursEndHourKey) ??
+          TimerSettings.defaultWorkHoursEndHour,
+      workHoursEndMinute:
+          prefs.getInt(workHoursEndMinuteKey) ??
+          TimerSettings.defaultWorkHoursEndMinute,
+      workDays:
+          prefs.getString(workDaysKey) ??
+          TimerSettings.defaultWorkDays,
+      naturalBreakCreditEnabled:
+          prefs.getBool(naturalBreakCreditEnabledKey) ??
+          TimerSettings.defaultNaturalBreakCreditEnabled,
     );
   }
 
@@ -391,6 +419,41 @@ class PreferencesService {
   Future<void> saveBlinkRemindersCadenceSeconds(int seconds) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(blinkRemindersCadenceSecondsKey, seconds);
+  }
+
+  Future<void> saveWorkHoursEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(workHoursEnabledKey, enabled);
+  }
+
+  Future<void> saveWorkHoursStartHour(int hour) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(workHoursStartHourKey, hour);
+  }
+
+  Future<void> saveWorkHoursStartMinute(int minute) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(workHoursStartMinuteKey, minute);
+  }
+
+  Future<void> saveWorkHoursEndHour(int hour) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(workHoursEndHourKey, hour);
+  }
+
+  Future<void> saveWorkHoursEndMinute(int minute) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(workHoursEndMinuteKey, minute);
+  }
+
+  Future<void> saveWorkDays(String days) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(workDaysKey, days);
+  }
+
+  Future<void> saveNaturalBreakCreditEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(naturalBreakCreditEnabledKey, enabled);
   }
 
   Future<void> saveStreakCount(int streakCount) async {

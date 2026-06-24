@@ -81,6 +81,20 @@ class SettingsPage extends StatefulWidget {
   final Future<void> Function() openUsageAccessSettings;
   final void Function(BuildContext context) openHistory;
   final VoidCallback resetStreak;
+  final bool workHoursEnabled;
+  final int workHoursStartHour;
+  final int workHoursStartMinute;
+  final int workHoursEndHour;
+  final int workHoursEndMinute;
+  final String workDays;
+  final bool naturalBreakCreditEnabled;
+  final void Function(bool) setWorkHoursEnabled;
+  final void Function(int) setWorkHoursStartHour;
+  final void Function(int) setWorkHoursStartMinute;
+  final void Function(int) setWorkHoursEndHour;
+  final void Function(int) setWorkHoursEndMinute;
+  final void Function(String) setWorkDays;
+  final void Function(bool) setNaturalBreakCreditEnabled;
 
   const SettingsPage({
     super.key,
@@ -145,6 +159,20 @@ class SettingsPage extends StatefulWidget {
     required this.openUsageAccessSettings,
     required this.openHistory,
     required this.resetStreak,
+    required this.workHoursEnabled,
+    required this.workHoursStartHour,
+    required this.workHoursStartMinute,
+    required this.workHoursEndHour,
+    required this.workHoursEndMinute,
+    required this.workDays,
+    required this.naturalBreakCreditEnabled,
+    required this.setWorkHoursEnabled,
+    required this.setWorkHoursStartHour,
+    required this.setWorkHoursStartMinute,
+    required this.setWorkHoursEndHour,
+    required this.setWorkHoursEndMinute,
+    required this.setWorkDays,
+    required this.setNaturalBreakCreditEnabled,
   });
 
   @override
@@ -364,6 +392,27 @@ class _SettingsPageState extends State<SettingsPage>
     return '$minutes min';
   }
 
+  String _getDayNameShort(int day) {
+    switch (day) {
+      case 1:
+        return 'Mon';
+      case 2:
+        return 'Tue';
+      case 3:
+        return 'Wed';
+      case 4:
+        return 'Thu';
+      case 5:
+        return 'Fri';
+      case 6:
+        return 'Sat';
+      case 7:
+        return 'Sun';
+      default:
+        return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -488,6 +537,145 @@ class _SettingsPageState extends State<SettingsPage>
             ],
           ),
           const SizedBox(height: 16),
+          _Section(
+            title: 'Work schedule',
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.calendar_today_outlined),
+                title: const Text('Active work hours & days'),
+                subtitle: const Text(
+                  'Only run the timer cycles during specific hours and days',
+                ),
+                value: widget.workHoursEnabled,
+                onChanged: widget.setWorkHoursEnabled,
+              ),
+              if (widget.workHoursEnabled) ...[
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                const Text(
+                  'Active Days',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (int i = 1; i <= 7; i++)
+                      FilterChip(
+                        label: Text(_getDayNameShort(i)),
+                        selected: widget.workDays
+                            .split(',')
+                            .where((e) => e.isNotEmpty)
+                            .map(int.parse)
+                            .contains(i),
+                        onSelected: (selected) {
+                          final activeDays = widget.workDays
+                              .split(',')
+                              .where((e) => e.isNotEmpty)
+                              .map(int.parse)
+                              .toList();
+                          if (selected) {
+                            if (!activeDays.contains(i)) {
+                              activeDays.add(i);
+                            }
+                          } else {
+                            if (activeDays.length > 1) {
+                              activeDays.remove(i);
+                            }
+                          }
+                          activeDays.sort();
+                          widget.setWorkDays(activeDays.join(','));
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 20),
+                    const SizedBox(width: 12),
+                    const Text('Start Time', style: TextStyle(fontSize: 15)),
+                    const Spacer(),
+                    DropdownButton<int>(
+                      value: widget.workHoursStartHour,
+                      onChanged: (val) {
+                        if (val != null) widget.setWorkHoursStartHour(val);
+                      },
+                      underline: const SizedBox(),
+                      items: List.generate(24, (index) {
+                        final displayHour = index.toString().padLeft(2, '0');
+                        return DropdownMenuItem<int>(
+                          value: index,
+                          child: Text(displayHour),
+                        );
+                      }),
+                    ),
+                    const Text(' : '),
+                    DropdownButton<int>(
+                      value: widget.workHoursStartMinute,
+                      onChanged: (val) {
+                        if (val != null) widget.setWorkHoursStartMinute(val);
+                      },
+                      underline: const SizedBox(),
+                      items: List.generate(60, (index) {
+                        final displayMinute = index.toString().padLeft(2, '0');
+                        return DropdownMenuItem<int>(
+                          value: index,
+                          child: Text(displayMinute),
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+                const Divider(height: 1),
+                Row(
+                  children: [
+                    const Icon(Icons.access_time_filled, size: 20),
+                    const SizedBox(width: 12),
+                    const Text('End Time', style: TextStyle(fontSize: 15)),
+                    const Spacer(),
+                    DropdownButton<int>(
+                      value: widget.workHoursEndHour,
+                      onChanged: (val) {
+                        if (val != null) widget.setWorkHoursEndHour(val);
+                      },
+                      underline: const SizedBox(),
+                      items: List.generate(24, (index) {
+                        final displayHour = index.toString().padLeft(2, '0');
+                        return DropdownMenuItem<int>(
+                          value: index,
+                          child: Text(displayHour),
+                        );
+                      }),
+                    ),
+                    const Text(' : '),
+                    DropdownButton<int>(
+                      value: widget.workHoursEndMinute,
+                      onChanged: (val) {
+                        if (val != null) widget.setWorkHoursEndMinute(val);
+                      },
+                      underline: const SizedBox(),
+                      items: List.generate(60, (index) {
+                        final displayMinute = index.toString().padLeft(2, '0');
+                        return DropdownMenuItem<int>(
+                          value: index,
+                          child: Text(displayMinute),
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
           if (_overlayPermissionStatus !=
               OverlayPermissionStatus.unsupported) ...[
             _Section(
@@ -598,6 +786,17 @@ class _SettingsPageState extends State<SettingsPage>
                     ),
                     value: widget.smartIdleEnabled,
                     onChanged: widget.setSmartIdleEnabled,
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: const Icon(Icons.check_circle_outline),
+                    title: const Text('Natural break credit'),
+                    subtitle: const Text(
+                      'Credit a completed break if you are idle/away for longer than the break duration',
+                    ),
+                    value: widget.naturalBreakCreditEnabled,
+                    onChanged: widget.setNaturalBreakCreditEnabled,
                   ),
                   const Divider(height: 1),
                   ListTile(

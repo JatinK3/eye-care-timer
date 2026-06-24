@@ -33,6 +33,7 @@ class TimerBackgroundService {
     required bool allowPostpone,
     required int postponeDurationSeconds,
     required bool smartIdleEnabled,
+    required bool naturalBreakCreditEnabled,
   }) async {
     if (!_isSupported) return;
     try {
@@ -53,6 +54,7 @@ class TimerBackgroundService {
         'allowPostpone': allowPostpone,
         'postponeDurationSeconds': postponeDurationSeconds,
         'smartIdleEnabled': smartIdleEnabled,
+        'naturalBreakCreditEnabled': naturalBreakCreditEnabled,
       });
     } on PlatformException catch (error) {
       debugPrint('Unable to start background phase: $error');

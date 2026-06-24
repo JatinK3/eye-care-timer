@@ -444,6 +444,55 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveBlinkRemindersCadenceSeconds(seconds));
   }
 
+  void _setWorkHoursEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(workHoursEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveWorkHoursEnabled(enabled));
+  }
+
+  void _setWorkHoursStartHour(int hour) {
+    setState(() {
+      _settings = _settings.copyWith(workHoursStartHour: hour);
+    });
+    unawaited(_preferencesService.saveWorkHoursStartHour(hour));
+  }
+
+  void _setWorkHoursStartMinute(int minute) {
+    setState(() {
+      _settings = _settings.copyWith(workHoursStartMinute: minute);
+    });
+    unawaited(_preferencesService.saveWorkHoursStartMinute(minute));
+  }
+
+  void _setWorkHoursEndHour(int hour) {
+    setState(() {
+      _settings = _settings.copyWith(workHoursEndHour: hour);
+    });
+    unawaited(_preferencesService.saveWorkHoursEndHour(hour));
+  }
+
+  void _setWorkHoursEndMinute(int minute) {
+    setState(() {
+      _settings = _settings.copyWith(workHoursEndMinute: minute);
+    });
+    unawaited(_preferencesService.saveWorkHoursEndMinute(minute));
+  }
+
+  void _setWorkDays(String days) {
+    setState(() {
+      _settings = _settings.copyWith(workDays: days);
+    });
+    unawaited(_preferencesService.saveWorkDays(days));
+  }
+
+  void _setNaturalBreakCreditEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(naturalBreakCreditEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveNaturalBreakCreditEnabled(enabled));
+  }
+
   void _setNotificationsEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(notificationsEnabled: enabled);
@@ -692,6 +741,20 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           blinkRemindersCadenceSeconds: _settings.blinkRemindersCadenceSeconds,
           setBlinkRemindersEnabled: _setBlinkRemindersEnabled,
           setBlinkRemindersCadenceSeconds: _setBlinkRemindersCadenceSeconds,
+          workHoursEnabled: _settings.workHoursEnabled,
+          workHoursStartHour: _settings.workHoursStartHour,
+          workHoursStartMinute: _settings.workHoursStartMinute,
+          workHoursEndHour: _settings.workHoursEndHour,
+          workHoursEndMinute: _settings.workHoursEndMinute,
+          workDays: _settings.workDays,
+          naturalBreakCreditEnabled: _settings.naturalBreakCreditEnabled,
+          setWorkHoursEnabled: _setWorkHoursEnabled,
+          setWorkHoursStartHour: _setWorkHoursStartHour,
+          setWorkHoursStartMinute: _setWorkHoursStartMinute,
+          setWorkHoursEndHour: _setWorkHoursEndHour,
+          setWorkHoursEndMinute: _setWorkHoursEndMinute,
+          setWorkDays: _setWorkDays,
+          setNaturalBreakCreditEnabled: _setNaturalBreakCreditEnabled,
           canChangeDurations: canChangeDurations,
           toggleTheme: _toggleTheme,
           setPreset: _setPreset,
@@ -775,6 +838,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
               chimeStyle: _settings.chimeStyle,
               blinkRemindersEnabled: _settings.blinkRemindersEnabled,
               blinkRemindersCadenceSeconds: _settings.blinkRemindersCadenceSeconds,
+              workHoursEnabled: _settings.workHoursEnabled,
+              workHoursStartHour: _settings.workHoursStartHour,
+              workHoursStartMinute: _settings.workHoursStartMinute,
+              workHoursEndHour: _settings.workHoursEndHour,
+              workHoursEndMinute: _settings.workHoursEndMinute,
+              workDays: _settings.workDays,
+              naturalBreakCreditEnabled: _settings.naturalBreakCreditEnabled,
               breakMode: _settings.breakMode,
               allowSkip: _settings.allowSkip,
               allowPostpone: _settings.allowPostpone,

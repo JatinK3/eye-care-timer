@@ -18,6 +18,13 @@ class TimerSettings {
   static const String defaultChimeStyle = 'tibetan_bowl';
   static const bool defaultBlinkRemindersEnabled = false;
   static const int defaultBlinkRemindersCadenceSeconds = 5;
+  static const bool defaultWorkHoursEnabled = false;
+  static const int defaultWorkHoursStartHour = 9;
+  static const int defaultWorkHoursStartMinute = 0;
+  static const int defaultWorkHoursEndHour = 18;
+  static const int defaultWorkHoursEndMinute = 0;
+  static const String defaultWorkDays = '1,2,3,4,5';
+  static const bool defaultNaturalBreakCreditEnabled = true;
 
   final int workDurationSeconds;
   final int breakDurationSeconds;
@@ -42,6 +49,13 @@ class TimerSettings {
   final String chimeStyle;
   final bool blinkRemindersEnabled;
   final int blinkRemindersCadenceSeconds;
+  final bool workHoursEnabled;
+  final int workHoursStartHour;
+  final int workHoursStartMinute;
+  final int workHoursEndHour;
+  final int workHoursEndMinute;
+  final String workDays;
+  final bool naturalBreakCreditEnabled;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -67,6 +81,13 @@ class TimerSettings {
     required this.chimeStyle,
     required this.blinkRemindersEnabled,
     required this.blinkRemindersCadenceSeconds,
+    required this.workHoursEnabled,
+    required this.workHoursStartHour,
+    required this.workHoursStartMinute,
+    required this.workHoursEndHour,
+    required this.workHoursEndMinute,
+    required this.workDays,
+    required this.naturalBreakCreditEnabled,
   });
 
   const TimerSettings.defaults()
@@ -92,7 +113,14 @@ class TimerSettings {
       breakVisualizerStyle = defaultBreakVisualizerStyle,
       chimeStyle = defaultChimeStyle,
       blinkRemindersEnabled = defaultBlinkRemindersEnabled,
-      blinkRemindersCadenceSeconds = defaultBlinkRemindersCadenceSeconds;
+      blinkRemindersCadenceSeconds = defaultBlinkRemindersCadenceSeconds,
+      workHoursEnabled = defaultWorkHoursEnabled,
+      workHoursStartHour = defaultWorkHoursStartHour,
+      workHoursStartMinute = defaultWorkHoursStartMinute,
+      workHoursEndHour = defaultWorkHoursEndHour,
+      workHoursEndMinute = defaultWorkHoursEndMinute,
+      workDays = defaultWorkDays,
+      naturalBreakCreditEnabled = defaultNaturalBreakCreditEnabled;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -118,6 +146,13 @@ class TimerSettings {
     String? chimeStyle,
     bool? blinkRemindersEnabled,
     int? blinkRemindersCadenceSeconds,
+    bool? workHoursEnabled,
+    int? workHoursStartHour,
+    int? workHoursStartMinute,
+    int? workHoursEndHour,
+    int? workHoursEndMinute,
+    String? workDays,
+    bool? naturalBreakCreditEnabled,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -147,6 +182,14 @@ class TimerSettings {
           blinkRemindersEnabled ?? this.blinkRemindersEnabled,
       blinkRemindersCadenceSeconds:
           blinkRemindersCadenceSeconds ?? this.blinkRemindersCadenceSeconds,
+      workHoursEnabled: workHoursEnabled ?? this.workHoursEnabled,
+      workHoursStartHour: workHoursStartHour ?? this.workHoursStartHour,
+      workHoursStartMinute: workHoursStartMinute ?? this.workHoursStartMinute,
+      workHoursEndHour: workHoursEndHour ?? this.workHoursEndHour,
+      workHoursEndMinute: workHoursEndMinute ?? this.workHoursEndMinute,
+      workDays: workDays ?? this.workDays,
+      naturalBreakCreditEnabled:
+          naturalBreakCreditEnabled ?? this.naturalBreakCreditEnabled,
     );
   }
 }

@@ -46,6 +46,8 @@ class TimerForegroundService : Service() {
     var allowPostpone = true
     var postponeDurationSeconds = 120
     var smartIdleEnabled = true
+    var naturalBreakCreditEnabled = true
+    var screenOffTimeMillis = 0L
     var isScreenOffPaused = false
     var pausedRemainingSeconds = 0L
     val pendingEvents = mutableListOf<Map<String, Any>>()
@@ -55,6 +57,9 @@ class TimerForegroundService : Service() {
             if (context == null || intent == null) return
             when (intent.action) {
                 Intent.ACTION_SCREEN_OFF -> {
+                    if (naturalBreakCreditEnabled) {
+                        screenOffTimeMillis = System.currentTimeMillis()
+                    }
                     if (smartIdleEnabled && !isBreak && deadlineMillis > 0L && !isScreenOffPaused) {
                         isScreenOffPaused = true
                         pausedRemainingSeconds = secondsRemaining()
@@ -64,6 +69,27 @@ class TimerForegroundService : Service() {
                     }
                 }
                 Intent.ACTION_SCREEN_ON -> {
+                    val offTime = screenOffTimeMillis
+                    screenOffTimeMillis = 0L
+                    if (naturalBreakCreditEnabled && offTime > 0L) {
+                        val elapsedOffSeconds = (System.currentTimeMillis() - offTime) / 1000L
+                        if (elapsedOffSeconds >= breakDurationSeconds) {
+                            isBreak = false
+                            isScreenOffPaused = false
+                            pausedRemainingSeconds = 0L
+                            deadlineMillis = System.currentTimeMillis() + workDurationSeconds * 1000L
+                            pendingEvents.add(mapOf(
+                                "type" to "naturalBreakCredited",
+                                "timestamp" to System.currentTimeMillis(),
+                                "durationSeconds" to workDurationSeconds
+                            ))
+                            saveState()
+                            presentCurrentPhase()
+                            resumeCurrentPhase()
+                            return
+                        }
+                    }
+
                     if (smartIdleEnabled && isScreenOffPaused) {
                         isScreenOffPaused = false
                         deadlineMillis = System.currentTimeMillis() + pausedRemainingSeconds * 1000L
@@ -159,6 +185,7 @@ class TimerForegroundService : Service() {
         allowPostpone = intent.getBooleanExtra(EXTRA_ALLOW_POSTPONE, true)
         postponeDurationSeconds = intent.getIntExtra(EXTRA_POSTPONE_DURATION, 120)
         smartIdleEnabled = intent.getBooleanExtra(EXTRA_SMART_IDLE, true)
+        naturalBreakCreditEnabled = intent.getBooleanExtra(EXTRA_NATURAL_BREAK_CREDIT, true)
 
         ensureChannel()
         startInForeground(buildOngoingNotification())
@@ -622,6 +649,8 @@ class TimerForegroundService : Service() {
             .putBoolean(EXTRA_ALLOW_POSTPONE, allowPostpone)
             .putInt(EXTRA_POSTPONE_DURATION, postponeDurationSeconds)
             .putBoolean("smartIdleEnabled", smartIdleEnabled)
+            .putBoolean("naturalBreakCreditEnabled", naturalBreakCreditEnabled)
+            .putLong("screenOffTimeMillis", screenOffTimeMillis)
             .putBoolean("isScreenOffPaused", isScreenOffPaused)
             .putLong("pausedRemainingSeconds", pausedRemainingSeconds)
             .commit()
@@ -648,6 +677,8 @@ class TimerForegroundService : Service() {
         allowPostpone = preferences.getBoolean(EXTRA_ALLOW_POSTPONE, true)
         postponeDurationSeconds = preferences.getInt(EXTRA_POSTPONE_DURATION, 120)
         smartIdleEnabled = preferences.getBoolean("smartIdleEnabled", true)
+        naturalBreakCreditEnabled = preferences.getBoolean("naturalBreakCreditEnabled", true)
+        screenOffTimeMillis = preferences.getLong("screenOffTimeMillis", 0L)
 
         val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
         val isScreenOn = powerManager?.isInteractive ?: true
@@ -686,6 +717,7 @@ class TimerForegroundService : Service() {
         const val EXTRA_ALLOW_POSTPONE = "allowPostpone"
         const val EXTRA_POSTPONE_DURATION = "postponeDurationSeconds"
         const val EXTRA_SMART_IDLE = "smartIdleEnabled"
+        const val EXTRA_NATURAL_BREAK_CREDIT = "naturalBreakCreditEnabled"
 
         private const val CHANNEL_ID = "blinkkind_timer_status"
         private const val NOTIFICATION_ID = 2001
@@ -714,6 +746,7 @@ class TimerForegroundService : Service() {
             allowPostpone: Boolean,
             postponeDurationSeconds: Int,
             smartIdleEnabled: Boolean,
+            naturalBreakCreditEnabled: Boolean,
         ) {
             val intent = Intent(context, TimerForegroundService::class.java).apply {
                 action = ACTION_START
@@ -733,6 +766,7 @@ class TimerForegroundService : Service() {
                 putExtra(EXTRA_ALLOW_POSTPONE, allowPostpone)
                 putExtra(EXTRA_POSTPONE_DURATION, postponeDurationSeconds)
                 putExtra(EXTRA_SMART_IDLE, smartIdleEnabled)
+                putExtra(EXTRA_NATURAL_BREAK_CREDIT, naturalBreakCreditEnabled)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)

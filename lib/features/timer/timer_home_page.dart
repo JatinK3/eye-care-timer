@@ -61,6 +61,13 @@ class TimerHomePage extends StatefulWidget {
   final String chimeStyle;
   final bool blinkRemindersEnabled;
   final int blinkRemindersCadenceSeconds;
+  final bool workHoursEnabled;
+  final int workHoursStartHour;
+  final int workHoursStartMinute;
+  final int workHoursEndHour;
+  final int workHoursEndMinute;
+  final String workDays;
+  final bool naturalBreakCreditEnabled;
 
   const TimerHomePage({
     super.key,
@@ -88,6 +95,13 @@ class TimerHomePage extends StatefulWidget {
     required this.chimeStyle,
     required this.blinkRemindersEnabled,
     required this.blinkRemindersCadenceSeconds,
+    required this.workHoursEnabled,
+    required this.workHoursStartHour,
+    required this.workHoursStartMinute,
+    required this.workHoursEndHour,
+    required this.workHoursEndMinute,
+    required this.workDays,
+    required this.naturalBreakCreditEnabled,
     this.breakOverlayService,
     required this.openSettings,
     required this.setPreset,
@@ -125,6 +139,9 @@ class TimerHomePageState extends State<TimerHomePage>
   late bool _autoRunEnabled;
   late int _autoRunCycleLimit;
   int _autoRunCompletedCycles = 0;
+  Timer? _scheduleCheckTimer;
+  bool _isSchedulePaused = false;
+  DateTime? _idleStartedAt;
 
   late int _initialDuration;
   late int _remainingSeconds;
@@ -308,6 +325,10 @@ class TimerHomePageState extends State<TimerHomePage>
       );
       _updateDesktopState();
     }
+    _scheduleCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _checkSchedule();
+    });
+    _checkSchedule();
   }
 
   /// Keeps the tray/app-indicator countdown in step with the wall clock.
@@ -378,6 +399,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _desktopIdleSubscription?.cancel();
     _desktopCommandSubscription?.cancel();
     _desktopTrayTicker?.cancel();
+    _scheduleCheckTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _phaseTransitionTimer?.cancel();
     _cancelPhaseDeadlineTimer();
@@ -414,6 +436,7 @@ class TimerHomePageState extends State<TimerHomePage>
       if (_isFocusMode) {
         unawaited(_systemUiService.setFocusModeEnabled(true));
       }
+      _checkSchedule();
     } else {
       if (_isFocusMode &&
           (state == AppLifecycleState.inactive ||
@@ -474,6 +497,7 @@ class TimerHomePageState extends State<TimerHomePage>
     if (isIdle) {
       if (!_isPaused && !_isSystemIdlePaused) {
         setState(() {
+          _idleStartedAt = DateTime.now();
           _isSystemIdlePaused = true;
           _animationController.stop();
           _pulseController.stop();
@@ -488,6 +512,16 @@ class TimerHomePageState extends State<TimerHomePage>
       }
     } else {
       if (_isSystemIdlePaused) {
+        final idleStart = _idleStartedAt;
+        _idleStartedAt = null;
+        if (widget.naturalBreakCreditEnabled && idleStart != null) {
+          final idleDuration = DateTime.now().difference(idleStart);
+          if (idleDuration.inSeconds >= _breakDurationSeconds) {
+            _creditNaturalBreak();
+            return;
+          }
+        }
+
         setState(() {
           _isSystemIdlePaused = false;
           _phaseStartedAt = DateTime.now();
@@ -735,6 +769,7 @@ class TimerHomePageState extends State<TimerHomePage>
         allowPostpone: widget.allowPostpone,
         postponeDurationSeconds: widget.postponeDurationSeconds,
         smartIdleEnabled: widget.smartIdleEnabled,
+        naturalBreakCreditEnabled: widget.naturalBreakCreditEnabled,
       ),
     );
   }
@@ -805,6 +840,120 @@ class TimerHomePageState extends State<TimerHomePage>
     });
     _animationController.forward();
     _updateDesktopState();
+  }
+
+  bool _isWithinWorkHours() {
+    if (!widget.workHoursEnabled) return true;
+    final now = DateTime.now();
+    final activeDays = widget.workDays
+        .split(',')
+        .where((e) => e.isNotEmpty)
+        .map(int.parse)
+        .toList();
+    if (!activeDays.contains(now.weekday)) {
+      return false;
+    }
+
+    final currentMinutes = now.hour * 60 + now.minute;
+    final startMinutes = widget.workHoursStartHour * 60 + widget.workHoursStartMinute;
+    final endMinutes = widget.workHoursEndHour * 60 + widget.workHoursEndMinute;
+
+    if (startMinutes == endMinutes) {
+      return true;
+    }
+
+    if (startMinutes < endMinutes) {
+      return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+    } else {
+      return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+    }
+  }
+
+  void _checkSchedule() {
+    if (!mounted) return;
+    if (!widget.workHoursEnabled) {
+      if (_isSchedulePaused) {
+        setState(() {
+          _isSchedulePaused = false;
+          if (_isRunning && !_isPaused && !_isSystemIdlePaused) {
+            _phaseStartedAt = DateTime.now();
+            _phaseEndsAt = _phaseStartedAt!.add(Duration(seconds: _remainingSeconds));
+            _animationController.forward();
+            _schedulePhaseDeadlineTimer(_phaseEndsAt!);
+            unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
+            _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
+            if (_remainingSeconds <= 5) _pulseController.forward();
+          }
+        });
+        _updateDesktopState();
+      }
+      return;
+    }
+
+    final within = _isWithinWorkHours();
+    if (!within) {
+      if (_isRunning && !_isSchedulePaused) {
+        setState(() {
+          _isSchedulePaused = true;
+          _animationController.stop();
+          _pulseController.stop();
+          _cancelPhaseDeadlineTimer();
+          _phaseStartedAt = null;
+          _phaseEndsAt = null;
+          _saveActiveSession(isPaused: true);
+          _cancelReminders();
+          unawaited(_backgroundService.stopPhase());
+        });
+        _updateDesktopState();
+      }
+    } else {
+      if (_isRunning && _isSchedulePaused) {
+        setState(() {
+          _isSchedulePaused = false;
+          if (!_isPaused && !_isSystemIdlePaused) {
+            _phaseStartedAt = DateTime.now();
+            _phaseEndsAt = _phaseStartedAt!.add(Duration(seconds: _remainingSeconds));
+            _animationController.forward();
+            _schedulePhaseDeadlineTimer(_phaseEndsAt!);
+            unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
+            _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
+            if (_remainingSeconds <= 5) _pulseController.forward();
+          }
+        });
+        _updateDesktopState();
+      }
+    }
+  }
+
+  void _creditNaturalBreak() {
+    if (!mounted) return;
+    setState(() {
+      _isBreak = false;
+      _isSystemIdlePaused = false;
+      _isPaused = false;
+      _isRunning = true;
+      _phaseOpacity = 1.0;
+      _initialDuration = _workDurationSeconds;
+      _remainingSeconds = _workDurationSeconds;
+      _animationController.duration = Duration(seconds: _workDurationSeconds);
+      _animationController.reset();
+      _phaseStartedAt = DateTime.now();
+      _phaseEndsAt = _phaseStartedAt!.add(Duration(seconds: _workDurationSeconds));
+    });
+
+    _animationController.forward(from: 0.0);
+    _saveActiveSession(remainingSeconds: _workDurationSeconds);
+    _schedulePhaseDeadlineTimer(_phaseEndsAt!);
+    unawaited(_schedulePhaseReminder(_workDurationSeconds, isBreak: false));
+    _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: false);
+    _updateDesktopState();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Natural break detected and credited! Timer reset.'),
+        duration: Duration(seconds: 4),
+      ),
+    );
   }
 
   // -------------------- Timer Logic --------------------
@@ -1005,11 +1154,16 @@ class TimerHomePageState extends State<TimerHomePage>
           bgSession['completedAutoRunCycles'] as int;
       final pendingEvents = bgSession['pendingEvents'] as List<dynamic>?;
       if (pendingEvents != null) {
+        bool hasNaturalBreak = false;
         for (final event in pendingEvents) {
           if (event is Map<dynamic, dynamic>) {
             final typeStr = event['type'] as String;
             final timestamp = event['timestamp'] as int;
             final durationSeconds = event['durationSeconds'] as int;
+            if (typeStr == 'naturalBreakCredited') {
+              hasNaturalBreak = true;
+              continue;
+            }
             final type = TimerEventType.values.firstWhere(
               (e) => e.name == typeStr,
               orElse: () => TimerEventType.workCompleted,
@@ -1021,6 +1175,17 @@ class TimerHomePageState extends State<TimerHomePage>
               durationSeconds: durationSeconds,
             ));
           }
+        }
+        if (hasNaturalBreak) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Natural break detected while away! Timer reset.'),
+                duration: Duration(seconds: 4),
+              ),
+            );
+          });
         }
       }
 
@@ -1214,6 +1379,9 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   String get _statusLabel {
+    if (_isSchedulePaused) {
+      return 'Schedule Paused';
+    }
     if (!_isRunning) {
       return 'Idle';
     }
@@ -1227,6 +1395,9 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   String get _phaseTitle {
+    if (_isSchedulePaused) {
+      return 'Timer paused by schedule';
+    }
     if (!_isRunning) {
       return 'Ready for your next focus session';
     }
@@ -1242,6 +1413,9 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   String get _phaseSubtitle {
+    if (_isSchedulePaused) {
+      return 'Outside active work hours or days.';
+    }
     if (!_isRunning) {
       return 'Start when your eyes and task are ready.';
     }
@@ -1257,6 +1431,9 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   IconData get _statusIcon {
+    if (_isSchedulePaused) {
+      return Icons.calendar_today_outlined;
+    }
     if (!_isRunning) {
       return Icons.check_circle_outline;
     }

@@ -105,6 +105,7 @@ class MainActivity : FlutterActivity() {
                             allowPostpone = call.argument<Boolean>("allowPostpone") ?: true,
                             postponeDurationSeconds = call.argument<Int>("postponeDurationSeconds") ?: 120,
                             smartIdleEnabled = call.argument<Boolean>("smartIdleEnabled") ?: true,
+                            naturalBreakCreditEnabled = call.argument<Boolean>("naturalBreakCreditEnabled") ?: true,
                         )
                     } else {
                         TimerForegroundService.stop(this)
