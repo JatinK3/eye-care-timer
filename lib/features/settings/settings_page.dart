@@ -355,6 +355,14 @@ class _SettingsPageState extends State<SettingsPage>
                     onSelected: () => _applyPreset(20 * 60, 20),
                   ),
                   _PresetChip(
+                    label: '10s / 10s (Test)',
+                    selected:
+                        widget.workDurationSeconds == 10 &&
+                        widget.breakDurationSeconds == 10,
+                    enabled: widget.canChangeDurations,
+                    onSelected: () => _applyPreset(10, 10),
+                  ),
+                  _PresetChip(
                     label: '25 / 5',
                     selected:
                         widget.workDurationSeconds == 25 * 60 &&
@@ -381,22 +389,28 @@ class _SettingsPageState extends State<SettingsPage>
                     ? null
                     : const Text('Pause or cancel the timer to change this'),
                 trailing: DropdownButton<int>(
-                  value: widget.workDurationSeconds ~/ 60,
-                  items: _workDurationMinutes
-                      .map(
-                        (minutes) => DropdownMenuItem<int>(
-                          value: minutes,
-                          child: Text('$minutes min'),
-                        ),
-                      )
-                      .toList(),
+                  value: widget.workDurationSeconds < 60 ? 0 : widget.workDurationSeconds ~/ 60,
+                  items: [
+                    if (widget.workDurationSeconds < 60)
+                      DropdownMenuItem<int>(
+                        value: 0,
+                        child: Text('${widget.workDurationSeconds}s'),
+                      ),
+                    ..._workDurationMinutes.map(
+                      (minutes) => DropdownMenuItem<int>(
+                        value: minutes,
+                        child: Text('$minutes min'),
+                      ),
+                    ),
+                  ],
                   onChanged: widget.canChangeDurations
                       ? (value) {
                           if (value == null) {
                             return;
                           }
+                          final nextSeconds = value == 0 ? widget.workDurationSeconds : value * 60;
                           widget.saveDurations(
-                            value * 60,
+                            nextSeconds,
                             widget.breakDurationSeconds,
                           );
                         }
@@ -413,14 +427,19 @@ class _SettingsPageState extends State<SettingsPage>
                     : const Text('Pause or cancel the timer to change this'),
                 trailing: DropdownButton<int>(
                   value: widget.breakDurationSeconds,
-                  items: _breakDurationSeconds
-                      .map(
-                        (seconds) => DropdownMenuItem<int>(
-                          value: seconds,
-                          child: Text(_durationLabel(seconds)),
-                        ),
-                      )
-                      .toList(),
+                  items: [
+                    if (!_breakDurationSeconds.contains(widget.breakDurationSeconds))
+                      DropdownMenuItem<int>(
+                        value: widget.breakDurationSeconds,
+                        child: Text(_durationLabel(widget.breakDurationSeconds)),
+                      ),
+                    ..._breakDurationSeconds.map(
+                      (seconds) => DropdownMenuItem<int>(
+                        value: seconds,
+                        child: Text(_durationLabel(seconds)),
+                      ),
+                    ),
+                  ],
                   onChanged: widget.canChangeDurations
                       ? (value) {
                           if (value == null) {
