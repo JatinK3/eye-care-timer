@@ -32,6 +32,7 @@ class PreferencesService {
   static const String postponeDurationSecondsKey = 'postponeDurationSeconds';
   static const String smartIdleEnabledKey = 'smartIdleEnabled';
   static const String breakVisualizerStyleKey = 'breakVisualizerStyle';
+  static const String chimeStyleKey = 'chimeStyle';
   static const String dailyHistoryKey = 'dailyHistory';
   static const String workSessionHistoryKey = 'workSessionHistory';
   static const String sessionIsActiveKey = 'sessionIsActive';
@@ -98,6 +99,9 @@ class PreferencesService {
       breakVisualizerStyle:
           prefs.getString(breakVisualizerStyleKey) ??
           TimerSettings.defaultBreakVisualizerStyle,
+      chimeStyle:
+          prefs.getString(chimeStyleKey) ??
+          TimerSettings.defaultChimeStyle,
     );
   }
 
@@ -364,6 +368,11 @@ class PreferencesService {
   Future<void> saveBreakVisualizerStyle(String style) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(breakVisualizerStyleKey, style);
+  }
+
+  Future<void> saveChimeStyle(String style) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(chimeStyleKey, style);
   }
 
   Future<void> saveStreakCount(int streakCount) async {

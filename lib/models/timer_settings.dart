@@ -15,6 +15,7 @@ class TimerSettings {
   static const int defaultPostponeDurationSeconds = 2 * 60;
   static const bool defaultSmartIdleEnabled = true;
   static const String defaultBreakVisualizerStyle = 'Breathing';
+  static const String defaultChimeStyle = 'tibetan_bowl';
 
   final int workDurationSeconds;
   final int breakDurationSeconds;
@@ -36,6 +37,7 @@ class TimerSettings {
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
   final String breakVisualizerStyle;
+  final String chimeStyle;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -58,6 +60,7 @@ class TimerSettings {
     required this.postponeDurationSeconds,
     required this.smartIdleEnabled,
     required this.breakVisualizerStyle,
+    required this.chimeStyle,
   });
 
   const TimerSettings.defaults()
@@ -80,7 +83,8 @@ class TimerSettings {
       allowPostpone = defaultAllowPostpone,
       postponeDurationSeconds = defaultPostponeDurationSeconds,
       smartIdleEnabled = defaultSmartIdleEnabled,
-      breakVisualizerStyle = defaultBreakVisualizerStyle;
+      breakVisualizerStyle = defaultBreakVisualizerStyle,
+      chimeStyle = defaultChimeStyle;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -103,6 +107,7 @@ class TimerSettings {
     int? postponeDurationSeconds,
     bool? smartIdleEnabled,
     String? breakVisualizerStyle,
+    String? chimeStyle,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -127,6 +132,7 @@ class TimerSettings {
           postponeDurationSeconds ?? this.postponeDurationSeconds,
       smartIdleEnabled: smartIdleEnabled ?? this.smartIdleEnabled,
       breakVisualizerStyle: breakVisualizerStyle ?? this.breakVisualizerStyle,
+      chimeStyle: chimeStyle ?? this.chimeStyle,
     );
   }
 }

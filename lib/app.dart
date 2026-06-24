@@ -423,6 +423,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveSoundEnabled(enabled));
   }
 
+  void _setChimeStyle(String style) {
+    setState(() {
+      _settings = _settings.copyWith(chimeStyle: style);
+    });
+    unawaited(_preferencesService.saveChimeStyle(style));
+  }
+
   void _setNotificationsEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(notificationsEnabled: enabled);
@@ -665,6 +672,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           openUsageAccessSettings: _openUsageAccessSettings,
           hapticsEnabled: _settings.hapticsEnabled,
           soundEnabled: _settings.soundEnabled,
+          chimeStyle: _settings.chimeStyle,
+          setChimeStyle: _setChimeStyle,
           canChangeDurations: canChangeDurations,
           toggleTheme: _toggleTheme,
           setPreset: _setPreset,
@@ -745,6 +754,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
               notificationsEnabled: _settings.notificationsEnabled,
               hapticsEnabled: _settings.hapticsEnabled,
               soundEnabled: _settings.soundEnabled,
+              chimeStyle: _settings.chimeStyle,
               breakMode: _settings.breakMode,
               allowSkip: _settings.allowSkip,
               allowPostpone: _settings.allowPostpone,

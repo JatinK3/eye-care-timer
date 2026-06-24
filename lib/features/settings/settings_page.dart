@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 import '../../models/timer_settings.dart';
 import '../../services/break_overlay_service.dart';
@@ -36,6 +39,8 @@ class SettingsPage extends StatefulWidget {
   final OverlayPermissionStatus overlayPermissionStatus;
   final bool hapticsEnabled;
   final bool soundEnabled;
+  final String chimeStyle;
+  final void Function(String) setChimeStyle;
   final bool canChangeDurations;
   final BreakMode breakMode;
   final void Function(BreakMode breakMode) setBreakMode;
@@ -105,6 +110,8 @@ class SettingsPage extends StatefulWidget {
     required this.overlayPermissionStatus,
     required this.hapticsEnabled,
     required this.soundEnabled,
+    required this.chimeStyle,
+    required this.setChimeStyle,
     required this.canChangeDurations,
     required this.toggleTheme,
     required this.setNotificationsEnabled,
@@ -168,10 +175,13 @@ class _SettingsPageState extends State<SettingsPage>
   bool _isTestingReminder = false;
   bool _launchAtStartup = false;
 
+  AudioPlayer? _audioPlayer;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _audioPlayer = AudioPlayer();
     _permissionStatus = widget.notificationPermissionStatus;
     _exactAlarmStatus = widget.exactAlarmStatus;
     _batteryOptimizationStatus = widget.batteryOptimizationStatus;
@@ -222,8 +232,22 @@ class _SettingsPageState extends State<SettingsPage>
 
   @override
   void dispose() {
+    _audioPlayer?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  Future<void> _playChimePreview(String style) async {
+    if (style == 'system_alert') {
+      await SystemSound.play(SystemSoundType.alert);
+    } else {
+      try {
+        await _audioPlayer?.stop();
+        await _audioPlayer?.play(AssetSource('sounds/$style.wav'));
+      } catch (e) {
+        await SystemSound.play(SystemSoundType.alert);
+      }
+    }
   }
 
   @override
@@ -739,6 +763,42 @@ class _SettingsPageState extends State<SettingsPage>
                 value: widget.soundEnabled,
                 onChanged: widget.setSoundEnabled,
               ),
+              if (widget.soundEnabled) ...[
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.music_note_outlined),
+                  title: const Text('Chime style'),
+                  subtitle: const Text('Sound to play when a break starts or ends'),
+                  trailing: DropdownButton<String>(
+                    value: widget.chimeStyle,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'tibetan_bowl',
+                        child: Text('Tibetan Bowl'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'wind_chimes',
+                        child: Text('Wind Chimes'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'zen_bell',
+                        child: Text('Zen Bell'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'system_alert',
+                        child: Text('System Alert'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        widget.setChimeStyle(value);
+                        unawaited(_playChimePreview(value));
+                      }
+                    },
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 16),

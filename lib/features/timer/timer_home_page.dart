@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:system_idle/system_idle.dart';
 
 import '../../models/timer_session.dart';
@@ -57,6 +58,7 @@ class TimerHomePage extends StatefulWidget {
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
   final String breakVisualizerStyle;
+  final String chimeStyle;
 
   const TimerHomePage({
     super.key,
@@ -81,6 +83,7 @@ class TimerHomePage extends StatefulWidget {
     required this.postponeDurationSeconds,
     required this.smartIdleEnabled,
     required this.breakVisualizerStyle,
+    required this.chimeStyle,
     this.breakOverlayService,
     required this.openSettings,
     required this.setPreset,
@@ -166,10 +169,13 @@ class TimerHomePageState extends State<TimerHomePage>
   StreamSubscription<DesktopCommand>? _desktopCommandSubscription;
   StreamSubscription<bool>? _desktopIdleSubscription;
 
+  AudioPlayer? _audioPlayer;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _audioPlayer = AudioPlayer();
     _backgroundService = widget.backgroundService ?? TimerBackgroundService();
     _workDurationSeconds = widget.initialWorkDurationSeconds;
     _breakDurationSeconds = widget.initialBreakDurationSeconds;
@@ -319,6 +325,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
   @override
   void dispose() {
+    _audioPlayer?.dispose();
     if (_isFocusMode) {
       unawaited(_systemUiService.setFocusModeEnabled(false));
     }
@@ -1061,12 +1068,21 @@ class TimerHomePageState extends State<TimerHomePage>
     }
   }
 
-  void _playChime() {
+  Future<void> _playChime() async {
     if (widget.hapticsEnabled) {
       unawaited(HapticFeedback.lightImpact());
     }
     if (widget.soundEnabled) {
-      unawaited(SystemSound.play(SystemSoundType.alert));
+      if (widget.chimeStyle == 'system_alert') {
+        unawaited(SystemSound.play(SystemSoundType.alert));
+      } else {
+        try {
+          await _audioPlayer?.stop();
+          unawaited(_audioPlayer!.play(AssetSource('sounds/${widget.chimeStyle}.wav')));
+        } catch (e) {
+          unawaited(SystemSound.play(SystemSoundType.alert));
+        }
+      }
     }
   }
 
