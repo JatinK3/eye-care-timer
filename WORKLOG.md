@@ -145,10 +145,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 **Audit snapshot.** BlinkKind today is a mature cross-platform app (Android, iOS, Linux, macOS, Windows, web) with: a 20-20-20 work/break/long-break engine with auto-run cycles and limits; Off/Gentle/Strict break modes with skip/postpone policies; five break visualizers plus two guided exercises (eye-dot tracker, box breathing); smart idle / DND / fullscreen-app postpone; exact-alarm + foreground-service background reliability; a native multi-monitor desktop break overlay with tray controls; History & Insights with CSV/JSON export; theming, color presets, Inter typography, and Immersive Focus Mode; onboarding and permission recovery. The items below target the gaps found in that audit, ordered by impact. None are started yet.
 
 ### P0 — AI Integration & Startup Splash (New)
-- [ ] **AI LLM Settings & Custom Provider Config**: Support key-value configuration storage in `TimerSettings` and `PreferencesService` for dynamic AI status, provider choice (Gemini, OpenAI, Groq), API keys, model selections, and editable prompts. Render these in a new collapsible settings group "AI Motivation & Prompts".
-- [ ] **Background Pre-Fetch AI Service**: Design a lightweight HTTP-based client (`AiService`) to call LLM endpoints without bulky dependencies. Implement background pre-fetching during work phases (caching the result to show the message instantly when a break starts), timeout/retry mechanics, and local backup templates for robust failover.
-- [ ] **Dynamic AI Break Screen Messaging**: Inject the pre-fetched AI-generated text dynamically into the fullscreen desktop break overlay and the in-app break card.
-- [ ] **App Launch Splash Quote Animation**: Build a 1.5-second startup splash screen displaying a motivational quote that uses a smooth drop-in slide/fade animation before transitioning to the home timer screen.
+- [x] **AI LLM Settings & Custom Provider Config**: Support key-value configuration storage in `TimerSettings` and `PreferencesService` for dynamic AI status, provider choice (Gemini, OpenAI, Groq), API keys, model selections, and editable prompts. Render these in a new collapsible settings group "AI Motivation & Prompts".
+- [x] **Background Pre-Fetch AI Service**: Design a lightweight HTTP-based client (`AiService`) to call LLM endpoints without bulky dependencies. Implement background pre-fetching during work phases (caching the result to show the message instantly when a break starts), timeout/retry mechanics, and local backup templates for robust failover.
+- [x] **Dynamic AI Break Screen Messaging**: Inject the pre-fetched AI-generated text dynamically into the fullscreen desktop break overlay and the in-app break card.
+- [x] **App Launch Splash Quote Animation**: Build a 1.5-second startup splash screen displaying a motivational quote that uses a smooth drop-in slide/fade animation before transitioning to the home timer screen.
 
 ### P0 — Signature eye-care depth (on-brand, differentiating)
 - [x] **Blink reminders & blink-rate training** — the product is literally *BlinkKind*, yet blinking exists only as static break-screen text (`desktop_break_overlay.dart`, `timer_home_page.dart`). Add an opt-in, low-friction "blink now" micro-nudge (subtle tray pulse / brief on-screen cue) on a configurable cadence, plus a guided blink exercise. This is the clearest differentiator vs. generic Pomodoro/eye timers and the most on-brand missing feature.
@@ -185,6 +185,18 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [ ] Show a "breaks taken today" count on home, and a pre-break countdown indication on the tray icon.
 
 ## Completed
+
+- Implemented full AI Motivation integration and startup splash screen:
+  - Created `lib/services/ai_service.dart` — a lightweight `http`-based HTTP client with no bulky SDK dependency. Supports Gemini (`v1beta` + API-key query param), OpenAI (`v1/chat/completions` + Bearer token), and Groq (`openai/v1/chat/completions` + Bearer token) for both model listing (`fetchModels`) and motivational quote generation (`generateMotivation`). Falls back to a curated hardcoded list of popular models per provider when the live fetch fails, and also exposes `getDefaultModels(provider)` for instant UI population.
+  - Added five new fields to `TimerSettings` (`aiMotivationEnabled`, `aiProvider`, `aiApiKey`, `aiModel`, `aiCustomSystemPrompt`) with `copyWith` support and sensible defaults (Gemini, disabled, empty key/prompt).
+  - Added five matching persistence keys and load/save methods to `PreferencesService`.
+  - Added a startup splash page (`lib/features/splash/splash_quote_page.dart`): a 1-second slide-down + fade-in animation showing a random eye-care motivational quote with app branding and a Skip button; auto-completes after 1.8 s. Wired into `BlinkKindApp` via a `_showSplash` flag, shown once on each cold start after onboarding.
+  - Added `_preFetchAiQuote()` to `TimerHomePageState`: fires in the background immediately when the work timer starts, stores the result in `_cachedAiQuote`, and silently falls back to `null` on any error. All three `showBreakOverlay` call sites now pass `_cachedAiQuote`.
+  - Threaded `aiQuote` through `BreakOverlayService.showBreakOverlay` and `_pushBreakOverlayRoute` into `DesktopBreakOverlay`, which renders `widget.aiQuote ?? _currentExercise`.
+  - Added an **"AI Motivation & Prompts"** collapsible category to `SettingsPage` with: enable toggle, provider dropdown, obscured API-key field with 800 ms debounced live model fetching, model dropdown with "Custom…" override dialog, and a multi-line system prompt editor. Registered the new category in `_buildCollapsibleGroups` and `_categoryIcon`.
+  - Added five AI-setting setters to `_BlinkKindAppState` and wired them into `_openSettings` and `TimerHomePage`.
+  - Added `http ^1.2.2` to `pubspec.yaml` as a direct dependency.
+  - Updated the `pumpBlinkKindApp` test helper and the onboarding test to dismiss the new splash screen before running assertions. All 59 widget tests pass; `flutter analyze` reports zero issues.
 
 - Implemented Global Hotkeys & Richer Tray/Menubar Controls (Task 2 of P1):
   - Integrated `hotkey_manager` and registered system-wide global hotkeys for standard actions: Pause/Resume (`Ctrl+Alt+P` or `Super+Alt+P`), Take Break Now (`Ctrl+Alt+B` or `Super+Alt+B`), Skip Break (`Ctrl+Alt+S` or `Super+Alt+S` during active breaks), and Postpone Break (`Ctrl+Alt+O` or `Super+Alt+O` during active breaks).
