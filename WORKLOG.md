@@ -140,9 +140,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Add unlimited and configurable per-run cycle limits.
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
-## Future Roadmap (Product Audit — 2026-06-24)
+## Future Roadmap (Product Audit — 2026-06-24, updated 2026-06-24)
 
-**Audit snapshot.** BlinkKind today is a mature cross-platform app (Android, iOS, Linux, macOS, Windows, web) with: a 20-20-20 work/break/long-break engine with auto-run cycles and limits; Off/Gentle/Strict break modes with skip/postpone policies; five break visualizers plus two guided exercises (eye-dot tracker, box breathing); smart idle / DND / fullscreen-app postpone; exact-alarm + foreground-service background reliability; a native multi-monitor desktop break overlay with tray controls; History & Insights with CSV/JSON export; theming, color presets, Inter typography, and Immersive Focus Mode; onboarding and permission recovery. The items below target the gaps found in that audit, ordered by impact. None are started yet.
+**Audit snapshot.** BlinkKind is now a mature cross-platform app with a full AI motivation layer: a 20-20-20 work/break/long-break engine with auto-run cycles and limits; Off/Gentle/Strict break modes with skip/postpone policies; five break visualizers plus two guided exercises; smart idle / DND / fullscreen-app postpone; exact-alarm + foreground-service background reliability; native multi-monitor desktop break overlay with tray controls; History & Insights with CSV/JSON export; theming, color presets, Inter typography, Immersive Focus Mode; onboarding and permission recovery; **AI Motivation & Prompts** (Gemini/OpenAI/Groq, dynamic model fetch, background pre-fetch, break-screen injection); **startup splash quote animation**. All P0 categories are fully complete. Remaining items below are ordered by next-session priority.
 
 ### P0 — AI Integration & Startup Splash (New)
 - [x] **AI LLM Settings & Custom Provider Config**: Support key-value configuration storage in `TimerSettings` and `PreferencesService` for dynamic AI status, provider choice (Gemini, OpenAI, Groq), API keys, model selections, and editable prompts. Render these in a new collapsible settings group "AI Motivation & Prompts".
@@ -183,6 +183,36 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [ ] Promote "Take a break now" and a "Snooze for…" action to the main home screen (currently tray-only).
 - [ ] Add a one-tap "Restore defaults" in Settings and reconsider defaults (e.g. in-app sound defaults to off).
 - [ ] Show a "breaks taken today" count on home, and a pre-break countdown indication on the tray icon.
+
+---
+
+## Session Log
+
+### 2026-06-24 (Session end ~18:30 IST)
+
+**Completed this session:**
+- Fully implemented **AI Motivation & Prompts** end-to-end:
+  - `AiService` — lightweight `http` client for Gemini, OpenAI, and Groq (chat completions + live model listing with hardcoded fallback).
+  - `TimerSettings` + `PreferencesService` — 5 new persisted fields (`aiMotivationEnabled`, `aiProvider`, `aiApiKey`, `aiModel`, `aiCustomSystemPrompt`).
+  - `SplashQuotePage` — 1.8 s slide-down/fade-in startup splash with random eye-care quote and Skip button.
+  - `app.dart` — `_showSplash` flag + 5 AI setters wired throughout state.
+  - `TimerHomePage` — `_preFetchAiQuote()` fires in background on work start; cached quote passed to all `showBreakOverlay` sites.
+  - `BreakOverlayService` + `DesktopBreakOverlay` — `aiQuote` threaded through to the break overlay, falling back to static tips.
+  - `SettingsPage` — new "AI Motivation & Prompts" collapsible category: enable toggle, provider dropdown, API-key field with debounced live model fetch, model dropdown with "Custom…" dialog, system prompt editor.
+  - Test suite updated (`pumpBlinkKindApp` + onboarding test dismiss the splash). **All 59 tests pass, zero analyzer issues.**
+- WORKLOG kept current throughout.
+
+**State at end of session:**
+- `flutter analyze` → 0 issues
+- `flutter test` → 59/59 pass
+- Git: 2 commits on `main` (`feat: add AI motivation…` + `docs: mark AI…`)
+
+**Recommended next session priorities (in order):**
+1. **Rotating eye-health tips & 20-20-20 education** (P0, 1 remaining) — surface short rotating tips on the break screen and a "Learn" card on home.
+2. **Achievements, streak milestones & compliance stats** (P1) — badges/levels for streaks; compliance rate (breaks taken vs. skipped from `TimerEventRecord`); focus-time heatmap in History.
+3. **Break-screen customization** (P1) — custom background, toggle for clock/next-phase/tips display during break.
+4. **Quick wins** — "breaks taken today" on home screen; "Restore defaults" in Settings; "Take a break now" on home.
+5. **Settings backup/restore** (P2) — JSON config export/import (pairs naturally with existing history export).
 
 ## Completed
 
