@@ -22,6 +22,7 @@ class DesktopIntegrationService extends WindowListener {
   bool _isBreakActive = false;
   bool _wasHiddenToTrayBeforeBreak = false;
   bool _wasMinimizedBeforeBreak = false;
+  bool _needsStyleRestoration = false;
   bool? _lastIsBreak;
   bool? _lastIsRunning;
   bool? _lastIsPaused;
@@ -297,6 +298,7 @@ class DesktopIntegrationService extends WindowListener {
   }
 
   Future<void> _showWindow() async {
+    await _restoreWindowStylesIfNeeded();
     await windowManager.show();
     await windowManager.focus();
   }
@@ -321,10 +323,14 @@ class DesktopIntegrationService extends WindowListener {
   }
 
   @override
-  void onWindowRestore() {}
+  void onWindowRestore() async {
+    await _restoreWindowStylesIfNeeded();
+  }
 
   @override
-  void onWindowFocus() {}
+  void onWindowFocus() async {
+    await _restoreWindowStylesIfNeeded();
+  }
 
   Future<void> showBreakOverlay(bool show) async {
     if (!isSupported) return;
@@ -438,6 +444,8 @@ class DesktopIntegrationService extends WindowListener {
     }
 
     if (_wasHiddenToTrayBeforeBreak || _wasMinimizedBeforeBreak) {
+      _needsStyleRestoration = true;
+
       // Stage A: Instantly hide or minimize the window to return to background
       try {
         if (_wasHiddenToTrayBeforeBreak) {
@@ -446,60 +454,9 @@ class DesktopIntegrationService extends WindowListener {
           await windowManager.minimize();
         }
       } catch (e) {
-        debugPrint('Failed to hide/minimize in Stage A: $e');
+        debugPrint('Failed to hide/minimize window: $e');
       }
 
-      // Stage B: Exit fullscreen and restore window styles/decorations in background
-      try {
-        await windowManager.setFullScreen(false);
-        await windowManager.setAlwaysOnTop(false);
-        await windowManager.setSkipTaskbar(false);
-        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
-
-        // Wait a small amount of time for the window manager to apply decorations.
-        // This is where Mutter/GNOME Shell might attempt to map/show the window.
-        await Future.delayed(const Duration(milliseconds: 150));
-
-        final saved = _savedWindowBounds;
-        if (saved != null) {
-          await windowManager.setBounds(saved);
-        } else {
-          await windowManager.setSize(const Size(1280, 720));
-          await windowManager.center();
-        }
-        if (_wasMaximized) {
-          await windowManager.maximize();
-        }
-      } catch (e) {
-        debugPrint('Failed to restore window style/bounds: $e');
-      }
-
-      // Stage C: Hide or minimize the window again to catch any compositor show/restore events
-      try {
-        if (_wasHiddenToTrayBeforeBreak) {
-          await windowManager.hide();
-        } else {
-          await windowManager.minimize();
-        }
-      } catch (e) {
-        debugPrint('Failed to hide/minimize in Stage C: $e');
-      }
-
-      // Stage D: Safety follow-up after a short delay
-      await Future.delayed(const Duration(milliseconds: 150));
-      try {
-        if (_wasHiddenToTrayBeforeBreak) {
-          await windowManager.hide();
-        } else {
-          await windowManager.minimize();
-        }
-      } catch (e) {
-        debugPrint('Failed to hide/minimize in Stage D: $e');
-      }
-
-      _savedWindowBounds = null;
-      _wasMaximized = false;
-      _wasMinimizedBeforeBreak = false;
       _breakMonitorRects = const [];
       return;
     }
@@ -533,6 +490,38 @@ class DesktopIntegrationService extends WindowListener {
     _wasMaximized = false;
     _wasMinimizedBeforeBreak = false;
     _breakMonitorRects = const [];
+  }
+
+  Future<void> _restoreWindowStylesIfNeeded() async {
+    if (_needsStyleRestoration) {
+      _needsStyleRestoration = false;
+      try {
+        await windowManager.setFullScreen(false);
+        await windowManager.setAlwaysOnTop(false);
+        await windowManager.setSkipTaskbar(false);
+        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+
+        // Wait for the window manager to process the style change and frame the window
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        final saved = _savedWindowBounds;
+        if (saved != null) {
+          await windowManager.setBounds(saved);
+        } else {
+          await windowManager.setSize(const Size(1280, 720));
+          await windowManager.center();
+        }
+        if (_wasMaximized) {
+          await windowManager.maximize();
+        }
+      } catch (e) {
+        debugPrint('Failed to restore window bounds: $e');
+      }
+      _savedWindowBounds = null;
+      _wasMaximized = false;
+      _wasMinimizedBeforeBreak = false;
+      _breakMonitorRects = const [];
+    }
   }
 
   Future<void> _updateDynamicTrayIcon(DesktopTimerState state) async {
