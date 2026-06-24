@@ -237,7 +237,7 @@ class TimerHomePageState extends State<TimerHomePage>
                   _isRunning) {
                 _pulseController.forward();
               }
-              if (widget.blinkRemindersEnabled && !_isBreak && _isRunning && !_isPaused) {
+              if (widget.blinkRemindersEnabled && !_isBreak && _isRunning && !_isPaused && !_isSchedulePaused && !_isSystemIdlePaused) {
                 final elapsed = _initialDuration - _remainingSeconds;
                 if (elapsed > 0 && elapsed % widget.blinkRemindersCadenceSeconds == 0) {
                   _triggerBlinkNudge();
@@ -348,6 +348,12 @@ class TimerHomePageState extends State<TimerHomePage>
     final clamped = (remainingMs / 1000).ceil().clamp(0, _initialDuration);
     if (clamped != _remainingSeconds) {
       _remainingSeconds = clamped;
+      if (widget.blinkRemindersEnabled && !_isBreak && _isRunning && !_isPaused && !_isSchedulePaused && !_isSystemIdlePaused) {
+        final elapsed = _initialDuration - _remainingSeconds;
+        if (elapsed > 0 && elapsed % widget.blinkRemindersCadenceSeconds == 0) {
+          _triggerBlinkNudge();
+        }
+      }
       _updateDesktopState();
     }
   }
