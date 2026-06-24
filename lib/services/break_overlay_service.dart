@@ -82,12 +82,13 @@ class BreakOverlayService {
     required int durationSeconds,
     required BreakMode breakMode,
     String breakVisualizerStyle = 'Breathing',
+    String? aiQuote,
   }) async {
     final bool isAppInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
 
     if (_isSupportedOnDesktop) {
       await DesktopIntegrationService.instance.showBreakOverlay(true);
-      _pushBreakOverlayRoute(durationSeconds, breakMode, breakVisualizerStyle);
+      _pushBreakOverlayRoute(durationSeconds, breakMode, breakVisualizerStyle, aiQuote);
       return true;
     }
 
@@ -123,8 +124,9 @@ class BreakOverlayService {
   void _pushBreakOverlayRoute(
     int durationSeconds,
     BreakMode breakMode,
-    String breakVisualizerStyle,
-  ) {
+    String breakVisualizerStyle, [
+    String? aiQuote,
+  ]) {
     final navigator = navigatorKey.currentState;
     if (navigator == null) return;
 
@@ -144,6 +146,7 @@ class BreakOverlayService {
           breakMode: breakMode,
           monitorRects: monitorRects,
           breakVisualizerStyle: breakVisualizerStyle,
+          aiQuote: aiQuote,
           onDismiss: () {
             unawaited(stopBreakOverlay());
           },

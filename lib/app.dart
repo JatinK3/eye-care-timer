@@ -12,6 +12,7 @@ import 'features/history/history_page.dart';
 import 'features/onboarding/onboarding_page.dart';
 import 'features/settings/settings_page.dart';
 import 'features/timer/timer_home_page.dart';
+import 'features/splash/splash_quote_page.dart';
 import 'models/timer_session.dart';
 import 'models/timer_settings.dart';
 import 'models/timer_event_record.dart';
@@ -186,6 +187,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   UsageAccessStatus _usageAccessStatus = UsageAccessStatus.unknown;
   bool _hasCompletedOnboarding = false;
   bool _isLoadingSettings = true;
+  bool _showSplash = true;
 
   final PermissionsService _permissionsService = PermissionsService();
 
@@ -515,6 +517,41 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveNaturalBreakCreditEnabled(enabled));
   }
 
+  void _setAiMotivationEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(aiMotivationEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveAiMotivationEnabled(enabled));
+  }
+
+  void _setAiProvider(String provider) {
+    setState(() {
+      _settings = _settings.copyWith(aiProvider: provider);
+    });
+    unawaited(_preferencesService.saveAiProvider(provider));
+  }
+
+  void _setAiApiKey(String apiKey) {
+    setState(() {
+      _settings = _settings.copyWith(aiApiKey: apiKey);
+    });
+    unawaited(_preferencesService.saveAiApiKey(apiKey));
+  }
+
+  void _setAiModel(String model) {
+    setState(() {
+      _settings = _settings.copyWith(aiModel: model);
+    });
+    unawaited(_preferencesService.saveAiModel(model));
+  }
+
+  void _setAiCustomSystemPrompt(String prompt) {
+    setState(() {
+      _settings = _settings.copyWith(aiCustomSystemPrompt: prompt);
+    });
+    unawaited(_preferencesService.saveAiCustomSystemPrompt(prompt));
+  }
+
   void _setNotificationsEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(notificationsEnabled: enabled);
@@ -806,6 +843,16 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           openBatteryOptimizationSettings: _openBatteryOptimizationSettings,
           openHistory: _openHistory,
           resetStreak: _resetStreakCount,
+          aiMotivationEnabled: _settings.aiMotivationEnabled,
+          aiProvider: _settings.aiProvider,
+          aiApiKey: _settings.aiApiKey,
+          aiModel: _settings.aiModel,
+          aiCustomSystemPrompt: _settings.aiCustomSystemPrompt,
+          setAiMotivationEnabled: _setAiMotivationEnabled,
+          setAiProvider: _setAiProvider,
+          setAiApiKey: _setAiApiKey,
+          setAiModel: _setAiModel,
+          setAiCustomSystemPrompt: _setAiCustomSystemPrompt,
         ),
       ),
     );
@@ -875,6 +922,12 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   skipNotifications: () =>
                       unawaited(_completeOnboarding(requestReminders: false)),
                 )
+              : _showSplash
+              ? SplashQuotePage(
+                  onComplete: () {
+                    setState(() => _showSplash = false);
+                  },
+                )
               : TimerHomePage(
                   isDark: isDarkTheme,
                   colorPreset: _settings.colorPreset,
@@ -921,6 +974,11 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   clearSession: _clearSession,
                   notificationService: _notificationService,
                   breakOverlayService: _breakOverlayService,
+                  aiMotivationEnabled: _settings.aiMotivationEnabled,
+                  aiProvider: _settings.aiProvider,
+                  aiApiKey: _settings.aiApiKey,
+                  aiModel: _settings.aiModel,
+                  aiCustomSystemPrompt: _settings.aiCustomSystemPrompt,
                 ),
         );
       },

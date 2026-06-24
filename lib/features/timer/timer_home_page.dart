@@ -10,6 +10,7 @@ import 'package:system_idle/system_idle.dart';
 import '../../models/timer_session.dart';
 import '../../models/timer_settings.dart';
 import '../../models/timer_event_record.dart';
+import '../../services/ai_service.dart';
 import '../../services/break_overlay_service.dart';
 import '../../services/desktop_controls_controller.dart';
 import '../../services/notification_service.dart';
@@ -70,6 +71,11 @@ class TimerHomePage extends StatefulWidget {
   final bool naturalBreakCreditEnabled;
   final String customAccentColorHex;
   final bool useSystemAccent;
+  final bool aiMotivationEnabled;
+  final String aiProvider;
+  final String aiApiKey;
+  final String aiModel;
+  final String aiCustomSystemPrompt;
 
   const TimerHomePage({
     super.key,
@@ -106,6 +112,11 @@ class TimerHomePage extends StatefulWidget {
     required this.workHoursEndMinute,
     required this.workDays,
     required this.naturalBreakCreditEnabled,
+    required this.aiMotivationEnabled,
+    required this.aiProvider,
+    required this.aiApiKey,
+    required this.aiModel,
+    required this.aiCustomSystemPrompt,
     this.breakOverlayService,
     required this.openSettings,
     required this.setPreset,
@@ -161,6 +172,9 @@ class TimerHomePageState extends State<TimerHomePage>
   bool _isSystemIdlePaused = false;
   final SystemUiService _systemUiService = const SystemUiService();
 
+  // AI-generated break quote, pre-fetched during work phase.
+  String? _cachedAiQuote;
+
   String _resolveVisualizerStyle() {
     if (widget.breakVisualizerStyle == 'Random') {
       const styles = [
@@ -173,6 +187,22 @@ class TimerHomePageState extends State<TimerHomePage>
       return styles[math.Random().nextInt(styles.length)];
     }
     return widget.breakVisualizerStyle;
+  }
+
+  Future<void> _preFetchAiQuote() async {
+    if (!widget.aiMotivationEnabled || widget.aiApiKey.isEmpty) return;
+    try {
+      final quote = await AiService.instance.generateMotivation(
+        provider: widget.aiProvider,
+        apiKey: widget.aiApiKey,
+        model: widget.aiModel,
+        prompt: widget.aiCustomSystemPrompt,
+      );
+      _cachedAiQuote = quote;
+    } catch (_) {
+      // Silently ignore failures; fallback to static exercise tip.
+      _cachedAiQuote = null;
+    }
   }
 
   late int _streakCount;
@@ -498,6 +528,7 @@ class TimerHomePageState extends State<TimerHomePage>
             durationSeconds: _remainingSeconds,
             breakMode: widget.breakMode,
             breakVisualizerStyle: _activeBreakVisualizerStyle,
+            aiQuote: _cachedAiQuote,
           ),
         );
       }
@@ -765,6 +796,7 @@ class TimerHomePageState extends State<TimerHomePage>
           durationSeconds: projection.remainingSeconds,
           breakMode: widget.breakMode,
           breakVisualizerStyle: _activeBreakVisualizerStyle,
+          aiQuote: _cachedAiQuote,
         ),
       );
     } else {
@@ -1039,6 +1071,7 @@ class TimerHomePageState extends State<TimerHomePage>
           durationSeconds: duration,
           breakMode: widget.breakMode,
           breakVisualizerStyle: _activeBreakVisualizerStyle,
+          aiQuote: _cachedAiQuote,
         ),
       );
     } else {
@@ -1050,6 +1083,8 @@ class TimerHomePageState extends State<TimerHomePage>
   void _startWorkTimer() {
     _autoRunCompletedCycles = 0;
     _startTimer(_workDurationSeconds);
+    // Pre-fetch AI quote for the upcoming break in background.
+    unawaited(_preFetchAiQuote());
     _updateDesktopState();
   }
 

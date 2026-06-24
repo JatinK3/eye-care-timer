@@ -46,6 +46,7 @@ dependencies:
   audioplayers: ^6.8.0
   hotkey_manager: ^0.2.3
   dynamic_color: ^1.8.1
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:

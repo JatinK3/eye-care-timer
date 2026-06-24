@@ -12,6 +12,7 @@ class DesktopBreakOverlay extends StatefulWidget {
   final VoidCallback onDismiss;
   final List<Rect> monitorRects;
   final String breakVisualizerStyle;
+  final String? aiQuote;
 
   const DesktopBreakOverlay({
     super.key,
@@ -20,6 +21,7 @@ class DesktopBreakOverlay extends StatefulWidget {
     required this.onDismiss,
     this.monitorRects = const [],
     this.breakVisualizerStyle = 'Breathing',
+    this.aiQuote,
   });
 
   @override
@@ -316,7 +318,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Text(
-              _currentExercise,
+              widget.aiQuote ?? _currentExercise,
               style: textStyle.headlineSmall?.copyWith(
                 color: Colors.cyanAccent,
                 fontWeight: FontWeight.w300,

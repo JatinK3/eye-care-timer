@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 import '../../models/timer_settings.dart';
+import '../../services/ai_service.dart';
 import '../../services/break_overlay_service.dart';
 import '../../services/desktop_integration_service.dart';
 import '../../services/notification_service.dart';
@@ -99,6 +100,18 @@ class SettingsPage extends StatefulWidget {
   final void Function(String) setCustomAccentColorHex;
   final void Function(bool) setUseSystemAccent;
 
+  // AI Motivation parameters
+  final bool aiMotivationEnabled;
+  final String aiProvider;
+  final String aiApiKey;
+  final String aiModel;
+  final String aiCustomSystemPrompt;
+  final void Function(bool) setAiMotivationEnabled;
+  final void Function(String) setAiProvider;
+  final void Function(String) setAiApiKey;
+  final void Function(String) setAiModel;
+  final void Function(String) setAiCustomSystemPrompt;
+
   const SettingsPage({
     super.key,
     required this.isDark,
@@ -184,6 +197,18 @@ class SettingsPage extends StatefulWidget {
     required this.setAmoledDarkEnabled,
     required this.setCustomAccentColorHex,
     required this.setUseSystemAccent,
+
+    // AI Motivation constructor parameters
+    required this.aiMotivationEnabled,
+    required this.aiProvider,
+    required this.aiApiKey,
+    required this.aiModel,
+    required this.aiCustomSystemPrompt,
+    required this.setAiMotivationEnabled,
+    required this.setAiProvider,
+    required this.setAiApiKey,
+    required this.setAiModel,
+    required this.setAiCustomSystemPrompt,
   });
 
   @override
@@ -209,7 +234,16 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   late BreakMode _breakMode;
   bool _isTestingReminder = false;
   bool _launchAtStartup = false;
-  
+
+  // AI settings UI state
+  List<String> _aiAvailableModels = [];
+  bool _aiLoadingModels = false;
+  String? _aiModelsError;
+  bool _aiApiKeyObscured = true;
+  final TextEditingController _aiApiKeyController = TextEditingController();
+  final TextEditingController _aiModelCustomController = TextEditingController();
+  Timer? _aiApiKeyDebounce;
+
   String _searchQuery = '';
   final _searchController = TextEditingController();
   AudioPlayer? _audioPlayer;
@@ -227,7 +261,12 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     _autoRunEnabled = widget.autoRunEnabled;
     _autoRunCycleLimit = widget.autoRunCycleLimit;
     _breakMode = widget.breakMode;
+    _aiApiKeyController.text = widget.aiApiKey;
+    _aiAvailableModels = AiService.instance.getDefaultModels(widget.aiProvider);
     _loadDesktopSettings();
+    if (widget.aiApiKey.isNotEmpty) {
+      unawaited(_fetchAiModels(widget.aiApiKey, widget.aiProvider));
+    }
   }
 
   Future<void> _loadDesktopSettings() async {
@@ -268,6 +307,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   void dispose() {
     _searchController.dispose();
     _audioPlayer?.dispose();
+    _aiApiKeyController.dispose();
+    _aiModelCustomController.dispose();
+    _aiApiKeyDebounce?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -1490,7 +1532,202 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             },
           ),
         ),
+
+      // 7. AI Motivation & Prompts
+      SettingItem(
+        title: 'AI Motivation & Prompts',
+        subtitle: 'Generate personalised eye-care quotes during breaks',
+        keywords: ['ai', 'motivation', 'llm', 'openai', 'groq', 'gemini', 'api', 'key', 'model', 'quote', 'prompt'],
+        category: 'AI Motivation & Prompts',
+        widget: _buildAiMotivationSettings(theme),
+      ),
     ];
+  }
+
+  Widget _buildAiMotivationSettings(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.auto_awesome_outlined),
+          title: const Text('Enable AI motivation'),
+          subtitle: const Text('Generate personalised quotes during breaks'),
+          value: widget.aiMotivationEnabled,
+          onChanged: widget.setAiMotivationEnabled,
+        ),
+        if (widget.aiMotivationEnabled) ...[
+          const Divider(height: 1),
+          const SizedBox(height: 8),
+          // Provider
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.cloud_outlined),
+            title: const Text('AI Provider'),
+            trailing: DropdownButton<String>(
+              value: widget.aiProvider,
+              underline: const SizedBox(),
+              items: const [
+                DropdownMenuItem(value: 'Gemini', child: Text('Google Gemini')),
+                DropdownMenuItem(value: 'OpenAI', child: Text('OpenAI (ChatGPT)')),
+                DropdownMenuItem(value: 'Groq', child: Text('Groq (Fast)')),
+              ],
+              onChanged: (val) {
+                if (val == null) return;
+                widget.setAiProvider(val);
+                setState(() {
+                  _aiAvailableModels = AiService.instance.getDefaultModels(val);
+                  _aiModelsError = null;
+                });
+                if (widget.aiApiKey.isNotEmpty) {
+                  unawaited(_fetchAiModels(widget.aiApiKey, val));
+                }
+              },
+            ),
+          ),
+          const Divider(height: 1),
+          // API Key
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _aiApiKeyController,
+                    obscureText: _aiApiKeyObscured,
+                    decoration: InputDecoration(
+                      labelText: 'API Key',
+                      hintText: 'Paste your API key here',
+                      border: const OutlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      suffixIcon: IconButton(
+                        icon: Icon(_aiApiKeyObscured ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                        onPressed: () => setState(() => _aiApiKeyObscured = !_aiApiKeyObscured),
+                      ),
+                    ),
+                    onChanged: (val) {
+                      _aiApiKeyDebounce?.cancel();
+                      _aiApiKeyDebounce = Timer(const Duration(milliseconds: 800), () {
+                        widget.setAiApiKey(val.trim());
+                        if (val.trim().isNotEmpty) {
+                          unawaited(_fetchAiModels(val.trim(), widget.aiProvider));
+                        }
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // Model selector
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: _aiLoadingModels
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.memory_outlined),
+            title: const Text('Model'),
+            subtitle: _aiModelsError != null
+                ? Text(_aiModelsError!, style: TextStyle(color: theme.colorScheme.error, fontSize: 12))
+                : null,
+            trailing: DropdownButton<String>(
+              value: _aiAvailableModels.contains(widget.aiModel) ? widget.aiModel : (_aiAvailableModels.isNotEmpty ? _aiAvailableModels.first : null),
+              underline: const SizedBox(),
+              items: [
+                ..._aiAvailableModels.map(
+                  (m) => DropdownMenuItem(value: m, child: Text(m, overflow: TextOverflow.ellipsis)),
+                ),
+                const DropdownMenuItem(value: '__custom__', child: Text('Custom...')),
+              ],
+              onChanged: (val) {
+                if (val == null) return;
+                if (val == '__custom__') {
+                  _showCustomModelDialog();
+                } else {
+                  widget.setAiModel(val);
+                }
+              },
+            ),
+          ),
+          const Divider(height: 1),
+          // System prompt
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: TextFormField(
+              initialValue: widget.aiCustomSystemPrompt,
+              key: ValueKey(widget.aiCustomSystemPrompt.hashCode),
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'System prompt',
+                hintText: 'Describe what kind of quote you want...',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              onChanged: (val) => widget.setAiCustomSystemPrompt(val),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _fetchAiModels(String apiKey, String provider) async {
+    if (apiKey.isEmpty) return;
+    setState(() {
+      _aiLoadingModels = true;
+      _aiModelsError = null;
+    });
+    try {
+      final models = await AiService.instance.fetchModels(provider: provider, apiKey: apiKey);
+      if (!mounted) return;
+      setState(() {
+        _aiAvailableModels = models.isNotEmpty ? models : AiService.instance.getDefaultModels(provider);
+        _aiLoadingModels = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _aiAvailableModels = AiService.instance.getDefaultModels(provider);
+        _aiLoadingModels = false;
+        _aiModelsError = 'Could not load models. Using defaults.';
+      });
+    }
+  }
+
+  void _showCustomModelDialog() {
+    _aiModelCustomController.text = widget.aiModel;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Custom model'),
+        content: TextField(
+          controller: _aiModelCustomController,
+          decoration: const InputDecoration(
+            labelText: 'Model name',
+            hintText: 'e.g. gpt-4o, gemini-2.0-flash',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final val = _aiModelCustomController.text.trim();
+              if (val.isNotEmpty) widget.setAiModel(val);
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Set'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSearchResults() {
@@ -1567,6 +1804,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       'Notifications & Sounds',
       'Auto Run & Long Breaks',
       if (groups.containsKey('Desktop Options')) 'Desktop Options',
+      'AI Motivation & Prompts',
     ];
 
     return ListView.builder(
@@ -1612,6 +1850,7 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       case 'Notifications & Sounds': return Icons.notifications_active;
       case 'Auto Run & Long Breaks': return Icons.repeat;
       case 'Desktop Options': return Icons.desktop_windows;
+      case 'AI Motivation & Prompts': return Icons.auto_awesome;
       default: return Icons.settings;
     }
   }

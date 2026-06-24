@@ -57,6 +57,11 @@ class PreferencesService {
   static const String amoledDarkEnabledKey = 'amoledDarkEnabled';
   static const String customAccentColorHexKey = 'customAccentColorHex';
   static const String useSystemAccentKey = 'useSystemAccent';
+  static const String aiMotivationEnabledKey = 'aiMotivationEnabled';
+  static const String aiProviderKey = 'aiProvider';
+  static const String aiApiKeyKey = 'aiApiKey';
+  static const String aiModelKey = 'aiModel';
+  static const String aiCustomSystemPromptKey = 'aiCustomSystemPrompt';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -150,6 +155,21 @@ class PreferencesService {
       useSystemAccent:
           prefs.getBool(useSystemAccentKey) ??
           TimerSettings.defaultUseSystemAccent,
+      aiMotivationEnabled:
+          prefs.getBool(aiMotivationEnabledKey) ??
+          TimerSettings.defaultAiMotivationEnabled,
+      aiProvider:
+          prefs.getString(aiProviderKey) ??
+          TimerSettings.defaultAiProvider,
+      aiApiKey:
+          prefs.getString(aiApiKeyKey) ??
+          TimerSettings.defaultAiApiKey,
+      aiModel:
+          prefs.getString(aiModelKey) ??
+          TimerSettings.defaultAiModel,
+      aiCustomSystemPrompt:
+          prefs.getString(aiCustomSystemPromptKey) ??
+          TimerSettings.defaultAiCustomSystemPrompt,
     );
   }
 
@@ -481,6 +501,31 @@ class PreferencesService {
   Future<void> saveNaturalBreakCreditEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(naturalBreakCreditEnabledKey, enabled);
+  }
+
+  Future<void> saveAiMotivationEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(aiMotivationEnabledKey, enabled);
+  }
+
+  Future<void> saveAiProvider(String provider) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(aiProviderKey, provider);
+  }
+
+  Future<void> saveAiApiKey(String apiKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(aiApiKeyKey, apiKey);
+  }
+
+  Future<void> saveAiModel(String model) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(aiModelKey, model);
+  }
+
+  Future<void> saveAiCustomSystemPrompt(String prompt) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(aiCustomSystemPromptKey, prompt);
   }
 
   Future<void> saveStreakCount(int streakCount) async {

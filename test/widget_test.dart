@@ -134,6 +134,13 @@ Future<FakeNotificationService> pumpBlinkKindApp(
   );
   await tester.pump();
   await tester.pump();
+  // Dismiss the startup splash screen if it is showing.
+  final skipFinder = find.text('Skip');
+  if (skipFinder.evaluate().isNotEmpty) {
+    await tester.tap(skipFinder);
+    await tester.pump();
+    await tester.pump();
+  }
   return notificationService;
 }
 
@@ -207,6 +214,14 @@ void main() {
 
     await tester.tap(find.text('Allow reminders and start'));
     await tester.pumpAndSettle();
+
+    // Dismiss the startup splash that appears after completing onboarding.
+    final skipAfterOnboarding = find.text('Skip');
+    if (skipAfterOnboarding.evaluate().isNotEmpty) {
+      await tester.tap(skipAfterOnboarding);
+      await tester.pump();
+      await tester.pump();
+    }
 
     expect(
       find.textContaining('Ready for your next focus session'),

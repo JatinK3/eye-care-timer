@@ -28,6 +28,11 @@ class TimerSettings {
   static const bool defaultAmoledDarkEnabled = false;
   static const String defaultCustomAccentColorHex = '#009688';
   static const bool defaultUseSystemAccent = false;
+  static const bool defaultAiMotivationEnabled = false;
+  static const String defaultAiProvider = 'Gemini';
+  static const String defaultAiApiKey = '';
+  static const String defaultAiModel = 'gemini-1.5-flash';
+  static const String defaultAiCustomSystemPrompt = 'You are a friendly eye-care assistant for a developer. Generate a short, warm, and highly engaging motivational quote (1-2 sentences) encouraging them to blink, rest their eyes, relax their shoulders, look at something far away, or practice deep breathing. Keep it fresh, encouraging, and punchy.';
 
   final int workDurationSeconds;
   final int breakDurationSeconds;
@@ -62,6 +67,11 @@ class TimerSettings {
   final bool amoledDarkEnabled;
   final String customAccentColorHex;
   final bool useSystemAccent;
+  final bool aiMotivationEnabled;
+  final String aiProvider;
+  final String aiApiKey;
+  final String aiModel;
+  final String aiCustomSystemPrompt;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -97,6 +107,11 @@ class TimerSettings {
     required this.amoledDarkEnabled,
     required this.customAccentColorHex,
     required this.useSystemAccent,
+    required this.aiMotivationEnabled,
+    required this.aiProvider,
+    required this.aiApiKey,
+    required this.aiModel,
+    required this.aiCustomSystemPrompt,
   });
 
   const TimerSettings.defaults()
@@ -132,7 +147,12 @@ class TimerSettings {
       naturalBreakCreditEnabled = defaultNaturalBreakCreditEnabled,
       amoledDarkEnabled = defaultAmoledDarkEnabled,
       customAccentColorHex = defaultCustomAccentColorHex,
-      useSystemAccent = defaultUseSystemAccent;
+      useSystemAccent = defaultUseSystemAccent,
+      aiMotivationEnabled = defaultAiMotivationEnabled,
+      aiProvider = defaultAiProvider,
+      aiApiKey = defaultAiApiKey,
+      aiModel = defaultAiModel,
+      aiCustomSystemPrompt = defaultAiCustomSystemPrompt;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -168,6 +188,11 @@ class TimerSettings {
     bool? amoledDarkEnabled,
     String? customAccentColorHex,
     bool? useSystemAccent,
+    bool? aiMotivationEnabled,
+    String? aiProvider,
+    String? aiApiKey,
+    String? aiModel,
+    String? aiCustomSystemPrompt,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -208,6 +233,11 @@ class TimerSettings {
       amoledDarkEnabled: amoledDarkEnabled ?? this.amoledDarkEnabled,
       customAccentColorHex: customAccentColorHex ?? this.customAccentColorHex,
       useSystemAccent: useSystemAccent ?? this.useSystemAccent,
+      aiMotivationEnabled: aiMotivationEnabled ?? this.aiMotivationEnabled,
+      aiProvider: aiProvider ?? this.aiProvider,
+      aiApiKey: aiApiKey ?? this.aiApiKey,
+      aiModel: aiModel ?? this.aiModel,
+      aiCustomSystemPrompt: aiCustomSystemPrompt ?? this.aiCustomSystemPrompt,
     );
   }
 }
