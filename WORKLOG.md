@@ -146,8 +146,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ### P0 — Signature eye-care depth (on-brand, differentiating)
 - [x] **Blink reminders & blink-rate training** — the product is literally *BlinkKind*, yet blinking exists only as static break-screen text (`desktop_break_overlay.dart`, `timer_home_page.dart`). Add an opt-in, low-friction "blink now" micro-nudge (subtle tray pulse / brief on-screen cue) on a configurable cadence, plus a guided blink exercise. This is the clearest differentiator vs. generic Pomodoro/eye timers and the most on-brand missing feature.
-- [ ] **Active work-hours & day schedule** — only run during configured hours/days (e.g. 09:00–18:00, Mon–Fri); auto-pause outside them. Removes the "why is it nagging me at night/weekend" friction. No time-of-day scheduling exists today.
-- [ ] **Natural / idle break credit** — `system_idle` is already wired for pausing; extend it so that when the user has already been idle ≥ break length, that counts as a completed break and defers the next one instead of interrupting someone who just stepped away (à la Stretchly).
+- [x] **Active work-hours & day schedule** — only run during configured hours/days (e.g. 09:00–18:00, Mon–Fri); auto-pause outside them. Removes the "why is it nagging me at night/weekend" friction. No time-of-day scheduling exists today.
+- [x] **Natural / idle break credit** — `system_idle` is already wired for pausing; extend it so that when the user has already been idle ≥ break length, that counts as a completed break and defers the next one instead of interrupting someone who just stepped away (à la Stretchly).
 - [ ] **Rotating eye-health tips & 20-20-20 education** — surface short, rotating eye-care tips on the break screen and a "Learn" card on home to reinforce the habit and the value proposition.
 
 ### P1 — Retention, motivation & everyday UX
@@ -179,6 +179,14 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [ ] Show a "breaks taken today" count on home, and a pre-break countdown indication on the tray icon.
 
 ## Completed
+
+- Implemented Active Work Hours & Day Schedule (Task 2) and Natural / Idle Break Credit (Task 3):
+  - Added work schedule settings (`workHoursEnabled`, start/end hours/minutes, and active work days representation) and natural break credit settings to `TimerSettings`, persisting them in `PreferencesService`.
+  - Created a "Work schedule" card in `SettingsPage` containing day selection chips (Mon-Sun) and start/end time dropdown selectors, and added a "Natural break credit" toggle within the smart idle configurations.
+  - Implemented periodic active schedule checks in `TimerHomePage` that auto-pauses the timer and displays "Schedule Paused" when outside active hours or days, auto-resuming when schedule times are met.
+  - Implemented idle duration checking on returning from desktop system idle (`system_idle`) and Android screen-off: if idle duration matches or exceeds the break length, the user receives a completed break credit, resetting the work countdown while maintaining their daily streak, complete with SnackBar alerts.
+  - Updated MethodChannel startPhase calls to pass `naturalBreakCreditEnabled` settings down to Android background services.
+  - Updated `TimerForegroundService.kt` to record `screenOffTimeMillis` on screen-off and credit natural breaks in the background when the screen remains off longer than the break duration, generating events parsed by the Flutter app on resume.
 
 - Implemented opt-in blink reminders (micro-nudges) and guided blink pacing training:
   - Added `blinkRemindersEnabled` and `blinkRemindersCadenceSeconds` configurations to the Settings model, preferences service, and settings page.
