@@ -24,6 +24,7 @@ class DesktopIntegrationService extends WindowListener {
   bool? _lastIsPaused;
   bool? _lastAllowPostpone;
   int? _lastPostponeDurationMinutes;
+  String? _lastIconPath;
 
   List<Rect> _breakMonitorRects = const [];
 
@@ -303,6 +304,17 @@ class DesktopIntegrationService extends WindowListener {
   }
 
   Future<void> _quitApp() async {
+    final oldPath = _lastIconPath;
+    if (oldPath != null) {
+      try {
+        final oldFile = File(oldPath);
+        if (await oldFile.exists()) {
+          await oldFile.delete();
+        }
+      } catch (e) {
+        debugPrint('Failed to delete tray icon on exit: $e');
+      }
+    }
     windowManager.removeListener(this);
     await windowManager.destroy();
   }
@@ -511,10 +523,26 @@ class DesktopIntegrationService extends WindowListener {
         tempDir = Platform.environment['TMPDIR'] ?? '/tmp';
       }
 
-      final file = File('$tempDir/blinkkind_tray_icon.png');
+      // Generate dynamic file path to bypass AppIndicator/composing caches
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final file = File('$tempDir/blinkkind_tray_icon_$timestamp.png');
       await file.writeAsBytes(pngBytes, flush: true);
 
       await _systemTray.setImage(file.path);
+
+      // Clean up the previously written tray icon file
+      final oldPath = _lastIconPath;
+      if (oldPath != null && oldPath != file.path) {
+        try {
+          final oldFile = File(oldPath);
+          if (await oldFile.exists()) {
+            await oldFile.delete();
+          }
+        } catch (e) {
+          debugPrint('Failed to delete old tray icon: $e');
+        }
+      }
+      _lastIconPath = file.path;
     } catch (e) {
       debugPrint('Failed to update dynamic tray icon: $e');
     }
