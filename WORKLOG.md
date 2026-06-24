@@ -153,8 +153,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 ### P1 — Retention, motivation & everyday UX
 - [ ] **Achievements, streak milestones & compliance stats** — badges/levels for streaks and breaks taken; add a compliance metric (breaks taken vs. skipped/postponed — the data already exists in `TimerEventRecord`) and a focus-time heatmap to History. No gamification exists today.
 - [x] **Global hotkeys + richer tray/menubar** — system-wide start/pause/skip/take-break-now; tray tooltip showing "next break at HH:MM" and a "snooze all for 1h / until tomorrow" quick action.
-- [ ] **Settings redesign with search & grouping** — `settings_page.dart` is ~1.2k lines and growing; add search and collapsible categories so the surface stays usable.
-- [ ] **Theme expansion** — custom accent-color picker, true-black AMOLED variant, and Material You / system-accent dynamic color.
+- [x] **Settings redesign with search & grouping** — `settings_page.dart` is ~1.2k lines and growing; add search and collapsible categories so the surface stays usable.
+- [x] **Theme expansion** — custom accent-color picker, true-black AMOLED variant, and Material You / system-accent dynamic color.
 - [ ] **Break-screen customization** — optional motivational quotes / custom messages, choice of background, and toggles for which info (clock, next phase, tips) is shown during a break.
 - [ ] **Localization (i18n) scaffolding** — app is English-only (no `flutter_localizations`/ARB); extract strings and add localization. Large reach multiplier.
 
@@ -362,6 +362,12 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 - Added real 20-second break test action:
   - Added `Test 20s break screen` to the settings page, which triggers a full, real 20-second break overlay. This enables instant verification of the break layout, exercise animations, and exit window state transitions (minimizing or hiding silently to the system tray/dock).
+
+- Implemented Settings Redesign with Search & Grouping and Theme Expansion:
+  - Grouped settings into clean, collapsible cards (`ExpansionTile`s) by categories: General Schedule, Break Screen & Behavior, Theme & Appearance, Notifications & Sounds, Auto Run & Long Breaks, and Desktop Options.
+  - Added a search bar that filters settings in real-time as the user types, presenting a flattened list of items decorated with category badges.
+  - Expanded appearance configuration to support Material You / OS system-accent colors, AMOLED true black backgrounds, and a premium accent color selector featuring a custom Hex input field and a 10-color circular picker.
+  - Updated all settings-related widget tests to explicitly expand category cards and specify the primary Scrollable target, achieving a fully green test suite.
 
 
 
