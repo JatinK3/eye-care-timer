@@ -10,6 +10,9 @@ enum DesktopCommand {
   // timer page can re-sync its display with the wall clock (on desktop the
   // countdown animation pauses while the window is hidden).
   windowResumed,
+  snooze1Hour,
+  snoozeUntilTomorrow,
+  cancelSnooze,
 }
 
 class DesktopTimerState {
@@ -21,6 +24,9 @@ class DesktopTimerState {
   final int postponeDurationMinutes;
   final int initialDurationSeconds;
   final bool isBlinkNudging;
+  final bool isSnoozed;
+  final int snoozeRemainingMinutes;
+  final DateTime? nextBreakAt;
 
   DesktopTimerState({
     required this.isRunning,
@@ -31,6 +37,9 @@ class DesktopTimerState {
     this.postponeDurationMinutes = 2,
     this.initialDurationSeconds = 1200,
     this.isBlinkNudging = false,
+    this.isSnoozed = false,
+    this.snoozeRemainingMinutes = 0,
+    this.nextBreakAt,
   });
 }
 

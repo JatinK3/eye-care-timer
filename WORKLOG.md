@@ -152,7 +152,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ### P1 — Retention, motivation & everyday UX
 - [ ] **Achievements, streak milestones & compliance stats** — badges/levels for streaks and breaks taken; add a compliance metric (breaks taken vs. skipped/postponed — the data already exists in `TimerEventRecord`) and a focus-time heatmap to History. No gamification exists today.
-- [ ] **Global hotkeys + richer tray/menubar** — system-wide start/pause/skip/take-break-now; tray tooltip showing "next break at HH:MM" and a "snooze all for 1h / until tomorrow" quick action.
+- [x] **Global hotkeys + richer tray/menubar** — system-wide start/pause/skip/take-break-now; tray tooltip showing "next break at HH:MM" and a "snooze all for 1h / until tomorrow" quick action.
 - [ ] **Settings redesign with search & grouping** — `settings_page.dart` is ~1.2k lines and growing; add search and collapsible categories so the surface stays usable.
 - [ ] **Theme expansion** — custom accent-color picker, true-black AMOLED variant, and Material You / system-accent dynamic color.
 - [ ] **Break-screen customization** — optional motivational quotes / custom messages, choice of background, and toggles for which info (clock, next phase, tips) is shown during a break.
@@ -179,6 +179,13 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [ ] Show a "breaks taken today" count on home, and a pre-break countdown indication on the tray icon.
 
 ## Completed
+
+- Implemented Global Hotkeys & Richer Tray/Menubar Controls (Task 2 of P1):
+  - Integrated `hotkey_manager` and registered system-wide global hotkeys for standard actions: Pause/Resume (`Ctrl+Alt+P` or `Super+Alt+P`), Take Break Now (`Ctrl+Alt+B` or `Super+Alt+B`), Skip Break (`Ctrl+Alt+S` or `Super+Alt+S` during active breaks), and Postpone Break (`Ctrl+Alt+O` or `Super+Alt+O` during active breaks).
+  - Enhanced the system tray tooltip to show the exact absolute time of the next break (e.g. `BlinkKind - Next break at 18:30` instead of a relative countdown) by calculating `nextBreakAt` in the timer state.
+  - Implemented in-memory Break Snoozing inside `TimerHomePageState` with snooze quick actions in the system tray menu: "Snooze Breaks for 1 Hour", "Snooze Breaks until Tomorrow", and "Cancel Snooze" (only visible when snoozed).
+  - Designed custom UI statuses, phase descriptions, and dynamic tray icon states ("Zz" symbol on a deep purple accent ring) to represent active snooze periods and remaining duration.
+  - Added clean-up tasks to unregister global hotkeys on application exit to avoid memory or context leaks.
 
 - Implemented Active Work Hours & Day Schedule (Task 2) and Natural / Idle Break Credit (Task 3):
   - Added work schedule settings (`workHoursEnabled`, start/end hours/minutes, and active work days representation) and natural break credit settings to `TimerSettings`, persisting them in `PreferencesService`.

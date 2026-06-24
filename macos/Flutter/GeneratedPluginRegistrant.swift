@@ -7,6 +7,7 @@ import Foundation
 
 import audioplayers_darwin
 import flutter_local_notifications
+import hotkey_manager_macos
 import screen_retriever_macos
 import shared_preferences_foundation
 import system_idle_macos
@@ -16,6 +17,7 @@ import window_manager
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   AudioplayersDarwinPlugin.register(with: registry.registrar(forPlugin: "AudioplayersDarwinPlugin"))
   FlutterLocalNotificationsPlugin.register(with: registry.registrar(forPlugin: "FlutterLocalNotificationsPlugin"))
+  HotkeyManagerMacosPlugin.register(with: registry.registrar(forPlugin: "HotkeyManagerMacosPlugin"))
   ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
   SystemIdlePlugin.register(with: registry.registrar(forPlugin: "SystemIdlePlugin"))

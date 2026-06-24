@@ -142,6 +142,8 @@ class TimerHomePageState extends State<TimerHomePage>
   Timer? _scheduleCheckTimer;
   bool _isSchedulePaused = false;
   DateTime? _idleStartedAt;
+  DateTime? _snoozeEndsAt;
+  int? _lastSnoozeRemaining;
 
   late int _initialDuration;
   late int _remainingSeconds;
@@ -289,7 +291,9 @@ class TimerHomePageState extends State<TimerHomePage>
                 }
                 break;
               case DesktopCommand.resume:
-                if (_isPaused || !_isRunning) {
+                if (_isSnoozed) {
+                  _cancelSnooze();
+                } else if (_isPaused || !_isRunning) {
                   if (!_isRunning) {
                     _startWorkTimer();
                   } else {
@@ -317,6 +321,15 @@ class TimerHomePageState extends State<TimerHomePage>
                 // was frozen while hidden, so snap it back to the wall clock.
                 _realignAnimationToClock();
                 break;
+              case DesktopCommand.snooze1Hour:
+                _snoozeBreaks(const Duration(hours: 1));
+                break;
+              case DesktopCommand.snoozeUntilTomorrow:
+                _snoozeUntilTomorrow();
+                break;
+              case DesktopCommand.cancelSnooze:
+                _cancelSnooze();
+                break;
             }
           });
       _desktopTrayTicker = Timer.periodic(
@@ -341,9 +354,27 @@ class TimerHomePageState extends State<TimerHomePage>
   /// value actually changed, so it's a no-op while the window is visible and the
   /// animation is already current (no duplicate tray redraws).
   void _onDesktopTrayTick() {
-    if (!mounted || !_isRunning || _isPaused || _phaseEndsAt == null) {
+    if (!mounted || !_isRunning) {
       return;
     }
+
+    final isSnoozed = _isSnoozed;
+    if (_isPaused && !isSnoozed) {
+      return;
+    }
+
+    if (isSnoozed) {
+      final now = DateTime.now();
+      final snoozeRemaining = (_snoozeEndsAt!.difference(now).inSeconds / 60).ceil();
+      if (snoozeRemaining != _lastSnoozeRemaining) {
+        _lastSnoozeRemaining = snoozeRemaining;
+        _updateDesktopState();
+      }
+      return;
+    }
+
+    if (_phaseEndsAt == null) return;
+
     final remainingMs = _phaseEndsAt!.difference(DateTime.now()).inMilliseconds;
     final clamped = (remainingMs / 1000).ceil().clamp(0, _initialDuration);
     if (clamped != _remainingSeconds) {
@@ -877,6 +908,13 @@ class TimerHomePageState extends State<TimerHomePage>
 
   void _checkSchedule() {
     if (!mounted) return;
+
+    // Check snooze expiry
+    if (_snoozeEndsAt != null && DateTime.now().isAfter(_snoozeEndsAt!)) {
+      _cancelSnooze();
+      return;
+    }
+
     if (!widget.workHoursEnabled) {
       if (_isSchedulePaused) {
         setState(() {
@@ -1041,6 +1079,63 @@ class TimerHomePageState extends State<TimerHomePage>
     _updateDesktopState();
   }
 
+  void _snoozeBreaks(Duration duration) {
+    setState(() {
+      _snoozeEndsAt = DateTime.now().add(duration);
+      _isRunning = true;
+      _isBreak = false;
+      _remainingSeconds = _workDurationSeconds;
+      _initialDuration = _workDurationSeconds;
+      
+      _isPaused = true;
+      _isSystemIdlePaused = false;
+      _animationController.stop();
+      _pulseController.stop();
+      _cancelPhaseDeadlineTimer();
+      _phaseStartedAt = null;
+      _phaseEndsAt = null;
+      _saveActiveSession(isPaused: true);
+      _cancelReminders();
+      unawaited(_backgroundService.stopPhase());
+      unawaited(widget.breakOverlayService?.stopBreakOverlay());
+    });
+    _updateDesktopState();
+  }
+
+  void _snoozeUntilTomorrow() {
+    final now = DateTime.now();
+    final tomorrow = now.add(const Duration(days: 1));
+    final snoozeTarget = DateTime(
+      tomorrow.year,
+      tomorrow.month,
+      tomorrow.day,
+      widget.workHoursEnabled ? widget.workHoursStartHour : 9,
+      widget.workHoursEnabled ? widget.workHoursStartMinute : 0,
+    );
+    final duration = snoozeTarget.difference(now);
+    _snoozeBreaks(duration.isNegative ? const Duration(hours: 12) : duration);
+  }
+
+  void _cancelSnooze() {
+    setState(() {
+      _snoozeEndsAt = null;
+      _lastSnoozeRemaining = null;
+      _isPaused = false;
+      _isSystemIdlePaused = false;
+      _phaseStartedAt = DateTime.now();
+      _phaseEndsAt = _phaseStartedAt!.add(
+        Duration(seconds: _remainingSeconds),
+      );
+      _animationController.forward();
+      _saveActiveSession();
+      _schedulePhaseDeadlineTimer(_phaseEndsAt!);
+      unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
+      _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
+      if (_remainingSeconds <= 5) _pulseController.forward();
+    });
+    _updateDesktopState();
+  }
+
   void _cancelReminders() {
     unawaited(widget.notificationService.cancelPhaseReminder());
     unawaited(widget.notificationService.cancelPreBreakWarningReminder());
@@ -1123,6 +1218,8 @@ class TimerHomePageState extends State<TimerHomePage>
       _isPaused = false;
       _isBreak = false;
       _isSystemIdlePaused = false;
+      _snoozeEndsAt = null;
+      _lastSnoozeRemaining = null;
       _phaseOpacity = 1.0;
       _phaseStartedAt = null;
       _phaseEndsAt = null;
@@ -1384,7 +1481,12 @@ class TimerHomePageState extends State<TimerHomePage>
     return ColorPresets.backgroundGradient(preset, isDark);
   }
 
+  bool get _isSnoozed => _snoozeEndsAt != null && DateTime.now().isBefore(_snoozeEndsAt!);
+
   String get _statusLabel {
+    if (_isSnoozed) {
+      return 'Snoozed';
+    }
     if (_isSchedulePaused) {
       return 'Schedule Paused';
     }
@@ -1401,6 +1503,11 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   String get _phaseTitle {
+    if (_isSnoozed) {
+      final diff = _snoozeEndsAt!.difference(DateTime.now());
+      final mins = (diff.inSeconds / 60).ceil();
+      return 'Breaks snoozed ($mins min left)';
+    }
     if (_isSchedulePaused) {
       return 'Timer paused by schedule';
     }
@@ -2053,6 +2160,16 @@ class TimerHomePageState extends State<TimerHomePage>
     if (defaultTargetPlatform == TargetPlatform.linux ||
         defaultTargetPlatform == TargetPlatform.macOS ||
         defaultTargetPlatform == TargetPlatform.windows) {
+      final now = DateTime.now();
+      final snoozeEnds = _snoozeEndsAt;
+      final isSnoozed = snoozeEnds != null && now.isBefore(snoozeEnds);
+      final snoozeRemaining = isSnoozed ? (snoozeEnds.difference(now).inSeconds / 60).ceil() : 0;
+      
+      DateTime? nextBreakVal;
+      if (_isRunning && !_isBreak && !_isPaused && !_isSystemIdlePaused && !isSnoozed) {
+        nextBreakVal = _phaseEndsAt;
+      }
+
       DesktopControlsController.instance.updateState(
         DesktopTimerState(
           isRunning: _isRunning,
@@ -2063,6 +2180,9 @@ class TimerHomePageState extends State<TimerHomePage>
           postponeDurationMinutes: widget.postponeDurationSeconds ~/ 60,
           initialDurationSeconds: _initialDuration,
           isBlinkNudging: _isBlinkNudging,
+          isSnoozed: isSnoozed,
+          snoozeRemainingMinutes: snoozeRemaining,
+          nextBreakAt: nextBreakVal,
         ),
       );
     }

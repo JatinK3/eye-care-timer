@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:system_tray/system_tray.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'desktop_controls_controller.dart';
 
 class DesktopIntegrationService extends WindowListener {
@@ -24,7 +25,9 @@ class DesktopIntegrationService extends WindowListener {
   bool? _lastIsPaused;
   bool? _lastAllowPostpone;
   int? _lastPostponeDurationMinutes;
+  bool? _lastIsSnoozed;
   String? _lastIconPath;
+  DesktopTimerState? _latestState;
 
   List<Rect> _breakMonitorRects = const [];
 
@@ -50,11 +53,15 @@ class DesktopIntegrationService extends WindowListener {
     // 2. Initialize System Tray
     await _initTray();
 
+    // 2b. Initialize Global Hotkeys
+    await _initHotkeys();
+
     // 3. Initialize Launch at Startup
     _initLaunchAtStartup();
 
     // 4. Listen to state changes to update the tray menu dynamically
     DesktopControlsController.instance.states.listen((state) {
+      _latestState = state;
       unawaited(_updateTrayMenu(state));
     });
 
@@ -143,9 +150,16 @@ class DesktopIntegrationService extends WindowListener {
       String tooltipText;
       if (state.isBreak) {
         tooltipText = 'BlinkKind - On a Break ($timeStr remaining)';
+      } else if (state.isSnoozed) {
+        tooltipText = 'BlinkKind - Breaks Snoozed';
       } else if (state.isRunning) {
         if (state.isPaused) {
           tooltipText = 'BlinkKind - Paused ($timeStr remaining)';
+        } else if (state.nextBreakAt != null) {
+          final localNext = state.nextBreakAt!.toLocal();
+          final hour = localNext.hour.toString().padLeft(2, '0');
+          final minute = localNext.minute.toString().padLeft(2, '0');
+          tooltipText = 'BlinkKind - Next break at $hour:$minute';
         } else {
           tooltipText = 'BlinkKind - Next break in $timeStr';
         }
@@ -157,6 +171,8 @@ class DesktopIntegrationService extends WindowListener {
       String titleText = '';
       if (state.isBreak) {
         titleText = 'Break $timeStr';
+      } else if (state.isSnoozed) {
+        titleText = 'Snoozed';
       } else if (state.isRunning) {
         if (state.isPaused) {
           titleText = 'Paused $timeStr';
@@ -172,7 +188,8 @@ class DesktopIntegrationService extends WindowListener {
           _lastIsRunning == state.isRunning &&
           _lastIsPaused == state.isPaused &&
           _lastAllowPostpone == state.allowPostpone &&
-          _lastPostponeDurationMinutes == state.postponeDurationMinutes) {
+          _lastPostponeDurationMinutes == state.postponeDurationMinutes &&
+          _lastIsSnoozed == state.isSnoozed) {
         return;
       }
 
@@ -181,6 +198,7 @@ class DesktopIntegrationService extends WindowListener {
       _lastIsPaused = state.isPaused;
       _lastAllowPostpone = state.allowPostpone;
       _lastPostponeDurationMinutes = state.postponeDurationMinutes;
+      _lastIsSnoozed = state.isSnoozed;
 
       final List<MenuItemBase> items = [
         MenuItemLabel(label: 'Show BlinkKind', onClicked: (_) => _showWindow()),
@@ -191,6 +209,8 @@ class DesktopIntegrationService extends WindowListener {
       String statusText;
       if (state.isBreak) {
         statusText = 'Status: On a Break';
+      } else if (state.isSnoozed) {
+        statusText = 'Status: Snoozed';
       } else if (state.isRunning) {
         if (state.isPaused) {
           statusText = 'Status: Paused';
@@ -229,7 +249,7 @@ class DesktopIntegrationService extends WindowListener {
           ]);
         }
       } else {
-        if (state.isRunning && !state.isPaused) {
+        if (state.isRunning && !state.isPaused && !state.isSnoozed) {
           items.addAll([
             MenuItemLabel(
               label: 'Take a Break Now',
@@ -243,7 +263,7 @@ class DesktopIntegrationService extends WindowListener {
         }
 
         if (state.isRunning) {
-          if (state.isPaused) {
+          if (state.isPaused || state.isSnoozed) {
             items.addAll([
               MenuItemLabel(
                 label: 'Resume Timer',
@@ -280,6 +300,40 @@ class DesktopIntegrationService extends WindowListener {
         }
       }
 
+      // Add Snooze options
+      items.add(MenuSeparator());
+      if (state.isSnoozed) {
+        items.addAll([
+          MenuItemLabel(
+            label: 'Cancel Snooze',
+            onClicked: (_) {
+              DesktopControlsController.instance.triggerCommand(
+                DesktopCommand.cancelSnooze,
+              );
+            },
+          ),
+        ]);
+      } else {
+        items.addAll([
+          MenuItemLabel(
+            label: 'Snooze Breaks for 1 Hour',
+            onClicked: (_) {
+              DesktopControlsController.instance.triggerCommand(
+                DesktopCommand.snooze1Hour,
+              );
+            },
+          ),
+          MenuItemLabel(
+            label: 'Snooze Breaks until Tomorrow',
+            onClicked: (_) {
+              DesktopControlsController.instance.triggerCommand(
+                DesktopCommand.snoozeUntilTomorrow,
+              );
+            },
+          ),
+        ]);
+      }
+
       items.addAll([
         MenuSeparator(),
         MenuItemLabel(label: 'Exit', onClicked: (_) => _quitApp()),
@@ -314,6 +368,11 @@ class DesktopIntegrationService extends WindowListener {
       } catch (e) {
         debugPrint('Failed to delete tray icon on exit: $e');
       }
+    }
+    try {
+      await hotKeyManager.unregisterAll();
+    } catch (e) {
+      debugPrint('Failed to unregister hotkeys on exit: $e');
     }
     windowManager.removeListener(this);
     await windowManager.destroy();
@@ -406,6 +465,10 @@ class DesktopIntegrationService extends WindowListener {
         if (state.initialDurationSeconds > 0) {
           progress = (state.remainingSeconds / state.initialDurationSeconds).clamp(0.0, 1.0);
         }
+      } else if (state.isSnoozed) {
+        ringColor = Colors.deepPurpleAccent;
+        text = 'Zz';
+        progress = 0.0;
       } else if (state.isRunning) {
         if (state.isPaused) {
           ringColor = Colors.orangeAccent;
@@ -545,6 +608,68 @@ class DesktopIntegrationService extends WindowListener {
       _lastIconPath = file.path;
     } catch (e) {
       debugPrint('Failed to update dynamic tray icon: $e');
+    }
+  }
+
+  Future<void> _initHotkeys() async {
+    try {
+      await hotKeyManager.unregisterAll();
+
+      final hotkeysConfig = [
+        // Pause/Resume
+        (PhysicalKeyboardKey.keyP, [HotKeyModifier.control, HotKeyModifier.alt], 'pause_resume'),
+        (PhysicalKeyboardKey.keyP, [HotKeyModifier.meta, HotKeyModifier.alt], 'pause_resume'),
+        // Take Break Now
+        (PhysicalKeyboardKey.keyB, [HotKeyModifier.control, HotKeyModifier.alt], 'start_break'),
+        (PhysicalKeyboardKey.keyB, [HotKeyModifier.meta, HotKeyModifier.alt], 'start_break'),
+        // Skip Break
+        (PhysicalKeyboardKey.keyS, [HotKeyModifier.control, HotKeyModifier.alt], 'skip_break'),
+        (PhysicalKeyboardKey.keyS, [HotKeyModifier.meta, HotKeyModifier.alt], 'skip_break'),
+        // Postpone Break
+        (PhysicalKeyboardKey.keyO, [HotKeyModifier.control, HotKeyModifier.alt], 'postpone_break'),
+        (PhysicalKeyboardKey.keyO, [HotKeyModifier.meta, HotKeyModifier.alt], 'postpone_break'),
+      ];
+
+      for (final config in hotkeysConfig) {
+        final hotKey = HotKey(
+          key: config.$1,
+          modifiers: config.$2,
+          scope: HotKeyScope.system,
+        );
+        await hotKeyManager.register(
+          hotKey,
+          keyDownHandler: (hk) {
+            _handleHotkey(config.$3);
+          },
+        );
+      }
+    } catch (e) {
+      debugPrint('Failed to initialize global hotkeys: $e');
+    }
+  }
+
+  void _handleHotkey(String action) {
+    switch (action) {
+      case 'pause_resume':
+        if (_latestState != null) {
+          if (_latestState!.isPaused || !_latestState!.isRunning || _latestState!.isSnoozed) {
+            DesktopControlsController.instance.triggerCommand(DesktopCommand.resume);
+          } else {
+            DesktopControlsController.instance.triggerCommand(DesktopCommand.pause);
+          }
+        } else {
+          DesktopControlsController.instance.triggerCommand(DesktopCommand.resume);
+        }
+        break;
+      case 'start_break':
+        DesktopControlsController.instance.triggerCommand(DesktopCommand.startBreak);
+        break;
+      case 'skip_break':
+        DesktopControlsController.instance.triggerCommand(DesktopCommand.skipBreak);
+        break;
+      case 'postpone_break':
+        DesktopControlsController.instance.triggerCommand(DesktopCommand.postponeBreak);
+        break;
     }
   }
 }
