@@ -23,6 +23,7 @@ class DesktopIntegrationService extends WindowListener {
   bool _isWindowHiddenToTray = false;
   bool _wasHiddenToTrayBeforeBreak = false;
   bool _wasMinimizedBeforeBreak = false;
+  bool _needsStyleRestoration = false;
   bool? _lastIsBreak;
   bool? _lastIsRunning;
   bool? _lastIsPaused;
@@ -299,6 +300,7 @@ class DesktopIntegrationService extends WindowListener {
 
   Future<void> _showWindow() async {
     _isWindowHiddenToTray = false;
+    await _restoreWindowStylesIfNeeded();
     await windowManager.show();
     await windowManager.focus();
   }
@@ -321,6 +323,16 @@ class DesktopIntegrationService extends WindowListener {
       _isWindowHiddenToTray = true;
       await windowManager.hide();
     }
+  }
+
+  @override
+  void onWindowRestore() async {
+    await _restoreWindowStylesIfNeeded();
+  }
+
+  @override
+  void onWindowFocus() async {
+    await _restoreWindowStylesIfNeeded();
   }
 
   Future<void> showBreakOverlay(bool show) async {
@@ -438,43 +450,49 @@ class DesktopIntegrationService extends WindowListener {
       debugPrint('Failed to hide native screen blockers: $e');
     }
 
-    // 2. If it was hidden or minimized before the break, skip all window_manager calls to prevent the window manager from unhiding/mapping the window!
+    // 2. If it was hidden or minimized before the break, set needs style restoration and return early!
     if (_wasHiddenToTrayBeforeBreak || _wasMinimizedBeforeBreak) {
-      _isWindowHiddenToTray = true;
-      _savedWindowBounds = null;
-      _wasMaximized = false;
-      _wasMinimizedBeforeBreak = false;
+      _isWindowHiddenToTray = _wasHiddenToTrayBeforeBreak;
+      _needsStyleRestoration = true;
       _breakMonitorRects = const [];
       return;
     }
 
     // 3. Otherwise (visible before break), restore window decorations and exit fullscreen on screen
-    try {
-      await windowManager.setFullScreen(false);
-      await windowManager.setAlwaysOnTop(false);
-      await windowManager.setSkipTaskbar(false);
-      await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+    _needsStyleRestoration = true;
+    await _restoreWindowStylesIfNeeded();
+  }
 
-      // Wait for the window manager to process the style change and frame the window
-      await Future.delayed(const Duration(milliseconds: 200));
+  Future<void> _restoreWindowStylesIfNeeded() async {
+    if (_needsStyleRestoration) {
+      _needsStyleRestoration = false;
+      try {
+        await windowManager.setFullScreen(false);
+        await windowManager.setAlwaysOnTop(false);
+        await windowManager.setSkipTaskbar(false);
+        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
 
-      final saved = _savedWindowBounds;
-      if (saved != null) {
-        await windowManager.setBounds(saved);
-      } else {
-        await windowManager.setSize(const Size(1280, 720));
-        await windowManager.center();
+        // Wait for the window manager to process the style change and frame the window
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        final saved = _savedWindowBounds;
+        if (saved != null) {
+          await windowManager.setBounds(saved);
+        } else {
+          await windowManager.setSize(const Size(1280, 720));
+          await windowManager.center();
+        }
+        if (_wasMaximized) {
+          await windowManager.maximize();
+        }
+      } catch (e) {
+        debugPrint('Failed to restore window bounds: $e');
       }
-      if (_wasMaximized) {
-        await windowManager.maximize();
-      }
-    } catch (e) {
-      debugPrint('Failed to restore window bounds: $e');
+      _savedWindowBounds = null;
+      _wasMaximized = false;
+      _wasMinimizedBeforeBreak = false;
+      _breakMonitorRects = const [];
     }
-    _savedWindowBounds = null;
-    _wasMaximized = false;
-    _wasMinimizedBeforeBreak = false;
-    _breakMonitorRects = const [];
   }
 
   Future<void> _updateDynamicTrayIcon(DesktopTimerState state) async {

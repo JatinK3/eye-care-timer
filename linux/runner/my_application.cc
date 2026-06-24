@@ -33,6 +33,13 @@ static double get_double_value(FlValue* value) {
 static void hide_blocker_windows(bool was_hidden, bool was_minimized,
                                  bool has_saved_bounds, double x, double y, double width, double height,
                                  bool was_maximized) {
+  (void)has_saved_bounds;
+  (void)x;
+  (void)y;
+  (void)width;
+  (void)height;
+  (void)was_maximized;
+
   for (GtkWidget* window : blocker_windows) {
     if (GTK_IS_WIDGET(window)) {
       gtk_widget_destroy(window);
@@ -42,24 +49,10 @@ static void hide_blocker_windows(bool was_hidden, bool was_minimized,
 
   if (main_window != nullptr) {
     if (was_hidden || was_minimized) {
-      // 1. Hide the window first to prevent any visual changes or mapping events
-      gtk_widget_hide(GTK_WIDGET(main_window));
-
-      // 2. Restore all styles synchronously on the hidden window
-      gtk_window_unfullscreen(main_window);
-      gtk_window_set_keep_above(main_window, FALSE);
-      gtk_window_set_skip_taskbar_hint(main_window, FALSE);
-      gtk_window_set_decorated(main_window, TRUE);
-
-      // 3. Restore bounds and maximize state
-      if (has_saved_bounds) {
-        gtk_window_resize(main_window, (gint)width, (gint)height);
-        gtk_window_move(main_window, (gint)x, (gint)y);
-      }
-      if (was_maximized) {
-        gtk_window_maximize(main_window);
-      } else {
-        gtk_window_unmaximize(main_window);
+      if (was_hidden) {
+        gtk_widget_hide(GTK_WIDGET(main_window));
+      } else if (was_minimized) {
+        gtk_window_iconify(main_window);
       }
     } else {
       // Normal restore (visible before break): Exit fullscreen and keep-above first, then present
