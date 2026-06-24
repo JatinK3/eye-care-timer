@@ -12,8 +12,13 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 5. [x] **Keyboard Dismissal & Shortcuts (Desktop Focus)**: Support key bindings (Esc to postpone, Space/Enter to skip, or hold Space to trigger Strict exit countdown) on the break overlay.
 6. [ ] **Custom Gentle Audio Player (High UX Value)**: Bundle gentle chime assets (Tibetan bowl, chimes, birds chirps) and play them on break start/end instead of the default OS system beep.
 7. [x] **Habit Reports & CSV Data Exporter**: Add a button on the History screen to export timer event history to a CSV file.
-8. [x] **Live System Tray Dynamic Icon**: Update the system tray icon to show remaining focus time dynamically.
-
+9. [ ] **Linux Window Restore after Break Bug**: Fix window not returning to its original tray-hidden or floating state and size after the break ends.
+   - **Symptom**: After the break timer finishes, the main window is not returned to its original state (e.g. tray-hidden, minimized, or floating bounds). The app display does not even scale down (it is stuck in fullscreen).
+   - **Context**: 
+     - Mutter/GNOME Shell on Linux triggers window mapping (show) requests when unfullscreening or updating titlebar decorations on a hidden/minimized window.
+     - To circumvent this, style updates were deferred until the window is restored (`onWindowRestore`, `onWindowFocus`, or `_showWindow`). However, this leads to the window staying in fullscreen mode (not scaling back to normal window sizes) or fails to hide back to the tray cleanly.
+     - Native C++ `my_application.cc` was simplified to only handle screen blocker windows, meaning Dart is solely responsible for main window state/bounds restoration.
+     - A robust fix needs to ensure the main window exits fullscreen and returns to the tray/minimized or correct floating bounds flawlessly.
 
 ### Detailed Tasks
 - [x] Improve Android rendering smoothness and release readiness.
