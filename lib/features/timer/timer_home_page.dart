@@ -59,6 +59,8 @@ class TimerHomePage extends StatefulWidget {
   final bool smartIdleEnabled;
   final String breakVisualizerStyle;
   final String chimeStyle;
+  final bool blinkRemindersEnabled;
+  final int blinkRemindersCadenceSeconds;
 
   const TimerHomePage({
     super.key,
@@ -84,6 +86,8 @@ class TimerHomePage extends StatefulWidget {
     required this.smartIdleEnabled,
     required this.breakVisualizerStyle,
     required this.chimeStyle,
+    required this.blinkRemindersEnabled,
+    required this.blinkRemindersCadenceSeconds,
     this.breakOverlayService,
     required this.openSettings,
     required this.setPreset,
@@ -160,8 +164,14 @@ class TimerHomePageState extends State<TimerHomePage>
 
   // Phase text fade.
   double _phaseOpacity = 1.0;
+  bool _isBlinkNudging = false;
   Timer? _phaseTransitionTimer;
   Timer? _phaseDeadlineTimer;
+  // Wall-clock 1Hz ticker (desktop only) that keeps the tray/app-indicator
+  // countdown live even while the main window is hidden — the in-window
+  // animation that normally drives the tray is frozen while the window isn't
+  // rendering.
+  Timer? _desktopTrayTicker;
   DateTime? _phaseStartedAt;
   DateTime? _phaseEndsAt;
 
@@ -209,6 +219,12 @@ class TimerHomePageState extends State<TimerHomePage>
                   !_pulseController.isAnimating &&
                   _isRunning) {
                 _pulseController.forward();
+              }
+              if (widget.blinkRemindersEnabled && !_isBreak && _isRunning && !_isPaused) {
+                final elapsed = _initialDuration - _remainingSeconds;
+                if (elapsed > 0 && elapsed % widget.blinkRemindersCadenceSeconds == 0) {
+                  _triggerBlinkNudge();
+                }
               }
               _updateDesktopState();
             }
@@ -279,8 +295,38 @@ class TimerHomePageState extends State<TimerHomePage>
                   _startTimer(_breakDurationSeconds, isBreak: true);
                 }
                 break;
+              case DesktopCommand.windowResumed:
+                // Window was just shown from the tray; the countdown animation
+                // was frozen while hidden, so snap it back to the wall clock.
+                _realignAnimationToClock();
+                break;
             }
           });
+      _desktopTrayTicker = Timer.periodic(
+        const Duration(seconds: 1),
+        (_) => _onDesktopTrayTick(),
+      );
+      _updateDesktopState();
+    }
+  }
+
+  /// Keeps the tray/app-indicator countdown in step with the wall clock.
+  ///
+  /// While the main window is visible the progress animation advances
+  /// [_remainingSeconds] and pushes the tray state ~once a second. The moment
+  /// the window is hidden/closed that animation freezes, so this Dart timer —
+  /// which keeps firing regardless of window visibility — recomputes the
+  /// remaining time from [_phaseEndsAt] and pushes it. It only pushes when the
+  /// value actually changed, so it's a no-op while the window is visible and the
+  /// animation is already current (no duplicate tray redraws).
+  void _onDesktopTrayTick() {
+    if (!mounted || !_isRunning || _isPaused || _phaseEndsAt == null) {
+      return;
+    }
+    final remainingMs = _phaseEndsAt!.difference(DateTime.now()).inMilliseconds;
+    final clamped = (remainingMs / 1000).ceil().clamp(0, _initialDuration);
+    if (clamped != _remainingSeconds) {
+      _remainingSeconds = clamped;
       _updateDesktopState();
     }
   }
@@ -331,6 +377,7 @@ class TimerHomePageState extends State<TimerHomePage>
     }
     _desktopIdleSubscription?.cancel();
     _desktopCommandSubscription?.cancel();
+    _desktopTrayTicker?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _phaseTransitionTimer?.cancel();
     _cancelPhaseDeadlineTimer();
@@ -350,7 +397,19 @@ class TimerHomePageState extends State<TimerHomePage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        // Android can fully suspend the Dart VM, so reconcile across every
+        // elapsed work/break boundary on resume.
         _syncTimerWithClock();
+      } else if (!kIsWeb &&
+          (defaultTargetPlatform == TargetPlatform.linux ||
+              defaultTargetPlatform == TargetPlatform.macOS ||
+              defaultTargetPlatform == TargetPlatform.windows)) {
+        // Desktop keeps the Dart VM and the phase deadline timer running while
+        // hidden, so only the frozen countdown *animation* needs re-aligning.
+        // Deliberately NOT _syncTimerWithClock(): full phase reconciliation on
+        // desktop focus transitions previously spawned duplicate break overlays
+        // and corrupted streak state (see WORKLOG).
+        _realignAnimationToClock();
       }
       if (_isFocusMode) {
         unawaited(_systemUiService.setFocusModeEnabled(true));
@@ -716,6 +775,38 @@ class TimerHomePageState extends State<TimerHomePage>
     return (elapsedSeconds / initialDurationSeconds).clamp(0.0, 1.0);
   }
 
+  /// Snaps the in-window countdown dial back into step with the wall clock after
+  /// the window was hidden (its vsync animation freezes while not rendering).
+  ///
+  /// Intentionally lightweight: it re-aligns the *current* phase's animation to
+  /// [_phaseEndsAt] and nothing more. It does NOT run [projectPhase]/phase
+  /// reconciliation, cross boundaries, start breaks, or touch streak counters —
+  /// the phase deadline is owned by [_phaseDeadlineTimer]. This is the desktop
+  /// counterpart to [_syncTimerWithClock], which is kept Android-only because
+  /// full reconciliation on desktop focus transitions previously spawned
+  /// duplicate break overlays and corrupted state.
+  void _realignAnimationToClock() {
+    if (!_isRunning || _isPaused || _phaseEndsAt == null) {
+      return;
+    }
+    final remainingMs = _phaseEndsAt!.difference(DateTime.now()).inMilliseconds;
+    if (remainingMs <= 0) {
+      // Phase already elapsed; let _phaseDeadlineTimer/_onPhaseComplete run it.
+      return;
+    }
+    final remaining = (remainingMs / 1000).ceil().clamp(1, _initialDuration);
+    final progress = _progressFromRemaining(
+      initialDurationSeconds: _initialDuration,
+      remainingSeconds: remaining,
+    );
+    setState(() {
+      _remainingSeconds = remaining;
+      _animationController.value = progress;
+    });
+    _animationController.forward();
+    _updateDesktopState();
+  }
+
   // -------------------- Timer Logic --------------------
   void _startTimer(int duration, {bool isBreak = false}) {
     _phaseTransitionTimer?.cancel();
@@ -818,6 +909,14 @@ class TimerHomePageState extends State<TimerHomePage>
     _animationController.stop();
     _playChime();
     _pulseController.stop();
+    // Cancel the pending "Break complete" reminder that was scheduled when the
+    // break started. Without this it would still fire at the original break-end
+    // time and tell the user the break completed even though they postponed it.
+    _cancelReminders();
+    // Tear down the break overlay too, so postponing from the tray menu (which
+    // doesn't go through the overlay's own dismiss path) doesn't leave the
+    // fullscreen break screen up over the resumed work phase.
+    unawaited(widget.breakOverlayService?.stopBreakOverlay());
     final postponeSeconds = widget.postponeDurationSeconds;
     widget.saveTimerEventRecord(TimerEventRecord(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -839,6 +938,9 @@ class TimerHomePageState extends State<TimerHomePage>
     _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: false);
     _saveActiveSession(remainingSeconds: _remainingSeconds);
     _schedulePhaseDeadlineTimer(_phaseEndsAt!);
+    // Schedule the reminder for the new (postponed) work window so it behaves
+    // like any other work phase instead of ending silently.
+    unawaited(_schedulePhaseReminder(postponeSeconds, isBreak: false));
     _updateDesktopState();
   }
 
@@ -1086,6 +1188,25 @@ class TimerHomePageState extends State<TimerHomePage>
     }
   }
 
+  void _triggerBlinkNudge() {
+    if (widget.hapticsEnabled) {
+      unawaited(HapticFeedback.selectionClick());
+    }
+    setState(() {
+      _isBlinkNudging = true;
+    });
+    _updateDesktopState();
+
+    Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _isBlinkNudging = false;
+        });
+        _updateDesktopState();
+      }
+    });
+  }
+
   bool get _canChangeSettings => !_isRunning;
 
   LinearGradient _backgroundGradientFromPreset(String preset, bool isDark) {
@@ -1269,6 +1390,8 @@ class TimerHomePageState extends State<TimerHomePage>
                         strokeWidth: _ringStrokeWidth,
                         isLandscape: isLandscape,
                         onTap: _toggleFocusMode,
+                        blinkRemindersEnabled: widget.blinkRemindersEnabled,
+                        isBlinkNudging: _isBlinkNudging,
                       );
 
                       final actionButtons = Wrap(
@@ -1551,7 +1674,9 @@ class TimerHomePageState extends State<TimerHomePage>
                               if (_activeBreakVisualizerStyle ==
                                       'EyeExercise' ||
                                   _activeBreakVisualizerStyle ==
-                                      'BoxBreathing') ...[
+                                      'BoxBreathing' ||
+                                  _activeBreakVisualizerStyle ==
+                                      'BlinkTraining') ...[
                                 const SizedBox(height: 16),
                                 ConstrainedBox(
                                   constraints: const BoxConstraints(
@@ -1565,11 +1690,18 @@ class TimerHomePageState extends State<TimerHomePage>
                                           totalDurationSeconds:
                                               _initialDuration,
                                         )
-                                      : BoxBreathingGuide(
-                                          remainingSeconds: _remainingSeconds,
-                                          totalDurationSeconds:
-                                              _initialDuration,
-                                        ),
+                                      : _activeBreakVisualizerStyle ==
+                                              'BoxBreathing'
+                                          ? BoxBreathingGuide(
+                                              remainingSeconds: _remainingSeconds,
+                                              totalDurationSeconds:
+                                                  _initialDuration,
+                                            )
+                                          : BlinkTrainingGuide(
+                                              remainingSeconds: _remainingSeconds,
+                                              totalDurationSeconds:
+                                                  _initialDuration,
+                                            ),
                                 ),
                               ],
                             ],
@@ -1747,6 +1879,7 @@ class TimerHomePageState extends State<TimerHomePage>
           allowPostpone: widget.allowPostpone,
           postponeDurationMinutes: widget.postponeDurationSeconds ~/ 60,
           initialDurationSeconds: _initialDuration,
+          isBlinkNudging: _isBlinkNudging,
         ),
       );
     }
@@ -1765,6 +1898,8 @@ class _AnimatedTimerDial extends StatelessWidget {
   final double strokeWidth;
   final bool isLandscape;
   final VoidCallback onTap;
+  final bool blinkRemindersEnabled;
+  final bool isBlinkNudging;
 
   const _AnimatedTimerDial({
     required this.size,
@@ -1778,6 +1913,8 @@ class _AnimatedTimerDial extends StatelessWidget {
     required this.strokeWidth,
     required this.isLandscape,
     required this.onTap,
+    required this.blinkRemindersEnabled,
+    required this.isBlinkNudging,
   });
 
   String _formattedTime(int seconds) {
@@ -1832,6 +1969,25 @@ class _AnimatedTimerDial extends StatelessWidget {
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (blinkRemindersEnabled) ...[
+                          AnimatedCrossFade(
+                            firstChild: Icon(
+                              Icons.remove_red_eye_outlined,
+                              size: 18,
+                              color: textColor.withValues(alpha: 0.5),
+                            ),
+                            secondChild: Icon(
+                              Icons.remove_red_eye,
+                              size: 18,
+                              color: progressColor,
+                            ),
+                            crossFadeState: isBlinkNudging
+                                ? CrossFadeState.showSecond
+                                : CrossFadeState.showFirst,
+                            duration: const Duration(milliseconds: 100),
+                          ),
+                          const SizedBox(height: 6),
+                        ],
                         Text(
                           _formattedTime(remainingSeconds),
                           style: Theme.of(context).textTheme.displaySmall?.copyWith(

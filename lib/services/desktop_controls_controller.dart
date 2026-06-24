@@ -1,6 +1,16 @@
 import 'dart:async';
 
-enum DesktopCommand { pause, resume, skipBreak, postponeBreak, startBreak }
+enum DesktopCommand {
+  pause,
+  resume,
+  skipBreak,
+  postponeBreak,
+  startBreak,
+  // Emitted when the main window is shown/focused again from the tray so the
+  // timer page can re-sync its display with the wall clock (on desktop the
+  // countdown animation pauses while the window is hidden).
+  windowResumed,
+}
 
 class DesktopTimerState {
   final bool isRunning;
@@ -9,8 +19,8 @@ class DesktopTimerState {
   final int remainingSeconds;
   final bool allowPostpone;
   final int postponeDurationMinutes;
-
   final int initialDurationSeconds;
+  final bool isBlinkNudging;
 
   DesktopTimerState({
     required this.isRunning,
@@ -20,6 +30,7 @@ class DesktopTimerState {
     this.allowPostpone = true,
     this.postponeDurationMinutes = 2,
     this.initialDurationSeconds = 1200,
+    this.isBlinkNudging = false,
   });
 }
 

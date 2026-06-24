@@ -86,4 +86,47 @@ void main() {
       expect(find.text('Hold'), findsOneWidget);
     });
   });
+
+  group('BlinkTrainingGuide', () {
+    testWidgets('renders initial state and cycles eye blink phases', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 400,
+              height: 400,
+              child: BlinkTrainingGuide(
+                remainingSeconds: 20,
+                totalDurationSeconds: 20,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Verify initial state: shows "Keep eyes relaxed"
+      expect(find.text('00:20'), findsOneWidget);
+      expect(find.text('Keep eyes relaxed'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is CustomPaint &&
+              widget.painter != null &&
+              widget.painter.runtimeType.toString() == '_EyePacingPainter',
+        ),
+        findsOneWidget,
+      );
+
+      // Advance by 3.4 seconds to enter the blink/closing phase
+      await tester.pump(const Duration(milliseconds: 3400));
+      expect(find.text('Blink!'), findsOneWidget);
+
+      // Advance to 3.9 seconds to return to the relaxed/open phase
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Keep eyes relaxed'), findsOneWidget);
+    });
+  });
 }

@@ -239,7 +239,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     final style = widget.breakVisualizerStyle;
 
     // Full-screen guided modes — no card, just the guide + controls
-    if (style == 'EyeExercise' || style == 'BoxBreathing') {
+    if (style == 'EyeExercise' || style == 'BoxBreathing' || style == 'BlinkTraining') {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
@@ -257,10 +257,15 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
                           remainingSeconds: _remainingSeconds,
                           totalDurationSeconds: widget.initialDurationSeconds,
                         )
-                      : BoxBreathingGuide(
-                          remainingSeconds: _remainingSeconds,
-                          totalDurationSeconds: widget.initialDurationSeconds,
-                        ),
+                      : style == 'BoxBreathing'
+                          ? BoxBreathingGuide(
+                              remainingSeconds: _remainingSeconds,
+                              totalDurationSeconds: widget.initialDurationSeconds,
+                            )
+                          : BlinkTrainingGuide(
+                              remainingSeconds: _remainingSeconds,
+                              totalDurationSeconds: widget.initialDurationSeconds,
+                            ),
                 ),
               ),
             ),
@@ -268,7 +273,9 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
             Text(
               style == 'EyeExercise'
                   ? 'Eye Exercise Break'
-                  : 'Box Breathing Break',
+                  : style == 'BoxBreathing'
+                      ? 'Box Breathing Break'
+                      : 'Blink Pacing Break',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: Colors.white38,
                   ),

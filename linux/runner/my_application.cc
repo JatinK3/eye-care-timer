@@ -63,6 +63,18 @@ static void destroy_blocker_windows() {
 // fullscreen/always-on-top styles cleared, all synchronously within this call,
 // so the compositor never re-maps it and flashes the UI on screen.
 static void exit_break() {
+  // Generic timer-stop paths (e.g. cancelling the work timer) also route through
+  // here via stopBreakOverlay(), even when no break is on screen. If a break is
+  // not actually active there are no blockers to tear down and the main window
+  // is in its normal, user-controlled state — so leave it completely untouched.
+  // Without this guard the stale restore flags from the *previous* break (e.g.
+  // "restore to tray") would hide or reposition a window the user is actively
+  // using. During a real break g_break_active is true, so the loved restore path
+  // below runs exactly as before.
+  if (!g_break_active) {
+    return;
+  }
+
   destroy_blocker_windows();
   g_break_active = false;
 

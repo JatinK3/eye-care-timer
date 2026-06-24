@@ -33,6 +33,8 @@ class PreferencesService {
   static const String smartIdleEnabledKey = 'smartIdleEnabled';
   static const String breakVisualizerStyleKey = 'breakVisualizerStyle';
   static const String chimeStyleKey = 'chimeStyle';
+  static const String blinkRemindersEnabledKey = 'blinkRemindersEnabled';
+  static const String blinkRemindersCadenceSecondsKey = 'blinkRemindersCadenceSeconds';
   static const String dailyHistoryKey = 'dailyHistory';
   static const String workSessionHistoryKey = 'workSessionHistory';
   static const String sessionIsActiveKey = 'sessionIsActive';
@@ -102,6 +104,12 @@ class PreferencesService {
       chimeStyle:
           prefs.getString(chimeStyleKey) ??
           TimerSettings.defaultChimeStyle,
+      blinkRemindersEnabled:
+          prefs.getBool(blinkRemindersEnabledKey) ??
+          TimerSettings.defaultBlinkRemindersEnabled,
+      blinkRemindersCadenceSeconds:
+          prefs.getInt(blinkRemindersCadenceSecondsKey) ??
+          TimerSettings.defaultBlinkRemindersCadenceSeconds,
     );
   }
 
@@ -373,6 +381,16 @@ class PreferencesService {
   Future<void> saveChimeStyle(String style) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(chimeStyleKey, style);
+  }
+
+  Future<void> saveBlinkRemindersEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(blinkRemindersEnabledKey, enabled);
+  }
+
+  Future<void> saveBlinkRemindersCadenceSeconds(int seconds) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(blinkRemindersCadenceSecondsKey, seconds);
   }
 
   Future<void> saveStreakCount(int streakCount) async {

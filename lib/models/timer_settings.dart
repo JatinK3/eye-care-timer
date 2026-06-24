@@ -16,6 +16,8 @@ class TimerSettings {
   static const bool defaultSmartIdleEnabled = true;
   static const String defaultBreakVisualizerStyle = 'Breathing';
   static const String defaultChimeStyle = 'tibetan_bowl';
+  static const bool defaultBlinkRemindersEnabled = false;
+  static const int defaultBlinkRemindersCadenceSeconds = 5;
 
   final int workDurationSeconds;
   final int breakDurationSeconds;
@@ -38,6 +40,8 @@ class TimerSettings {
   final bool smartIdleEnabled;
   final String breakVisualizerStyle;
   final String chimeStyle;
+  final bool blinkRemindersEnabled;
+  final int blinkRemindersCadenceSeconds;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -61,6 +65,8 @@ class TimerSettings {
     required this.smartIdleEnabled,
     required this.breakVisualizerStyle,
     required this.chimeStyle,
+    required this.blinkRemindersEnabled,
+    required this.blinkRemindersCadenceSeconds,
   });
 
   const TimerSettings.defaults()
@@ -84,7 +90,9 @@ class TimerSettings {
       postponeDurationSeconds = defaultPostponeDurationSeconds,
       smartIdleEnabled = defaultSmartIdleEnabled,
       breakVisualizerStyle = defaultBreakVisualizerStyle,
-      chimeStyle = defaultChimeStyle;
+      chimeStyle = defaultChimeStyle,
+      blinkRemindersEnabled = defaultBlinkRemindersEnabled,
+      blinkRemindersCadenceSeconds = defaultBlinkRemindersCadenceSeconds;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -108,6 +116,8 @@ class TimerSettings {
     bool? smartIdleEnabled,
     String? breakVisualizerStyle,
     String? chimeStyle,
+    bool? blinkRemindersEnabled,
+    int? blinkRemindersCadenceSeconds,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -133,6 +143,10 @@ class TimerSettings {
       smartIdleEnabled: smartIdleEnabled ?? this.smartIdleEnabled,
       breakVisualizerStyle: breakVisualizerStyle ?? this.breakVisualizerStyle,
       chimeStyle: chimeStyle ?? this.chimeStyle,
+      blinkRemindersEnabled:
+          blinkRemindersEnabled ?? this.blinkRemindersEnabled,
+      blinkRemindersCadenceSeconds:
+          blinkRemindersCadenceSeconds ?? this.blinkRemindersCadenceSeconds,
     );
   }
 }

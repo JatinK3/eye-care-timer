@@ -495,3 +495,222 @@ class _BoxBreathingPainter extends CustomPainter {
       old.phaseProgress != phaseProgress ||
       old.color != color;
 }
+
+// ---------------------------------------------------------------------------
+// Blink Training Guide (Blink reflex pacing)
+// ---------------------------------------------------------------------------
+
+class BlinkTrainingGuide extends StatefulWidget {
+  final int remainingSeconds;
+  final int totalDurationSeconds;
+
+  const BlinkTrainingGuide({
+    super.key,
+    required this.remainingSeconds,
+    required this.totalDurationSeconds,
+  });
+
+  @override
+  State<BlinkTrainingGuide> createState() => _BlinkTrainingGuideState();
+}
+
+class _BlinkTrainingGuideState extends State<BlinkTrainingGuide>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  // Blink cycle of 4 seconds: 3.3s open → 0.15s closing → 0.2s closed → 0.15s opening → 0.2s open
+  static const _cycleDurationSeconds = 4.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  String _formatTime(int secs) {
+    final m = secs ~/ 60;
+    final s = secs % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const themeColor = Color(0xFF00E5CC);
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final t = _controller.value * _cycleDurationSeconds; // 0..4
+        double openAmount = 1.0;
+        String instruction = 'Keep eyes relaxed';
+
+        if (t < 3.3) {
+          openAmount = 1.0;
+          instruction = 'Keep eyes relaxed';
+        } else if (t < 3.45) {
+          final frac = (t - 3.3) / 0.15;
+          openAmount = 1.0 - frac; // closing
+          instruction = 'Blink!';
+        } else if (t < 3.65) {
+          openAmount = 0.0; // closed
+          instruction = 'Blink!';
+        } else if (t < 3.8) {
+          final frac = (t - 3.65) / 0.15;
+          openAmount = frac; // opening
+          instruction = 'Keep eyes relaxed';
+        } else {
+          openAmount = 1.0;
+          instruction = 'Keep eyes relaxed';
+        }
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final size = math.min(constraints.maxWidth, constraints.maxHeight);
+            final eyeSize = size * 0.45;
+
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                // Countdown arc (overall break time)
+                SizedBox(
+                  width: size,
+                  height: size,
+                  child: CircularProgressIndicator(
+                    value: widget.totalDurationSeconds > 0
+                        ? widget.remainingSeconds / widget.totalDurationSeconds
+                        : 0,
+                    strokeWidth: 3,
+                    color: themeColor.withValues(alpha: 0.4),
+                    backgroundColor: Colors.white.withValues(alpha: 0.06),
+                  ),
+                ),
+                // Center blinking eye painter
+                SizedBox(
+                  width: eyeSize * 1.5,
+                  height: eyeSize,
+                  child: CustomPaint(
+                    painter: _EyePacingPainter(
+                      openAmount: openAmount,
+                      color: themeColor,
+                    ),
+                  ),
+                ),
+                // Center labels positioned below/above the eye shape
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 24),
+                      child: Text(
+                        _formatTime(widget.remainingSeconds),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: Text(
+                        instruction,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: openAmount < 0.5 ? themeColor : Colors.white60,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _EyePacingPainter extends CustomPainter {
+  final double openAmount;
+  final Color color;
+
+  const _EyePacingPainter({
+    required this.openAmount,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final center = Offset(w / 2, h / 2);
+
+    final outerPath = Path();
+    // Build almond shape.
+    final double topOffset = (h / 2) - (h * 0.35 * openAmount);
+    final double bottomOffset = (h / 2) + (h * 0.35 * openAmount);
+
+    outerPath.moveTo(w * 0.1, h / 2);
+    outerPath.quadraticBezierTo(w / 2, topOffset, w * 0.9, h / 2);
+    outerPath.quadraticBezierTo(w / 2, bottomOffset, w * 0.1, h / 2);
+    outerPath.close();
+
+    canvas.save();
+
+    // Eyeball background filling (soft clean white)
+    final eyeballPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.9)
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(outerPath, eyeballPaint);
+
+    // Clip to keep the iris/pupil strictly inside the eyelids
+    canvas.clipPath(outerPath);
+
+    // Draw Iris
+    final irisRadius = math.min(w, h) * 0.28;
+    final irisPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, irisRadius, irisPaint);
+
+    // Draw Pupil
+    final pupilPaint = Paint()
+      ..color = Colors.black87
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, irisRadius * 0.45, pupilPaint);
+
+    // Draw light reflection spot
+    final reflectionPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(
+      center + Offset(-irisRadius * 0.22, -irisRadius * 0.22),
+      irisRadius * 0.15,
+      reflectionPaint,
+    );
+
+    canvas.restore();
+
+    // Draw eyelids outline
+    final lidPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.85)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPath(outerPath, lidPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _EyePacingPainter old) =>
+      old.openAmount != openAmount || old.color != color;
+}

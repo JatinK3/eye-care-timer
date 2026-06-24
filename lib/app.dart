@@ -430,6 +430,20 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveChimeStyle(style));
   }
 
+  void _setBlinkRemindersEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(blinkRemindersEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveBlinkRemindersEnabled(enabled));
+  }
+
+  void _setBlinkRemindersCadenceSeconds(int seconds) {
+    setState(() {
+      _settings = _settings.copyWith(blinkRemindersCadenceSeconds: seconds);
+    });
+    unawaited(_preferencesService.saveBlinkRemindersCadenceSeconds(seconds));
+  }
+
   void _setNotificationsEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(notificationsEnabled: enabled);
@@ -674,6 +688,10 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           soundEnabled: _settings.soundEnabled,
           chimeStyle: _settings.chimeStyle,
           setChimeStyle: _setChimeStyle,
+          blinkRemindersEnabled: _settings.blinkRemindersEnabled,
+          blinkRemindersCadenceSeconds: _settings.blinkRemindersCadenceSeconds,
+          setBlinkRemindersEnabled: _setBlinkRemindersEnabled,
+          setBlinkRemindersCadenceSeconds: _setBlinkRemindersCadenceSeconds,
           canChangeDurations: canChangeDurations,
           toggleTheme: _toggleTheme,
           setPreset: _setPreset,
@@ -755,6 +773,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
               hapticsEnabled: _settings.hapticsEnabled,
               soundEnabled: _settings.soundEnabled,
               chimeStyle: _settings.chimeStyle,
+              blinkRemindersEnabled: _settings.blinkRemindersEnabled,
+              blinkRemindersCadenceSeconds: _settings.blinkRemindersCadenceSeconds,
               breakMode: _settings.breakMode,
               allowSkip: _settings.allowSkip,
               allowPostpone: _settings.allowPostpone,

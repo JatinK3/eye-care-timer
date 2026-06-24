@@ -140,7 +140,61 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Add unlimited and configurable per-run cycle limits.
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
+## Future Roadmap (Product Audit — 2026-06-24)
+
+**Audit snapshot.** BlinkKind today is a mature cross-platform app (Android, iOS, Linux, macOS, Windows, web) with: a 20-20-20 work/break/long-break engine with auto-run cycles and limits; Off/Gentle/Strict break modes with skip/postpone policies; five break visualizers plus two guided exercises (eye-dot tracker, box breathing); smart idle / DND / fullscreen-app postpone; exact-alarm + foreground-service background reliability; a native multi-monitor desktop break overlay with tray controls; History & Insights with CSV/JSON export; theming, color presets, Inter typography, and Immersive Focus Mode; onboarding and permission recovery. The items below target the gaps found in that audit, ordered by impact. None are started yet.
+
+### P0 — Signature eye-care depth (on-brand, differentiating)
+- [x] **Blink reminders & blink-rate training** — the product is literally *BlinkKind*, yet blinking exists only as static break-screen text (`desktop_break_overlay.dart`, `timer_home_page.dart`). Add an opt-in, low-friction "blink now" micro-nudge (subtle tray pulse / brief on-screen cue) on a configurable cadence, plus a guided blink exercise. This is the clearest differentiator vs. generic Pomodoro/eye timers and the most on-brand missing feature.
+- [ ] **Active work-hours & day schedule** — only run during configured hours/days (e.g. 09:00–18:00, Mon–Fri); auto-pause outside them. Removes the "why is it nagging me at night/weekend" friction. No time-of-day scheduling exists today.
+- [ ] **Natural / idle break credit** — `system_idle` is already wired for pausing; extend it so that when the user has already been idle ≥ break length, that counts as a completed break and defers the next one instead of interrupting someone who just stepped away (à la Stretchly).
+- [ ] **Rotating eye-health tips & 20-20-20 education** — surface short, rotating eye-care tips on the break screen and a "Learn" card on home to reinforce the habit and the value proposition.
+
+### P1 — Retention, motivation & everyday UX
+- [ ] **Achievements, streak milestones & compliance stats** — badges/levels for streaks and breaks taken; add a compliance metric (breaks taken vs. skipped/postponed — the data already exists in `TimerEventRecord`) and a focus-time heatmap to History. No gamification exists today.
+- [ ] **Global hotkeys + richer tray/menubar** — system-wide start/pause/skip/take-break-now; tray tooltip showing "next break at HH:MM" and a "snooze all for 1h / until tomorrow" quick action.
+- [ ] **Settings redesign with search & grouping** — `settings_page.dart` is ~1.2k lines and growing; add search and collapsible categories so the surface stays usable.
+- [ ] **Theme expansion** — custom accent-color picker, true-black AMOLED variant, and Material You / system-accent dynamic color.
+- [ ] **Break-screen customization** — optional motivational quotes / custom messages, choice of background, and toggles for which info (clock, next phase, tips) is shown during a break.
+- [ ] **Localization (i18n) scaffolding** — app is English-only (no `flutter_localizations`/ARB); extract strings and add localization. Large reach multiplier.
+
+### P2 — Cross-device, ecosystem & context intelligence
+- [ ] **Settings backup/restore, then cloud sync** — start with config export/import (JSON) to complement the existing history export; later add optional account-based sync of settings + history across devices.
+- [ ] **Meeting / camera-in-use auto-postpone** — detect an active camera/mic (video calls) or a calendar event and postpone the break, extending the existing smart-idle/DND logic.
+- [ ] **Per-app rules & profiles** — don't interrupt while chosen apps are focused; "Work" vs "Gaming" profiles with different cadences.
+- [ ] **Home-screen widgets & OS surfaces** — Android home widget, iOS widget + Live Activity, macOS menu-bar extra, Windows taskbar progress.
+- [ ] **Wellness micro-breaks (modular)** — optional hydration / posture / stretch reminders alongside eye breaks (opt-in modules).
+- [ ] **OS DND / Focus integration** — set system Do-Not-Disturb / Focus during work phases.
+
+### P3 — Quality, distribution & infrastructure
+- [ ] **Physical-device validation** (also tracked above) — Android OEM background restrictions, iOS immersive restore, desktop Wayland/X11 edge cases.
+- [ ] **CI + expanded test coverage** — automated analyze/test on push; widen widget/unit coverage as new features land.
+- [ ] **Desktop auto-update + store distribution** — an update channel for the `.deb`/`.rpm`, plus publishing to Flathub/Snap, Microsoft Store, App Store, Play Store, and Homebrew.
+- [ ] **Opt-in, privacy-respecting analytics & crash reporting** — understand real usage/compliance without compromising the local-first stance.
+- [ ] **Accessibility & performance audit** — screen-reader pass, reduced-motion option, colorblind-safe palettes; revisit the once-per-second tray PNG render cadence on desktop.
+
+### Quick wins (low effort, near-term)
+- [ ] Promote "Take a break now" and a "Snooze for…" action to the main home screen (currently tray-only).
+- [ ] Add a one-tap "Restore defaults" in Settings and reconsider defaults (e.g. in-app sound defaults to off).
+- [ ] Show a "breaks taken today" count on home, and a pre-break countdown indication on the tray icon.
+
 ## Completed
+
+- Implemented opt-in blink reminders (micro-nudges) and guided blink pacing training:
+  - Added `blinkRemindersEnabled` and `blinkRemindersCadenceSeconds` configurations to the Settings model, preferences service, and settings page.
+  - Implemented real-time cadence checking in the work timer ticks to trigger micro-nudges (Haptic ticks on mobile/haptic platforms, and temporary dynamic system tray closed-eye icon changes + central eye animation flashes in the home screen timer dial).
+  - Built the `BlinkTrainingGuide` widget with an animated custom-drawn vector eye using the `_EyePacingPainter` (smooth quadratic Beziers shape scaling representing blinking lids, iris, pupil, and light reflection).
+  - Wired `BlinkTraining` into desktop overlays and homepage layouts, added settings visualizer dropdown selection, and added full widget test coverage.
+
+- Fixed the desktop tray / app-indicator countdown freezing while the window is hidden. The tray time was only ever pushed from the in-window progress `AnimationController`'s per-frame listener, and Flutter stops producing frames once the GTK window is hidden/closed — so the indicator froze at whatever value it showed when the window was closed, even though the underlying phase (and breaks) kept running on the wall-clock `_phaseDeadlineTimer`.
+  - Added a desktop-only wall-clock `Timer.periodic(1s)` (`_desktopTrayTicker` / `_onDesktopTrayTick` in `timer_home_page.dart`) that runs regardless of window visibility, recomputes the remaining time from `_phaseEndsAt`, and pushes it to the tray via `_updateDesktopState()`. It only pushes when the value actually changes, so it is a no-op while the window is visible and the animation already keeps the value current (no duplicate tray redraws). Started in the desktop init block, cancelled in `dispose()`.
+  - Also fixed the **in-window** dial showing a stale value when the window is reopened: added a lightweight `_realignAnimationToClock()` that snaps the current phase's animation back to the wall clock, triggered on tray-restore (new `DesktopCommand.windowResumed`, emitted from `DesktopIntegrationService._showWindow()`) and on desktop `AppLifecycleState.resumed`.
+  - **Important — did NOT re-enable `_syncTimerWithClock()` on desktop.** `_realignAnimationToClock()` only re-aligns the single current phase's animation; it never runs `projectPhase` reconciliation, crosses boundaries, starts breaks, or mutates streak counters. This preserves the earlier deliberate decision (recorded below) to keep full clock reconciliation Android-only, which avoided duplicate break overlays / state corruption on desktop focus transitions.
+  - Verified: `flutter analyze` clean, release build green via `tool/package_linux.sh`, `dist/blinkkind_1.0.0_amd64.deb` produced.
+
+- Fixed Postpone falsely showing a "Break complete" notification. Starting a break schedules a "Break complete" reminder (`NotificationService.scheduleBreakCompleteReminder`, a wall-clock timer on Linux) for the break's full duration. `_postponeBreak()` switched to a work phase but never cancelled that pending reminder, so it still fired at the original break-end time and told the user the break had completed. Fix (`timer_home_page.dart`, `_postponeBreak`): cancel the pending reminder (`_cancelReminders()`), tear down the break overlay (so postponing from the tray menu doesn't leave the fullscreen break screen up), and schedule the reminder for the new postponed work window. Skip was already correct — it routes through `_onPhaseComplete()`, which cancels reminders — so no change was needed there.
+
+- Fixed the main window auto-closing when the work timer is cancelled. The "Cancel" / "Cancel Timer" button routes through `_cancelTimer()` → `stopBreakOverlay()` → native `exitBreak()`, which previously ran its window restore logic unconditionally and reused the leftover "restore to tray" flag from the *previous* break, hiding the visible window even though no break was on screen. Fix (`linux/runner/my_application.cc`, `exit_break()`): early-return when `g_break_active` is false, so the window transform/restore only fires during an actual break and spurious calls leave the user's window untouched. Does not alter the on-device-verified restore path (during a real break `g_break_active` is true, so it runs identically).
 
 - Fixed the Linux "window restore after break" bug for good (backlog item #9) — verified on-device, **this implementation is final and must not be modified**. Made the native GTK runner (`linux/runner/my_application.cc`) the single owner of the main window during a break and removed the Dart `window_manager` transform/deferred-restore entirely, eliminating the long-standing "dual-mapping" conflict where both Dart and native code fought over the same window.
   - New native `enterBreak`: snapshots the window's pre-break state — hidden-to-tray, minimized, maximized, or floating position/size (tracked via a `window-state-event` handler on the main `GtkWindow`) — then forces the window onto the active cursor monitor, fullscreens it to host the rich Flutter break UI, and blacks out the other monitors with blocker windows.

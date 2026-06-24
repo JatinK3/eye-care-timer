@@ -41,6 +41,10 @@ class SettingsPage extends StatefulWidget {
   final bool soundEnabled;
   final String chimeStyle;
   final void Function(String) setChimeStyle;
+  final bool blinkRemindersEnabled;
+  final int blinkRemindersCadenceSeconds;
+  final void Function(bool) setBlinkRemindersEnabled;
+  final void Function(int) setBlinkRemindersCadenceSeconds;
   final bool canChangeDurations;
   final BreakMode breakMode;
   final void Function(BreakMode breakMode) setBreakMode;
@@ -112,6 +116,10 @@ class SettingsPage extends StatefulWidget {
     required this.soundEnabled,
     required this.chimeStyle,
     required this.setChimeStyle,
+    required this.blinkRemindersEnabled,
+    required this.blinkRemindersCadenceSeconds,
+    required this.setBlinkRemindersEnabled,
+    required this.setBlinkRemindersCadenceSeconds,
     required this.canChangeDurations,
     required this.toggleTheme,
     required this.setNotificationsEnabled,
@@ -628,6 +636,10 @@ class _SettingsPageState extends State<SettingsPage>
                           child: Text('Eye Exercises'),
                         ),
                         DropdownMenuItem(
+                          value: 'BlinkTraining',
+                          child: Text('Blink Training (Blink Pacing)'),
+                        ),
+                        DropdownMenuItem(
                           value: 'Ambient',
                           child: Text('Ambient Flow'),
                         ),
@@ -738,6 +750,47 @@ class _SettingsPageState extends State<SettingsPage>
                   onTap: () => widget.setPreset(preset),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _Section(
+            title: 'Blink reminders',
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.remove_red_eye_outlined),
+                title: const Text('Blink nudges (micro-reminders)'),
+                subtitle: const Text(
+                  'Flashes the system tray icon or pulses UI to encourage healthy blinking',
+                ),
+                value: widget.blinkRemindersEnabled,
+                onChanged: widget.setBlinkRemindersEnabled,
+              ),
+              if (widget.blinkRemindersEnabled) ...[
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.timer_outlined),
+                  title: const Text('Nudge cadence'),
+                  subtitle: const Text('Interval between blink reminders'),
+                  trailing: DropdownButton<int>(
+                    value: widget.blinkRemindersCadenceSeconds,
+                    items: const [
+                      DropdownMenuItem(value: 3, child: Text('Every 3s')),
+                      DropdownMenuItem(value: 4, child: Text('Every 4s')),
+                      DropdownMenuItem(value: 5, child: Text('Every 5s')),
+                      DropdownMenuItem(value: 6, child: Text('Every 6s')),
+                      DropdownMenuItem(value: 8, child: Text('Every 8s')),
+                      DropdownMenuItem(value: 10, child: Text('Every 10s')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        widget.setBlinkRemindersCadenceSeconds(value);
+                      }
+                    },
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 16),

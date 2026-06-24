@@ -294,6 +294,12 @@ class DesktopIntegrationService extends WindowListener {
   Future<void> _showWindow() async {
     await windowManager.show();
     await windowManager.focus();
+    // The in-window countdown animation is paused while the window is hidden, so
+    // tell the timer page to re-project its display from the wall clock now that
+    // the window is visible again.
+    DesktopControlsController.instance.triggerCommand(
+      DesktopCommand.windowResumed,
+    );
   }
 
   Future<void> _quitApp() async {
@@ -431,7 +437,36 @@ class DesktopIntegrationService extends WindowListener {
       }
 
       // 4. Draw central remaining text or dot
-      if (text.isNotEmpty) {
+      if (state.isBlinkNudging) {
+        final eyePaint = Paint()
+          ..color = ringColor
+          ..style = ui.PaintingStyle.stroke
+          ..strokeWidth = 1.8
+          ..strokeCap = ui.StrokeCap.round;
+
+        canvas.drawArc(
+          Rect.fromLTWH(width * 0.25, height * 0.38, width * 0.5, height * 0.25),
+          0,
+          math.pi,
+          false,
+          eyePaint,
+        );
+        canvas.drawLine(
+          Offset(width * 0.35, height * 0.51),
+          Offset(width * 0.3, height * 0.61),
+          eyePaint..strokeWidth = 1.2,
+        );
+        canvas.drawLine(
+          Offset(width * 0.5, height * 0.52),
+          Offset(width * 0.5, height * 0.65),
+          eyePaint..strokeWidth = 1.2,
+        );
+        canvas.drawLine(
+          Offset(width * 0.65, height * 0.51),
+          Offset(width * 0.7, height * 0.61),
+          eyePaint..strokeWidth = 1.2,
+        );
+      } else if (text.isNotEmpty) {
         final textPainter = TextPainter(
           text: TextSpan(
             text: text,
