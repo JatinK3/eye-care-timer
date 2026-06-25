@@ -441,6 +441,20 @@ class DesktopIntegrationService extends WindowListener {
     }
   }
 
+  Future<void> showWarningOverlay(bool show) async {
+    if (!isSupported) return;
+    if (show) {
+      _isBreakActive = true;
+      try {
+        await _overlayChannel.invokeMethod('enterWarning');
+      } catch (e) {
+        // Fallback or ignore
+      }
+    } else {
+      await _exitBreakWindow();
+    }
+  }
+
   static const MethodChannel _overlayChannel = MethodChannel(
     "blinkkind/break_overlay",
   );

@@ -505,4 +505,13 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Implemented migration logic in `PreferencesService.loadSettings()` to automatically transition existing installations with unchanged default prompts to the new broader health and wellness prompt.
   - Verified compilation and test suite remains fully correct and functional.
 
+- Fixed Desktop Linux Warning, Previews, and Single AI Message:
+  - Added native Linux GTK `enter_warning()` channel method that snapshots window state and brings the main window visible/always-on-top when the 10-second pre-break warning begins, ensuring the warning is visible even when working on another fullscreen Chrome window.
+  - Aligned warning state variables so postponing/cancelling during the warning phase restores the window silently back to the tray/minimized state, reusing native window restoration logic.
+  - Exposed "Preview break screen" and "Test 20s break screen" unconditionally on desktop settings UI, removing Android-only overlay permission constraints.
+  - Cleaned up AI pre-fetching to trigger exactly once per work phase in `_startTimer` and `_postponeBreak` in the background.
+  - Cleaned up break overlay screen layout to hide rotating static tip details subtext when `aiQuote` or `customMessage` is active, keeping a single clean focused quote.
+  - Verified compilation, analyzer checks, and unit tests pass successfully.
+
+
 

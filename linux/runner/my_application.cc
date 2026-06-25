@@ -108,6 +108,34 @@ static void exit_break() {
   }
 }
 
+// Snapshot state and show warning window always-on-top
+static void enter_warning(GtkApplication* app) {
+  if (!g_break_active && g_main_window != nullptr) {
+    g_break_active = true;
+
+    GtkWidget* main_widget = GTK_WIDGET(g_main_window);
+    bool visible = gtk_widget_get_visible(main_widget);
+    bool minimized = (g_main_window_state & GDK_WINDOW_STATE_ICONIFIED) != 0;
+    bool maximized = (g_main_window_state & GDK_WINDOW_STATE_MAXIMIZED) != 0;
+
+    g_restore_to_background = (!visible) || minimized;
+    g_was_maximized = maximized;
+    g_have_saved_bounds = false;
+    if (visible && !minimized && !maximized) {
+      gtk_window_get_position(g_main_window, &g_saved_x, &g_saved_y);
+      gtk_window_get_size(g_main_window, &g_saved_w, &g_saved_h);
+      g_have_saved_bounds = true;
+    }
+  }
+
+  if (g_main_window != nullptr) {
+    gtk_widget_show(GTK_WIDGET(g_main_window));
+    gtk_window_deiconify(g_main_window);
+    gtk_window_set_keep_above(g_main_window, TRUE);
+    gtk_window_present(g_main_window);
+  }
+}
+
 // Begin a break: snapshot the main window's current state, force it up onto the
 // active (cursor) monitor in fullscreen to host the Flutter break UI, then cover
 // every other monitor with a black blocker window.
@@ -422,6 +450,9 @@ static void my_application_activate(GApplication* application) {
 
         if (g_strcmp0(method, "enterBreak") == 0) {
           enter_break(GTK_APPLICATION(self));
+          fl_method_call_respond_success(method_call, nullptr, nullptr);
+        } else if (g_strcmp0(method, "enterWarning") == 0) {
+          enter_warning(GTK_APPLICATION(self));
           fl_method_call_respond_success(method_call, nullptr, nullptr);
         } else if (g_strcmp0(method, "exitBreak") == 0) {
           exit_break();

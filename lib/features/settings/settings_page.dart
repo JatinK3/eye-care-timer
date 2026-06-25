@@ -1264,47 +1264,49 @@ class _SettingsPageState extends State<SettingsPage>
                 : null,
           ),
         ),
-        SettingItem(
-          title: 'Preview break screen',
-          subtitle: 'Show a 10-second black overlay',
-          keywords: ['preview', 'break', 'screen', 'test'],
-          category: 'Break Screen & Behavior',
-          widget: ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.fullscreen),
-            title: const Text('Preview break screen'),
-            subtitle: const Text('Show a 10-second black overlay'),
-            trailing: IconButton(
-              onPressed:
-                  _overlayPermissionStatus == OverlayPermissionStatus.allowed
-                  ? _showOverlayPreview
-                  : null,
-              icon: const Icon(Icons.play_arrow),
-              tooltip: 'Preview break overlay',
-            ),
-          ),
-        ),
-        SettingItem(
-          title: 'Test 20s break screen',
-          subtitle: 'Launch a real 20-second eye break',
-          keywords: ['test', '20s', 'break', 'overlay', 'real'],
-          category: 'Break Screen & Behavior',
-          widget: ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.timer),
-            title: const Text('Test 20s break screen'),
-            subtitle: const Text('Launch a real 20-second eye break'),
-            trailing: IconButton(
-              onPressed:
-                  _overlayPermissionStatus == OverlayPermissionStatus.allowed
-                  ? _showRealBreakTest
-                  : null,
-              icon: const Icon(Icons.play_arrow),
-              tooltip: 'Test real break overlay',
-            ),
-          ),
-        ),
       ],
+      SettingItem(
+        title: 'Preview break screen',
+        subtitle: 'Show a 10-second black overlay',
+        keywords: ['preview', 'break', 'screen', 'test'],
+        category: 'Break Screen & Behavior',
+        widget: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.fullscreen),
+          title: const Text('Preview break screen'),
+          subtitle: const Text('Show a 10-second black overlay'),
+          trailing: IconButton(
+            onPressed:
+                (_overlayPermissionStatus == OverlayPermissionStatus.allowed ||
+                 _overlayPermissionStatus == OverlayPermissionStatus.unsupported)
+                ? _showOverlayPreview
+                : null,
+            icon: const Icon(Icons.play_arrow),
+            tooltip: 'Preview break overlay',
+          ),
+        ),
+      ),
+      SettingItem(
+        title: 'Test 20s break screen',
+        subtitle: 'Launch a real 20-second eye break',
+        keywords: ['test', '20s', 'break', 'overlay', 'real'],
+        category: 'Break Screen & Behavior',
+        widget: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.timer),
+          title: const Text('Test 20s break screen'),
+          subtitle: const Text('Launch a real 20-second eye break'),
+          trailing: IconButton(
+            onPressed:
+                (_overlayPermissionStatus == OverlayPermissionStatus.allowed ||
+                 _overlayPermissionStatus == OverlayPermissionStatus.unsupported)
+                ? _showRealBreakTest
+                : null,
+            icon: const Icon(Icons.play_arrow),
+            tooltip: 'Test real break overlay',
+          ),
+        ),
+      ),
       if (widget.smartIdleEnabled &&
           _usageAccessStatus != UsageAccessStatus.unsupported)
         SettingItem(

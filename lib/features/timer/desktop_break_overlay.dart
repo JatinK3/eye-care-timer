@@ -340,7 +340,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               ),
             ),
           ),
-          if (widget.showTips) ...[
+          if (widget.showTips && widget.aiQuote == null && widget.customMessage.trim().isEmpty) ...[
             const SizedBox(height: 12),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 560),

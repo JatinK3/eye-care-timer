@@ -200,6 +200,7 @@ class TimerHomePageState extends State<TimerHomePage>
   String? _aiInsightError;
 
   bool _lastDndState = false;
+  bool _desktopWarningActive = false;
 
   String _resolveVisualizerStyle() {
     if (widget.breakVisualizerStyle == 'Random') {
@@ -1194,6 +1195,9 @@ class TimerHomePageState extends State<TimerHomePage>
       );
     } else {
       unawaited(widget.breakOverlayService?.stopBreakOverlay());
+      if (!isBreak) {
+        unawaited(_preFetchAiQuote());
+      }
     }
     _updateDesktopState();
   }
@@ -1201,8 +1205,6 @@ class TimerHomePageState extends State<TimerHomePage>
   void _startWorkTimer() {
     _autoRunCompletedCycles = 0;
     _startTimer(_workDurationSeconds);
-    // Pre-fetch AI quote for the upcoming break in background.
-    unawaited(_preFetchAiQuote());
     _updateDesktopState();
   }
 
@@ -1362,6 +1364,7 @@ class TimerHomePageState extends State<TimerHomePage>
     // Schedule the reminder for the new (postponed) work window so it behaves
     // like any other work phase instead of ending silently.
     unawaited(_schedulePhaseReminder(postponeSeconds, isBreak: false));
+    unawaited(_preFetchAiQuote());
     _updateDesktopState();
   }
 
@@ -2867,6 +2870,25 @@ class TimerHomePageState extends State<TimerHomePage>
       final isSnoozed = snoozeEnds != null && now.isBefore(snoozeEnds);
       final snoozeRemaining = isSnoozed ? (snoozeEnds.difference(now).inSeconds / 60).ceil() : 0;
       
+      final showWarning = _isRunning &&
+          !_isBreak &&
+          !_isPaused &&
+          !_isSystemIdlePaused &&
+          widget.twoStageWarningEnabled &&
+          _remainingSeconds <= 10 &&
+          _remainingSeconds > 0 &&
+          !isSnoozed;
+
+      if (showWarning && !_desktopWarningActive) {
+        _desktopWarningActive = true;
+        unawaited(DesktopIntegrationService.instance.showWarningOverlay(true));
+      } else if (!showWarning && _desktopWarningActive) {
+        _desktopWarningActive = false;
+        if (!_isBreak) {
+          unawaited(DesktopIntegrationService.instance.showWarningOverlay(false));
+        }
+      }
+
       DateTime? nextBreakVal;
       if (_isRunning && !_isBreak && !_isPaused && !_isSystemIdlePaused && !isSnoozed) {
         nextBreakVal = _phaseEndsAt;
