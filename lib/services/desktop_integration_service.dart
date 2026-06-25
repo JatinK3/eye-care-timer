@@ -19,6 +19,15 @@ class DesktopIntegrationService extends WindowListener {
   final SystemTray _systemTray = SystemTray();
   final Menu _menu = Menu();
   bool _isInitialized = false;
+
+  static const MethodChannel _lockChannel = MethodChannel(
+    "blinkkind/system_lock",
+  );
+
+  final StreamController<bool> _lockStreamController =
+      StreamController<bool>.broadcast();
+
+  Stream<bool> get onSystemLockChanged => _lockStreamController.stream;
   bool _isBreakActive = false;
   bool? _lastIsBreak;
   bool? _lastIsRunning;
@@ -63,6 +72,15 @@ class DesktopIntegrationService extends WindowListener {
     DesktopControlsController.instance.states.listen((state) {
       _latestState = state;
       unawaited(_updateTrayMenu(state));
+    });
+
+    // 5. Setup MethodChannel for native system lock/unlock notifications
+    _lockChannel.setMethodCallHandler((call) async {
+      if (call.method == 'lock') {
+        _lockStreamController.add(true);
+      } else if (call.method == 'unlock') {
+        _lockStreamController.add(false);
+      }
     });
 
     if (startMinimized) {

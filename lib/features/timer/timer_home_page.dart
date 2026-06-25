@@ -14,6 +14,7 @@ import '../../models/timer_event_record.dart';
 import '../../services/ai_service.dart';
 import '../../services/break_overlay_service.dart';
 import '../../services/desktop_controls_controller.dart';
+import '../../services/desktop_integration_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/os_focus_service.dart';
 import '../../services/system_ui_service.dart';
@@ -290,6 +291,7 @@ class TimerHomePageState extends State<TimerHomePage>
   late final TimerBackgroundService _backgroundService;
   StreamSubscription<DesktopCommand>? _desktopCommandSubscription;
   StreamSubscription<bool>? _desktopIdleSubscription;
+  StreamSubscription<bool>? _desktopLockSubscription;
 
   AudioPlayer? _audioPlayer;
 
@@ -556,6 +558,7 @@ class TimerHomePageState extends State<TimerHomePage>
     }
     unawaited(OsFocusService.instance.setDndEnabled(false));
     _desktopIdleSubscription?.cancel();
+    _desktopLockSubscription?.cancel();
     _desktopCommandSubscription?.cancel();
     _desktopTrayTicker?.cancel();
     _educationTipTimer?.cancel();
@@ -637,6 +640,11 @@ class TimerHomePageState extends State<TimerHomePage>
     }
 
     try {
+      _desktopLockSubscription = DesktopIntegrationService.instance.onSystemLockChanged.listen((isLocked) {
+        if (!mounted) return;
+        handleDesktopIdleChange(isLocked);
+      });
+
       final systemIdle = SystemIdle.forPlatform();
       unawaited(() async {
         await systemIdle.initialize();

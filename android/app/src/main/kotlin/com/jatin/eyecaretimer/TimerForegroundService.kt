@@ -1,6 +1,7 @@
 package com.jatin.eyecaretimer
 
 import android.app.AlarmManager
+import android.app.KeyguardManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -69,36 +70,47 @@ class TimerForegroundService : Service() {
                     }
                 }
                 Intent.ACTION_SCREEN_ON -> {
-                    val offTime = screenOffTimeMillis
-                    screenOffTimeMillis = 0L
-                    if (naturalBreakCreditEnabled && offTime > 0L) {
-                        val elapsedOffSeconds = (System.currentTimeMillis() - offTime) / 1000L
-                        if (elapsedOffSeconds >= breakDurationSeconds) {
-                            isBreak = false
-                            isScreenOffPaused = false
-                            pausedRemainingSeconds = 0L
-                            deadlineMillis = System.currentTimeMillis() + workDurationSeconds * 1000L
-                            pendingEvents.add(mapOf(
-                                "type" to "naturalBreakCredited",
-                                "timestamp" to System.currentTimeMillis(),
-                                "durationSeconds" to workDurationSeconds
-                            ))
-                            saveState()
-                            presentCurrentPhase()
-                            resumeCurrentPhase()
-                            return
-                        }
-                    }
-
-                    if (smartIdleEnabled && isScreenOffPaused) {
-                        isScreenOffPaused = false
-                        deadlineMillis = System.currentTimeMillis() + pausedRemainingSeconds * 1000L
-                        saveState()
-                        presentCurrentPhase()
-                        resumeCurrentPhase()
+                    val km = context.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+                    val isLocked = km?.isKeyguardLocked ?: false
+                    if (!isLocked) {
+                        handleUserResumed(context)
                     }
                 }
+                Intent.ACTION_USER_PRESENT -> {
+                    handleUserResumed(context)
+                }
             }
+        }
+    }
+
+    private fun handleUserResumed(context: Context) {
+        val offTime = screenOffTimeMillis
+        if (naturalBreakCreditEnabled && offTime > 0L) {
+            screenOffTimeMillis = 0L
+            val elapsedOffSeconds = (System.currentTimeMillis() - offTime) / 1000L
+            if (elapsedOffSeconds >= breakDurationSeconds) {
+                isBreak = false
+                isScreenOffPaused = false
+                pausedRemainingSeconds = 0L
+                deadlineMillis = System.currentTimeMillis() + workDurationSeconds * 1000L
+                pendingEvents.add(mapOf(
+                    "type" to "naturalBreakCredited",
+                    "timestamp" to System.currentTimeMillis(),
+                    "durationSeconds" to workDurationSeconds
+                ))
+                saveState()
+                presentCurrentPhase()
+                resumeCurrentPhase()
+                return
+            }
+        }
+
+        if (smartIdleEnabled && isScreenOffPaused) {
+            isScreenOffPaused = false
+            deadlineMillis = System.currentTimeMillis() + pausedRemainingSeconds * 1000L
+            saveState()
+            presentCurrentPhase()
+            resumeCurrentPhase()
         }
     }
 
@@ -108,6 +120,7 @@ class TimerForegroundService : Service() {
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_USER_PRESENT)
         }
         registerReceiver(screenStateReceiver, filter)
     }

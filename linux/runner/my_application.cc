@@ -24,6 +24,9 @@ static std::vector<GtkWidget*> blocker_windows;
 // hidden in the tray.
 static GtkWindow* g_main_window = nullptr;
 
+static FlMethodChannel* g_lock_channel = nullptr;
+static GDBusConnection* g_dbus_conn = nullptr;
+
 // Latest state from "window-state-event"; used to detect whether the main
 // window was minimized/maximized at the moment a break begins.
 static GdkWindowState g_main_window_state = static_cast<GdkWindowState>(0);
@@ -211,6 +214,135 @@ static void enter_break(GtkApplication* app) {
   }
 }
 
+static void on_dbus_signal(GDBusConnection* connection,
+                           const gchar* sender_name,
+                           const gchar* object_path,
+                           const gchar* interface_name,
+                           const gchar* signal_name,
+                           GVariant* parameters,
+                           gpointer user_data) {
+  (void)connection;
+  (void)sender_name;
+  (void)object_path;
+  (void)interface_name;
+  (void)user_data;
+
+  if (g_lock_channel == nullptr) return;
+
+  if (g_strcmp0(signal_name, "ActiveChanged") == 0) {
+    gboolean active = FALSE;
+    g_variant_get(parameters, "(b)", &active);
+    if (active) {
+      fl_method_channel_invoke_method(g_lock_channel, "lock", nullptr, nullptr, nullptr, nullptr);
+    } else {
+      fl_method_channel_invoke_method(g_lock_channel, "unlock", nullptr, nullptr, nullptr, nullptr);
+    }
+  }
+}
+
+static void on_logind_signal(GDBusConnection* connection,
+                             const gchar* sender_name,
+                             const gchar* object_path,
+                             const gchar* interface_name,
+                             const gchar* signal_name,
+                             GVariant* parameters,
+                             gpointer user_data) {
+  (void)connection;
+  (void)sender_name;
+  (void)object_path;
+  (void)interface_name;
+  (void)parameters;
+  (void)user_data;
+
+  if (g_lock_channel == nullptr) return;
+
+  if (g_strcmp0(signal_name, "Lock") == 0) {
+    fl_method_channel_invoke_method(g_lock_channel, "lock", nullptr, nullptr, nullptr, nullptr);
+  } else if (g_strcmp0(signal_name, "Unlock") == 0) {
+    fl_method_channel_invoke_method(g_lock_channel, "unlock", nullptr, nullptr, nullptr, nullptr);
+  }
+}
+
+static void setup_dbus_listeners() {
+  g_autoptr(GError) error = nullptr;
+  g_dbus_conn = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, &error);
+  if (error != nullptr) {
+    g_warning("Failed to connect to DBus session bus: %s", error->message);
+    return;
+  }
+  g_object_ref(g_dbus_conn); // Ensure it is kept alive
+
+  // Subscribe to GNOME ScreenSaver ActiveChanged
+  g_dbus_connection_signal_subscribe(
+      g_dbus_conn,
+      nullptr,
+      "org.gnome.ScreenSaver",
+      "ActiveChanged",
+      "/org/gnome/ScreenSaver",
+      nullptr,
+      G_DBUS_SIGNAL_FLAGS_NONE,
+      on_dbus_signal,
+      nullptr,
+      nullptr
+  );
+
+  // Subscribe to KDE / freedesktop ScreenSaver ActiveChanged
+  g_dbus_connection_signal_subscribe(
+      g_dbus_conn,
+      nullptr,
+      "org.freedesktop.ScreenSaver",
+      "ActiveChanged",
+      "/org/freedesktop/ScreenSaver",
+      nullptr,
+      G_DBUS_SIGNAL_FLAGS_NONE,
+      on_dbus_signal,
+      nullptr,
+      nullptr
+  );
+
+  // Subscribe to Cinnamon ScreenSaver ActiveChanged
+  g_dbus_connection_signal_subscribe(
+      g_dbus_conn,
+      nullptr,
+      "org.cinnamon.ScreenSaver",
+      "ActiveChanged",
+      "/org/cinnamon/ScreenSaver",
+      nullptr,
+      G_DBUS_SIGNAL_FLAGS_NONE,
+      on_dbus_signal,
+      nullptr,
+      nullptr
+  );
+
+  // Subscribe to systemd login session Lock
+  g_dbus_connection_signal_subscribe(
+      g_dbus_conn,
+      "org.freedesktop.login1",
+      "org.freedesktop.login1.Session",
+      "Lock",
+      nullptr,
+      nullptr,
+      G_DBUS_SIGNAL_FLAGS_NONE,
+      on_logind_signal,
+      nullptr,
+      nullptr
+  );
+
+  // Subscribe to systemd login session Unlock
+  g_dbus_connection_signal_subscribe(
+      g_dbus_conn,
+      "org.freedesktop.login1",
+      "org.freedesktop.login1.Session",
+      "Unlock",
+      nullptr,
+      nullptr,
+      G_DBUS_SIGNAL_FLAGS_NONE,
+      on_logind_signal,
+      nullptr,
+      nullptr
+  );
+}
+
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView *view)
 {
@@ -301,6 +433,14 @@ static void my_application_activate(GApplication* application) {
       self,
       nullptr);
 
+  g_lock_channel = fl_method_channel_new(
+      fl_engine_get_binary_messenger(engine),
+      "blinkkind/system_lock",
+      FL_METHOD_CODEC(codec));
+  g_object_ref(g_lock_channel);
+
+  setup_dbus_listeners();
+
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
 
@@ -338,6 +478,15 @@ static void my_application_shutdown(GApplication* application) {
 
   // Perform any actions required at application shutdown.
   destroy_blocker_windows();
+
+  if (g_lock_channel != nullptr) {
+    g_object_unref(g_lock_channel);
+    g_lock_channel = nullptr;
+  }
+  if (g_dbus_conn != nullptr) {
+    g_object_unref(g_dbus_conn);
+    g_dbus_conn = nullptr;
+  }
 
   G_APPLICATION_CLASS(my_application_parent_class)->shutdown(application);
 }

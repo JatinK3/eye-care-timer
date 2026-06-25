@@ -479,3 +479,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Increased dynamic system tray icon canvas size from 24x24 to 32x32 in `lib/services/desktop_integration_service.dart`.
   - Scaled the background circle and progress ring bounds, reducing margins/paddings so the icon occupies more vertical space.
   - Increased progress ring stroke thickness to 2.5 and scaled text font sizes (10.0 to 12.5) and graphics for higher contrast, sharpness, and visual appeal in the dock/system tray.
+
+- Implemented Screen Lock and User Presence Inactivity Detection:
+  - **Android**: Updated `TimerForegroundService.kt` to subscribe to `Intent.ACTION_USER_PRESENT` and integrated `KeyguardManager`. The app now waits to resume the timer until the user actually unlocks their device rather than immediately when the screen lights up for a notification.
+  - **Linux Desktop**: Subscribed to system DBus session signals (`org.gnome.ScreenSaver`, `org.freedesktop.ScreenSaver`, `org.cinnamon.ScreenSaver`, and systemd `org.freedesktop.login1.Session` Lock/Unlock signals) inside `linux/runner/my_application.cc`. Relayed lock/unlock events through method channel `blinkkind/system_lock` directly to Dart, instantly pausing the active countdown when locked, and resuming it when unlocked.
