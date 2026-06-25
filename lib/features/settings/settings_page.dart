@@ -1025,15 +1025,17 @@ class _SettingsPageState extends State<SettingsPage>
       ),
       if (_breakMode != BreakMode.off) ...[
         SettingItem(
-          title: 'Immersive pre-break warning',
-          subtitle: 'Enable a pulsing edge glow and full-screen fade-to-black before breaks',
-          keywords: ['warning', 'pre-break', 'immersive', 'glow', 'fade', 'two-stage'],
+          title: 'Pre-break notification alert',
+          subtitle: 'Send a system notification 10 seconds before a break starts',
+          keywords: ['warning', 'pre-break', 'notification', 'alert', 'two-stage'],
           category: 'Break Screen & Behavior',
           widget: SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.warning_amber_outlined),
-            title: const Text('Immersive pre-break warning'),
-            subtitle: const Text('Pulsing edge glow and full-screen fade-to-black'),
+            secondary: const Icon(Icons.notifications_active_outlined),
+            title: const Text('Pre-break notification alert'),
+            subtitle: const Text(
+              'Send a system notification 10 seconds before a break starts',
+            ),
             value: widget.twoStageWarningEnabled,
             onChanged: widget.setTwoStageWarningEnabled,
           ),

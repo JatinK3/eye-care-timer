@@ -432,8 +432,8 @@ class NotificationService {
         notificationDetails: _blinkNotificationDetails,
         payload: 'blink_reminder',
       );
-    } on PlatformException catch (error) {
-      debugPrint('Unable to show blink reminder: \$error');
+    } on PlatformException catch (e) {
+      debugPrint('Unable to show blink reminder: $e');
     }
   }
 

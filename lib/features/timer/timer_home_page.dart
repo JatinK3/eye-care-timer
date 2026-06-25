@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -200,7 +199,7 @@ class TimerHomePageState extends State<TimerHomePage>
   String? _aiInsightError;
 
   bool _lastDndState = false;
-  bool _desktopWarningActive = false;
+
   int? _postponedBreakDuration;
 
   String _resolveVisualizerStyle() {
@@ -2664,232 +2663,7 @@ class TimerHomePageState extends State<TimerHomePage>
               ),
             ),
           ),
-          AnimatedBuilder(
-            animation: _progressAnimation,
-            builder: (context, child) {
-              final remainingSeconds =
-                  (_initialDuration * _progressAnimation.value).ceil();
-              final showWarning =
-                  _isRunning &&
-                  !_isBreak &&
-                  !_isPaused &&
-                  widget.twoStageWarningEnabled &&
-                  remainingSeconds <= 10 &&
-                  remainingSeconds > 0;
-              if (!showWarning) {
-                return const SizedBox.shrink();
-              }
 
-              // Stage 1: Pulsing edge glow + Top banner (10s to 6s remaining)
-              if (remainingSeconds > 5) {
-                final pulseOpacity = 0.35 +
-                    0.25 *
-                        math.sin(
-                          DateTime.now().millisecondsSinceEpoch * 0.005,
-                        );
-                return Stack(
-                  children: [
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Colors.amber.withValues(alpha: pulseOpacity),
-                              width: 6.0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 16,
-                      left: 16,
-                      right: 16,
-                      child: SafeArea(
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 480),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: BackdropFilter(
-                                filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                                child: Container(
-                                  color: Colors.black.withValues(alpha: 0.75),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.visibility_off_outlined,
-                                        color: Colors.amberAccent,
-                                        size: 24,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          'Eye break starting in $remainingSeconds seconds...',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.copyWith(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      if (widget.allowPostpone) ...[
-                                        TextButton(
-                                          onPressed: _postponeBreak,
-                                          style: TextButton.styleFrom(
-                                            foregroundColor: Colors.amberAccent,
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            minimumSize: Size.zero,
-                                            tapTargetSize:
-                                                MaterialTapTargetSize.shrinkWrap,
-                                          ),
-                                          child: Text(
-                                            'Postpone (${widget.postponeDurationSeconds ~/ 60}m)',
-                                            style: const TextStyle(fontSize: 12),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                      ],
-                                      TextButton(
-                                        onPressed: _cancelTimer,
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: Colors.red.shade300,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          minimumSize: Size.zero,
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        child: const Text(
-                                          'Cancel Timer',
-                                          style: TextStyle(fontSize: 12),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              }
-
-              // Stage 2: Full-screen fade to black (5s to 1s remaining)
-              final warningOpacity = ((5 - remainingSeconds) / 5.0).clamp(
-                0.0,
-                1.0,
-              );
-              return Positioned.fill(
-                child: Container(
-                  color: Colors.black.withValues(alpha: warningOpacity),
-                  child: Opacity(
-                    opacity: warningOpacity,
-                    child: Center(
-                      child: SingleChildScrollView(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.visibility_off_outlined,
-                                size: 64,
-                                color: Colors.red.shade300,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Eye break starting in $remainingSeconds seconds',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Prepare to look 20 feet away to rest your eyes',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(color: Colors.white70),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 24),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (widget.allowPostpone) ...[
-                                    ElevatedButton.icon(
-                                      onPressed: _postponeBreak,
-                                      icon: const Icon(Icons.snooze),
-                                      label: Text(
-                                        'Postpone (${widget.postponeDurationSeconds ~/ 60}m)',
-                                      ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.white24,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 12,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                  ],
-                                  OutlinedButton.icon(
-                                    onPressed: _cancelTimer,
-                                    icon: const Icon(Icons.close),
-                                    label: const Text('Cancel Timer'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: Colors.red.shade200,
-                                      side: BorderSide(
-                                        color: Colors.red.shade300,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 12,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
         ],
       ),
     ),
@@ -2921,25 +2695,6 @@ class TimerHomePageState extends State<TimerHomePage>
       final isSnoozed = snoozeEnds != null && now.isBefore(snoozeEnds);
       final snoozeRemaining = isSnoozed ? (snoozeEnds.difference(now).inSeconds / 60).ceil() : 0;
       
-      final showWarning = _isRunning &&
-          !_isBreak &&
-          !_isPaused &&
-          !_isSystemIdlePaused &&
-          widget.twoStageWarningEnabled &&
-          _remainingSeconds <= 10 &&
-          _remainingSeconds > 0 &&
-          !isSnoozed;
-
-      if (showWarning && !_desktopWarningActive) {
-        _desktopWarningActive = true;
-        unawaited(DesktopIntegrationService.instance.showWarningOverlay(true));
-      } else if (!showWarning && _desktopWarningActive) {
-        _desktopWarningActive = false;
-        if (!_isBreak) {
-          unawaited(DesktopIntegrationService.instance.showWarningOverlay(false));
-        }
-      }
-
       DateTime? nextBreakVal;
       if (_isRunning && !_isBreak && !_isPaused && !_isSystemIdlePaused && !isSnoozed) {
         nextBreakVal = _phaseEndsAt;
