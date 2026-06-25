@@ -491,3 +491,12 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Increased background circle radius to fill the 32x32 canvas completely to the edges.
   - Increased progress ring stroke thickness from 2.5 to 3.5 for enhanced visual presence.
   - Scaled the central remaining text font size from 12.5 to 14.5 to match the taskbar font height.
+
+- Implemented Two-Stage Warning and Settings Switch:
+  - Added a new `twoStageWarningEnabled` preference and setting switch under "Break Screen & Behavior" category to toggle the pre-break warning behavior.
+  - Developed Stage 1 Warning (10s to 6s remaining): Pulsing amber edge border (width 6px) with dynamic sine-wave opacity, and a compact translucent top banner containing warning text and actions (Postpone/Cancel).
+  - Developed Stage 2 Warning (5s to 0s remaining): Immersive progressive fade-to-black backdrop with large centered countdown typography, prepare-to-rest instruction, and centralized buttons.
+  - Bypasses pre-break warnings entirely when the switch is toggled off, jumping straight to the break overlay when the work timer expires.
+  - Resolved compiler/import issues with `BackdropFilter` and missing required constructor arguments.
+  - Verified and verified correctness through Dart/Flutter static analysis and unit/widget test suites (all 74 tests green).
+

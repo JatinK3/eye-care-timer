@@ -538,6 +538,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveAutoStartSchedule(enabled));
   }
 
+  void _setTwoStageWarningEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(twoStageWarningEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveTwoStageWarningEnabled(enabled));
+  }
+
   void _setOsFocusDndEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(osFocusDndEnabled: enabled);
@@ -894,6 +901,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           setNaturalBreakCreditEnabled: _setNaturalBreakCreditEnabled,
           autoStartSchedule: _settings.autoStartSchedule,
           setAutoStartSchedule: _setAutoStartSchedule,
+          twoStageWarningEnabled: _settings.twoStageWarningEnabled,
+          setTwoStageWarningEnabled: _setTwoStageWarningEnabled,
           canChangeDurations: canChangeDurations,
           toggleTheme: _toggleTheme,
           setPreset: _setPreset,
@@ -1055,6 +1064,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   naturalBreakCreditEnabled:
                       _settings.naturalBreakCreditEnabled,
                   autoStartSchedule: _settings.autoStartSchedule,
+                  twoStageWarningEnabled: _settings.twoStageWarningEnabled,
                   breakMode: _settings.breakMode,
                   allowSkip: _settings.allowSkip,
                   allowPostpone: _settings.allowPostpone,

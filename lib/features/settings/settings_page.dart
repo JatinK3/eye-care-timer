@@ -120,6 +120,8 @@ class SettingsPage extends StatefulWidget {
   final void Function(bool) setStartMinimized;
   final bool autoStartSchedule;
   final void Function(bool) setAutoStartSchedule;
+  final bool twoStageWarningEnabled;
+  final void Function(bool) setTwoStageWarningEnabled;
 
   // AI Motivation parameters
   final bool aiMotivationEnabled;
@@ -235,6 +237,8 @@ class SettingsPage extends StatefulWidget {
     required this.setStartMinimized,
     required this.autoStartSchedule,
     required this.setAutoStartSchedule,
+    required this.twoStageWarningEnabled,
+    required this.setTwoStageWarningEnabled,
 
     // AI Motivation constructor parameters
     required this.aiMotivationEnabled,
@@ -1008,6 +1012,22 @@ class _SettingsPageState extends State<SettingsPage>
           ),
         ),
       ),
+      if (_breakMode != BreakMode.off) ...[
+        SettingItem(
+          title: 'Immersive pre-break warning',
+          subtitle: 'Enable a pulsing edge glow and full-screen fade-to-black before breaks',
+          keywords: ['warning', 'pre-break', 'immersive', 'glow', 'fade', 'two-stage'],
+          category: 'Break Screen & Behavior',
+          widget: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.warning_amber_outlined),
+            title: const Text('Immersive pre-break warning'),
+            subtitle: const Text('Pulsing edge glow and full-screen fade-to-black'),
+            value: widget.twoStageWarningEnabled,
+            onChanged: widget.setTwoStageWarningEnabled,
+          ),
+        ),
+      ],
       if (_breakMode == BreakMode.gentle) ...[
         SettingItem(
           title: 'Allow skip',
@@ -2359,6 +2379,7 @@ class _SettingsPageState extends State<SettingsPage>
       aiApiKey: widget.aiApiKey,
       aiModel: widget.aiModel,
       aiCustomSystemPrompt: widget.aiCustomSystemPrompt,
+      twoStageWarningEnabled: widget.twoStageWarningEnabled,
     );
   }
 

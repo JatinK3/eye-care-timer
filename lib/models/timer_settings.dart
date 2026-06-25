@@ -36,6 +36,7 @@ class TimerSettings {
   static const bool defaultAutoStartSchedule = false;
   static const bool defaultAiMotivationEnabled = false;
   static const bool defaultOsFocusDndEnabled = false;
+  static const bool defaultTwoStageWarningEnabled = true;
   static const String defaultAiProvider = 'Gemini';
   static const String defaultAiApiKey = '';
   static const String defaultAiModel = 'gemini-1.5-flash';
@@ -87,6 +88,7 @@ class TimerSettings {
   final String aiApiKey;
   final String aiModel;
   final String aiCustomSystemPrompt;
+  final bool twoStageWarningEnabled;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -134,6 +136,7 @@ class TimerSettings {
     required this.aiApiKey,
     required this.aiModel,
     required this.aiCustomSystemPrompt,
+    required this.twoStageWarningEnabled,
   });
 
   const TimerSettings.defaults()
@@ -181,7 +184,8 @@ class TimerSettings {
       aiProvider = defaultAiProvider,
       aiApiKey = defaultAiApiKey,
       aiModel = defaultAiModel,
-      aiCustomSystemPrompt = defaultAiCustomSystemPrompt;
+      aiCustomSystemPrompt = defaultAiCustomSystemPrompt,
+      twoStageWarningEnabled = defaultTwoStageWarningEnabled;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -229,6 +233,7 @@ class TimerSettings {
     String? aiApiKey,
     String? aiModel,
     String? aiCustomSystemPrompt,
+    bool? twoStageWarningEnabled,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -281,6 +286,7 @@ class TimerSettings {
       aiApiKey: aiApiKey ?? this.aiApiKey,
       aiModel: aiModel ?? this.aiModel,
       aiCustomSystemPrompt: aiCustomSystemPrompt ?? this.aiCustomSystemPrompt,
+      twoStageWarningEnabled: twoStageWarningEnabled ?? this.twoStageWarningEnabled,
     );
   }
 
@@ -330,6 +336,7 @@ class TimerSettings {
       'aiApiKey': aiApiKey,
       'aiModel': aiModel,
       'aiCustomSystemPrompt': aiCustomSystemPrompt,
+      'twoStageWarningEnabled': twoStageWarningEnabled,
     };
   }
 
@@ -380,6 +387,7 @@ class TimerSettings {
       aiApiKey: json['aiApiKey'] as String? ?? defaultAiApiKey,
       aiModel: json['aiModel'] as String? ?? defaultAiModel,
       aiCustomSystemPrompt: json['aiCustomSystemPrompt'] as String? ?? defaultAiCustomSystemPrompt,
+      twoStageWarningEnabled: json['twoStageWarningEnabled'] as bool? ?? defaultTwoStageWarningEnabled,
     );
   }
 

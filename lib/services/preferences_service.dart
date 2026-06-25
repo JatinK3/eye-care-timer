@@ -71,6 +71,7 @@ class PreferencesService {
   static const String aiCustomSystemPromptKey = 'aiCustomSystemPrompt';
   static const String autoStartScheduleKey = 'autoStartSchedule';
   static const String osFocusDndEnabledKey = 'osFocusDndEnabled';
+  static const String twoStageWarningEnabledKey = 'twoStageWarningEnabled';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -192,6 +193,9 @@ class PreferencesService {
       osFocusDndEnabled:
           prefs.getBool(osFocusDndEnabledKey) ??
           TimerSettings.defaultOsFocusDndEnabled,
+      twoStageWarningEnabled:
+          prefs.getBool(twoStageWarningEnabledKey) ??
+          TimerSettings.defaultTwoStageWarningEnabled,
     );
   }
 
@@ -347,6 +351,7 @@ class PreferencesService {
     await prefs.setString(aiCustomSystemPromptKey, TimerSettings.defaultAiCustomSystemPrompt);
     await prefs.setBool(autoStartScheduleKey, TimerSettings.defaultAutoStartSchedule);
     await prefs.setBool(osFocusDndEnabledKey, TimerSettings.defaultOsFocusDndEnabled);
+    await prefs.setBool(twoStageWarningEnabledKey, TimerSettings.defaultTwoStageWarningEnabled);
 
     return const TimerSettings.defaults().copyWith(streakCount: currentStreak);
   }
@@ -397,6 +402,7 @@ class PreferencesService {
     await prefs.setString(aiCustomSystemPromptKey, settings.aiCustomSystemPrompt);
     await prefs.setBool(autoStartScheduleKey, settings.autoStartSchedule);
     await prefs.setBool(osFocusDndEnabledKey, settings.osFocusDndEnabled);
+    await prefs.setBool(twoStageWarningEnabledKey, settings.twoStageWarningEnabled);
   }
 
   Future<bool> loadOnboardingCompleted() async {
@@ -517,6 +523,11 @@ class PreferencesService {
   Future<void> saveNotificationsEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(notificationsEnabledKey, enabled);
+  }
+
+  Future<void> saveTwoStageWarningEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(twoStageWarningEnabledKey, enabled);
   }
 
   Future<void> saveHapticsEnabled(bool enabled) async {
