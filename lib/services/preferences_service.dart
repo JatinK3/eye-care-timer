@@ -184,9 +184,16 @@ class PreferencesService {
           prefs.getString(aiProviderKey) ?? TimerSettings.defaultAiProvider,
       aiApiKey: prefs.getString(aiApiKeyKey) ?? TimerSettings.defaultAiApiKey,
       aiModel: prefs.getString(aiModelKey) ?? TimerSettings.defaultAiModel,
-      aiCustomSystemPrompt:
-          prefs.getString(aiCustomSystemPromptKey) ??
-          TimerSettings.defaultAiCustomSystemPrompt,
+      aiCustomSystemPrompt: () {
+        final saved = prefs.getString(aiCustomSystemPromptKey);
+        if (saved == null) {
+          return TimerSettings.defaultAiCustomSystemPrompt;
+        }
+        if (saved.contains('friendly eye-care assistant')) {
+          return TimerSettings.defaultAiCustomSystemPrompt;
+        }
+        return saved;
+      }(),
       autoStartSchedule:
           prefs.getBool(autoStartScheduleKey) ??
           TimerSettings.defaultAutoStartSchedule,

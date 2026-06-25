@@ -500,3 +500,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Resolved compiler/import issues with `BackdropFilter` and missing required constructor arguments.
   - Verified and verified correctness through Dart/Flutter static analysis and unit/widget test suites (all 74 tests green).
 
+- Expanded AI Health Insight system prompt:
+  - Updated the default system prompt (`TimerSettings.defaultAiCustomSystemPrompt`) to generate general health tips (drinking water regularly, stretching, standing up, shoulder/legs release) as well as eye-care tips.
+  - Implemented migration logic in `PreferencesService.loadSettings()` to automatically transition existing installations with unchanged default prompts to the new broader health and wellness prompt.
+  - Verified compilation and test suite remains fully correct and functional.
+
+
