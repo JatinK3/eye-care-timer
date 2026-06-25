@@ -34,14 +34,16 @@ class PreferencesService {
   static const String breakVisualizerStyleKey = 'breakVisualizerStyle';
   static const String chimeStyleKey = 'chimeStyle';
   static const String blinkRemindersEnabledKey = 'blinkRemindersEnabled';
-  static const String blinkRemindersCadenceSecondsKey = 'blinkRemindersCadenceSeconds';
+  static const String blinkRemindersCadenceSecondsKey =
+      'blinkRemindersCadenceSeconds';
   static const String workHoursEnabledKey = 'workHoursEnabled';
   static const String workHoursStartHourKey = 'workHoursStartHour';
   static const String workHoursStartMinuteKey = 'workHoursStartMinute';
   static const String workHoursEndHourKey = 'workHoursEndHour';
   static const String workHoursEndMinuteKey = 'workHoursEndMinute';
   static const String workDaysKey = 'workDays';
-  static const String naturalBreakCreditEnabledKey = 'naturalBreakCreditEnabled';
+  static const String naturalBreakCreditEnabledKey =
+      'naturalBreakCreditEnabled';
   static const String dailyHistoryKey = 'dailyHistory';
   static const String workSessionHistoryKey = 'workSessionHistory';
   static const String sessionIsActiveKey = 'sessionIsActive';
@@ -57,6 +59,7 @@ class PreferencesService {
   static const String amoledDarkEnabledKey = 'amoledDarkEnabled';
   static const String customAccentColorHexKey = 'customAccentColorHex';
   static const String useSystemAccentKey = 'useSystemAccent';
+  static const String startMinimizedKey = 'startMinimized';
   static const String aiMotivationEnabledKey = 'aiMotivationEnabled';
   static const String aiProviderKey = 'aiProvider';
   static const String aiApiKeyKey = 'aiApiKey';
@@ -117,8 +120,7 @@ class PreferencesService {
           prefs.getString(breakVisualizerStyleKey) ??
           TimerSettings.defaultBreakVisualizerStyle,
       chimeStyle:
-          prefs.getString(chimeStyleKey) ??
-          TimerSettings.defaultChimeStyle,
+          prefs.getString(chimeStyleKey) ?? TimerSettings.defaultChimeStyle,
       blinkRemindersEnabled:
           prefs.getBool(blinkRemindersEnabledKey) ??
           TimerSettings.defaultBlinkRemindersEnabled,
@@ -140,9 +142,7 @@ class PreferencesService {
       workHoursEndMinute:
           prefs.getInt(workHoursEndMinuteKey) ??
           TimerSettings.defaultWorkHoursEndMinute,
-      workDays:
-          prefs.getString(workDaysKey) ??
-          TimerSettings.defaultWorkDays,
+      workDays: prefs.getString(workDaysKey) ?? TimerSettings.defaultWorkDays,
       naturalBreakCreditEnabled:
           prefs.getBool(naturalBreakCreditEnabledKey) ??
           TimerSettings.defaultNaturalBreakCreditEnabled,
@@ -155,18 +155,16 @@ class PreferencesService {
       useSystemAccent:
           prefs.getBool(useSystemAccentKey) ??
           TimerSettings.defaultUseSystemAccent,
+      startMinimized:
+          prefs.getBool(startMinimizedKey) ??
+          TimerSettings.defaultStartMinimized,
       aiMotivationEnabled:
           prefs.getBool(aiMotivationEnabledKey) ??
           TimerSettings.defaultAiMotivationEnabled,
       aiProvider:
-          prefs.getString(aiProviderKey) ??
-          TimerSettings.defaultAiProvider,
-      aiApiKey:
-          prefs.getString(aiApiKeyKey) ??
-          TimerSettings.defaultAiApiKey,
-      aiModel:
-          prefs.getString(aiModelKey) ??
-          TimerSettings.defaultAiModel,
+          prefs.getString(aiProviderKey) ?? TimerSettings.defaultAiProvider,
+      aiApiKey: prefs.getString(aiApiKeyKey) ?? TimerSettings.defaultAiApiKey,
+      aiModel: prefs.getString(aiModelKey) ?? TimerSettings.defaultAiModel,
       aiCustomSystemPrompt:
           prefs.getString(aiCustomSystemPromptKey) ??
           TimerSettings.defaultAiCustomSystemPrompt,
@@ -381,6 +379,11 @@ class PreferencesService {
   Future<void> saveUseSystemAccent(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(useSystemAccentKey, enabled);
+  }
+
+  Future<void> saveStartMinimized(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(startMinimizedKey, enabled);
   }
 
   Future<void> saveDailyGoal(int dailyGoal) async {

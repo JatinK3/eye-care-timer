@@ -28,11 +28,13 @@ class TimerSettings {
   static const bool defaultAmoledDarkEnabled = false;
   static const String defaultCustomAccentColorHex = '#009688';
   static const bool defaultUseSystemAccent = false;
+  static const bool defaultStartMinimized = false;
   static const bool defaultAiMotivationEnabled = false;
   static const String defaultAiProvider = 'Gemini';
   static const String defaultAiApiKey = '';
   static const String defaultAiModel = 'gemini-1.5-flash';
-  static const String defaultAiCustomSystemPrompt = 'You are a friendly eye-care assistant for a developer. Generate a short, warm, and highly engaging motivational quote (1-2 sentences) encouraging them to blink, rest their eyes, relax their shoulders, look at something far away, or practice deep breathing. Keep it fresh, encouraging, and punchy.';
+  static const String defaultAiCustomSystemPrompt =
+      'You are a friendly eye-care assistant for a developer. Generate a short, warm, and highly engaging motivational quote (1-2 sentences) encouraging them to blink, rest their eyes, relax their shoulders, look at something far away, or practice deep breathing. Keep it fresh, encouraging, and punchy.';
 
   final int workDurationSeconds;
   final int breakDurationSeconds;
@@ -67,6 +69,7 @@ class TimerSettings {
   final bool amoledDarkEnabled;
   final String customAccentColorHex;
   final bool useSystemAccent;
+  final bool startMinimized;
   final bool aiMotivationEnabled;
   final String aiProvider;
   final String aiApiKey;
@@ -107,6 +110,7 @@ class TimerSettings {
     required this.amoledDarkEnabled,
     required this.customAccentColorHex,
     required this.useSystemAccent,
+    required this.startMinimized,
     required this.aiMotivationEnabled,
     required this.aiProvider,
     required this.aiApiKey,
@@ -148,6 +152,7 @@ class TimerSettings {
       amoledDarkEnabled = defaultAmoledDarkEnabled,
       customAccentColorHex = defaultCustomAccentColorHex,
       useSystemAccent = defaultUseSystemAccent,
+      startMinimized = defaultStartMinimized,
       aiMotivationEnabled = defaultAiMotivationEnabled,
       aiProvider = defaultAiProvider,
       aiApiKey = defaultAiApiKey,
@@ -188,6 +193,7 @@ class TimerSettings {
     bool? amoledDarkEnabled,
     String? customAccentColorHex,
     bool? useSystemAccent,
+    bool? startMinimized,
     bool? aiMotivationEnabled,
     String? aiProvider,
     String? aiApiKey,
@@ -233,6 +239,7 @@ class TimerSettings {
       amoledDarkEnabled: amoledDarkEnabled ?? this.amoledDarkEnabled,
       customAccentColorHex: customAccentColorHex ?? this.customAccentColorHex,
       useSystemAccent: useSystemAccent ?? this.useSystemAccent,
+      startMinimized: startMinimized ?? this.startMinimized,
       aiMotivationEnabled: aiMotivationEnabled ?? this.aiMotivationEnabled,
       aiProvider: aiProvider ?? this.aiProvider,
       aiApiKey: aiApiKey ?? this.aiApiKey,

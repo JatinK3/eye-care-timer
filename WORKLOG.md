@@ -216,6 +216,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Completed
 
+- Added desktop **Start minimized** preference for launch-at-startup workflows: Settings now exposes a Desktop Options toggle, the value persists via `TimerSettings`/`PreferencesService`, and desktop startup reads it before initializing the tray/window integration so BlinkKind can launch directly into the system tray. Verified with `flutter analyze` and `flutter test` (59 passing).
+
 - Implemented full AI Motivation integration and startup splash screen:
   - Created `lib/services/ai_service.dart` — a lightweight `http`-based HTTP client with no bulky SDK dependency. Supports Gemini (`v1beta` + API-key query param), OpenAI (`v1/chat/completions` + Bearer token), and Groq (`openai/v1/chat/completions` + Bearer token) for both model listing (`fetchModels`) and motivational quote generation (`generateMotivation`). Falls back to a curated hardcoded list of popular models per provider when the live fetch fails, and also exposes `getDefaultModels(provider)` for instant UI population.
   - Added five new fields to `TimerSettings` (`aiMotivationEnabled`, `aiProvider`, `aiApiKey`, `aiModel`, `aiCustomSystemPrompt`) with `copyWith` support and sensible defaults (Gemini, disabled, empty key/prompt).

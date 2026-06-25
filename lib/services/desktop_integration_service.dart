@@ -41,7 +41,7 @@ class DesktopIntegrationService extends WindowListener {
       (Platform.isLinux || Platform.isMacOS || Platform.isWindows) &&
       !Platform.environment.containsKey('FLUTTER_TEST');
 
-  Future<void> initialize() async {
+  Future<void> initialize({bool startMinimized = false}) async {
     if (!isSupported || _isInitialized) return;
 
     // 1. Initialize Window Manager
@@ -64,6 +64,10 @@ class DesktopIntegrationService extends WindowListener {
       _latestState = state;
       unawaited(_updateTrayMenu(state));
     });
+
+    if (startMinimized) {
+      await windowManager.hide();
+    }
 
     _isInitialized = true;
   }
@@ -145,8 +149,9 @@ class DesktopIntegrationService extends WindowListener {
       // avoiding any hover flickering issues.
       final minutes = state.remainingSeconds ~/ 60;
       final seconds = state.remainingSeconds % 60;
-      final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-      
+      final timeStr =
+          '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
       String tooltipText;
       if (state.isBreak) {
         tooltipText = 'BlinkKind - On a Break ($timeStr remaining)';
@@ -452,7 +457,11 @@ class DesktopIntegrationService extends WindowListener {
       final bgPaint = Paint()
         ..color = const ui.Color(0xDD1E1E1E)
         ..style = ui.PaintingStyle.fill;
-      canvas.drawCircle(Offset(width / 2, height / 2), (width / 2) - 1.0, bgPaint);
+      canvas.drawCircle(
+        Offset(width / 2, height / 2),
+        (width / 2) - 1.0,
+        bgPaint,
+      );
 
       // 2. State specific colors and text
       ui.Color ringColor;
@@ -463,7 +472,8 @@ class DesktopIntegrationService extends WindowListener {
         ringColor = Colors.greenAccent;
         text = state.remainingSeconds.toString();
         if (state.initialDurationSeconds > 0) {
-          progress = (state.remainingSeconds / state.initialDurationSeconds).clamp(0.0, 1.0);
+          progress = (state.remainingSeconds / state.initialDurationSeconds)
+              .clamp(0.0, 1.0);
         }
       } else if (state.isSnoozed) {
         ringColor = Colors.deepPurpleAccent;
@@ -480,7 +490,8 @@ class DesktopIntegrationService extends WindowListener {
           text = mins.toString();
         }
         if (state.initialDurationSeconds > 0) {
-          progress = (state.remainingSeconds / state.initialDurationSeconds).clamp(0.0, 1.0);
+          progress = (state.remainingSeconds / state.initialDurationSeconds)
+              .clamp(0.0, 1.0);
         }
       } else {
         ringColor = Colors.grey;
@@ -493,7 +504,11 @@ class DesktopIntegrationService extends WindowListener {
         ..strokeWidth = 2.0
         ..strokeCap = ui.StrokeCap.round
         ..color = ringColor.withValues(alpha: 0.25);
-      canvas.drawCircle(Offset(width / 2, height / 2), (width / 2) - 2.5, ringPaint);
+      canvas.drawCircle(
+        Offset(width / 2, height / 2),
+        (width / 2) - 2.5,
+        ringPaint,
+      );
 
       if (progress > 0) {
         final activeRingPaint = Paint()
@@ -501,9 +516,12 @@ class DesktopIntegrationService extends WindowListener {
           ..strokeWidth = 2.0
           ..strokeCap = ui.StrokeCap.round
           ..color = ringColor;
-        
+
         canvas.drawArc(
-          Rect.fromCircle(center: Offset(width / 2, height / 2), radius: (width / 2) - 2.5),
+          Rect.fromCircle(
+            center: Offset(width / 2, height / 2),
+            radius: (width / 2) - 2.5,
+          ),
           -math.pi / 2,
           2 * math.pi * progress,
           false,
@@ -520,7 +538,12 @@ class DesktopIntegrationService extends WindowListener {
           ..strokeCap = ui.StrokeCap.round;
 
         canvas.drawArc(
-          Rect.fromLTWH(width * 0.25, height * 0.38, width * 0.5, height * 0.25),
+          Rect.fromLTWH(
+            width * 0.25,
+            height * 0.38,
+            width * 0.5,
+            height * 0.25,
+          ),
           0,
           math.pi,
           false,
@@ -581,7 +604,8 @@ class DesktopIntegrationService extends WindowListener {
 
       final String tempDir;
       if (Platform.isWindows) {
-        tempDir = Platform.environment['TEMP'] ?? Platform.environment['TMP'] ?? '.';
+        tempDir =
+            Platform.environment['TEMP'] ?? Platform.environment['TMP'] ?? '.';
       } else {
         tempDir = Platform.environment['TMPDIR'] ?? '/tmp';
       }
@@ -617,17 +641,49 @@ class DesktopIntegrationService extends WindowListener {
 
       final hotkeysConfig = [
         // Pause/Resume
-        (PhysicalKeyboardKey.keyP, [HotKeyModifier.control, HotKeyModifier.alt], 'pause_resume'),
-        (PhysicalKeyboardKey.keyP, [HotKeyModifier.meta, HotKeyModifier.alt], 'pause_resume'),
+        (
+          PhysicalKeyboardKey.keyP,
+          [HotKeyModifier.control, HotKeyModifier.alt],
+          'pause_resume',
+        ),
+        (
+          PhysicalKeyboardKey.keyP,
+          [HotKeyModifier.meta, HotKeyModifier.alt],
+          'pause_resume',
+        ),
         // Take Break Now
-        (PhysicalKeyboardKey.keyB, [HotKeyModifier.control, HotKeyModifier.alt], 'start_break'),
-        (PhysicalKeyboardKey.keyB, [HotKeyModifier.meta, HotKeyModifier.alt], 'start_break'),
+        (
+          PhysicalKeyboardKey.keyB,
+          [HotKeyModifier.control, HotKeyModifier.alt],
+          'start_break',
+        ),
+        (
+          PhysicalKeyboardKey.keyB,
+          [HotKeyModifier.meta, HotKeyModifier.alt],
+          'start_break',
+        ),
         // Skip Break
-        (PhysicalKeyboardKey.keyS, [HotKeyModifier.control, HotKeyModifier.alt], 'skip_break'),
-        (PhysicalKeyboardKey.keyS, [HotKeyModifier.meta, HotKeyModifier.alt], 'skip_break'),
+        (
+          PhysicalKeyboardKey.keyS,
+          [HotKeyModifier.control, HotKeyModifier.alt],
+          'skip_break',
+        ),
+        (
+          PhysicalKeyboardKey.keyS,
+          [HotKeyModifier.meta, HotKeyModifier.alt],
+          'skip_break',
+        ),
         // Postpone Break
-        (PhysicalKeyboardKey.keyO, [HotKeyModifier.control, HotKeyModifier.alt], 'postpone_break'),
-        (PhysicalKeyboardKey.keyO, [HotKeyModifier.meta, HotKeyModifier.alt], 'postpone_break'),
+        (
+          PhysicalKeyboardKey.keyO,
+          [HotKeyModifier.control, HotKeyModifier.alt],
+          'postpone_break',
+        ),
+        (
+          PhysicalKeyboardKey.keyO,
+          [HotKeyModifier.meta, HotKeyModifier.alt],
+          'postpone_break',
+        ),
       ];
 
       for (final config in hotkeysConfig) {
@@ -652,23 +708,37 @@ class DesktopIntegrationService extends WindowListener {
     switch (action) {
       case 'pause_resume':
         if (_latestState != null) {
-          if (_latestState!.isPaused || !_latestState!.isRunning || _latestState!.isSnoozed) {
-            DesktopControlsController.instance.triggerCommand(DesktopCommand.resume);
+          if (_latestState!.isPaused ||
+              !_latestState!.isRunning ||
+              _latestState!.isSnoozed) {
+            DesktopControlsController.instance.triggerCommand(
+              DesktopCommand.resume,
+            );
           } else {
-            DesktopControlsController.instance.triggerCommand(DesktopCommand.pause);
+            DesktopControlsController.instance.triggerCommand(
+              DesktopCommand.pause,
+            );
           }
         } else {
-          DesktopControlsController.instance.triggerCommand(DesktopCommand.resume);
+          DesktopControlsController.instance.triggerCommand(
+            DesktopCommand.resume,
+          );
         }
         break;
       case 'start_break':
-        DesktopControlsController.instance.triggerCommand(DesktopCommand.startBreak);
+        DesktopControlsController.instance.triggerCommand(
+          DesktopCommand.startBreak,
+        );
         break;
       case 'skip_break':
-        DesktopControlsController.instance.triggerCommand(DesktopCommand.skipBreak);
+        DesktopControlsController.instance.triggerCommand(
+          DesktopCommand.skipBreak,
+        );
         break;
       case 'postpone_break':
-        DesktopControlsController.instance.triggerCommand(DesktopCommand.postponeBreak);
+        DesktopControlsController.instance.triggerCommand(
+          DesktopCommand.postponeBreak,
+        );
         break;
     }
   }

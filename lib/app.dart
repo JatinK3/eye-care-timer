@@ -369,8 +369,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     final history = await _preferencesService.loadHistory();
     final workSessionHistory = await _preferencesService
         .loadWorkSessionHistory();
-    final timerEventHistory = await _preferencesService
-        .loadTimerEventHistory();
+    final timerEventHistory = await _preferencesService.loadTimerEventHistory();
     final hasCompletedOnboarding = await _preferencesService
         .loadOnboardingCompleted();
     if (!mounted) {
@@ -452,6 +451,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       _settings = _settings.copyWith(useSystemAccent: enabled);
     });
     unawaited(_preferencesService.saveUseSystemAccent(enabled));
+  }
+
+  void _setStartMinimized(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(startMinimized: enabled);
+    });
+    unawaited(_preferencesService.saveStartMinimized(enabled));
   }
 
   void _setBlinkRemindersEnabled(bool enabled) {
@@ -827,6 +833,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           setAmoledDarkEnabled: _setAmoledDarkEnabled,
           setCustomAccentColorHex: _setCustomAccentColorHex,
           setUseSystemAccent: _setUseSystemAccent,
+          startMinimized: _settings.startMinimized,
+          setStartMinimized: _setStartMinimized,
           setNotificationsEnabled: _setNotificationsEnabled,
           setHapticsEnabled: _setHapticsEnabled,
           setSoundEnabled: _setSoundEnabled,
@@ -863,13 +871,22 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
         final seedColor = _settings.useSystemAccent
-            ? (lightDynamic?.primary ?? ColorPresets.seedColor(_settings.colorPreset, customHex: _settings.customAccentColorHex))
-            : ColorPresets.seedColor(_settings.colorPreset, customHex: _settings.customAccentColorHex);
+            ? (lightDynamic?.primary ??
+                  ColorPresets.seedColor(
+                    _settings.colorPreset,
+                    customHex: _settings.customAccentColorHex,
+                  ))
+            : ColorPresets.seedColor(
+                _settings.colorPreset,
+                customHex: _settings.customAccentColorHex,
+              );
 
         ColorScheme lightColorScheme;
         ColorScheme darkColorScheme;
 
-        if (_settings.useSystemAccent && lightDynamic != null && darkDynamic != null) {
+        if (_settings.useSystemAccent &&
+            lightDynamic != null &&
+            darkDynamic != null) {
           lightColorScheme = lightDynamic;
           darkColorScheme = darkDynamic;
         } else {
@@ -882,13 +899,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
 
         // AMOLED modifications
         if (_settings.amoledDarkEnabled) {
-          darkColorScheme = darkColorScheme.copyWith(
-            surface: Colors.black,
-          );
+          darkColorScheme = darkColorScheme.copyWith(surface: Colors.black);
         }
 
-        final isPlatformDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
-        final isDarkTheme = _settings.themeMode == ThemeMode.dark ||
+        final isPlatformDark =
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+        final isDarkTheme =
+            _settings.themeMode == ThemeMode.dark ||
             (_settings.themeMode == ThemeMode.system && isPlatformDark);
 
         return MaterialApp(
@@ -907,7 +924,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
             useMaterial3: true,
             brightness: Brightness.dark,
             colorScheme: darkColorScheme,
-            scaffoldBackgroundColor: _settings.amoledDarkEnabled ? Colors.black : null,
+            scaffoldBackgroundColor: _settings.amoledDarkEnabled
+                ? Colors.black
+                : null,
             textTheme: _buildTextTheme(ThemeData.dark().textTheme),
             pageTransitionsTheme: _smoothPageTransitionsTheme,
           ),
@@ -947,14 +966,16 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   soundEnabled: _settings.soundEnabled,
                   chimeStyle: _settings.chimeStyle,
                   blinkRemindersEnabled: _settings.blinkRemindersEnabled,
-                  blinkRemindersCadenceSeconds: _settings.blinkRemindersCadenceSeconds,
+                  blinkRemindersCadenceSeconds:
+                      _settings.blinkRemindersCadenceSeconds,
                   workHoursEnabled: _settings.workHoursEnabled,
                   workHoursStartHour: _settings.workHoursStartHour,
                   workHoursStartMinute: _settings.workHoursStartMinute,
                   workHoursEndHour: _settings.workHoursEndHour,
                   workHoursEndMinute: _settings.workHoursEndMinute,
                   workDays: _settings.workDays,
-                  naturalBreakCreditEnabled: _settings.naturalBreakCreditEnabled,
+                  naturalBreakCreditEnabled:
+                      _settings.naturalBreakCreditEnabled,
                   breakMode: _settings.breakMode,
                   allowSkip: _settings.allowSkip,
                   allowPostpone: _settings.allowPostpone,

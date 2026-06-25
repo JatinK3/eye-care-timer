@@ -54,24 +54,29 @@ class SettingsPage extends StatefulWidget {
   final void Function(bool enabled) setHapticsEnabled;
   final void Function(bool enabled) setSoundEnabled;
   final void Function(String preset) setPreset;
-  final void Function(int workDurationSeconds, int breakDurationSeconds) saveDurations;
+  final void Function(int workDurationSeconds, int breakDurationSeconds)
+  saveDurations;
   final void Function(int dailyGoal) setDailyGoal;
   final void Function({
     required bool enabled,
     required int durationSeconds,
     required int everyCycles,
-  }) saveLongBreakSettings;
-  final void Function({required bool enabled, required int cycleLimit}) saveAutoRunSettings;
+  })
+  saveLongBreakSettings;
+  final void Function({required bool enabled, required int cycleLimit})
+  saveAutoRunSettings;
   final Future<void> Function() openNotificationSettings;
   final Future<void> Function() openReminderChannelSettings;
   final Future<bool> Function() showTestReminder;
-  final Future<NotificationReliabilityStatus> Function() refreshNotificationReliabilityStatus;
+  final Future<NotificationReliabilityStatus> Function()
+  refreshNotificationReliabilityStatus;
   final Future<void> Function() requestExactAlarmPermission;
   final Future<void> Function() openBatteryOptimizationSettings;
   final Future<void> Function() openOverlayPermissionSettings;
   final Future<bool> Function() showOverlayPreview;
   final Future<bool> Function() showRealBreakTest;
-  final Future<OverlayPermissionStatus> Function() refreshOverlayPermissionStatus;
+  final Future<OverlayPermissionStatus> Function()
+  refreshOverlayPermissionStatus;
   final UsageAccessStatus usageAccessStatus;
   final Future<UsageAccessStatus> Function() refreshUsageAccessStatus;
   final Future<void> Function() openUsageAccessSettings;
@@ -99,6 +104,8 @@ class SettingsPage extends StatefulWidget {
   final void Function(bool) setAmoledDarkEnabled;
   final void Function(String) setCustomAccentColorHex;
   final void Function(bool) setUseSystemAccent;
+  final bool startMinimized;
+  final void Function(bool) setStartMinimized;
 
   // AI Motivation parameters
   final bool aiMotivationEnabled;
@@ -197,6 +204,8 @@ class SettingsPage extends StatefulWidget {
     required this.setAmoledDarkEnabled,
     required this.setCustomAccentColorHex,
     required this.setUseSystemAccent,
+    required this.startMinimized,
+    required this.setStartMinimized,
 
     // AI Motivation constructor parameters
     required this.aiMotivationEnabled,
@@ -215,8 +224,20 @@ class SettingsPage extends StatefulWidget {
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver {
-  static const List<int> _workDurationMinutes = [1, 2, 5, 10, 15, 20, 25, 30, 45, 60];
+class _SettingsPageState extends State<SettingsPage>
+    with WidgetsBindingObserver {
+  static const List<int> _workDurationMinutes = [
+    1,
+    2,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    45,
+    60,
+  ];
   static const List<int> _breakDurationSeconds = [20, 30, 45, 60, 90, 120, 300];
   static const List<int> _longBreakDurationSeconds = [180, 300, 600, 900];
   static const List<int> _longBreakCycles = [2, 3, 4, 5, 6];
@@ -241,7 +262,8 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   String? _aiModelsError;
   bool _aiApiKeyObscured = true;
   final TextEditingController _aiApiKeyController = TextEditingController();
-  final TextEditingController _aiModelCustomController = TextEditingController();
+  final TextEditingController _aiModelCustomController =
+      TextEditingController();
   Timer? _aiApiKeyDebounce;
 
   String _searchQuery = '';
@@ -271,7 +293,8 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
 
   Future<void> _loadDesktopSettings() async {
     if (DesktopIntegrationService.instance.isSupported) {
-      final isEnabled = await DesktopIntegrationService.instance.isLaunchAtStartupEnabled();
+      final isEnabled = await DesktopIntegrationService.instance
+          .isLaunchAtStartupEnabled();
       if (mounted) {
         setState(() {
           _launchAtStartup = isEnabled;
@@ -283,13 +306,15 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   @override
   void didUpdateWidget(covariant SettingsPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.notificationPermissionStatus != widget.notificationPermissionStatus) {
+    if (oldWidget.notificationPermissionStatus !=
+        widget.notificationPermissionStatus) {
       _permissionStatus = widget.notificationPermissionStatus;
     }
     if (oldWidget.exactAlarmStatus != widget.exactAlarmStatus) {
       _exactAlarmStatus = widget.exactAlarmStatus;
     }
-    if (oldWidget.batteryOptimizationStatus != widget.batteryOptimizationStatus) {
+    if (oldWidget.batteryOptimizationStatus !=
+        widget.batteryOptimizationStatus) {
       _batteryOptimizationStatus = widget.batteryOptimizationStatus;
     }
     if (oldWidget.overlayPermissionStatus != widget.overlayPermissionStatus) {
@@ -335,7 +360,8 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   }
 
   Future<void> _refreshSystemStatuses() async {
-    final notificationStatus = await widget.refreshNotificationReliabilityStatus();
+    final notificationStatus = await widget
+        .refreshNotificationReliabilityStatus();
     final overlayStatus = await widget.refreshOverlayPermissionStatus();
     final usageStatus = await widget.refreshUsageAccessStatus();
     if (!mounted) return;
@@ -430,14 +456,22 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
 
   String _getDayNameShort(int day) {
     switch (day) {
-      case 1: return 'Mon';
-      case 2: return 'Tue';
-      case 3: return 'Wed';
-      case 4: return 'Thu';
-      case 5: return 'Fri';
-      case 6: return 'Sat';
-      case 7: return 'Sun';
-      default: return '';
+      case 1:
+        return 'Mon';
+      case 2:
+        return 'Tue';
+      case 3:
+        return 'Wed';
+      case 4:
+        return 'Thu';
+      case 5:
+        return 'Fri';
+      case 6:
+        return 'Sat';
+      case 7:
+        return 'Sun';
+      default:
+        return '';
     }
   }
 
@@ -445,7 +479,8 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
     return switch (_permissionStatus) {
       NotificationPermissionStatus.allowed => 'System permission allowed',
       NotificationPermissionStatus.disabled => 'System permission blocked',
-      NotificationPermissionStatus.unsupported => 'Status unavailable on this platform',
+      NotificationPermissionStatus.unsupported =>
+        'Status unavailable on this platform',
       NotificationPermissionStatus.unknown => 'Checking system permission',
     };
   }
@@ -462,7 +497,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   Color? _notificationPermissionColor(BuildContext context) {
     return switch (_permissionStatus) {
       NotificationPermissionStatus.allowed => Colors.green,
-      NotificationPermissionStatus.disabled => Theme.of(context).colorScheme.error,
+      NotificationPermissionStatus.disabled => Theme.of(
+        context,
+      ).colorScheme.error,
       NotificationPermissionStatus.unsupported => null,
       NotificationPermissionStatus.unknown => null,
     };
@@ -471,7 +508,8 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   String _overlayPermissionLabel() {
     return switch (_overlayPermissionStatus) {
       OverlayPermissionStatus.allowed => 'Allowed on this device',
-      OverlayPermissionStatus.disabled => 'Permission required for enforced breaks',
+      OverlayPermissionStatus.disabled =>
+        'Permission required for enforced breaks',
       OverlayPermissionStatus.unknown => 'Checking overlay permission',
       OverlayPermissionStatus.unsupported => 'Unavailable on this platform',
     };
@@ -494,7 +532,16 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       SettingItem(
         title: 'Quick presets',
         subtitle: '20-20-20, 25/5, 45/5, 10s/10s (Test)',
-        keywords: ['preset', '20-20-20', 'quick', 'duration', 'time', '25', '45', '10'],
+        keywords: [
+          'preset',
+          '20-20-20',
+          'quick',
+          'duration',
+          'time',
+          '25',
+          '45',
+          '10',
+        ],
         category: 'General Schedule',
         widget: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -504,25 +551,33 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             children: [
               _PresetChip(
                 label: '20-20-20',
-                selected: widget.workDurationSeconds == 20 * 60 && widget.breakDurationSeconds == 20,
+                selected:
+                    widget.workDurationSeconds == 20 * 60 &&
+                    widget.breakDurationSeconds == 20,
                 enabled: widget.canChangeDurations,
                 onSelected: () => _applyPreset(20 * 60, 20),
               ),
               _PresetChip(
                 label: '10s / 10s (Test)',
-                selected: widget.workDurationSeconds == 10 && widget.breakDurationSeconds == 10,
+                selected:
+                    widget.workDurationSeconds == 10 &&
+                    widget.breakDurationSeconds == 10,
                 enabled: widget.canChangeDurations,
                 onSelected: () => _applyPreset(10, 10),
               ),
               _PresetChip(
                 label: '25 / 5',
-                selected: widget.workDurationSeconds == 25 * 60 && widget.breakDurationSeconds == 5 * 60,
+                selected:
+                    widget.workDurationSeconds == 25 * 60 &&
+                    widget.breakDurationSeconds == 5 * 60,
                 enabled: widget.canChangeDurations,
                 onSelected: () => _applyPreset(25 * 60, 5 * 60),
               ),
               _PresetChip(
                 label: '45 / 5',
-                selected: widget.workDurationSeconds == 45 * 60 && widget.breakDurationSeconds == 5 * 60,
+                selected:
+                    widget.workDurationSeconds == 45 * 60 &&
+                    widget.breakDurationSeconds == 5 * 60,
                 enabled: widget.canChangeDurations,
                 onSelected: () => _applyPreset(45 * 60, 5 * 60),
               ),
@@ -532,16 +587,22 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       ),
       SettingItem(
         title: 'Work duration',
-        subtitle: widget.canChangeDurations ? 'Choose work interval' : 'Pause/cancel timer to change',
+        subtitle: widget.canChangeDurations
+            ? 'Choose work interval'
+            : 'Pause/cancel timer to change',
         keywords: ['work', 'duration', 'minutes', 'time'],
         category: 'General Schedule',
         widget: ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.work_outline),
           title: const Text('Work duration'),
-          subtitle: widget.canChangeDurations ? null : const Text('Pause or cancel the timer to change this'),
+          subtitle: widget.canChangeDurations
+              ? null
+              : const Text('Pause or cancel the timer to change this'),
           trailing: DropdownButton<int>(
-            value: widget.workDurationSeconds < 60 ? 0 : widget.workDurationSeconds ~/ 60,
+            value: widget.workDurationSeconds < 60
+                ? 0
+                : widget.workDurationSeconds ~/ 60,
             items: [
               if (widget.workDurationSeconds < 60)
                 DropdownMenuItem<int>(
@@ -558,8 +619,13 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             onChanged: widget.canChangeDurations
                 ? (value) {
                     if (value == null) return;
-                    final nextSeconds = value == 0 ? widget.workDurationSeconds : value * 60;
-                    widget.saveDurations(nextSeconds, widget.breakDurationSeconds);
+                    final nextSeconds = value == 0
+                        ? widget.workDurationSeconds
+                        : value * 60;
+                    widget.saveDurations(
+                      nextSeconds,
+                      widget.breakDurationSeconds,
+                    );
                   }
                 : null,
           ),
@@ -567,14 +633,18 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       ),
       SettingItem(
         title: 'Break duration',
-        subtitle: widget.canChangeDurations ? 'Choose break length' : 'Pause/cancel timer to change',
+        subtitle: widget.canChangeDurations
+            ? 'Choose break length'
+            : 'Pause/cancel timer to change',
         keywords: ['break', 'duration', 'seconds', 'time'],
         category: 'General Schedule',
         widget: ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.visibility_outlined),
           title: const Text('Break duration'),
-          subtitle: widget.canChangeDurations ? null : const Text('Pause or cancel the timer to change this'),
+          subtitle: widget.canChangeDurations
+              ? null
+              : const Text('Pause or cancel the timer to change this'),
           trailing: DropdownButton<int>(
             value: widget.breakDurationSeconds,
             items: [
@@ -608,15 +678,17 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.flag_outlined),
           title: const Text('Daily goal'),
-          subtitle: Text('${widget.streakCount} / ${widget.dailyGoal} breaks today'),
+          subtitle: Text(
+            '${widget.streakCount} / ${widget.dailyGoal} breaks today',
+          ),
           trailing: DropdownButton<int>(
             value: widget.dailyGoal,
-            items: _dailyGoals.map(
-              (goal) => DropdownMenuItem<int>(
-                value: goal,
-                child: Text('$goal'),
-              ),
-            ).toList(),
+            items: _dailyGoals
+                .map(
+                  (goal) =>
+                      DropdownMenuItem<int>(value: goal, child: Text('$goal')),
+                )
+                .toList(),
             onChanged: (value) {
               if (value != null) widget.setDailyGoal(value);
             },
@@ -626,7 +698,15 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       SettingItem(
         title: 'History',
         subtitle: 'Review your recent eye breaks',
-        keywords: ['history', 'recent', 'breaks', 'insights', 'statistics', 'csv', 'json'],
+        keywords: [
+          'history',
+          'recent',
+          'breaks',
+          'insights',
+          'statistics',
+          'csv',
+          'json',
+        ],
         category: 'General Schedule',
         widget: ListTile(
           contentPadding: EdgeInsets.zero,
@@ -655,7 +735,16 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       SettingItem(
         title: 'Active work hours & days',
         subtitle: 'Only run the timer cycles during specific hours and days',
-        keywords: ['schedule', 'work', 'hours', 'days', 'time', 'start', 'end', 'calendar'],
+        keywords: [
+          'schedule',
+          'work',
+          'hours',
+          'days',
+          'time',
+          'start',
+          'end',
+          'calendar',
+        ],
         category: 'General Schedule',
         widget: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -664,7 +753,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               contentPadding: EdgeInsets.zero,
               secondary: const Icon(Icons.calendar_today_outlined),
               title: const Text('Active work hours & days'),
-              subtitle: const Text('Only run the timer cycles during specific hours and days'),
+              subtitle: const Text(
+                'Only run the timer cycles during specific hours and days',
+              ),
               value: widget.workHoursEnabled,
               onChanged: widget.setWorkHoursEnabled,
             ),
@@ -850,28 +941,43 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
         ),
         SettingItem(
           title: 'Smart Pause & Postpone',
-          subtitle: 'Pause on screen-off / system idle; delay breaks for games or videos',
-          keywords: ['smart', 'pause', 'postpone', 'idle', 'game', 'video', 'cast', 'dnd'],
+          subtitle:
+              'Pause on screen-off / system idle; delay breaks for games or videos',
+          keywords: [
+            'smart',
+            'pause',
+            'postpone',
+            'idle',
+            'game',
+            'video',
+            'cast',
+            'dnd',
+          ],
           category: 'Break Screen & Behavior',
           widget: SwitchListTile(
             contentPadding: EdgeInsets.zero,
             secondary: const Icon(Icons.psychology_outlined),
             title: const Text('Smart Pause & Postpone'),
-            subtitle: const Text('Pause on screen-off / system idle; delay breaks for games or videos'),
+            subtitle: const Text(
+              'Pause on screen-off / system idle; delay breaks for games or videos',
+            ),
             value: widget.smartIdleEnabled,
             onChanged: widget.setSmartIdleEnabled,
           ),
         ),
         SettingItem(
           title: 'Natural break credit',
-          subtitle: 'Credit a completed break if you are idle/away for longer than the break duration',
+          subtitle:
+              'Credit a completed break if you are idle/away for longer than the break duration',
           keywords: ['natural', 'break', 'credit', 'idle', 'away', 'keyboard'],
           category: 'Break Screen & Behavior',
           widget: SwitchListTile(
             contentPadding: EdgeInsets.zero,
             secondary: const Icon(Icons.check_circle_outline),
             title: const Text('Natural break credit'),
-            subtitle: const Text('Credit a completed break if you are idle/away for longer than the break duration'),
+            subtitle: const Text(
+              'Credit a completed break if you are idle/away for longer than the break duration',
+            ),
             value: widget.naturalBreakCreditEnabled,
             onChanged: widget.setNaturalBreakCreditEnabled,
           ),
@@ -879,7 +985,17 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
         SettingItem(
           title: 'Break visualizer style',
           subtitle: 'Choose ambient effect during breaks',
-          keywords: ['visualizer', 'style', 'breathing', 'box', 'exercise', 'blink', 'ambient', 'starry', 'random'],
+          keywords: [
+            'visualizer',
+            'style',
+            'breathing',
+            'box',
+            'exercise',
+            'blink',
+            'ambient',
+            'starry',
+            'random',
+          ],
           category: 'Break Screen & Behavior',
           widget: ListTile(
             contentPadding: EdgeInsets.zero,
@@ -891,18 +1007,30 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               underline: const SizedBox(),
               dropdownColor: theme.cardColor,
               style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
               onChanged: (String? val) {
                 if (val != null) widget.setBreakVisualizerStyle(val);
               },
               items: const [
                 DropdownMenuItem(value: 'Random', child: Text('Random/All')),
-                DropdownMenuItem(value: 'Breathing', child: Text('Calm Breathing')),
-                DropdownMenuItem(value: 'BoxBreathing', child: Text('Box Breathing (4-4-4-4)')),
-                DropdownMenuItem(value: 'EyeExercise', child: Text('Eye Exercises')),
-                DropdownMenuItem(value: 'BlinkTraining', child: Text('Blink Training (Blink Pacing)')),
+                DropdownMenuItem(
+                  value: 'Breathing',
+                  child: Text('Calm Breathing'),
+                ),
+                DropdownMenuItem(
+                  value: 'BoxBreathing',
+                  child: Text('Box Breathing (4-4-4-4)'),
+                ),
+                DropdownMenuItem(
+                  value: 'EyeExercise',
+                  child: Text('Eye Exercises'),
+                ),
+                DropdownMenuItem(
+                  value: 'BlinkTraining',
+                  child: Text('Blink Training (Blink Pacing)'),
+                ),
                 DropdownMenuItem(value: 'Ambient', child: Text('Ambient Flow')),
                 DropdownMenuItem(value: 'Starry', child: Text('Starry Sky')),
               ],
@@ -923,12 +1051,14 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               trailing: DropdownButton<int>(
                 value: widget.postponeDurationSeconds,
                 underline: const SizedBox(),
-                items: _postponeDurations.map(
-                  (seconds) => DropdownMenuItem<int>(
-                    value: seconds,
-                    child: Text('${seconds ~/ 60} min'),
-                  ),
-                ).toList(),
+                items: _postponeDurations
+                    .map(
+                      (seconds) => DropdownMenuItem<int>(
+                        value: seconds,
+                        child: Text('${seconds ~/ 60} min'),
+                      ),
+                    )
+                    .toList(),
                 onChanged: (value) {
                   if (value != null) widget.setPostponeDurationSeconds(value);
                 },
@@ -951,7 +1081,8 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             ),
             title: const Text('Display over other apps'),
             subtitle: Text(_overlayPermissionLabel()),
-            trailing: _overlayPermissionStatus == OverlayPermissionStatus.disabled
+            trailing:
+                _overlayPermissionStatus == OverlayPermissionStatus.disabled
                 ? TextButton(
                     key: const ValueKey('overlay_allow_button'),
                     onPressed: widget.openOverlayPermissionSettings,
@@ -971,7 +1102,10 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             title: const Text('Preview break screen'),
             subtitle: const Text('Show a 10-second black overlay'),
             trailing: IconButton(
-              onPressed: _overlayPermissionStatus == OverlayPermissionStatus.allowed ? _showOverlayPreview : null,
+              onPressed:
+                  _overlayPermissionStatus == OverlayPermissionStatus.allowed
+                  ? _showOverlayPreview
+                  : null,
               icon: const Icon(Icons.play_arrow),
               tooltip: 'Preview break overlay',
             ),
@@ -988,18 +1122,32 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             title: const Text('Test 20s break screen'),
             subtitle: const Text('Launch a real 20-second eye break'),
             trailing: IconButton(
-              onPressed: _overlayPermissionStatus == OverlayPermissionStatus.allowed ? _showRealBreakTest : null,
+              onPressed:
+                  _overlayPermissionStatus == OverlayPermissionStatus.allowed
+                  ? _showRealBreakTest
+                  : null,
               icon: const Icon(Icons.play_arrow),
               tooltip: 'Test real break overlay',
             ),
           ),
         ),
       ],
-      if (widget.smartIdleEnabled && _usageAccessStatus != UsageAccessStatus.unsupported)
+      if (widget.smartIdleEnabled &&
+          _usageAccessStatus != UsageAccessStatus.unsupported)
         SettingItem(
           title: 'Usage access',
-          subtitle: _usageAccessStatus == UsageAccessStatus.allowed ? 'App detection enabled' : 'Required to detect games & videos',
-          keywords: ['usage', 'access', 'apps', 'detection', 'game', 'video', 'permission'],
+          subtitle: _usageAccessStatus == UsageAccessStatus.allowed
+              ? 'App detection enabled'
+              : 'Required to detect games & videos',
+          keywords: [
+            'usage',
+            'access',
+            'apps',
+            'detection',
+            'game',
+            'video',
+            'permission',
+          ],
           category: 'Break Screen & Behavior',
           widget: ListTile(
             contentPadding: EdgeInsets.zero,
@@ -1048,22 +1196,33 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       if (widget.isDark)
         SettingItem(
           title: 'AMOLED dark mode',
-          subtitle: 'Use pure black (#000000) backgrounds for battery saving and higher contrast',
+          subtitle:
+              'Use pure black (#000000) backgrounds for battery saving and higher contrast',
           keywords: ['amoled', 'pure', 'black', 'battery', 'contrast', 'dark'],
           category: 'Theme & Appearance',
           widget: SwitchListTile(
             contentPadding: EdgeInsets.zero,
             secondary: const Icon(Icons.power_settings_new_outlined),
             title: const Text('AMOLED dark mode'),
-            subtitle: const Text('Use pure black backgrounds for battery saving'),
+            subtitle: const Text(
+              'Use pure black backgrounds for battery saving',
+            ),
             value: widget.amoledDarkEnabled,
             onChanged: widget.setAmoledDarkEnabled,
           ),
         ),
       SettingItem(
         title: 'Use system accent color',
-        subtitle: 'Automatically follow Material You / OS system-accent dynamic colors',
-        keywords: ['system', 'accent', 'color', 'material you', 'dynamic', 'os'],
+        subtitle:
+            'Automatically follow Material You / OS system-accent dynamic colors',
+        keywords: [
+          'system',
+          'accent',
+          'color',
+          'material you',
+          'dynamic',
+          'os',
+        ],
         category: 'Theme & Appearance',
         widget: SwitchListTile(
           contentPadding: EdgeInsets.zero,
@@ -1078,7 +1237,18 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
         SettingItem(
           title: 'Color preset',
           subtitle: 'Choose your preferred accent color theme preset',
-          keywords: ['color', 'preset', 'theme', 'pastel', 'blue', 'green', 'rose', 'graphite', 'sunrise', 'custom'],
+          keywords: [
+            'color',
+            'preset',
+            'theme',
+            'pastel',
+            'blue',
+            'green',
+            'rose',
+            'graphite',
+            'sunrise',
+            'custom',
+          ],
           category: 'Theme & Appearance',
           widget: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1094,10 +1264,16 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                   contentPadding: EdgeInsets.zero,
                   leading: CircleAvatar(
                     radius: 10,
-                    backgroundColor: ColorPresets.swatchColor(preset, widget.isDark, customHex: widget.customAccentColorHex),
+                    backgroundColor: ColorPresets.swatchColor(
+                      preset,
+                      widget.isDark,
+                      customHex: widget.customAccentColorHex,
+                    ),
                   ),
                   title: Text(preset),
-                  trailing: preset == widget.colorPreset ? const Icon(Icons.check) : null,
+                  trailing: preset == widget.colorPreset
+                      ? const Icon(Icons.check)
+                      : null,
                   onTap: () => widget.setPreset(preset),
                 ),
               ),
@@ -1127,15 +1303,22 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                     ])
                       GestureDetector(
                         onTap: () {
-                          final hex = '#${color.toARGB32().toRadixString(16).substring(2, 8)}';
+                          final hex =
+                              '#${color.toARGB32().toRadixString(16).substring(2, 8)}';
                           widget.setCustomAccentColorHex(hex);
                         },
                         child: CircleAvatar(
                           radius: 18,
                           backgroundColor: color,
-                          child: widget.customAccentColorHex.toLowerCase() ==
-                                  '#${color.toARGB32().toRadixString(16).substring(2, 8)}'.toLowerCase()
-                              ? const Icon(Icons.check, color: Colors.white, size: 18)
+                          child:
+                              widget.customAccentColorHex.toLowerCase() ==
+                                  '#${color.toARGB32().toRadixString(16).substring(2, 8)}'
+                                      .toLowerCase()
+                              ? const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 18,
+                                )
                               : null,
                         ),
                       ),
@@ -1149,13 +1332,18 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                     labelText: 'Accent Color Hex Code',
                     hintText: '#009688',
                     border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                   ),
                   style: theme.textTheme.bodyMedium,
                   onFieldSubmitted: (val) {
-                    if (val.startsWith('#') && (val.length == 7 || val.length == 9)) {
+                    if (val.startsWith('#') &&
+                        (val.length == 7 || val.length == 9)) {
                       widget.setCustomAccentColorHex(val);
-                    } else if (!val.startsWith('#') && (val.length == 6 || val.length == 8)) {
+                    } else if (!val.startsWith('#') &&
+                        (val.length == 6 || val.length == 8)) {
                       widget.setCustomAccentColorHex('#$val');
                     }
                   },
@@ -1216,7 +1404,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : IconButton(
-                  onPressed: widget.notificationsEnabled ? _showTestReminder : null,
+                  onPressed: widget.notificationsEnabled
+                      ? _showTestReminder
+                      : null,
                   icon: const Icon(Icons.play_arrow),
                   tooltip: 'Send test reminder',
                 ),
@@ -1250,7 +1440,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
             if (!widget.notificationsEnabled)
               const Padding(
                 padding: EdgeInsets.only(bottom: 8, top: 4),
-                child: Text('Timer alerts are off. The countdown still works in the app.'),
+                child: Text(
+                  'Timer alerts are off. The countdown still works in the app.',
+                ),
               ),
           ],
         ),
@@ -1258,17 +1450,30 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       if (_exactAlarmStatus != ExactAlarmStatus.unsupported)
         SettingItem(
           title: 'Precise reminders permission',
-          subtitle: _exactAlarmStatus == ExactAlarmStatus.allowed ? 'Exact timing allowed' : 'May arrive a little late',
-          keywords: ['precise', 'reminders', 'exact', 'timing', 'alarm', 'permission'],
+          subtitle: _exactAlarmStatus == ExactAlarmStatus.allowed
+              ? 'Exact timing allowed'
+              : 'May arrive a little late',
+          keywords: [
+            'precise',
+            'reminders',
+            'exact',
+            'timing',
+            'alarm',
+            'permission',
+          ],
           category: 'Notifications & Sounds',
           widget: ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Icon(
-              _exactAlarmStatus == ExactAlarmStatus.allowed ? Icons.alarm_on_outlined : Icons.alarm_off_outlined,
+              _exactAlarmStatus == ExactAlarmStatus.allowed
+                  ? Icons.alarm_on_outlined
+                  : Icons.alarm_off_outlined,
             ),
             title: const Text('Precise reminders'),
             subtitle: Text(
-              _exactAlarmStatus == ExactAlarmStatus.allowed ? 'Exact timing allowed' : 'May arrive a little late',
+              _exactAlarmStatus == ExactAlarmStatus.allowed
+                  ? 'Exact timing allowed'
+                  : 'May arrive a little late',
             ),
             trailing: _exactAlarmStatus == ExactAlarmStatus.disabled
                 ? TextButton(
@@ -1281,25 +1486,37 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       if (_batteryOptimizationStatus != BatteryOptimizationStatus.unsupported)
         SettingItem(
           title: 'Background reliability battery optimization',
-          subtitle: _batteryOptimizationStatus == BatteryOptimizationStatus.unrestricted
+          subtitle:
+              _batteryOptimizationStatus ==
+                  BatteryOptimizationStatus.unrestricted
               ? 'Battery use is unrestricted'
               : 'Battery optimization may delay alerts',
-          keywords: ['battery', 'reliability', 'optimization', 'background', 'delay'],
+          keywords: [
+            'battery',
+            'reliability',
+            'optimization',
+            'background',
+            'delay',
+          ],
           category: 'Notifications & Sounds',
           widget: ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Icon(
-              _batteryOptimizationStatus == BatteryOptimizationStatus.unrestricted
+              _batteryOptimizationStatus ==
+                      BatteryOptimizationStatus.unrestricted
                   ? Icons.battery_saver_outlined
                   : Icons.battery_alert_outlined,
             ),
             title: const Text('Background reliability'),
             subtitle: Text(
-              _batteryOptimizationStatus == BatteryOptimizationStatus.unrestricted
+              _batteryOptimizationStatus ==
+                      BatteryOptimizationStatus.unrestricted
                   ? 'Battery use is unrestricted'
                   : 'Battery optimization may delay alerts',
             ),
-            trailing: _batteryOptimizationStatus == BatteryOptimizationStatus.restricted
+            trailing:
+                _batteryOptimizationStatus ==
+                    BatteryOptimizationStatus.restricted
                 ? TextButton(
                     onPressed: _openBatteryOptimizationSettings,
                     child: const Text('Review'),
@@ -1332,7 +1549,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               contentPadding: EdgeInsets.zero,
               secondary: const Icon(Icons.volume_up_outlined),
               title: const Text('In-app sound'),
-              subtitle: const Text('Play an extra system alert while BlinkKind is open'),
+              subtitle: const Text(
+                'Play an extra system alert while BlinkKind is open',
+              ),
               value: widget.soundEnabled,
               onChanged: widget.setSoundEnabled,
             ),
@@ -1342,14 +1561,28 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.music_note_outlined),
                 title: const Text('Chime style'),
-                subtitle: const Text('Sound to play when a break starts or ends'),
+                subtitle: const Text(
+                  'Sound to play when a break starts or ends',
+                ),
                 trailing: DropdownButton<String>(
                   value: widget.chimeStyle,
                   items: const [
-                    DropdownMenuItem(value: 'tibetan_bowl', child: Text('Tibetan Bowl')),
-                    DropdownMenuItem(value: 'wind_chimes', child: Text('Wind Chimes')),
-                    DropdownMenuItem(value: 'zen_bell', child: Text('Zen Bell')),
-                    DropdownMenuItem(value: 'system_alert', child: Text('System Alert')),
+                    DropdownMenuItem(
+                      value: 'tibetan_bowl',
+                      child: Text('Tibetan Bowl'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'wind_chimes',
+                      child: Text('Wind Chimes'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'zen_bell',
+                      child: Text('Zen Bell'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'system_alert',
+                      child: Text('System Alert'),
+                    ),
                   ],
                   onChanged: (value) {
                     if (value != null) {
@@ -1365,8 +1598,16 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       ),
       SettingItem(
         title: 'Blink nudges (micro-reminders)',
-        subtitle: 'Flashes the system tray icon or pulses UI to encourage healthy blinking',
-        keywords: ['blink', 'nudges', 'micro-reminders', 'tray', 'flash', 'eye'],
+        subtitle:
+            'Flashes the system tray icon or pulses UI to encourage healthy blinking',
+        keywords: [
+          'blink',
+          'nudges',
+          'micro-reminders',
+          'tray',
+          'flash',
+          'eye',
+        ],
         category: 'Notifications & Sounds',
         widget: Column(
           children: [
@@ -1374,7 +1615,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               contentPadding: EdgeInsets.zero,
               secondary: const Icon(Icons.remove_red_eye_outlined),
               title: const Text('Blink nudges (micro-reminders)'),
-              subtitle: const Text('Flashes the system tray icon or pulses UI to encourage healthy blinking'),
+              subtitle: const Text(
+                'Flashes the system tray icon or pulses UI to encourage healthy blinking',
+              ),
               value: widget.blinkRemindersEnabled,
               onChanged: widget.setBlinkRemindersEnabled,
             ),
@@ -1396,7 +1639,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                     DropdownMenuItem(value: 10, child: Text('Every 10s')),
                   ],
                   onChanged: (value) {
-                    if (value != null) widget.setBlinkRemindersCadenceSeconds(value);
+                    if (value != null) {
+                      widget.setBlinkRemindersCadenceSeconds(value);
+                    }
                   },
                 ),
               ),
@@ -1408,7 +1653,8 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       // 5. Auto Run & Long Breaks
       SettingItem(
         title: 'Run schedule automatically auto run',
-        subtitle: 'Continue work and break cycles until stopped or limit is reached',
+        subtitle:
+            'Continue work and break cycles until stopped or limit is reached',
         keywords: ['auto', 'run', 'autorenew', 'schedule', 'cycles', 'loop'],
         category: 'Auto Run & Long Breaks',
         widget: Column(
@@ -1423,7 +1669,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                     : 'Pause or cancel the timer to change this',
               ),
               value: _autoRunEnabled,
-              onChanged: widget.canChangeDurations ? (enabled) => _saveAutoRun(enabled: enabled) : null,
+              onChanged: widget.canChangeDurations
+                  ? (enabled) => _saveAutoRun(enabled: enabled)
+                  : null,
             ),
             const Divider(height: 1),
             ListTile(
@@ -1433,12 +1681,14 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               subtitle: const Text('Completed work cycles in one run'),
               trailing: DropdownButton<int>(
                 value: _autoRunCycleLimit,
-                items: _autoRunCycleLimits.map(
-                  (limit) => DropdownMenuItem<int>(
-                    value: limit,
-                    child: Text(_cycleLimitLabel(limit)),
-                  ),
-                ).toList(),
+                items: _autoRunCycleLimits
+                    .map(
+                      (limit) => DropdownMenuItem<int>(
+                        value: limit,
+                        child: Text(_cycleLimitLabel(limit)),
+                      ),
+                    )
+                    .toList(),
                 onChanged: widget.canChangeDurations && _autoRunEnabled
                     ? (value) {
                         if (value != null) _saveAutoRun(cycleLimit: value);
@@ -1460,7 +1710,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               contentPadding: EdgeInsets.zero,
               secondary: const Icon(Icons.coffee_outlined),
               title: const Text('Long break mode'),
-              subtitle: Text('After ${widget.longBreakEveryCycles} work cycles, rest for ${_durationLabel(widget.longBreakDurationSeconds)}'),
+              subtitle: Text(
+                'After ${widget.longBreakEveryCycles} work cycles, rest for ${_durationLabel(widget.longBreakDurationSeconds)}',
+              ),
               value: widget.longBreakEnabled,
               onChanged: (enabled) => _saveLongBreak(enabled: enabled),
             ),
@@ -1472,12 +1724,14 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                 title: const Text('Cycle interval'),
                 trailing: DropdownButton<int>(
                   value: widget.longBreakEveryCycles,
-                  items: _longBreakCycles.map(
-                    (cycles) => DropdownMenuItem<int>(
-                      value: cycles,
-                      child: Text('$cycles cycles'),
-                    ),
-                  ).toList(),
+                  items: _longBreakCycles
+                      .map(
+                        (cycles) => DropdownMenuItem<int>(
+                          value: cycles,
+                          child: Text('$cycles cycles'),
+                        ),
+                      )
+                      .toList(),
                   onChanged: widget.longBreakEnabled
                       ? (value) {
                           if (value != null) _saveLongBreak(everyCycles: value);
@@ -1492,15 +1746,19 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                 title: const Text('Long break duration'),
                 trailing: DropdownButton<int>(
                   value: widget.longBreakDurationSeconds,
-                  items: _longBreakDurationSeconds.map(
-                    (seconds) => DropdownMenuItem<int>(
-                      value: seconds,
-                      child: Text(_durationLabel(seconds)),
-                    ),
-                  ).toList(),
+                  items: _longBreakDurationSeconds
+                      .map(
+                        (seconds) => DropdownMenuItem<int>(
+                          value: seconds,
+                          child: Text(_durationLabel(seconds)),
+                        ),
+                      )
+                      .toList(),
                   onChanged: widget.longBreakEnabled
                       ? (value) {
-                          if (value != null) _saveLongBreak(durationSeconds: value);
+                          if (value != null) {
+                            _saveLongBreak(durationSeconds: value);
+                          }
                         }
                       : null,
                 ),
@@ -1513,23 +1771,50 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       // 6. Desktop Options
       if (isDesktop)
         SettingItem(
-          title: 'Launch at Startup autostart',
-          subtitle: 'Start BlinkKind automatically when you log in to your desktop',
-          keywords: ['launch', 'startup', 'login', 'autostart', 'boot', 'desktop'],
+          title: 'Desktop startup behavior',
+          subtitle: 'Control login launch and tray-first startup behavior',
+          keywords: [
+            'launch',
+            'startup',
+            'login',
+            'autostart',
+            'boot',
+            'desktop',
+            'minimized',
+            'tray',
+          ],
           category: 'Desktop Options',
-          widget: SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.rocket_launch_outlined),
-            title: const Text('Launch at Startup'),
-            subtitle: const Text('Start BlinkKind automatically when you log in'),
-            value: _launchAtStartup,
-            onChanged: (value) async {
-              await DesktopIntegrationService.instance.setLaunchAtStartup(value);
-              final isEnabled = await DesktopIntegrationService.instance.isLaunchAtStartupEnabled();
-              setState(() {
-                _launchAtStartup = isEnabled;
-              });
-            },
+          widget: Column(
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.rocket_launch_outlined),
+                title: const Text('Launch at Startup'),
+                subtitle: const Text(
+                  'Start BlinkKind automatically when you log in',
+                ),
+                value: _launchAtStartup,
+                onChanged: (value) async {
+                  await DesktopIntegrationService.instance.setLaunchAtStartup(
+                    value,
+                  );
+                  final isEnabled = await DesktopIntegrationService.instance
+                      .isLaunchAtStartupEnabled();
+                  setState(() {
+                    _launchAtStartup = isEnabled;
+                  });
+                },
+              ),
+              const Divider(height: 1),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.move_to_inbox_outlined),
+                title: const Text('Start minimized'),
+                subtitle: const Text('Open into the tray on app startup'),
+                value: widget.startMinimized,
+                onChanged: widget.setStartMinimized,
+              ),
+            ],
           ),
         ),
 
@@ -1537,7 +1822,19 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       SettingItem(
         title: 'AI Motivation & Prompts',
         subtitle: 'Generate personalised eye-care quotes during breaks',
-        keywords: ['ai', 'motivation', 'llm', 'openai', 'groq', 'gemini', 'api', 'key', 'model', 'quote', 'prompt'],
+        keywords: [
+          'ai',
+          'motivation',
+          'llm',
+          'openai',
+          'groq',
+          'gemini',
+          'api',
+          'key',
+          'model',
+          'quote',
+          'prompt',
+        ],
         category: 'AI Motivation & Prompts',
         widget: _buildAiMotivationSettings(theme),
       ),
@@ -1569,7 +1866,10 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               underline: const SizedBox(),
               items: const [
                 DropdownMenuItem(value: 'Gemini', child: Text('Google Gemini')),
-                DropdownMenuItem(value: 'OpenAI', child: Text('OpenAI (ChatGPT)')),
+                DropdownMenuItem(
+                  value: 'OpenAI',
+                  child: Text('OpenAI (ChatGPT)'),
+                ),
                 DropdownMenuItem(value: 'Groq', child: Text('Groq (Fast)')),
               ],
               onChanged: (val) {
@@ -1599,20 +1899,34 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                       labelText: 'API Key',
                       hintText: 'Paste your API key here',
                       border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       suffixIcon: IconButton(
-                        icon: Icon(_aiApiKeyObscured ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                        onPressed: () => setState(() => _aiApiKeyObscured = !_aiApiKeyObscured),
+                        icon: Icon(
+                          _aiApiKeyObscured
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
+                        onPressed: () => setState(
+                          () => _aiApiKeyObscured = !_aiApiKeyObscured,
+                        ),
                       ),
                     ),
                     onChanged: (val) {
                       _aiApiKeyDebounce?.cancel();
-                      _aiApiKeyDebounce = Timer(const Duration(milliseconds: 800), () {
-                        widget.setAiApiKey(val.trim());
-                        if (val.trim().isNotEmpty) {
-                          unawaited(_fetchAiModels(val.trim(), widget.aiProvider));
-                        }
-                      });
+                      _aiApiKeyDebounce = Timer(
+                        const Duration(milliseconds: 800),
+                        () {
+                          widget.setAiApiKey(val.trim());
+                          if (val.trim().isNotEmpty) {
+                            unawaited(
+                              _fetchAiModels(val.trim(), widget.aiProvider),
+                            );
+                          }
+                        },
+                      );
                     },
                   ),
                 ),
@@ -1632,16 +1946,32 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                 : const Icon(Icons.memory_outlined),
             title: const Text('Model'),
             subtitle: _aiModelsError != null
-                ? Text(_aiModelsError!, style: TextStyle(color: theme.colorScheme.error, fontSize: 12))
+                ? Text(
+                    _aiModelsError!,
+                    style: TextStyle(
+                      color: theme.colorScheme.error,
+                      fontSize: 12,
+                    ),
+                  )
                 : null,
             trailing: DropdownButton<String>(
-              value: _aiAvailableModels.contains(widget.aiModel) ? widget.aiModel : (_aiAvailableModels.isNotEmpty ? _aiAvailableModels.first : null),
+              value: _aiAvailableModels.contains(widget.aiModel)
+                  ? widget.aiModel
+                  : (_aiAvailableModels.isNotEmpty
+                        ? _aiAvailableModels.first
+                        : null),
               underline: const SizedBox(),
               items: [
                 ..._aiAvailableModels.map(
-                  (m) => DropdownMenuItem(value: m, child: Text(m, overflow: TextOverflow.ellipsis)),
+                  (m) => DropdownMenuItem(
+                    value: m,
+                    child: Text(m, overflow: TextOverflow.ellipsis),
+                  ),
                 ),
-                const DropdownMenuItem(value: '__custom__', child: Text('Custom...')),
+                const DropdownMenuItem(
+                  value: '__custom__',
+                  child: Text('Custom...'),
+                ),
               ],
               onChanged: (val) {
                 if (val == null) return;
@@ -1665,7 +1995,10 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                 labelText: 'System prompt',
                 hintText: 'Describe what kind of quote you want...',
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
               ),
               onChanged: (val) => widget.setAiCustomSystemPrompt(val),
             ),
@@ -1682,10 +2015,15 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       _aiModelsError = null;
     });
     try {
-      final models = await AiService.instance.fetchModels(provider: provider, apiKey: apiKey);
+      final models = await AiService.instance.fetchModels(
+        provider: provider,
+        apiKey: apiKey,
+      );
       if (!mounted) return;
       setState(() {
-        _aiAvailableModels = models.isNotEmpty ? models : AiService.instance.getDefaultModels(provider);
+        _aiAvailableModels = models.isNotEmpty
+            ? models
+            : AiService.instance.getDefaultModels(provider);
         _aiLoadingModels = false;
       });
     } catch (e) {
@@ -1733,7 +2071,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
   Widget _buildSearchResults() {
     final items = _allSettingItems(context);
     final filtered = items.where((item) {
-      final text = '${item.title} ${item.subtitle ?? ''} ${item.category} ${item.keywords.join(' ')}'.toLowerCase();
+      final text =
+          '${item.title} ${item.subtitle ?? ''} ${item.category} ${item.keywords.join(' ')}'
+              .toLowerCase();
       return text.contains(_searchQuery);
     }).toList();
 
@@ -1766,7 +2106,10 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(4),
@@ -1824,7 +2167,9 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
 
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Theme(
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
@@ -1833,7 +2178,10 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               leading: Icon(_categoryIcon(category)),
-              childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              childrenPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
               children: children,
             ),
           ),
@@ -1844,14 +2192,22 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
 
   IconData _categoryIcon(String category) {
     switch (category) {
-      case 'General Schedule': return Icons.calendar_today;
-      case 'Break Screen & Behavior': return Icons.visibility;
-      case 'Theme & Appearance': return Icons.color_lens;
-      case 'Notifications & Sounds': return Icons.notifications_active;
-      case 'Auto Run & Long Breaks': return Icons.repeat;
-      case 'Desktop Options': return Icons.desktop_windows;
-      case 'AI Motivation & Prompts': return Icons.auto_awesome;
-      default: return Icons.settings;
+      case 'General Schedule':
+        return Icons.calendar_today;
+      case 'Break Screen & Behavior':
+        return Icons.visibility;
+      case 'Theme & Appearance':
+        return Icons.color_lens;
+      case 'Notifications & Sounds':
+        return Icons.notifications_active;
+      case 'Auto Run & Long Breaks':
+        return Icons.repeat;
+      case 'Desktop Options':
+        return Icons.desktop_windows;
+      case 'AI Motivation & Prompts':
+        return Icons.auto_awesome;
+      default:
+        return Icons.settings;
     }
   }
 
@@ -1862,7 +2218,10 @@ class _SettingsPageState extends State<SettingsPage> with WidgetsBindingObserver
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
