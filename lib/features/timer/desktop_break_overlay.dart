@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/timer_settings.dart';
 import '../../services/desktop_controls_controller.dart';
+import '../../services/desktop_integration_service.dart';
 import 'break_guides.dart';
 import 'eye_health_tips.dart';
 
@@ -18,6 +19,7 @@ class DesktopBreakOverlay extends StatefulWidget {
   final bool showTips;
   final bool showProgress;
   final String customMessage;
+  final bool isPreview;
 
   const DesktopBreakOverlay({
     super.key,
@@ -31,6 +33,7 @@ class DesktopBreakOverlay extends StatefulWidget {
     this.showTips = true,
     this.showProgress = true,
     this.customMessage = '',
+    this.isPreview = false,
   });
 
   @override
@@ -47,6 +50,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   bool _hasDismissed = false;
   final FocusNode _focusNode = FocusNode(debugLabel: 'DesktopBreakOverlayFocus');
   bool _isSpacePressed = false;
+  bool _wasRunningBeforePreview = false;
 
   @override
   void initState() {
@@ -55,19 +59,27 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
 
     _tipOffset = math.Random().nextInt(EyeHealthTips.all.length);
 
-    // Listen to timer state changes to keep countdown synced
-    _stateSubscription = DesktopControlsController.instance.states.listen((
-      state,
-    ) {
-      if (!mounted) return;
-      if (state.isBreak && state.remainingSeconds > 0) {
-        setState(() {
-          _remainingSeconds = state.remainingSeconds;
-        });
-      } else {
-        _dismiss();
+    if (widget.isPreview) {
+      final latest = DesktopIntegrationService.instance.latestState;
+      if (latest != null && latest.isRunning && !latest.isPaused) {
+        _wasRunningBeforePreview = true;
+        DesktopControlsController.instance.triggerCommand(DesktopCommand.pause);
       }
-    });
+    } else {
+      // Listen to timer state changes to keep countdown synced
+      _stateSubscription = DesktopControlsController.instance.states.listen((
+        state,
+      ) {
+        if (!mounted) return;
+        if (state.isBreak && state.remainingSeconds > 0) {
+          setState(() {
+            _remainingSeconds = state.remainingSeconds;
+          });
+        } else {
+          _dismiss();
+        }
+      });
+    }
 
     // Fallback local timer (e.g. for previews)
     if (_remainingSeconds > 0) {
@@ -97,6 +109,9 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     _localTimer?.cancel();
     _holdTimer?.cancel();
     _focusNode.dispose();
+    if (widget.isPreview && _wasRunningBeforePreview) {
+      DesktopControlsController.instance.triggerCommand(DesktopCommand.resume);
+    }
     super.dispose();
   }
 

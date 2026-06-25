@@ -249,12 +249,13 @@ class TimerHomePageState extends State<TimerHomePage>
     });
 
     try {
-      const prompt = 'Generate a single, unique, practical, and highly engaging eye-health or posture tip (strict limit of 30 words) for a developer working at a computer. Make it specific, actionable, and encouraging.';
+      const prompt = 'Generate a single, unique, practical, and highly engaging desk wellness tip (strict limit of 30 words) for a developer working at a computer. Focus on overall well-being, such as posture, stretching, hydration, eye rest, deep breathing, or quick physical movement. Make it highly specific, actionable, and encouraging.';
       final insight = await AiService.instance.generateMotivation(
         provider: widget.aiProvider,
         apiKey: widget.aiApiKey,
         model: widget.aiModel,
         prompt: prompt,
+        temperature: 0.3,
       );
       setState(() {
         _aiHealthInsight = insight;

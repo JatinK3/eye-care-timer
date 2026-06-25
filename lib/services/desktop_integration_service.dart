@@ -38,6 +38,8 @@ class DesktopIntegrationService extends WindowListener {
   String? _lastIconPath;
   DesktopTimerState? _latestState;
 
+  DesktopTimerState? get latestState => _latestState;
+
   List<Rect> _breakMonitorRects = const [];
 
   /// Per-monitor rectangles (in the overlay window's local coordinate space) to

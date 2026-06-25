@@ -109,6 +109,7 @@ class AiService {
     required String apiKey,
     required String model,
     required String prompt,
+    double temperature = 0.3,
   }) async {
     if (apiKey.isEmpty) {
       throw ArgumentError('API Key cannot be empty');
@@ -133,7 +134,10 @@ class AiService {
                 {'text': prompt}
               ]
             }
-          ]
+          ],
+          'generationConfig': {
+            'temperature': temperature,
+          }
         }),
       ).timeout(const Duration(seconds: 10));
 
@@ -166,7 +170,7 @@ class AiService {
           'messages': [
             {'role': 'user', 'content': prompt}
           ],
-          'temperature': 0.7,
+          'temperature': temperature,
           'max_tokens': 100,
         }),
       ).timeout(const Duration(seconds: 10));

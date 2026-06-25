@@ -56,6 +56,7 @@ class FakeBreakOverlayService extends BreakOverlayService {
     bool showTips = true,
     bool showProgress = true,
     String customMessage = '',
+    bool isPreview = false,
   }) async {
     breakOverlayCount++;
     lastCustomMessage = customMessage;

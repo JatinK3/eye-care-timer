@@ -69,6 +69,7 @@ class BreakOverlayService {
         showTips: showTips,
         showProgress: showProgress,
         customMessage: customMessage,
+        isPreview: true,
       );
     }
 
@@ -81,6 +82,7 @@ class BreakOverlayService {
         showTips: showTips,
         showProgress: showProgress,
         customMessage: customMessage,
+        isPreview: true,
       );
       return true;
     }
@@ -105,6 +107,7 @@ class BreakOverlayService {
     bool showTips = true,
     bool showProgress = true,
     String customMessage = '',
+    bool isPreview = false,
   }) async {
     final bool isAppInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
 
@@ -119,6 +122,7 @@ class BreakOverlayService {
         showTips: showTips,
         showProgress: showProgress,
         customMessage: customMessage,
+        isPreview: isPreview,
       );
       return true;
     }
@@ -165,6 +169,7 @@ class BreakOverlayService {
     bool showTips = true,
     bool showProgress = true,
     String customMessage = '',
+    bool isPreview = false,
   }) {
     final navigator = navigatorKey.currentState;
     if (navigator == null) return;
@@ -190,6 +195,7 @@ class BreakOverlayService {
           showTips: showTips,
           showProgress: showProgress,
           customMessage: customMessage,
+          isPreview: isPreview,
           onDismiss: () {
             unawaited(stopBreakOverlay());
           },

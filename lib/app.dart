@@ -348,6 +348,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       showTips: _settings.breakShowTips,
       showProgress: _settings.breakShowProgress,
       customMessage: _settings.breakCustomMessage,
+      isPreview: true,
     );
   }
 
