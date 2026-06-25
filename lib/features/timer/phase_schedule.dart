@@ -142,6 +142,7 @@ PhaseProjection projectPhase({
   required int streakCount,
   required int autoRunCompletedCycles,
   required PhasePlan plan,
+  int? postponedBreakDuration,
 }) {
   var curIsBreak = isBreak;
   var curEndsAt = phaseEndsAt;
@@ -204,23 +205,39 @@ PhaseProjection projectPhase({
       curEndsAt = curEndsAt.add(Duration(seconds: dur));
     } else {
       // Work completed: count it and roll into the appropriate break.
-      streak += 1;
-      cycles += 1;
-      completed.add(
-        CompletedWork(completedAt: curEndsAt, durationSeconds: curDuration),
-      );
-      final dur = plan.breakDurationForCompletedCycle(streak);
-      if (dur <= 0) {
-        return PhaseProjection._idle(
-          streakCount: streak,
-          autoRunCompletedCycles: 0,
-          completedWorkSessions: completed,
-          boundariesCrossed: boundaries,
+      final isPostponedTransition = !isBreak && boundaries == 1 && postponedBreakDuration != null;
+      if (isPostponedTransition) {
+        final dur = postponedBreakDuration;
+        if (dur <= 0) {
+          return PhaseProjection._idle(
+            streakCount: streak,
+            autoRunCompletedCycles: 0,
+            completedWorkSessions: completed,
+            boundariesCrossed: boundaries,
+          );
+        }
+        curIsBreak = true;
+        curDuration = dur;
+        curEndsAt = curEndsAt.add(Duration(seconds: dur));
+      } else {
+        streak += 1;
+        cycles += 1;
+        completed.add(
+          CompletedWork(completedAt: curEndsAt, durationSeconds: curDuration),
         );
+        final dur = plan.breakDurationForCompletedCycle(streak);
+        if (dur <= 0) {
+          return PhaseProjection._idle(
+            streakCount: streak,
+            autoRunCompletedCycles: 0,
+            completedWorkSessions: completed,
+            boundariesCrossed: boundaries,
+          );
+        }
+        curIsBreak = true;
+        curDuration = dur;
+        curEndsAt = curEndsAt.add(Duration(seconds: dur));
       }
-      curIsBreak = true;
-      curDuration = dur;
-      curEndsAt = curEndsAt.add(Duration(seconds: dur));
     }
   }
 

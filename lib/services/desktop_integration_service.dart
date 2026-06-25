@@ -517,7 +517,7 @@ class DesktopIntegrationService extends WindowListener {
       double progress = 0.0;
 
       if (state.isBreak) {
-        ringColor = Colors.greenAccent;
+        ringColor = state.isLongBreak ? Colors.pinkAccent : Colors.greenAccent;
         text = state.remainingSeconds.toString();
         if (state.initialDurationSeconds > 0) {
           progress = (state.remainingSeconds / state.initialDurationSeconds)

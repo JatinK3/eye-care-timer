@@ -28,6 +28,7 @@ class DesktopTimerState {
   final bool isSnoozed;
   final int snoozeRemainingMinutes;
   final DateTime? nextBreakAt;
+  final bool isLongBreak;
 
   DesktopTimerState({
     required this.isRunning,
@@ -41,6 +42,7 @@ class DesktopTimerState {
     this.isSnoozed = false,
     this.snoozeRemainingMinutes = 0,
     this.nextBreakAt,
+    this.isLongBreak = false,
   });
 }
 

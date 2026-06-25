@@ -201,6 +201,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
   bool _lastDndState = false;
   bool _desktopWarningActive = false;
+  int? _postponedBreakDuration;
 
   String _resolveVisualizerStyle() {
     if (widget.breakVisualizerStyle == 'Random') {
@@ -744,6 +745,8 @@ class TimerHomePageState extends State<TimerHomePage>
       return;
     }
 
+    _postponedBreakDuration = session.postponedBreakDuration;
+
     final projection = projectPhase(
       now: DateTime.now(),
       isBreak: session.isBreak,
@@ -752,6 +755,7 @@ class TimerHomePageState extends State<TimerHomePage>
       streakCount: _streakCount,
       autoRunCompletedCycles: session.completedAutoRunCycles,
       plan: _currentPlan(),
+      postponedBreakDuration: session.postponedBreakDuration,
     );
 
     if (projection.boundariesCrossed == 0 && !projection.isIdle) {
@@ -804,6 +808,7 @@ class TimerHomePageState extends State<TimerHomePage>
       );
       _animationController.value = progress;
       _autoRunCompletedCycles = session.completedAutoRunCycles;
+      _postponedBreakDuration = session.postponedBreakDuration;
     });
   }
 
@@ -829,6 +834,9 @@ class TimerHomePageState extends State<TimerHomePage>
     required bool scheduleReminder,
     required bool playChime,
   }) {
+    if (projection.boundariesCrossed > 0) {
+      _postponedBreakDuration = null;
+    }
     for (final work in projection.completedWorkSessions) {
       widget.saveCompletedWorkSession(work.completedAt, work.durationSeconds);
     }
@@ -962,6 +970,8 @@ class TimerHomePageState extends State<TimerHomePage>
         postponeDurationSeconds: widget.postponeDurationSeconds,
         smartIdleEnabled: widget.smartIdleEnabled,
         naturalBreakCreditEnabled: widget.naturalBreakCreditEnabled,
+        postponedBreakDuration: _postponedBreakDuration,
+        currentPhaseDurationSeconds: _initialDuration,
       ),
     );
   }
@@ -1349,6 +1359,7 @@ class TimerHomePageState extends State<TimerHomePage>
     ));
     setState(() {
       _isBreak = false;
+      _postponedBreakDuration = _initialDuration;
       _phaseOpacity = 1.0;
       _initialDuration = postponeSeconds;
       _remainingSeconds = _initialDuration;
@@ -1430,6 +1441,7 @@ class TimerHomePageState extends State<TimerHomePage>
       final bgCompletedAutoRunCycles =
           bgSession['completedAutoRunCycles'] as int;
       final pendingEvents = bgSession['pendingEvents'] as List<dynamic>?;
+      final bgPostponedBreakDuration = bgSession['postponedBreakDuration'] as int?;
       if (pendingEvents != null) {
         bool hasNaturalBreak = false;
         for (final event in pendingEvents) {
@@ -1471,6 +1483,7 @@ class TimerHomePageState extends State<TimerHomePage>
         _streakCount = bgStreakCount;
         _autoRunCompletedCycles = bgCompletedAutoRunCycles;
         _phaseEndsAt = DateTime.fromMillisecondsSinceEpoch(bgEndsAtMillis);
+        _postponedBreakDuration = bgPostponedBreakDuration;
 
         _workDurationSeconds = bgSession['workDurationSeconds'] as int;
         _breakDurationSeconds = bgSession['breakDurationSeconds'] as int;
@@ -1495,6 +1508,7 @@ class TimerHomePageState extends State<TimerHomePage>
       streakCount: _streakCount,
       autoRunCompletedCycles: _autoRunCompletedCycles,
       plan: _currentPlan(),
+      postponedBreakDuration: _postponedBreakDuration,
     );
     _applyProjection(
       projection,
@@ -1554,21 +1568,30 @@ class TimerHomePageState extends State<TimerHomePage>
         return;
       }
 
-      final completedCycles = _streakCount + 1;
+      final upcomingBreakDuration = _postponedBreakDuration ?? _breakDurationForCompletedCycle(_streakCount + 1);
+      final isPostponed = _postponedBreakDuration != null;
+
       setState(() {
-        _streakCount = completedCycles;
-        _autoRunCompletedCycles++;
+        _postponedBreakDuration = null;
+        if (!isPostponed) {
+          _streakCount = _streakCount + 1;
+          _autoRunCompletedCycles++;
+        }
       });
-      widget.saveStreakCount(_streakCount);
-      widget.saveCompletedWorkSession(completedPhaseAt, _initialDuration);
-      widget.saveTimerEventRecord(TimerEventRecord(
-        id: completedPhaseAt.millisecondsSinceEpoch.toString(),
-        timestamp: completedPhaseAt,
-        type: TimerEventType.workCompleted,
-        durationSeconds: _initialDuration,
-      ));
+
+      if (!isPostponed) {
+        widget.saveStreakCount(_streakCount);
+        widget.saveCompletedWorkSession(completedPhaseAt, _initialDuration);
+        widget.saveTimerEventRecord(TimerEventRecord(
+          id: completedPhaseAt.millisecondsSinceEpoch.toString(),
+          timestamp: completedPhaseAt,
+          type: TimerEventType.workCompleted,
+          durationSeconds: _initialDuration,
+        ));
+      }
+
       _startTimer(
-        _breakDurationForCompletedCycle(completedCycles),
+        upcomingBreakDuration,
         isBreak: true,
       );
     });
@@ -1585,8 +1608,17 @@ class TimerHomePageState extends State<TimerHomePage>
         phaseStartedAt: _phaseStartedAt,
         phaseEndsAt: _phaseEndsAt,
         completedAutoRunCycles: _autoRunCompletedCycles,
+        postponedBreakDuration: _postponedBreakDuration,
       ),
     );
+  }
+
+  bool _isNextBreakLong() {
+    if (_postponedBreakDuration != null) {
+      return _postponedBreakDuration == _longBreakDurationSeconds;
+    }
+    if (!_longBreakEnabled || _longBreakEveryCycles <= 0) return false;
+    return (_streakCount + 1) % _longBreakEveryCycles == 0;
   }
 
   Future<bool> _schedulePhaseReminder(
@@ -1601,14 +1633,19 @@ class TimerHomePageState extends State<TimerHomePage>
     if (isBreak) {
       return widget.notificationService.scheduleBreakCompleteReminder(delay);
     } else {
+      final nextIsLong = _isNextBreakLong();
       if (durationSeconds > 10) {
         unawaited(
           widget.notificationService.schedulePreBreakWarningReminder(
             Duration(seconds: durationSeconds - 10),
+            isLongBreak: nextIsLong,
           ),
         );
       }
-      return widget.notificationService.scheduleWorkCompleteReminder(delay);
+      return widget.notificationService.scheduleWorkCompleteReminder(
+        delay,
+        isLongBreak: nextIsLong,
+      );
     }
   }
 
@@ -2907,6 +2944,7 @@ class TimerHomePageState extends State<TimerHomePage>
           isSnoozed: isSnoozed,
           snoozeRemainingMinutes: snoozeRemaining,
           nextBreakAt: nextBreakVal,
+          isLongBreak: _isBreak && _longBreakEnabled && _initialDuration == _longBreakDurationSeconds,
         ),
       );
     }

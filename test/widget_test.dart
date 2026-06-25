@@ -103,7 +103,7 @@ class FakeNotificationService extends NotificationService {
   }
 
   @override
-  Future<bool> scheduleWorkCompleteReminder(Duration delay) async {
+  Future<bool> scheduleWorkCompleteReminder(Duration delay, {bool isLongBreak = false}) async {
     workReminderCount++;
     return true;
   }
@@ -124,7 +124,7 @@ class FakeNotificationService extends NotificationService {
   Future<void> cancelPreBreakWarningReminder() async {}
 
   @override
-  Future<bool> schedulePreBreakWarningReminder(Duration delay) async {
+  Future<bool> schedulePreBreakWarningReminder(Duration delay, {bool isLongBreak = false}) async {
     return true;
   }
 

@@ -106,6 +106,8 @@ class MainActivity : FlutterActivity() {
                             postponeDurationSeconds = call.argument<Int>("postponeDurationSeconds") ?: 120,
                             smartIdleEnabled = call.argument<Boolean>("smartIdleEnabled") ?: true,
                             naturalBreakCreditEnabled = call.argument<Boolean>("naturalBreakCreditEnabled") ?: true,
+                            postponedBreakDuration = call.argument<Int>("postponedBreakDuration"),
+                            currentPhaseDurationSeconds = call.argument<Int>("currentPhaseDurationSeconds"),
                         )
                     } else {
                         TimerForegroundService.stop(this)
@@ -134,7 +136,8 @@ class MainActivity : FlutterActivity() {
                             "longBreakEveryCycles" to service.longBreakEveryCycles,
                             "autoRunEnabled" to service.autoRunEnabled,
                             "autoRunCycleLimit" to service.autoRunCycleLimit,
-                            "pendingEvents" to events
+                            "pendingEvents" to events,
+                            "postponedBreakDuration" to if (service.postponedBreakDuration > 0) service.postponedBreakDuration else null
                         ))
                     } else {
                         result.success(null)

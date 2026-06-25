@@ -37,12 +37,12 @@ class NotificationService {
   static const int _testReminderId = 1002;
   static const int _preBreakWarningReminderId = 1003;
 
-  Future<bool> schedulePreBreakWarningReminder(Duration delay) {
+  Future<bool> schedulePreBreakWarningReminder(Duration delay, {bool isLongBreak = false}) {
     return _schedulePhaseReminder(
       id: _preBreakWarningReminderId,
       delay: delay,
-      title: 'Eye break starting soon',
-      body: 'Prepare to rest your eyes in 10 seconds.',
+      title: isLongBreak ? 'Long break starting soon' : 'Short break starting soon',
+      body: isLongBreak ? 'Prepare to take a longer rest.' : 'Prepare to rest your eyes in 10 seconds.',
       payload: 'pre_break_warning',
     );
   }
@@ -339,11 +339,11 @@ class NotificationService {
     }
   }
 
-  Future<bool> scheduleWorkCompleteReminder(Duration delay) {
+  Future<bool> scheduleWorkCompleteReminder(Duration delay, {bool isLongBreak = false}) {
     return _schedulePhaseReminder(
       delay: delay,
-      title: 'Time for an eye break',
-      body: 'Look 20 ft away and rest your eyes.',
+      title: isLongBreak ? 'Time for a Long Break' : 'Time for a Short Break',
+      body: isLongBreak ? 'Take a longer rest to stretch and refresh.' : 'Look 20 ft away and rest your eyes.',
       payload: 'work_complete',
     );
   }

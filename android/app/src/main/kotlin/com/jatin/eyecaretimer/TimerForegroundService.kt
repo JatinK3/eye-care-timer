@@ -48,6 +48,8 @@ class TimerForegroundService : Service() {
     var postponeDurationSeconds = 120
     var smartIdleEnabled = true
     var naturalBreakCreditEnabled = true
+    var postponedBreakDuration = -1
+    var currentPhaseInitialDuration = 0
     var screenOffTimeMillis = 0L
     var isScreenOffPaused = false
     var pausedRemainingSeconds = 0L
@@ -199,6 +201,8 @@ class TimerForegroundService : Service() {
         postponeDurationSeconds = intent.getIntExtra(EXTRA_POSTPONE_DURATION, 120)
         smartIdleEnabled = intent.getBooleanExtra(EXTRA_SMART_IDLE, true)
         naturalBreakCreditEnabled = intent.getBooleanExtra(EXTRA_NATURAL_BREAK_CREDIT, true)
+        postponedBreakDuration = intent.getIntExtra("postponedBreakDuration", -1)
+        currentPhaseInitialDuration = intent.getIntExtra("currentPhaseInitialDuration", if (isBreak) breakDurationForCompletedCycle(streakCount) else workDurationSeconds)
 
         ensureChannel()
         startInForeground(buildOngoingNotification())
@@ -227,6 +231,8 @@ class TimerForegroundService : Service() {
         if (isBreak) {
             BreakOverlayController.hide()
             isBreak = false
+            postponedBreakDuration = currentPhaseInitialDuration
+            currentPhaseInitialDuration = postponeDurationSeconds
             pendingEvents.add(mapOf(
                 "type" to "breakPostponed",
                 "timestamp" to System.currentTimeMillis(),
@@ -392,22 +398,36 @@ class TimerForegroundService : Service() {
             }
             isBreak = false
             deadlineMillis += workDurationSeconds * 1000L
+            currentPhaseInitialDuration = workDurationSeconds
             return true
         }
 
-        streakCount += 1
-        completedAutoRunCycles += 1
-        val duration = breakDurationForCompletedCycle(streakCount)
+        val isPostponedTransition = postponedBreakDuration > 0
+        val duration = if (isPostponedTransition) {
+            val dur = postponedBreakDuration
+            postponedBreakDuration = -1
+            dur
+        } else {
+            streakCount += 1
+            completedAutoRunCycles += 1
+            breakDurationForCompletedCycle(streakCount)
+        }
+
         if (duration <= 0) {
             return false
         }
-        pendingEvents.add(mapOf(
-            "type" to "workCompleted",
-            "timestamp" to System.currentTimeMillis(),
-            "durationSeconds" to workDurationSeconds
-        ))
+
+        if (!isPostponedTransition) {
+            pendingEvents.add(mapOf(
+                "type" to "workCompleted",
+                "timestamp" to System.currentTimeMillis(),
+                "durationSeconds" to workDurationSeconds
+            ))
+        }
+
         isBreak = true
         deadlineMillis += duration * 1000L
+        currentPhaseInitialDuration = duration
         return true
     }
 
@@ -663,6 +683,8 @@ class TimerForegroundService : Service() {
             .putInt(EXTRA_POSTPONE_DURATION, postponeDurationSeconds)
             .putBoolean("smartIdleEnabled", smartIdleEnabled)
             .putBoolean("naturalBreakCreditEnabled", naturalBreakCreditEnabled)
+            .putInt("postponedBreakDuration", postponedBreakDuration)
+            .putInt("currentPhaseInitialDuration", currentPhaseInitialDuration)
             .putLong("screenOffTimeMillis", screenOffTimeMillis)
             .putBoolean("isScreenOffPaused", isScreenOffPaused)
             .putLong("pausedRemainingSeconds", pausedRemainingSeconds)
@@ -691,6 +713,8 @@ class TimerForegroundService : Service() {
         postponeDurationSeconds = preferences.getInt(EXTRA_POSTPONE_DURATION, 120)
         smartIdleEnabled = preferences.getBoolean("smartIdleEnabled", true)
         naturalBreakCreditEnabled = preferences.getBoolean("naturalBreakCreditEnabled", true)
+        postponedBreakDuration = preferences.getInt("postponedBreakDuration", -1)
+        currentPhaseInitialDuration = preferences.getInt("currentPhaseInitialDuration", 0)
         screenOffTimeMillis = preferences.getLong("screenOffTimeMillis", 0L)
 
         val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
@@ -760,6 +784,8 @@ class TimerForegroundService : Service() {
             postponeDurationSeconds: Int,
             smartIdleEnabled: Boolean,
             naturalBreakCreditEnabled: Boolean,
+            postponedBreakDuration: Int? = null,
+            currentPhaseDurationSeconds: Int? = null,
         ) {
             val intent = Intent(context, TimerForegroundService::class.java).apply {
                 action = ACTION_START
@@ -780,6 +806,10 @@ class TimerForegroundService : Service() {
                 putExtra(EXTRA_POSTPONE_DURATION, postponeDurationSeconds)
                 putExtra(EXTRA_SMART_IDLE, smartIdleEnabled)
                 putExtra(EXTRA_NATURAL_BREAK_CREDIT, naturalBreakCreditEnabled)
+                putExtra("postponedBreakDuration", postponedBreakDuration ?: -1)
+                if (currentPhaseDurationSeconds != null) {
+                    putExtra("currentPhaseInitialDuration", currentPhaseDurationSeconds)
+                }
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
