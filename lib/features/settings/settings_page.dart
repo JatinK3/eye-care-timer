@@ -943,13 +943,31 @@ class _SettingsPageState extends State<SettingsPage>
         subtitle: 'Toggle system Do Not Disturb (DND) automatically during work phases (Linux GNOME)',
         keywords: ['focus', 'dnd', 'do not disturb', 'os', 'notification', 'quiet', 'system'],
         category: 'General Schedule',
-        widget: SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          secondary: const Icon(Icons.do_not_disturb_on),
-          title: const Text('OS Focus Mode (DND)'),
-          subtitle: const Text('Toggle system DND during work phases'),
-          value: widget.osFocusDndEnabled,
-          onChanged: widget.setOsFocusDndEnabled,
+        widget: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.do_not_disturb_on),
+              title: const Text('OS Focus Mode (DND)'),
+              subtitle: const Text('Toggle system DND during work phases'),
+              value: widget.osFocusDndEnabled,
+              onChanged: widget.setOsFocusDndEnabled,
+            ),
+            if (widget.osFocusDndEnabled)
+              Padding(
+                padding: const EdgeInsets.only(left: 48.0, top: 4.0, bottom: 8.0),
+                child: Text(
+                  'Note: Ubuntu/GNOME does not natively support DND exceptions/whitelist. '
+                  'If you want specific apps to bypass DND, turn this toggle off and instead manually '
+                  'silence noisy apps under Ubuntu System Settings -> Notifications.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
 
