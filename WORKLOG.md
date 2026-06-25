@@ -166,7 +166,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] **Auto-start schedule on launch** — automatically start the work timer/schedule when the application starts, persisting this setting to simplify user productivity setup (similar to SafeEyes).
 
 ### P2 — Cross-device, ecosystem & context intelligence
-- [ ] **Settings backup/restore, then cloud sync** — start with config export/import (JSON) to complement the existing history export; later add optional account-based sync of settings + history across devices.
+- [x] **Settings backup/restore, then cloud sync** — start with config export/import (JSON) to complement the existing history export; later add optional account-based sync of settings + history across devices.
 - [ ] **Meeting / camera-in-use auto-postpone** — detect an active camera/mic (video calls) or a calendar event and postpone the break, extending the existing smart-idle/DND logic.
 - [ ] **Per-app rules & profiles** — don't interrupt while chosen apps are focused; "Work" vs "Gaming" profiles with different cadences.
 - [ ] **Home-screen widgets & OS surfaces** — Android home widget, iOS widget + Live Activity, macOS menu-bar extra, Windows taskbar progress.
@@ -184,13 +184,13 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] Promote "Take a break now" and a "Snooze for…" action to the main home screen (currently tray-only).
 - [x] Add a one-tap "Restore defaults" in Settings and reconsider defaults (e.g. in-app sound defaults to off).
 - [x] Show a "breaks taken today" count on home.
-- [ ] Add a pre-break countdown indication on the tray icon.
+- [x] Add a pre-break countdown indication on the tray icon.
 
 ---
 
 ## Session Log
 
-### 2026-06-25 (Session end ~12:30 IST)
+### 2026-06-25 (Session end ~13:10 IST)
 
 **Completed this session:**
 - Fully implemented **Restore Defaults Settings Option**:
@@ -201,9 +201,17 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - `TimerHomePageState` tracks the active phase and automatically enables DND during active work phases, disabling DND when paused, stopped, or on break.
   - Added an `"OS Focus Mode (DND)"` switch toggle under the `"General Schedule"` settings category, which is optional and disabled by default.
   - Added a clear inline note explaining Ubuntu/GNOME DND whitelist/exception behavior (explaining that since Ubuntu doesn't support whitelisting specific apps to bypass system DND, users who need exceptions should keep the toggle off and instead manually silence noisy apps via Ubuntu Settings -> Notifications).
+- Fully implemented **Settings Backup & Restore**:
+  - Added `toJson()` and `fromJson()` serialization helper methods to `TimerSettings`.
+  - Added `PreferencesService.saveAllSettings(settings)` to update all configuration values in SharedPreferences in bulk.
+  - Added a `FilePicker` dependency and implemented file export (writing JSON to the `Downloads` directory) and file import (loading, parsing, and applying a chosen JSON backup file).
+  - Exposed `"Backup settings"` and `"Restore settings"` options under `"System Options"` in the Settings Page.
+- Fully implemented **Pre-Break Tray Icon Countdown**:
+  - Enhanced `DesktopIntegrationService._updateDynamicTrayIcon(state)` to detect when a work phase is imminent (< 60 seconds remaining).
+  - The tray icon dynamically shifts its ring color to a warn color (`Colors.amberAccent`) and displays remaining seconds instead of rounded minutes in real-time.
 - Cleaned and verified the entire codebase:
-  - Added new widget test coverage for the DND toggle and Settings reset features.
-  - Verified static analysis (`flutter analyze` is clean with 0 issues) and ran all 69 unit/widget tests successfully.
+  - Added unit/widget tests for the settings JSON serialization, UI backup/restore entries, DND toggle, and Settings reset features.
+  - Verified static analysis (`flutter analyze` is clean with 0 issues) and ran all 71 unit/widget tests successfully (100% passing).
 
 ### 2026-06-24 (Session end ~18:30 IST)
 
