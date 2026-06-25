@@ -199,7 +199,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - Fully implemented **OS Focus & DND Integration**:
   - `OsFocusService` executes GNOME Shell commands (`gsettings set org.gnome.desktop.notifications show-banners false/true`) to toggle system DND automatically on Linux.
   - `TimerHomePageState` tracks the active phase and automatically enables DND during active work phases, disabling DND when paused, stopped, or on break.
-  - Added an `"OS Focus Mode (DND)"` switch toggle under the `"General Schedule"` settings category.
+  - Added an `"OS Focus Mode (DND)"` switch toggle under the `"General Schedule"` settings category, which is optional and disabled by default.
+  - Added a clear inline note explaining Ubuntu/GNOME DND whitelist/exception behavior (explaining that since Ubuntu doesn't support whitelisting specific apps to bypass system DND, users who need exceptions should keep the toggle off and instead manually silence noisy apps via Ubuntu Settings -> Notifications).
 - Cleaned and verified the entire codebase:
   - Added new widget test coverage for the DND toggle and Settings reset features.
   - Verified static analysis (`flutter analyze` is clean with 0 issues) and ran all 69 unit/widget tests successfully.
