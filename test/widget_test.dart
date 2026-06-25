@@ -884,6 +884,36 @@ void main() {
     expect(find.text('0 / 10 breaks'), findsOneWidget);
   });
 
+  testWidgets('settings screen configures custom daily goal', (
+    WidgetTester tester,
+  ) async {
+    await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    final categoryHeader = find.text('General Schedule');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Daily goal'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('6'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Custom...').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Custom daily goal'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, 'Number of breaks'), '15');
+    await tester.tap(find.text('Set'));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getInt(PreferencesService.dailyGoalKey), 15);
+  });
+
   testWidgets('settings opens recent break history', (
     WidgetTester tester,
   ) async {

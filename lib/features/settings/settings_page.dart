@@ -284,6 +284,8 @@ class _SettingsPageState extends State<SettingsPage>
   final TextEditingController _aiApiKeyController = TextEditingController();
   final TextEditingController _aiModelCustomController =
       TextEditingController();
+  final TextEditingController _dailyGoalCustomController =
+      TextEditingController();
   Timer? _aiApiKeyDebounce;
 
   String _searchQuery = '';
@@ -354,6 +356,7 @@ class _SettingsPageState extends State<SettingsPage>
     _audioPlayer?.dispose();
     _aiApiKeyController.dispose();
     _aiModelCustomController.dispose();
+    _dailyGoalCustomController.dispose();
     _aiApiKeyDebounce?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -702,15 +705,31 @@ class _SettingsPageState extends State<SettingsPage>
             '${widget.streakCount} / ${widget.dailyGoal} breaks today',
           ),
           trailing: DropdownButton<int>(
-            value: widget.dailyGoal,
-            items: _dailyGoals
-                .map(
-                  (goal) =>
-                      DropdownMenuItem<int>(value: goal, child: Text('$goal')),
-                )
-                .toList(),
+            value: _dailyGoals.contains(widget.dailyGoal) ? widget.dailyGoal : null,
+            items: [
+              ..._dailyGoals.map(
+                (goal) => DropdownMenuItem<int>(
+                  value: goal,
+                  child: Text('$goal'),
+                ),
+              ),
+              const DropdownMenuItem<int>(
+                value: -1,
+                child: Text('Custom...'),
+              ),
+              if (!_dailyGoals.contains(widget.dailyGoal))
+                DropdownMenuItem<int>(
+                  value: widget.dailyGoal,
+                  child: Text('${widget.dailyGoal} (Custom)'),
+                ),
+            ],
             onChanged: (value) {
-              if (value != null) widget.setDailyGoal(value);
+              if (value == null) return;
+              if (value == -1) {
+                _showCustomDailyGoalDialog();
+              } else {
+                widget.setDailyGoal(value);
+              }
             },
           ),
         ),
@@ -2148,6 +2167,41 @@ class _SettingsPageState extends State<SettingsPage>
             onPressed: () {
               final val = _aiModelCustomController.text.trim();
               if (val.isNotEmpty) widget.setAiModel(val);
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Set'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCustomDailyGoalDialog() {
+    _dailyGoalCustomController.text = widget.dailyGoal.toString();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Custom daily goal'),
+        content: TextField(
+          controller: _dailyGoalCustomController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Number of breaks',
+            hintText: 'e.g. 15, 20',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final val = int.tryParse(_dailyGoalCustomController.text.trim());
+              if (val != null && val > 0) {
+                widget.setDailyGoal(val);
+              }
               Navigator.of(ctx).pop();
             },
             child: const Text('Set'),

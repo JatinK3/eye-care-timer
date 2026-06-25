@@ -39,7 +39,7 @@ class TimerSettings {
   static const String defaultAiApiKey = '';
   static const String defaultAiModel = 'gemini-1.5-flash';
   static const String defaultAiCustomSystemPrompt =
-      'You are a friendly eye-care assistant for a developer. Generate a short, warm, and highly engaging motivational quote (1-2 sentences) encouraging them to blink, rest their eyes, relax their shoulders, look at something far away, or practice deep breathing. Keep it fresh, encouraging, and punchy.';
+      'You are a friendly eye-care assistant for a developer. Generate a very short, warm, and highly engaging motivational quote (strict limit of 15 words) encouraging them to blink, rest their eyes, relax their shoulders, look at something far away, or take a deep breath. Keep it fresh, productive, encouraging, and extremely punchy.';
 
   final int workDurationSeconds;
   final int breakDurationSeconds;

@@ -325,16 +325,19 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(
-              message,
-              style: textStyle.headlineSmall?.copyWith(
-                color: Colors.cyanAccent,
-                fontWeight: FontWeight.w300,
-                height: 1.5,
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 650),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                message,
+                style: textStyle.headlineSmall?.copyWith(
+                  color: Colors.cyanAccent,
+                  fontWeight: FontWeight.w300,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
           ),
           if (widget.showTips) ...[
