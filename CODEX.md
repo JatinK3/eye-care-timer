@@ -2,7 +2,7 @@
 
 ## Project Context
 
-This repository is the Flutter app `BlinkKind: Eye Break Timer`, based on the 20-20-20 rule. The existing Dart package name remains `eyeapptimer` for import stability. The app helps users work for a configurable interval, then take a short eye break. The current direction is a lightweight wellness utility with reliable timer behavior, saved preferences, reminders, daily streak tracking, calm Material 3 UI, and eventual mobile store readiness.
+This repository is the Flutter app `BlinkKind: Eye Break Timer`, based on the 20-20-20 rule. The existing Dart package name remains `eyeapptimer` for import stability. The app helps users work for a configurable interval, then take a short eye break. The current direction is a polished cross-platform wellness utility with reliable timer behavior, saved preferences, reminders, daily streak tracking, enforced break surfaces, desktop tray operation, calm Material 3 UI, optional AI motivation, and eventual store/distribution readiness.
 
 Keep this file updated when architecture, behavior, or roadmap decisions change.
 
@@ -26,23 +26,25 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 ## Current Structure
 
 - `lib/main.dart`: App entrypoint only.
-- `lib/app.dart`: Top-level `MaterialApp`, theme/preset state, startup loading, persistence coordination, and notification and break-overlay service injection.
+- `lib/app.dart`: Top-level `MaterialApp`, theme/preset state, startup loading, splash routing, persistence coordination, AI-setting state, and notification and break-overlay service injection.
+- `lib/features/splash/splash_quote_page.dart`: Short startup quote splash with a slide/fade animation and skip action, shown after onboarding on cold start.
 - `lib/features/timer/timer_home_page.dart`: Main timer UI, countdown state, phase-event orchestration, lifecycle reconciliation, overlay lifecycle, native deadline-owner synchronization, and notification scheduling hooks.
 - `lib/features/timer/phase_schedule.dart`: Pure wall-clock phase projection used to fast-forward restored/backgrounded sessions across every elapsed work and break boundary.
 - `lib/features/timer/display_layout.dart`: Pure desktop display-union geometry used to span a break window across multiple monitors and translate each monitor into window-local coordinates.
 - `lib/features/timer/desktop_break_overlay.dart`: Desktop break surface that renders once for fullscreen fallback or replicates centered break content across every monitor in a spanning window.
 - `lib/models/timer_settings.dart`: Persisted timer settings model and defaults, including color preset, notification, feedback, long-break, automatic-cycle, daily goal, and Off/Gentle/Strict break-screen preferences.
 - `lib/theme/color_presets.dart`: Shared preset names, seed colors, swatches, timer gradients, and progress colors.
-- `lib/features/settings/settings_page.dart`: Dedicated settings UI for durations, theme, presets, reminder permission recovery, automatic-cycle controls, Android break-overlay permission and preview controls, progress history entry point, and streak reset.
+- `lib/features/settings/settings_page.dart`: Dedicated searchable/collapsible settings UI for durations, theme, presets, reminder permission recovery, automatic-cycle controls, smart idle, work schedule, blink reminders, AI motivation, Android break-overlay permission and preview controls, progress history entry point, and streak reset.
 - `lib/features/onboarding/onboarding_page.dart`: First-run 20-20-20 explanation and reminder permission entry point.
 - `lib/features/history/history_page.dart`: Range-based daily history, monthly and goal metrics, week-over-week trend, recent completed-session detail, and confirmed activity clearing.
 - `lib/models/work_session_record.dart`: Deduplicated completed work-session record with completion time and configured focus duration.
 - `lib/models/timer_session.dart`: Serializable active/paused timer session state and automatic-run cycle progress shared by persistence and platform synchronization.
-- `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, bounded completed-session history, daily goal, notification preference, feedback preferences, automatic-cycle settings, and active timer session.
+- `lib/services/preferences_service.dart`: `shared_preferences` load/save for onboarding completion, durations, theme mode, color preset, daily streak, daily history, bounded completed-session history, daily goal, notification preference, feedback preferences, automatic-cycle settings, smart idle, work schedule, blink reminders, AI settings, and active timer session.
+- `lib/services/ai_service.dart`: Lightweight HTTP client for Gemini, OpenAI, and Groq motivation generation and live model discovery, with local fallback model lists/templates.
 - `lib/services/notification_service.dart`: `flutter_local_notifications` initialization, permission requests/status checks, system settings recovery hooks, exact-alarm capability checks, battery optimization diagnostics, explicit audible-channel creation, test-reminder support, verified phase reminder scheduling with inexact fallback, and cancellation.
 - `lib/services/system_ui_service.dart`: Cross-platform focus-mode system chrome coordinator with an iOS MethodChannel bridge and Flutter fallback.
 - `lib/services/break_overlay_service.dart`: Android overlay permission, preview, active break display, and dismissal MethodChannel wrapper with safe unsupported-platform behavior.
-- `lib/services/desktop_integration_service.dart`: Desktop tray, launch-at-login, window lifecycle, and X11 multi-monitor break-window spanning with restoration of the previous window state.
+- `lib/services/desktop_integration_service.dart`: Desktop tray, global hotkeys, launch-at-login, dynamic tray countdown icons, window lifecycle, and native Linux break-window entry/exit coordination with previous-state restoration.
 - `lib/services/timer_background_service.dart`: Dart bridge that sends the active deadline, complete cadence settings, streak, and automatic-run counters to the Android foreground service.
 - `android/app/src/main/kotlin/com/jatin/eyecaretimer/BreakOverlayController.kt`: Process-scoped native full-screen break overlay with preview, Gentle/Strict behavior, exercise rotation, countdown, and emergency press-and-hold exit.
 - `android/app/src/main/kotlin/com/jatin/eyecaretimer/AppVisibility.kt`: Small native visibility flag updated by `MainActivity` so background services can distinguish an actually resumed Activity from a process kept foreground by a foreground-service notification.
@@ -51,7 +53,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `test/phase_schedule_test.dart`: Unit coverage for multi-boundary wall-clock phase projection and clock-change handling.
 - `test/display_layout_test.dart`: Unit coverage for empty, invalid, offset, horizontal, and vertical multi-monitor display geometry.
 - `test/timer_session_test.dart`: Timer session platform-serialization coverage.
-- `test/widget_test.dart`: Widget smoke, persistence load, timer controls, automatic-cycle restore/limits, break-mode settings, settings/history navigation, notification fake, and transition regression tests.
+- `test/widget_test.dart`: Widget smoke, persistence load, timer controls, automatic-cycle restore/limits, break-mode settings, onboarding/splash handling, settings/history navigation, notification fake, and transition regression tests.
 - `WORKLOG.md`: Ordered roadmap and completion log.
 
 ## Current App Behavior
@@ -59,6 +61,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Default work duration is 20 minutes.
 - Default break duration is 20 seconds.
 - First run shows onboarding for the 20-20-20 habit and lets the user allow reminders or continue without them.
+- After onboarding, cold start shows a short motivational quote splash before entering the timer.
 - Users can change work and break durations from the settings screen while the timer is idle, including quick presets for `20-20-20`, `25 / 5`, and `45 / 5`.
 - Start schedules a work-complete notification and begins the countdown.
 - Pause stops the animation and cancels the pending phase notification.
@@ -74,17 +77,22 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Daily streak resets when the saved streak date is not today.
 - The main timer shows daily goal progress and a goal-reached state when completed breaks meet the configured goal.
 - Settings includes History ranges for 7 days, 30 days, and all active days, plus current-month totals, goal completion rate, best day, weekly trend, recent completed sessions, and confirmed activity clearing.
+- Settings is searchable and organized into collapsible groups so the growing preference surface remains usable.
 - Settings shows notification permission, precise-alarm capability, Android battery optimization status, direct reminder-channel sound settings, and a test reminder action. The optional in-app sound toggle is separate from system notification audio.
 - On Android, Settings reports display-over-other-apps permission and can launch a native 10-second break-screen preview. Users can persist `Off`, `Gentle`, or `Strict` behavior. Active timer transitions show and dismiss the native overlay, and a background work deadline launches it through the foreground service/alarm path. Gentle mode permits skipping; Strict mode requires a press-and-hold emergency exit.
+- AI Motivation can be enabled from Settings with provider/API-key/model/system-prompt configuration. Work phases prefetch a short motivational break quote, and break surfaces fall back to curated static guidance when AI is disabled or unavailable.
 - Light/dark theme toggle and `Pastel`, `Calm Blue`, `Forest`, `Rose`, `Graphite`, and `Sunrise` presets are available.
 - The app theme seed, settings swatches, timer gradients, and timer progress color now come from the same preset source.
 - UI now uses state-specific status chips/copy, icon-backed controls, responsive wrapping buttons, a dedicated settings screen, notification and feedback toggle UX, contrast-safe dark-mode primary buttons, calmer text, and tighter card radius.
 - The home countdown isolates per-frame work in `AnimatedBuilder` subtrees for the dial and warning curtain. Repaint boundaries keep the static gradient and surrounding controls out of timer repaints, while desktop timer state updates only when the displayed second changes.
 - Android explicitly enables Impeller. Android/iOS use Cupertino-style page transitions and bouncing scroll physics for a lighter, consistent mobile interaction feel.
 - iOS focus mode uses manual Flutter overlay hiding plus a native `ImmersiveFlutterViewController` to hide the status bar and home indicator and defer edge gestures. It restores chrome on focus exit, disposal, or app deactivation and reapplies immersion on resume.
-- On desktop, break mode uses a borderless always-on-top window. X11 multi-monitor sessions span the union of all displays and center a break surface on each monitor; single-monitor and Wayland sessions use fullscreen fallback because Wayland does not permit reliable absolute global window positioning.
+- On desktop, break mode uses a borderless always-on-top/fullscreen window model with native Linux GTK ownership for enter/exit. The native runner snapshots the pre-break window state and restores hidden-to-tray, minimized, maximized, or floating windows without visible flash. Multi-monitor Linux support uses native monitor-targeted fullscreening/blockers where available.
 - On desktop, the close button hides the app to tray instead of exiting. Timer phases also schedule a desktop wall-clock deadline timer so hidden-to-tray windows still transition into the break phase even if Flutter animation frames are throttled. Linux native `showBlockers` explicitly shows/deiconifies/presents the main GTK window before monitor-targeted fullscreening.
 - Desktop break overlays use an immediately opaque route to avoid showing the underlying in-app break UI during presentation. Natural break completion explicitly stops the overlay and publishes idle desktop state. If the window was tray-hidden before the break, it is hidden back to tray after the break ends.
+- Desktop tray support includes dynamic countdown/status icons, next-break tooltip text, start/pause/resume/take-break-now/skip/postpone/snooze actions, and global hotkeys.
+- Optional blink reminders can show subtle in-app/tray nudges and a guided blink training visualizer.
+- Work-hours scheduling can pause outside configured days/hours, and natural break credit can count sufficient idle/screen-off time as a completed rest.
 
 ## Dependencies
 
@@ -95,6 +103,16 @@ Runtime dependencies currently declared:
 - `timezone`
 - `flutter_local_notifications`
 - `shared_preferences`
+- `system_tray`
+- `window_manager`
+- `launch_at_startup`
+- `screen_retriever`
+- `system_idle`
+- `google_fonts`
+- `audioplayers`
+- `hotkey_manager`
+- `dynamic_color`
+- `http`
 
 Dependency cleanup note: the unused `circular_countdown_timer` package was removed because countdown behavior uses Flutter `AnimationController`.
 
@@ -137,7 +155,7 @@ Android build toolchain maintenance:
 
 ## Current Audit Findings
 
-Last audit date: 2026-06-22.
+Last audit date: 2026-06-24.
 
 Commands run after the current implementation:
 
@@ -146,21 +164,23 @@ Commands run after the current implementation:
 - `flutter build apk --debug`
 - `flutter build apk --release`
 - `flutter build web`
+- `tool/package_linux.sh`
 
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 49 tests.
+- `flutter test`: passing, 59 tests.
 - `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
 - `flutter build apk --release`: passing with AOT compilation and tree-shaking; generated `build/app/outputs/flutter-apk/app-release.apk` (49.5 MB).
 - `flutter build web`: passing; generated `build/web`.
 - Android 17 emulator baseline passed for service/alarm registration, cross-app overlay launch at a background work deadline, rotation survival, automatic break dismissal, and service cleanup. This does not replace Android 10-15/OEM physical-device testing.
-- Multi-monitor display geometry is covered by seven unit tests. Real X11 multi-monitor, Wayland fallback, and mixed-DPI positioning still require hardware validation; the local Linux build also requires `libayatana-appindicator3-dev` for the existing `system_tray` dependency.
+- Linux release packaging has passed locally through `tool/package_linux.sh`, producing `dist/blinkkind_1.0.0_amd64.deb` when native dependencies are installed.
+- Multi-monitor display geometry is covered by unit tests, and Linux native monitor-targeted fullscreen/blocker behavior has been validated on-device for the current implementation. Future mixed-DPI/compositor edge cases still need broad hardware coverage.
 - The iOS immersive bridge cannot be compiled on this Linux host. Dart analysis and focus-mode widget coverage pass; native build and physical iPhone/iPad lifecycle validation remain open.
 
 Important git/worktree note:
 
-- `pubspec.lock` was already modified before `CODEX.md` was created, and dependency work later updated it further through `flutter pub add shared_preferences`.
+- Ignore unrelated untracked local artifacts such as `dist/` or ad-hoc photos unless the user explicitly asks to manage them.
 
 ## Priority Direction: Immersive Break Mode
 
@@ -172,15 +192,15 @@ Implementation decisions:
 - Break surface: true black background, centered remaining time, one short eye-care instruction, restrained progress, optional sound, and no decorative cards. It must fit phones, tablets, desktop windows, landscape, and large text.
 - Transition: show a configurable pre-break warning, then fade to black and enter the break surface. Restore system UI, focus, window state, and the timer state exactly once when the break ends or is safely dismissed.
 - Architecture: timer phase transitions must emit presentation-independent events. A dedicated break presentation service will choose in-app immersive UI or native desktop windows without duplicating timer logic.
-- Platform priority: prove Android overlay permission and manual overlay behavior first, integrate it with the timer second, then implement Linux, Windows, and macOS desktop enforcement. Desktop still requires tray operation and launch-at-login before overlays can be dependable while the main window is closed. X11 and Wayland require separate validation because compositors may restrict focus and topmost behavior.
+- Platform priority: Android overlay permission/manual overlay, desktop tray operation, launch-at-login support, and native Linux break enter/exit are implemented. X11 and Wayland still require separate validation whenever compositor-specific behavior changes because focus/topmost rules differ.
 - Android: BlinkKind requests `SYSTEM_ALERT_WINDOW` as an explicit opt-in and uses `TYPE_APPLICATION_OVERLAY` to cover other apps during breaks. The manual preview and timer-triggered overlays are implemented. Rotation, system-bar, lock-screen, call, cross-app, Doze, process-death, and OEM behavior still require physical-device validation. Android Go devices may reject overlay permission, and system bars or lock-screen content may remain system-controlled.
 - iOS: immersive break UI is available only while BlinkKind is active; iOS does not permit apps to cover other applications or force themselves foreground. The in-app immersive system UI implementation is complete; native compilation and rotation, app-switching, interruption, and restoration behavior still require macOS/Xcode and physical iPhone/iPad validation.
-- Android runtime: the foreground service receives a full cadence snapshot, persists it separately from Flutter session state, shows a silent ongoing notification, and advances exact/inexact deadline alarms across native work/break cycles while Flutter is suspended. It mirrors cycle limits and long-break cadence, restores after ordinary process death, fast-forwards delayed delivery, rejects stale alarms, and shows the native overlay when the Activity is not actually resumed. Flutter remains authoritative and reconciles elapsed boundaries on resume. Reboot rescheduling, later native-only audible reminders, Android 14+ foreground-service requirements, Android 15+ background-start ordering, and OEM restrictions remain open; Android force-stop intentionally prevents self-restart.
+- Android runtime: the foreground service receives a full cadence snapshot, persists it separately from Flutter session state, shows a silent ongoing notification, and advances exact/inexact deadline alarms across native work/break cycles while Flutter is suspended. It mirrors cycle limits and long-break cadence, restores after ordinary process death, fast-forwards delayed delivery, rejects stale alarms, and shows the native overlay when the Activity is not actually resumed. Flutter remains authoritative and reconciles elapsed boundaries on resume. Reboot rescheduling and audible later-cycle reminders are implemented; Android force-stop intentionally prevents self-restart. Android 10-15/OEM restrictions remain physical-device validation work.
 - Safety: calls, alarms, lock screen, accessibility navigation, and an emergency exit must remain usable. The feature is habit enforcement, not device lockout.
 
 Creative follow-ups after the core overlay is stable:
 
-- Exercise rotation: distance focus, deliberate blinking, shoulder release, posture reset, and hydration prompts.
+- Rotating education: surface brief eye-health tips and 20-20-20 explanations on break and home surfaces.
 - A two-stage warning curtain: a subtle edge flash followed by the full black break if work continues.
  - Smart pause based on idle time is implemented on Android (via screen-off state) and desktop (Windows/Linux/macOS via system-wide inactivity detection using system_idle) so that time spent away from the device pauses the active countdown.
 - Meeting, presentation, game, and media awareness with user-controlled defer rules.
@@ -196,6 +216,8 @@ Creative follow-ups after the core overlay is stable:
    - First-run onboarding and notification permission recovery are implemented.
    - Quick timer presets and configurable long-break mode are implemented.
    - Automatic work/break scheduling is implemented with unlimited or configurable per-run cycle limits.
+   - AI Motivation and startup splash quotes are implemented with provider selection, live model fetch, background prefetch, and static fallbacks.
+   - Remaining near-term product feature: rotating eye-health tips plus a Learn surface.
 
 2. Stronger background/session restore.
    - Active session restore is implemented for launch and app resume.
