@@ -493,7 +493,7 @@ class DesktopIntegrationService extends WindowListener {
         ..style = ui.PaintingStyle.fill;
       canvas.drawCircle(
         Offset(width / 2, height / 2),
-        (width / 2) - 0.5,
+        (width / 2),
         bgPaint,
       );
 
@@ -538,10 +538,10 @@ class DesktopIntegrationService extends WindowListener {
         text = '';
       }
 
-      // 3. Draw progress ring (thicker stroke, less margin)
+      // 3. Draw progress ring (thicker stroke, maximized to edge)
       final ringPaint = Paint()
         ..style = ui.PaintingStyle.stroke
-        ..strokeWidth = 2.5
+        ..strokeWidth = 3.5
         ..strokeCap = ui.StrokeCap.round
         ..color = ringColor.withValues(alpha: 0.25);
       canvas.drawCircle(
@@ -553,7 +553,7 @@ class DesktopIntegrationService extends WindowListener {
       if (progress > 0) {
         final activeRingPaint = Paint()
           ..style = ui.PaintingStyle.stroke
-          ..strokeWidth = 2.5
+          ..strokeWidth = 3.5
           ..strokeCap = ui.StrokeCap.round
           ..color = ringColor;
 
@@ -610,7 +610,7 @@ class DesktopIntegrationService extends WindowListener {
             text: text,
             style: TextStyle(
               color: Colors.white,
-              fontSize: text.length > 2 ? 10.0 : 12.5,
+              fontSize: text.length > 2 ? 11.5 : 14.5,
               fontWeight: ui.FontWeight.bold,
               height: 1.0,
             ),
