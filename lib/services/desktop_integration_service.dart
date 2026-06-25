@@ -461,10 +461,12 @@ class DesktopIntegrationService extends WindowListener {
     "blinkkind/break_overlay",
   );
 
-  /// Begins the desktop break. All main-window manipulation — forcing the
-  /// window up onto the active (cursor) monitor, fullscreening it to host the
-  /// Flutter break UI, and covering the other monitors with black blockers — is
-  /// delegated to the native GTK runner so it owns the window transform
+  /// Begins the desktop break. Native GTK snapshots/restores the main window
+  /// state and either fullscreen-targets a single monitor or spans the main
+  /// Flutter window across the virtual desktop. When spanning, it returns each
+  /// monitor's local rectangle so the Flutter overlay can replicate the break
+  /// content on every screen instead of showing blank black blockers. The work is
+  /// delegated to the native runner so it owns the window transform
   /// end-to-end. This avoids the "dual-mapping" conflict that arose when both
   /// window_manager (Dart) and GTK (native) fought over the same window, and
   /// lets the runner restore the window synchronously on exit without
@@ -472,10 +474,34 @@ class DesktopIntegrationService extends WindowListener {
   Future<void> _enterBreakWindow() async {
     _breakMonitorRects = const [];
     try {
-      await _overlayChannel.invokeMethod('enterBreak');
+      final result = await _overlayChannel.invokeMethod<Object?>('enterBreak');
+      _breakMonitorRects = _monitorRectsFromNativeResult(result);
     } catch (e) {
       debugPrint('Failed to enter native break window: $e');
     }
+  }
+
+  List<Rect> _monitorRectsFromNativeResult(Object? result) {
+    if (result is! Map) return const [];
+    final rawRects = result['monitorRects'];
+    if (rawRects is! List || rawRects.length <= 1) return const [];
+
+    final rects = <Rect>[];
+    for (final item in rawRects) {
+      if (item is! Map) continue;
+      final x = _nativeDouble(item['x']);
+      final y = _nativeDouble(item['y']);
+      final width = _nativeDouble(item['width']);
+      final height = _nativeDouble(item['height']);
+      if (width <= 0 || height <= 0) continue;
+      rects.add(Rect.fromLTWH(x, y, width, height));
+    }
+    return rects.length > 1 ? List.unmodifiable(rects) : const [];
+  }
+
+  double _nativeDouble(Object? value) {
+    if (value is num) return value.toDouble();
+    return 0;
   }
 
   /// Ends the desktop break. The native runner tears down the blockers and
