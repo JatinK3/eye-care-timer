@@ -463,7 +463,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Added a search bar that filters settings in real-time as the user types, presenting a flattened list of items decorated with category badges.
   - Expanded appearance configuration to support Material You / OS system-accent colors, AMOLED true black backgrounds, and a premium accent color selector featuring a custom Hex input field and a 10-color circular picker.
   - Updated all settings-related widget tests to explicitly expand category cards and specify the primary Scrollable target, achieving a fully green test suite.
-
-
-
-
+- Implemented AI Health Insight Dashboard Card:
+  - Added a new dynamic card directly below the educational learn card on the main dashboard timer screen (both portrait and landscape layouts).
+  - Fetches highly specific, engaging, and actionable eye-health and posture tips (restricted to 30 words) for computer developers.
+  - Leverages the existing `AiService` LLM client using configured provider, model, API key, and prompt settings.
+  - Features dynamic post-frame loading on app initialization and instant configuration updates when settings are modified.
+  - Fully supports manual regeneration/refresh and graceful fallback handling (displaying error messages and retry states, including instructions when the API key is missing).
+  - Equipment of full widget and unit test coverage verifying display states (enabled, disabled, loading, missing API key error cases).

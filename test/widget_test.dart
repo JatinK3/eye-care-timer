@@ -1498,5 +1498,43 @@ void main() {
     await tester.pumpAndSettle();
     expect(restoreFinder, findsOneWidget);
   });
+
+  testWidgets('AI Health Insight card is hidden when AI motivation is disabled', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      'aiMotivationEnabled': false,
+    });
+    await pumpBlinkKindApp(tester);
+    expect(find.text('AI Health Insight'), findsNothing);
+  });
+
+  testWidgets('AI Health Insight card shows error when API key is missing', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      'aiMotivationEnabled': true,
+      'aiApiKey': '',
+    });
+    await pumpBlinkKindApp(tester);
+    await tester.pump();
+    expect(find.text('AI Health Insight'), findsAtLeastNWidgets(1));
+    expect(find.text('API key is missing. Please configure it in Settings.'), findsAtLeastNWidgets(1));
+  });
+
+  testWidgets('AI Health Insight card renders when enabled with API key', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      'aiMotivationEnabled': true,
+      'aiApiKey': 'test_api_key',
+    });
+    await pumpBlinkKindApp(tester);
+    await tester.pump();
+    expect(find.text('AI Health Insight'), findsAtLeastNWidgets(1));
+  });
 }
 

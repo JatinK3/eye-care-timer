@@ -190,6 +190,11 @@ class TimerHomePageState extends State<TimerHomePage>
   // AI-generated break quote, pre-fetched during work phase.
   String? _cachedAiQuote;
 
+  // AI Health Insight fields
+  String? _aiHealthInsight;
+  bool _isAiInsightLoading = false;
+  String? _aiInsightError;
+
   bool _lastDndState = false;
 
   String _resolveVisualizerStyle() {
@@ -219,6 +224,41 @@ class TimerHomePageState extends State<TimerHomePage>
     } catch (_) {
       // Silently ignore failures; fallback to static exercise tip.
       _cachedAiQuote = null;
+    }
+  }
+
+  Future<void> _fetchAiHealthInsight() async {
+    if (!widget.aiMotivationEnabled) return;
+    if (widget.aiApiKey.isEmpty) {
+      setState(() {
+        _aiInsightError = 'API key is missing. Please configure it in Settings.';
+        _isAiInsightLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isAiInsightLoading = true;
+      _aiInsightError = null;
+    });
+
+    try {
+      const prompt = 'Generate a single, unique, practical, and highly engaging eye-health or posture tip (strict limit of 30 words) for a developer working at a computer. Make it specific, actionable, and encouraging.';
+      final insight = await AiService.instance.generateMotivation(
+        provider: widget.aiProvider,
+        apiKey: widget.aiApiKey,
+        model: widget.aiModel,
+        prompt: prompt,
+      );
+      setState(() {
+        _aiHealthInsight = insight;
+        _isAiInsightLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _aiInsightError = 'Failed to fetch AI tip. Make sure your API key and connection are valid.';
+        _isAiInsightLoading = false;
+      });
     }
   }
 
@@ -407,6 +447,12 @@ class TimerHomePageState extends State<TimerHomePage>
       _checkSchedule();
     });
     _checkSchedule();
+
+    if (widget.aiMotivationEnabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fetchAiHealthInsight();
+      });
+    }
   }
 
   /// Keeps the tray/app-indicator countdown in step with the wall clock.
@@ -457,6 +503,13 @@ class TimerHomePageState extends State<TimerHomePage>
   @override
   void didUpdateWidget(covariant TimerHomePage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.aiMotivationEnabled &&
+        (!oldWidget.aiMotivationEnabled ||
+         oldWidget.aiApiKey != widget.aiApiKey ||
+         oldWidget.aiProvider != widget.aiProvider ||
+         oldWidget.aiModel != widget.aiModel)) {
+      _fetchAiHealthInsight();
+    }
     if (oldWidget.breakVisualizerStyle != widget.breakVisualizerStyle) {
       setState(() {
         _activeBreakVisualizerStyle = _resolveVisualizerStyle();
@@ -1854,6 +1907,164 @@ class TimerHomePageState extends State<TimerHomePage>
     );
   }
 
+  Widget _buildAiInsightCard(ThemeData theme, bool isDark, Color accentColor) {
+    if (!widget.aiMotivationEnabled) return const SizedBox.shrink();
+
+    final surfaceColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.white.withValues(alpha: 0.72);
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.black.withValues(alpha: 0.08);
+
+    Widget content;
+    if (_isAiInsightLoading) {
+      content = Row(
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Analyzing habits & preparing custom tip...',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isDark ? Colors.white60 : Colors.black54,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      );
+    } else if (_aiInsightError != null) {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _aiInsightError!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: _fetchAiHealthInsight,
+            borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.refresh, size: 14, color: accentColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Retry',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: accentColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (_aiHealthInsight != null) {
+      content = Text(
+        _aiHealthInsight!,
+        style: theme.textTheme.bodySmall,
+      );
+    } else {
+      // Not loaded yet and not loading (e.g. if key was empty or request not made)
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'No insight loaded yet.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isDark ? Colors.white60 : Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: _fetchAiHealthInsight,
+            borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.refresh, size: 14, color: accentColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Generate tip',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: accentColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 350),
+      child: Container(
+        key: ValueKey('ai_insight_${_isAiInsightLoading}_${_aiInsightError != null}_${_aiHealthInsight?.hashCode}'),
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: borderColor),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.auto_awesome, color: accentColor, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'AI Health Insight',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (!_isAiInsightLoading && _aiHealthInsight != null)
+                        IconButton(
+                          icon: const Icon(Icons.refresh, size: 16),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: _fetchAiHealthInsight,
+                          tooltip: 'Regenerate Insight',
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  content,
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBreakTipPanel(ThemeData theme, bool isDark, Color accentColor) {
     return AnimatedBuilder(
       animation: _progressAnimation,
@@ -2170,6 +2381,14 @@ class TimerHomePageState extends State<TimerHomePage>
                                           isDark,
                                           progressColor,
                                         ),
+                                        if (widget.aiMotivationEnabled) ...[
+                                          const SizedBox(height: 12),
+                                          _buildAiInsightCard(
+                                            Theme.of(context),
+                                            isDark,
+                                            progressColor,
+                                          ),
+                                        ],
                                       ] else ...[
                                         Opacity(
                                           opacity: 0.35,
@@ -2348,6 +2567,14 @@ class TimerHomePageState extends State<TimerHomePage>
                                 isDark,
                                 progressColor,
                               ),
+                              if (widget.aiMotivationEnabled) ...[
+                                const SizedBox(height: 12),
+                                _buildAiInsightCard(
+                                  Theme.of(context),
+                                  isDark,
+                                  progressColor,
+                                ),
+                              ],
                             ] else ...[
                               Opacity(
                                 opacity: 0.35,
