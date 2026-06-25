@@ -258,3 +258,9 @@ Creative follow-ups after the core overlay is stable:
 
 - The system tray `Show BlinkKind` action should always restore the main dashboard. It now emits `DesktopCommand.showDashboard` after showing/focusing the window; the separate tray Settings action remains responsible for opening settings.
 - Blink reminder notifications are cadence-gated at the timer source with a bucket/time guard because both the animation listener and desktop tray ticker can observe the same elapsed boundary. On Linux, blink notifications try to replace the previous `notify-send` notification to avoid filling the notification shade.
+
+
+## Blink Reminder Architecture
+
+- OS blink reminders and tray blink nudges are intentionally separate controls. OS reminders use `blinkRemindersEnabled` / `blinkRemindersCadenceSeconds` and should present as visible silent banners where the OS permits. Tray nudges use `trayBlinkNudgesEnabled` / `trayBlinkNudgeCadenceSeconds` and only pulse the dial/tray eye indicator.
+- Keep duplicate prevention separate for both systems: notification buckets use `_lastBlinkReminderBucket`, while tray pulse buckets use `_lastTrayBlinkNudgeBucket`.

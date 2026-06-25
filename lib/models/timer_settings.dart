@@ -22,6 +22,8 @@ class TimerSettings {
   static const String defaultChimeStyle = 'tibetan_bowl';
   static const bool defaultBlinkRemindersEnabled = true;
   static const int defaultBlinkRemindersCadenceSeconds = 120;
+  static const bool defaultTrayBlinkNudgesEnabled = true;
+  static const int defaultTrayBlinkNudgeCadenceSeconds = 60;
   static const bool defaultWorkHoursEnabled = false;
   static const int defaultWorkHoursStartHour = 9;
   static const int defaultWorkHoursStartMinute = 0;
@@ -75,6 +77,8 @@ class TimerSettings {
   final String chimeStyle;
   final bool blinkRemindersEnabled;
   final int blinkRemindersCadenceSeconds;
+  final bool trayBlinkNudgesEnabled;
+  final int trayBlinkNudgeCadenceSeconds;
   final bool workHoursEnabled;
   final int workHoursStartHour;
   final int workHoursStartMinute;
@@ -128,6 +132,8 @@ class TimerSettings {
     required this.chimeStyle,
     required this.blinkRemindersEnabled,
     required this.blinkRemindersCadenceSeconds,
+    required this.trayBlinkNudgesEnabled,
+    required this.trayBlinkNudgeCadenceSeconds,
     required this.workHoursEnabled,
     required this.workHoursStartHour,
     required this.workHoursStartMinute,
@@ -182,6 +188,8 @@ class TimerSettings {
       chimeStyle = defaultChimeStyle,
       blinkRemindersEnabled = defaultBlinkRemindersEnabled,
       blinkRemindersCadenceSeconds = defaultBlinkRemindersCadenceSeconds,
+      trayBlinkNudgesEnabled = defaultTrayBlinkNudgesEnabled,
+      trayBlinkNudgeCadenceSeconds = defaultTrayBlinkNudgeCadenceSeconds,
       workHoursEnabled = defaultWorkHoursEnabled,
       workHoursStartHour = defaultWorkHoursStartHour,
       workHoursStartMinute = defaultWorkHoursStartMinute,
@@ -235,6 +243,8 @@ class TimerSettings {
     String? chimeStyle,
     bool? blinkRemindersEnabled,
     int? blinkRemindersCadenceSeconds,
+    bool? trayBlinkNudgesEnabled,
+    int? trayBlinkNudgeCadenceSeconds,
     bool? workHoursEnabled,
     int? workHoursStartHour,
     int? workHoursStartMinute,
@@ -292,6 +302,10 @@ class TimerSettings {
           blinkRemindersEnabled ?? this.blinkRemindersEnabled,
       blinkRemindersCadenceSeconds:
           blinkRemindersCadenceSeconds ?? this.blinkRemindersCadenceSeconds,
+      trayBlinkNudgesEnabled:
+          trayBlinkNudgesEnabled ?? this.trayBlinkNudgesEnabled,
+      trayBlinkNudgeCadenceSeconds:
+          trayBlinkNudgeCadenceSeconds ?? this.trayBlinkNudgeCadenceSeconds,
       workHoursEnabled: workHoursEnabled ?? this.workHoursEnabled,
       workHoursStartHour: workHoursStartHour ?? this.workHoursStartHour,
       workHoursStartMinute: workHoursStartMinute ?? this.workHoursStartMinute,
@@ -311,12 +325,18 @@ class TimerSettings {
       aiApiKey: aiApiKey ?? this.aiApiKey,
       aiModel: aiModel ?? this.aiModel,
       aiCustomSystemPrompt: aiCustomSystemPrompt ?? this.aiCustomSystemPrompt,
-      twoStageWarningEnabled: twoStageWarningEnabled ?? this.twoStageWarningEnabled,
-      blinkReminderAiEnabled: blinkReminderAiEnabled ?? this.blinkReminderAiEnabled,
-      blinkReminderCustomMessage: blinkReminderCustomMessage ?? this.blinkReminderCustomMessage,
-      cameraMicAutoPostponeEnabled: cameraMicAutoPostponeEnabled ?? this.cameraMicAutoPostponeEnabled,
-      wellnessRemindersEnabled: wellnessRemindersEnabled ?? this.wellnessRemindersEnabled,
-      wellnessReminderCadenceSeconds: wellnessReminderCadenceSeconds ?? this.wellnessReminderCadenceSeconds,
+      twoStageWarningEnabled:
+          twoStageWarningEnabled ?? this.twoStageWarningEnabled,
+      blinkReminderAiEnabled:
+          blinkReminderAiEnabled ?? this.blinkReminderAiEnabled,
+      blinkReminderCustomMessage:
+          blinkReminderCustomMessage ?? this.blinkReminderCustomMessage,
+      cameraMicAutoPostponeEnabled:
+          cameraMicAutoPostponeEnabled ?? this.cameraMicAutoPostponeEnabled,
+      wellnessRemindersEnabled:
+          wellnessRemindersEnabled ?? this.wellnessRemindersEnabled,
+      wellnessReminderCadenceSeconds:
+          wellnessReminderCadenceSeconds ?? this.wellnessReminderCadenceSeconds,
     );
   }
 
@@ -348,6 +368,8 @@ class TimerSettings {
       'chimeStyle': chimeStyle,
       'blinkRemindersEnabled': blinkRemindersEnabled,
       'blinkRemindersCadenceSeconds': blinkRemindersCadenceSeconds,
+      'trayBlinkNudgesEnabled': trayBlinkNudgesEnabled,
+      'trayBlinkNudgeCadenceSeconds': trayBlinkNudgeCadenceSeconds,
       'workHoursEnabled': workHoursEnabled,
       'workHoursStartHour': workHoursStartHour,
       'workHoursStartMinute': workHoursStartMinute,
@@ -375,10 +397,15 @@ class TimerSettings {
     };
   }
 
-  static TimerSettings fromJson(Map<String, dynamic> json, {int currentStreak = 0}) {
+  static TimerSettings fromJson(
+    Map<String, dynamic> json, {
+    int currentStreak = 0,
+  }) {
     return TimerSettings(
-      workDurationSeconds: json['workDurationSeconds'] as int? ?? defaultWorkDurationSeconds,
-      breakDurationSeconds: json['breakDurationSeconds'] as int? ?? defaultBreakDurationSeconds,
+      workDurationSeconds:
+          json['workDurationSeconds'] as int? ?? defaultWorkDurationSeconds,
+      breakDurationSeconds:
+          json['breakDurationSeconds'] as int? ?? defaultBreakDurationSeconds,
       themeMode: _parseThemeMode(json['themeMode']),
       colorPreset: json['colorPreset'] as String? ?? defaultColorPreset,
       streakCount: currentStreak,
@@ -387,47 +414,95 @@ class TimerSettings {
       hapticsEnabled: json['hapticsEnabled'] as bool? ?? true,
       soundEnabled: json['soundEnabled'] as bool? ?? false,
       longBreakEnabled: json['longBreakEnabled'] as bool? ?? false,
-      longBreakDurationSeconds: json['longBreakDurationSeconds'] as int? ?? defaultLongBreakDurationSeconds,
-      longBreakEveryCycles: json['longBreakEveryCycles'] as int? ?? defaultLongBreakEveryCycles,
+      longBreakDurationSeconds:
+          json['longBreakDurationSeconds'] as int? ??
+          defaultLongBreakDurationSeconds,
+      longBreakEveryCycles:
+          json['longBreakEveryCycles'] as int? ?? defaultLongBreakEveryCycles,
       autoRunEnabled: json['autoRunEnabled'] as bool? ?? false,
       autoRunCycleLimit: json['autoRunCycleLimit'] as int? ?? 0,
       breakMode: _parseBreakMode(json['breakMode']),
       allowSkip: json['allowSkip'] as bool? ?? defaultAllowSkip,
       allowPostpone: json['allowPostpone'] as bool? ?? defaultAllowPostpone,
-      postponeDurationSeconds: json['postponeDurationSeconds'] as int? ?? defaultPostponeDurationSeconds,
-      smartIdleEnabled: json['smartIdleEnabled'] as bool? ?? defaultSmartIdleEnabled,
-      breakVisualizerStyle: json['breakVisualizerStyle'] as String? ?? defaultBreakVisualizerStyle,
+      postponeDurationSeconds:
+          json['postponeDurationSeconds'] as int? ??
+          defaultPostponeDurationSeconds,
+      smartIdleEnabled:
+          json['smartIdleEnabled'] as bool? ?? defaultSmartIdleEnabled,
+      breakVisualizerStyle:
+          json['breakVisualizerStyle'] as String? ??
+          defaultBreakVisualizerStyle,
       breakShowClock: json['breakShowClock'] as bool? ?? defaultBreakShowClock,
       breakShowTips: json['breakShowTips'] as bool? ?? defaultBreakShowTips,
-      breakShowProgress: json['breakShowProgress'] as bool? ?? defaultBreakShowProgress,
-      breakCustomMessage: json['breakCustomMessage'] as String? ?? defaultBreakCustomMessage,
+      breakShowProgress:
+          json['breakShowProgress'] as bool? ?? defaultBreakShowProgress,
+      breakCustomMessage:
+          json['breakCustomMessage'] as String? ?? defaultBreakCustomMessage,
       chimeStyle: json['chimeStyle'] as String? ?? defaultChimeStyle,
-      blinkRemindersEnabled: json['blinkRemindersEnabled'] as bool? ?? defaultBlinkRemindersEnabled,
-      blinkRemindersCadenceSeconds: json['blinkRemindersCadenceSeconds'] as int? ?? defaultBlinkRemindersCadenceSeconds,
-      workHoursEnabled: json['workHoursEnabled'] as bool? ?? defaultWorkHoursEnabled,
-      workHoursStartHour: json['workHoursStartHour'] as int? ?? defaultWorkHoursStartHour,
-      workHoursStartMinute: json['workHoursStartMinute'] as int? ?? defaultWorkHoursStartMinute,
-      workHoursEndHour: json['workHoursEndHour'] as int? ?? defaultWorkHoursEndHour,
-      workHoursEndMinute: json['workHoursEndMinute'] as int? ?? defaultWorkHoursEndMinute,
+      blinkRemindersEnabled:
+          json['blinkRemindersEnabled'] as bool? ??
+          defaultBlinkRemindersEnabled,
+      blinkRemindersCadenceSeconds:
+          json['blinkRemindersCadenceSeconds'] as int? ??
+          defaultBlinkRemindersCadenceSeconds,
+      trayBlinkNudgesEnabled:
+          json['trayBlinkNudgesEnabled'] as bool? ??
+          defaultTrayBlinkNudgesEnabled,
+      trayBlinkNudgeCadenceSeconds:
+          json['trayBlinkNudgeCadenceSeconds'] as int? ??
+          defaultTrayBlinkNudgeCadenceSeconds,
+      workHoursEnabled:
+          json['workHoursEnabled'] as bool? ?? defaultWorkHoursEnabled,
+      workHoursStartHour:
+          json['workHoursStartHour'] as int? ?? defaultWorkHoursStartHour,
+      workHoursStartMinute:
+          json['workHoursStartMinute'] as int? ?? defaultWorkHoursStartMinute,
+      workHoursEndHour:
+          json['workHoursEndHour'] as int? ?? defaultWorkHoursEndHour,
+      workHoursEndMinute:
+          json['workHoursEndMinute'] as int? ?? defaultWorkHoursEndMinute,
       workDays: json['workDays'] as String? ?? defaultWorkDays,
-      naturalBreakCreditEnabled: json['naturalBreakCreditEnabled'] as bool? ?? defaultNaturalBreakCreditEnabled,
-      amoledDarkEnabled: json['amoledDarkEnabled'] as bool? ?? defaultAmoledDarkEnabled,
-      customAccentColorHex: json['customAccentColorHex'] as String? ?? defaultCustomAccentColorHex,
-      useSystemAccent: json['useSystemAccent'] as bool? ?? defaultUseSystemAccent,
+      naturalBreakCreditEnabled:
+          json['naturalBreakCreditEnabled'] as bool? ??
+          defaultNaturalBreakCreditEnabled,
+      amoledDarkEnabled:
+          json['amoledDarkEnabled'] as bool? ?? defaultAmoledDarkEnabled,
+      customAccentColorHex:
+          json['customAccentColorHex'] as String? ??
+          defaultCustomAccentColorHex,
+      useSystemAccent:
+          json['useSystemAccent'] as bool? ?? defaultUseSystemAccent,
       startMinimized: json['startMinimized'] as bool? ?? defaultStartMinimized,
-      autoStartSchedule: json['autoStartSchedule'] as bool? ?? defaultAutoStartSchedule,
-      aiMotivationEnabled: json['aiMotivationEnabled'] as bool? ?? defaultAiMotivationEnabled,
-      osFocusDndEnabled: json['osFocusDndEnabled'] as bool? ?? defaultOsFocusDndEnabled,
+      autoStartSchedule:
+          json['autoStartSchedule'] as bool? ?? defaultAutoStartSchedule,
+      aiMotivationEnabled:
+          json['aiMotivationEnabled'] as bool? ?? defaultAiMotivationEnabled,
+      osFocusDndEnabled:
+          json['osFocusDndEnabled'] as bool? ?? defaultOsFocusDndEnabled,
       aiProvider: json['aiProvider'] as String? ?? defaultAiProvider,
       aiApiKey: json['aiApiKey'] as String? ?? defaultAiApiKey,
       aiModel: json['aiModel'] as String? ?? defaultAiModel,
-      aiCustomSystemPrompt: json['aiCustomSystemPrompt'] as String? ?? defaultAiCustomSystemPrompt,
-      twoStageWarningEnabled: json['twoStageWarningEnabled'] as bool? ?? defaultTwoStageWarningEnabled,
-      blinkReminderAiEnabled: json['blinkReminderAiEnabled'] as bool? ?? defaultBlinkReminderAiEnabled,
-      blinkReminderCustomMessage: json['blinkReminderCustomMessage'] as String? ?? defaultBlinkReminderCustomMessage,
-      cameraMicAutoPostponeEnabled: json['cameraMicAutoPostponeEnabled'] as bool? ?? defaultCameraMicAutoPostponeEnabled,
-      wellnessRemindersEnabled: json['wellnessRemindersEnabled'] as bool? ?? defaultWellnessRemindersEnabled,
-      wellnessReminderCadenceSeconds: json['wellnessReminderCadenceSeconds'] as int? ?? defaultWellnessReminderCadenceSeconds,
+      aiCustomSystemPrompt:
+          json['aiCustomSystemPrompt'] as String? ??
+          defaultAiCustomSystemPrompt,
+      twoStageWarningEnabled:
+          json['twoStageWarningEnabled'] as bool? ??
+          defaultTwoStageWarningEnabled,
+      blinkReminderAiEnabled:
+          json['blinkReminderAiEnabled'] as bool? ??
+          defaultBlinkReminderAiEnabled,
+      blinkReminderCustomMessage:
+          json['blinkReminderCustomMessage'] as String? ??
+          defaultBlinkReminderCustomMessage,
+      cameraMicAutoPostponeEnabled:
+          json['cameraMicAutoPostponeEnabled'] as bool? ??
+          defaultCameraMicAutoPostponeEnabled,
+      wellnessRemindersEnabled:
+          json['wellnessRemindersEnabled'] as bool? ??
+          defaultWellnessRemindersEnabled,
+      wellnessReminderCadenceSeconds:
+          json['wellnessReminderCadenceSeconds'] as int? ??
+          defaultWellnessReminderCadenceSeconds,
     );
   }
 

@@ -519,3 +519,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Added blink reminder bucket/time throttling in the timer page so the animation ticker and desktop wall-clock ticker cannot both emit notifications for the same cadence boundary.
   - Updated Linux blink reminders to reuse/replace the previous notification when notify-send supports notification IDs, with a fallback for older notify-send versions.
   - Verified with flutter analyze.
+
+- Split blink banners from tray blink nudges:
+  - Added independent persisted settings for tray blink nudges and tray nudge interval.
+  - Kept OS blink banner reminders separately configurable from tray icon pulses.
+  - Updated Settings with separate controls for banner interval and tray nudge interval.
+  - Raised blink reminder notifications to a visible banner-style channel/urgency while keeping them silent.
+  - Verified with flutter analyze and focused settings/model tests.

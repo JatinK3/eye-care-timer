@@ -483,6 +483,20 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveBlinkRemindersCadenceSeconds(seconds));
   }
 
+  void _setTrayBlinkNudgesEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(trayBlinkNudgesEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveTrayBlinkNudgesEnabled(enabled));
+  }
+
+  void _setTrayBlinkNudgeCadenceSeconds(int seconds) {
+    setState(() {
+      _settings = _settings.copyWith(trayBlinkNudgeCadenceSeconds: seconds);
+    });
+    unawaited(_preferencesService.saveTrayBlinkNudgeCadenceSeconds(seconds));
+  }
+
   void _setWorkHoursEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(workHoursEnabled: enabled);
@@ -554,7 +568,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   }
 
   Future<void> _restoreDefaultSettings() async {
-    final defaults = await _preferencesService.resetToDefaultSettings(_settings.streakCount);
+    final defaults = await _preferencesService.resetToDefaultSettings(
+      _settings.streakCount,
+    );
     setState(() {
       _settings = defaults;
     });
@@ -886,6 +902,10 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           blinkRemindersCadenceSeconds: _settings.blinkRemindersCadenceSeconds,
           setBlinkRemindersEnabled: _setBlinkRemindersEnabled,
           setBlinkRemindersCadenceSeconds: _setBlinkRemindersCadenceSeconds,
+          trayBlinkNudgesEnabled: _settings.trayBlinkNudgesEnabled,
+          trayBlinkNudgeCadenceSeconds: _settings.trayBlinkNudgeCadenceSeconds,
+          setTrayBlinkNudgesEnabled: _setTrayBlinkNudgesEnabled,
+          setTrayBlinkNudgeCadenceSeconds: _setTrayBlinkNudgeCadenceSeconds,
           blinkReminderAiEnabled: _settings.blinkReminderAiEnabled,
           blinkReminderCustomMessage: _settings.blinkReminderCustomMessage,
           cameraMicAutoPostponeEnabled: _settings.cameraMicAutoPostponeEnabled,
@@ -1062,6 +1082,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   blinkRemindersEnabled: _settings.blinkRemindersEnabled,
                   blinkRemindersCadenceSeconds:
                       _settings.blinkRemindersCadenceSeconds,
+                  trayBlinkNudgesEnabled: _settings.trayBlinkNudgesEnabled,
+                  trayBlinkNudgeCadenceSeconds:
+                      _settings.trayBlinkNudgeCadenceSeconds,
                   workHoursEnabled: _settings.workHoursEnabled,
                   workHoursStartHour: _settings.workHoursStartHour,
                   workHoursStartMinute: _settings.workHoursStartMinute,
@@ -1106,8 +1129,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                       _settings.blinkReminderCustomMessage,
                   cameraMicAutoPostponeEnabled:
                       _settings.cameraMicAutoPostponeEnabled,
-                  wellnessRemindersEnabled:
-                      _settings.wellnessRemindersEnabled,
+                  wellnessRemindersEnabled: _settings.wellnessRemindersEnabled,
                   wellnessReminderCadenceSeconds:
                       _settings.wellnessReminderCadenceSeconds,
                 ),

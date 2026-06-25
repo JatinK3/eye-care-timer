@@ -50,7 +50,7 @@ class NotificationService {
         _wellnessChannelId,
         _wellnessChannelName,
         description: _wellnessChannelDescription,
-        importance: Importance.low,
+        importance: Importance.high,
         playSound: false,
         enableVibration: false,
       );
@@ -60,20 +60,23 @@ class NotificationService {
           _wellnessChannelId,
           _wellnessChannelName,
           channelDescription: _wellnessChannelDescription,
-          importance: Importance.low,
-          priority: Priority.low,
+          importance: Importance.high,
+          priority: Priority.high,
           playSound: false,
           enableVibration: false,
           silent: true,
         ),
         iOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
-        macOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
+        macOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentSound: false,
+        ),
       );
 
-  static const String _blinkChannelId = 'blinkkind_blink_reminders_v1';
+  static const String _blinkChannelId = 'blinkkind_blink_reminders_v2';
   static const String _blinkChannelName = 'Blink reminders';
   static const String _blinkChannelDescription =
-      'Gentle periodic reminders to blink consciously during work sessions.';
+      'Visible periodic banner reminders to blink consciously during work sessions.';
   static const AndroidNotificationChannel _blinkChannel =
       AndroidNotificationChannel(
         _blinkChannelId,
@@ -103,12 +106,19 @@ class NotificationService {
         ),
       );
 
-  Future<bool> schedulePreBreakWarningReminder(Duration delay, {bool isLongBreak = false}) {
+  Future<bool> schedulePreBreakWarningReminder(
+    Duration delay, {
+    bool isLongBreak = false,
+  }) {
     return _schedulePhaseReminder(
       id: _preBreakWarningReminderId,
       delay: delay,
-      title: isLongBreak ? 'Long break starting soon' : 'Short break starting soon',
-      body: isLongBreak ? 'Prepare to take a longer rest.' : 'Prepare to rest your eyes in 10 seconds.',
+      title: isLongBreak
+          ? 'Long break starting soon'
+          : 'Short break starting soon',
+      body: isLongBreak
+          ? 'Prepare to take a longer rest.'
+          : 'Prepare to rest your eyes in 10 seconds.',
       payload: 'pre_break_warning',
     );
   }
@@ -377,8 +387,10 @@ class NotificationService {
     if (Platform.isLinux) {
       try {
         await Process.run('notify-send', [
-          '-a', 'BlinkKind',
-          '-i', 'blinkkind',
+          '-a',
+          'BlinkKind',
+          '-i',
+          'blinkkind',
           'BlinkKind test reminder',
           'If you heard this, phase reminder sound is ready.',
         ]);
@@ -407,11 +419,16 @@ class NotificationService {
     }
   }
 
-  Future<bool> scheduleWorkCompleteReminder(Duration delay, {bool isLongBreak = false}) {
+  Future<bool> scheduleWorkCompleteReminder(
+    Duration delay, {
+    bool isLongBreak = false,
+  }) {
     return _schedulePhaseReminder(
       delay: delay,
       title: isLongBreak ? 'Time for a Long Break' : 'Time for a Short Break',
-      body: isLongBreak ? 'Take a longer rest to stretch and refresh.' : 'Look 20 ft away and rest your eyes.',
+      body: isLongBreak
+          ? 'Take a longer rest to stretch and refresh.'
+          : 'Look 20 ft away and rest your eyes.',
       payload: 'work_complete',
     );
   }
@@ -446,10 +463,14 @@ class NotificationService {
       try {
         final replaceId = _linuxBlinkNotificationReplaceId;
         final replaceArgs = [
-          '-a', 'BlinkKind',
-          '-i', 'blinkkind',
-          '-u', 'low',
-          '-t', '4000',
+          '-a',
+          'BlinkKind',
+          '-i',
+          'blinkkind',
+          '-u',
+          'normal',
+          '-t',
+          '7000',
           '-p',
           if (replaceId != null) ...['-r', replaceId.toString()],
           'Blink reminder',
@@ -465,15 +486,21 @@ class NotificationService {
         }
 
         final fallback = await Process.run('notify-send', [
-          '-a', 'BlinkKind',
-          '-i', 'blinkkind',
-          '-u', 'low',
-          '-t', '4000',
+          '-a',
+          'BlinkKind',
+          '-i',
+          'blinkkind',
+          '-u',
+          'normal',
+          '-t',
+          '7000',
           'Blink reminder',
           body,
         ]);
         if (fallback.exitCode != 0) {
-          debugPrint('Failed to send Linux blink notification: ${fallback.stderr}');
+          debugPrint(
+            'Failed to send Linux blink notification: ${fallback.stderr}',
+          );
         }
       } catch (e) {
         debugPrint('Failed to send Linux blink notification: $e');
@@ -495,7 +522,10 @@ class NotificationService {
     }
   }
 
-  Future<void> showWellnessReminder(WellnessType type, {String? aiMessage}) async {
+  Future<void> showWellnessReminder(
+    WellnessType type, {
+    String? aiMessage,
+  }) async {
     if (kIsWeb) return;
 
     String title;
@@ -507,21 +537,29 @@ class NotificationService {
         break;
       case WellnessType.posture:
         title = 'Posture check';
-        body = aiMessage ?? 'Sit up straight, shoulders relaxed, screen at eye level.';
+        body =
+            aiMessage ??
+            'Sit up straight, shoulders relaxed, screen at eye level.';
         break;
       case WellnessType.stretch:
         title = 'Stretch reminder';
-        body = aiMessage ?? 'Stand up and stretch for 30 seconds. Your body will thank you!';
+        body =
+            aiMessage ??
+            'Stand up and stretch for 30 seconds. Your body will thank you!';
         break;
     }
 
     if (Platform.isLinux) {
       try {
         await Process.run('notify-send', [
-          '-a', 'BlinkKind',
-          '-i', 'blinkkind',
-          '-u', 'low',
-          '-t', '5000',
+          '-a',
+          'BlinkKind',
+          '-i',
+          'blinkkind',
+          '-u',
+          'low',
+          '-t',
+          '5000',
           title,
           body,
         ]);
@@ -578,8 +616,10 @@ class NotificationService {
         _linuxWarningTimer?.cancel();
         _linuxWarningTimer = Timer(delay, () {
           Process.run('notify-send', [
-            '-a', 'BlinkKind',
-            '-i', 'blinkkind',
+            '-a',
+            'BlinkKind',
+            '-i',
+            'blinkkind',
             title,
             body,
           ]);
@@ -588,8 +628,10 @@ class NotificationService {
         _linuxPhaseTimer?.cancel();
         _linuxPhaseTimer = Timer(delay, () {
           Process.run('notify-send', [
-            '-a', 'BlinkKind',
-            '-i', 'blinkkind',
+            '-a',
+            'BlinkKind',
+            '-i',
+            'blinkkind',
             title,
             body,
           ]);

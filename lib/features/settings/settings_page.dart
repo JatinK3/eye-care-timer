@@ -58,6 +58,10 @@ class SettingsPage extends StatefulWidget {
   final int blinkRemindersCadenceSeconds;
   final void Function(bool) setBlinkRemindersEnabled;
   final void Function(int) setBlinkRemindersCadenceSeconds;
+  final bool trayBlinkNudgesEnabled;
+  final int trayBlinkNudgeCadenceSeconds;
+  final void Function(bool) setTrayBlinkNudgesEnabled;
+  final void Function(int) setTrayBlinkNudgeCadenceSeconds;
   final bool blinkReminderAiEnabled;
   final String blinkReminderCustomMessage;
   final bool cameraMicAutoPostponeEnabled;
@@ -191,6 +195,10 @@ class SettingsPage extends StatefulWidget {
     required this.blinkRemindersCadenceSeconds,
     required this.setBlinkRemindersEnabled,
     required this.setBlinkRemindersCadenceSeconds,
+    required this.trayBlinkNudgesEnabled,
+    required this.trayBlinkNudgeCadenceSeconds,
+    required this.setTrayBlinkNudgesEnabled,
+    required this.setTrayBlinkNudgeCadenceSeconds,
     required this.blinkReminderAiEnabled,
     required this.blinkReminderCustomMessage,
     required this.cameraMicAutoPostponeEnabled,
@@ -299,8 +307,9 @@ class _SettingsPageState extends State<SettingsPage>
     // If already one of the valid minute values, return as-is.
     if (valid.contains(seconds)) return seconds;
     // Otherwise snap to closest valid value.
-    return valid.reduce((a, b) =>
-        (a - seconds).abs() < (b - seconds).abs() ? a : b);
+    return valid.reduce(
+      (a, b) => (a - seconds).abs() < (b - seconds).abs() ? a : b,
+    );
   }
 
   late NotificationPermissionStatus _permissionStatus;
@@ -746,15 +755,10 @@ class _SettingsPageState extends State<SettingsPage>
             value: widget.dailyGoal,
             items: [
               ..._dailyGoals.map(
-                (goal) => DropdownMenuItem<int>(
-                  value: goal,
-                  child: Text('$goal'),
-                ),
+                (goal) =>
+                    DropdownMenuItem<int>(value: goal, child: Text('$goal')),
               ),
-              const DropdownMenuItem<int>(
-                value: -1,
-                child: Text('Custom...'),
-              ),
+              const DropdownMenuItem<int>(value: -1, child: Text('Custom...')),
               if (!_dailyGoals.contains(widget.dailyGoal))
                 DropdownMenuItem<int>(
                   value: widget.dailyGoal,
@@ -971,8 +975,17 @@ class _SettingsPageState extends State<SettingsPage>
       ),
       SettingItem(
         title: 'OS Focus Mode (DND)',
-        subtitle: 'Toggle system Do Not Disturb (DND) automatically during work phases (Linux GNOME)',
-        keywords: ['focus', 'dnd', 'do not disturb', 'os', 'notification', 'quiet', 'system'],
+        subtitle:
+            'Toggle system Do Not Disturb (DND) automatically during work phases (Linux GNOME)',
+        keywords: [
+          'focus',
+          'dnd',
+          'do not disturb',
+          'os',
+          'notification',
+          'quiet',
+          'system',
+        ],
         category: 'General Schedule',
         widget: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -987,13 +1000,19 @@ class _SettingsPageState extends State<SettingsPage>
             ),
             if (widget.osFocusDndEnabled)
               Padding(
-                padding: const EdgeInsets.only(left: 48.0, top: 4.0, bottom: 8.0),
+                padding: const EdgeInsets.only(
+                  left: 48.0,
+                  top: 4.0,
+                  bottom: 8.0,
+                ),
                 child: Text(
                   'Note: Ubuntu/GNOME does not natively support DND exceptions/whitelist. '
                   'If you want specific apps to bypass DND, turn this toggle off and instead manually '
                   'silence noisy apps under Ubuntu System Settings -> Notifications.',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                    color: theme.textTheme.bodySmall?.color?.withValues(
+                      alpha: 0.7,
+                    ),
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -1036,8 +1055,15 @@ class _SettingsPageState extends State<SettingsPage>
       if (_breakMode != BreakMode.off) ...[
         SettingItem(
           title: 'Pre-break notification alert',
-          subtitle: 'Send a system notification 10 seconds before a break starts',
-          keywords: ['warning', 'pre-break', 'notification', 'alert', 'two-stage'],
+          subtitle:
+              'Send a system notification 10 seconds before a break starts',
+          keywords: [
+            'warning',
+            'pre-break',
+            'notification',
+            'alert',
+            'two-stage',
+          ],
           category: 'Break Screen & Behavior',
           widget: SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -1207,7 +1233,9 @@ class _SettingsPageState extends State<SettingsPage>
                 contentPadding: EdgeInsets.zero,
                 secondary: const Icon(Icons.donut_large_outlined),
                 title: const Text('Show progress ring'),
-                subtitle: const Text('Visualize break progress on classic layouts'),
+                subtitle: const Text(
+                  'Visualize break progress on classic layouts',
+                ),
                 value: widget.breakShowProgress,
                 onChanged: widget.setBreakShowProgress,
               ),
@@ -1301,7 +1329,8 @@ class _SettingsPageState extends State<SettingsPage>
           trailing: IconButton(
             onPressed:
                 (_overlayPermissionStatus == OverlayPermissionStatus.allowed ||
-                 _overlayPermissionStatus == OverlayPermissionStatus.unsupported)
+                    _overlayPermissionStatus ==
+                        OverlayPermissionStatus.unsupported)
                 ? _showOverlayPreview
                 : null,
             icon: const Icon(Icons.play_arrow),
@@ -1322,7 +1351,8 @@ class _SettingsPageState extends State<SettingsPage>
           trailing: IconButton(
             onPressed:
                 (_overlayPermissionStatus == OverlayPermissionStatus.allowed ||
-                 _overlayPermissionStatus == OverlayPermissionStatus.unsupported)
+                    _overlayPermissionStatus ==
+                        OverlayPermissionStatus.unsupported)
                 ? _showRealBreakTest
                 : null,
             icon: const Icon(Icons.play_arrow),
@@ -1803,6 +1833,8 @@ class _SettingsPageState extends State<SettingsPage>
           'nudges',
           'micro-reminders',
           'notification',
+          'banner',
+          'popup',
           'eye',
           'conscious',
           'moisture',
@@ -1815,7 +1847,7 @@ class _SettingsPageState extends State<SettingsPage>
               secondary: const Icon(Icons.remove_red_eye_outlined),
               title: const Text('Conscious blinking reminders'),
               subtitle: const Text(
-                'Sends OS notifications reminding you to blink during work, keeping your eyes moist and reducing fatigue',
+                'Shows visible OS banner reminders during work, keeping your eyes moist and reducing fatigue',
               ),
               value: widget.blinkRemindersEnabled,
               onChanged: widget.setBlinkRemindersEnabled,
@@ -1825,10 +1857,12 @@ class _SettingsPageState extends State<SettingsPage>
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.timer_outlined),
-                title: const Text('Reminder interval'),
-                subtitle: const Text('How often to send a blink reminder'),
+                title: const Text('Banner interval'),
+                subtitle: const Text('How often to show the OS blink banner'),
                 trailing: DropdownButton<int>(
-                  value: _nearestBlinkCadence(widget.blinkRemindersCadenceSeconds),
+                  value: _nearestBlinkCadence(
+                    widget.blinkRemindersCadenceSeconds,
+                  ),
                   items: const [
                     DropdownMenuItem(value: 60, child: Text('Every 1 min')),
                     DropdownMenuItem(value: 120, child: Text('Every 2 min')),
@@ -1840,6 +1874,43 @@ class _SettingsPageState extends State<SettingsPage>
                   onChanged: (value) {
                     if (value != null) {
                       widget.setBlinkRemindersCadenceSeconds(value);
+                    }
+                  },
+                ),
+              ),
+            ],
+            const Divider(height: 1),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.notifications_active_outlined),
+              title: const Text('Tray blink nudges'),
+              subtitle: const Text(
+                'Pulses the system tray icon independently from OS banner reminders',
+              ),
+              value: widget.trayBlinkNudgesEnabled,
+              onChanged: widget.setTrayBlinkNudgesEnabled,
+            ),
+            if (widget.trayBlinkNudgesEnabled) ...[
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.timelapse_outlined),
+                title: const Text('Tray nudge interval'),
+                subtitle: const Text('How often the tray icon should pulse'),
+                trailing: DropdownButton<int>(
+                  value: _nearestBlinkCadence(
+                    widget.trayBlinkNudgeCadenceSeconds,
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 60, child: Text('Every 1 min')),
+                    DropdownMenuItem(value: 120, child: Text('Every 2 min')),
+                    DropdownMenuItem(value: 300, child: Text('Every 5 min')),
+                    DropdownMenuItem(value: 600, child: Text('Every 10 min')),
+                    DropdownMenuItem(value: 900, child: Text('Every 15 min')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      widget.setTrayBlinkNudgeCadenceSeconds(value);
                     }
                   },
                 ),
@@ -2040,7 +2111,14 @@ class _SettingsPageState extends State<SettingsPage>
       SettingItem(
         title: 'Reset settings',
         subtitle: 'Restore all configurations to factory defaults',
-        keywords: ['reset', 'restore', 'default', 'factory', 'settings', 'clear'],
+        keywords: [
+          'reset',
+          'restore',
+          'default',
+          'factory',
+          'settings',
+          'clear',
+        ],
         category: 'System Options',
         widget: ListTile(
           contentPadding: EdgeInsets.zero,
@@ -2387,6 +2465,8 @@ class _SettingsPageState extends State<SettingsPage>
       chimeStyle: widget.chimeStyle,
       blinkRemindersEnabled: widget.blinkRemindersEnabled,
       blinkRemindersCadenceSeconds: widget.blinkRemindersCadenceSeconds,
+      trayBlinkNudgesEnabled: widget.trayBlinkNudgesEnabled,
+      trayBlinkNudgeCadenceSeconds: widget.trayBlinkNudgeCadenceSeconds,
       workHoursEnabled: widget.workHoursEnabled,
       workHoursStartHour: widget.workHoursStartHour,
       workHoursStartMinute: widget.workHoursStartMinute,
@@ -2424,7 +2504,11 @@ class _SettingsPageState extends State<SettingsPage>
       };
       final content = const JsonEncoder.withIndent('  ').convert(jsonMap);
 
-      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+      final timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .split('.')
+          .first;
       final fileName = 'blinkkind_settings_backup_$timestamp.json';
 
       String? dirPath;
@@ -2472,9 +2556,9 @@ class _SettingsPageState extends State<SettingsPage>
       );
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to backup settings: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to backup settings: $e")));
     }
   }
 
@@ -2498,7 +2582,10 @@ class _SettingsPageState extends State<SettingsPage>
       }
 
       final settingsMap = decoded['settings'] as Map<String, dynamic>;
-      final newSettings = TimerSettings.fromJson(settingsMap, currentStreak: widget.streakCount);
+      final newSettings = TimerSettings.fromJson(
+        settingsMap,
+        currentStreak: widget.streakCount,
+      );
 
       await widget.importSettings(newSettings);
 
@@ -2508,9 +2595,9 @@ class _SettingsPageState extends State<SettingsPage>
       );
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to restore settings: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to restore settings: $e")));
     }
   }
 
