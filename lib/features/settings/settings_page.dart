@@ -114,6 +114,8 @@ class SettingsPage extends StatefulWidget {
   final void Function(bool) setUseSystemAccent;
   final bool startMinimized;
   final void Function(bool) setStartMinimized;
+  final bool autoStartSchedule;
+  final void Function(bool) setAutoStartSchedule;
 
   // AI Motivation parameters
   final bool aiMotivationEnabled;
@@ -222,6 +224,8 @@ class SettingsPage extends StatefulWidget {
     required this.setUseSystemAccent,
     required this.startMinimized,
     required this.setStartMinimized,
+    required this.autoStartSchedule,
+    required this.setAutoStartSchedule,
 
     // AI Motivation constructor parameters
     required this.aiMotivationEnabled,
@@ -892,6 +896,20 @@ class _SettingsPageState extends State<SettingsPage>
               ),
             ],
           ],
+        ),
+      ),
+      SettingItem(
+        title: 'Auto-start schedule',
+        subtitle: 'Start work timer automatically on application launch',
+        keywords: ['auto', 'start', 'schedule', 'launch', 'run', 'boot'],
+        category: 'General Schedule',
+        widget: SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.play_circle_outline),
+          title: const Text('Auto-start schedule'),
+          subtitle: const Text('Automatically start the timer on launch'),
+          value: widget.autoStartSchedule,
+          onChanged: widget.setAutoStartSchedule,
         ),
       ),
 

@@ -33,7 +33,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/features/timer/eye_health_tips.dart`: Shared static catalog for rotating 20-20-20 education, break prompts, blink reminders, and home Learn-card copy.
 - `lib/features/timer/display_layout.dart`: Pure desktop display-union geometry used to span a break window across multiple monitors and translate each monitor into window-local coordinates.
 - `lib/features/timer/desktop_break_overlay.dart`: Desktop break surface that renders once for fullscreen fallback or replicates centered break content across every monitor in a spanning window, with rotating eye-health tips and optional AI quote text.
-- `lib/models/timer_settings.dart`: Persisted timer settings model and defaults, including color preset, notification, feedback, long-break, automatic-cycle, daily goal, Off/Gentle/Strict break-screen preferences, break-screen content toggles, and custom break message.
+- `lib/models/timer_settings.dart`: Persisted timer settings model and defaults, including color preset, notification, feedback, long-break, automatic-cycle, daily goal, Off/Gentle/Strict break-screen preferences, break-screen content toggles, custom break message, and auto-start schedule.
 - `lib/theme/color_presets.dart`: Shared preset names, seed colors, swatches, timer gradients, and progress colors.
 - `lib/features/settings/settings_page.dart`: Dedicated searchable/collapsible settings UI for durations, theme, presets, reminder permission recovery, automatic-cycle controls, smart idle, work schedule, blink reminders, AI motivation, Android break-overlay permission and preview controls, progress history entry point, and streak reset.
 - `lib/features/onboarding/onboarding_page.dart`: First-run 20-20-20 explanation and reminder permission entry point.
@@ -95,6 +95,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Optional blink reminders can show subtle in-app/tray nudges and a guided blink training visualizer.
 - The home screen includes a compact Learn card with rotating eye-health education and a breaks-taken-today summary. Break screens rotate through practical 20-20-20/blink/posture tips unless an AI quote or custom break message is available. Users can hide break clock/tips/progress on Flutter-rendered break surfaces.
 - Work-hours scheduling can pause outside configured days/hours, and natural break credit can count sufficient idle/screen-off time as a completed rest.
+- An optional auto-start schedule setting automatically begins the work countdown timer on application launch (useful for login/startup automation).
 
 ## Dependencies
 

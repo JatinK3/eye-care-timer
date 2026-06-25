@@ -163,6 +163,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] **Theme expansion** — custom accent-color picker, true-black AMOLED variant, and Material You / system-accent dynamic color.
 - [x] **Break-screen customization** — optional motivational quotes / custom messages, choice of background, and toggles for which info (clock, next phase, tips) is shown during a break.
 - [ ] **Localization (i18n) scaffolding** — app is English-only (no `flutter_localizations`/ARB); extract strings and add localization. Large reach multiplier.
+- [x] **Auto-start schedule on launch** — automatically start the work timer/schedule when the application starts, persisting this setting to simplify user productivity setup (similar to SafeEyes).
 
 ### P2 — Cross-device, ecosystem & context intelligence
 - [ ] **Settings backup/restore, then cloud sync** — start with config export/import (JSON) to complement the existing history export; later add optional account-based sync of settings + history across devices.
@@ -217,6 +218,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Completed
 
+- Implemented auto-start schedule on launch settings preference and logic inside `_restoreInitialSession` callback.
 - Implemented the next P1/P2 product-depth batch:
   - History now shows break compliance, achievements/milestones, milestone count, and richer insights based on existing `TimerEventRecord` and completed session history.
   - Break-screen customization settings now persist show-clock, show-tips, show-progress, and custom break-message preferences. Flutter in-app/desktop break surfaces consume these settings.

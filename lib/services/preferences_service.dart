@@ -69,6 +69,7 @@ class PreferencesService {
   static const String aiApiKeyKey = 'aiApiKey';
   static const String aiModelKey = 'aiModel';
   static const String aiCustomSystemPromptKey = 'aiCustomSystemPrompt';
+  static const String autoStartScheduleKey = 'autoStartSchedule';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -184,6 +185,9 @@ class PreferencesService {
       aiCustomSystemPrompt:
           prefs.getString(aiCustomSystemPromptKey) ??
           TimerSettings.defaultAiCustomSystemPrompt,
+      autoStartSchedule:
+          prefs.getBool(autoStartScheduleKey) ??
+          TimerSettings.defaultAutoStartSchedule,
     );
   }
 
@@ -565,6 +569,11 @@ class PreferencesService {
   Future<void> saveAiCustomSystemPrompt(String prompt) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(aiCustomSystemPromptKey, prompt);
+  }
+
+  Future<void> saveAutoStartSchedule(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(autoStartScheduleKey, enabled);
   }
 
   Future<void> saveStreakCount(int streakCount) async {

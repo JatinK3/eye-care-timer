@@ -76,6 +76,7 @@ class TimerHomePage extends StatefulWidget {
   final bool naturalBreakCreditEnabled;
   final String customAccentColorHex;
   final bool useSystemAccent;
+  final bool autoStartSchedule;
   final bool aiMotivationEnabled;
   final String aiProvider;
   final String aiApiKey;
@@ -121,6 +122,7 @@ class TimerHomePage extends StatefulWidget {
     required this.workHoursEndMinute,
     required this.workDays,
     required this.naturalBreakCreditEnabled,
+    required this.autoStartSchedule,
     required this.aiMotivationEnabled,
     required this.aiProvider,
     required this.aiApiKey,
@@ -638,6 +640,14 @@ class TimerHomePageState extends State<TimerHomePage>
   void _restoreInitialSession() {
     final session = widget.initialSession;
     if (!session.isActive) {
+      if (widget.autoStartSchedule) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_isRunning) {
+            _startTimer(_workDurationSeconds);
+            _checkSchedule();
+          }
+        });
+      }
       return;
     }
 

@@ -531,6 +531,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveNaturalBreakCreditEnabled(enabled));
   }
 
+  void _setAutoStartSchedule(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(autoStartSchedule: enabled);
+    });
+    unawaited(_preferencesService.saveAutoStartSchedule(enabled));
+  }
+
   void _setAiMotivationEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(aiMotivationEnabled: enabled);
@@ -864,6 +871,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           setWorkHoursEndMinute: _setWorkHoursEndMinute,
           setWorkDays: _setWorkDays,
           setNaturalBreakCreditEnabled: _setNaturalBreakCreditEnabled,
+          autoStartSchedule: _settings.autoStartSchedule,
+          setAutoStartSchedule: _setAutoStartSchedule,
           canChangeDurations: canChangeDurations,
           toggleTheme: _toggleTheme,
           setPreset: _setPreset,
@@ -1020,6 +1029,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   workDays: _settings.workDays,
                   naturalBreakCreditEnabled:
                       _settings.naturalBreakCreditEnabled,
+                  autoStartSchedule: _settings.autoStartSchedule,
                   breakMode: _settings.breakMode,
                   allowSkip: _settings.allowSkip,
                   allowPostpone: _settings.allowPostpone,

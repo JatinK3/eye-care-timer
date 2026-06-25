@@ -563,6 +563,44 @@ void main() {
     expect(prefs.getInt(PreferencesService.autoRunCycleLimitKey), 3);
   });
 
+  testWidgets('settings toggles auto-start schedule preference', (
+    WidgetTester tester,
+  ) async {
+    await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    final categoryHeader = find.text('General Schedule');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    final autoStartTile = find.widgetWithText(SwitchListTile, 'Auto-start schedule');
+    await tester.scrollUntilVisible(autoStartTile, 300, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    await tester.tap(autoStartTile);
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool(PreferencesService.autoStartScheduleKey), isTrue);
+  });
+
+  testWidgets('autoStartSchedule starts the timer on launch', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.autoStartScheduleKey: true,
+    });
+    await pumpBlinkKindApp(tester);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Pause'), findsOneWidget);
+    expect(find.text('Start'), findsNothing);
+  });
+
   testWidgets('settings updates break screen mode', (
     WidgetTester tester,
   ) async {

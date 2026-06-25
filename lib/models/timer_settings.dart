@@ -33,6 +33,7 @@ class TimerSettings {
   static const String defaultCustomAccentColorHex = '#009688';
   static const bool defaultUseSystemAccent = false;
   static const bool defaultStartMinimized = false;
+  static const bool defaultAutoStartSchedule = false;
   static const bool defaultAiMotivationEnabled = false;
   static const String defaultAiProvider = 'Gemini';
   static const String defaultAiApiKey = '';
@@ -78,6 +79,7 @@ class TimerSettings {
   final String customAccentColorHex;
   final bool useSystemAccent;
   final bool startMinimized;
+  final bool autoStartSchedule;
   final bool aiMotivationEnabled;
   final String aiProvider;
   final String aiApiKey;
@@ -123,6 +125,7 @@ class TimerSettings {
     required this.customAccentColorHex,
     required this.useSystemAccent,
     required this.startMinimized,
+    required this.autoStartSchedule,
     required this.aiMotivationEnabled,
     required this.aiProvider,
     required this.aiApiKey,
@@ -169,6 +172,7 @@ class TimerSettings {
       customAccentColorHex = defaultCustomAccentColorHex,
       useSystemAccent = defaultUseSystemAccent,
       startMinimized = defaultStartMinimized,
+      autoStartSchedule = defaultAutoStartSchedule,
       aiMotivationEnabled = defaultAiMotivationEnabled,
       aiProvider = defaultAiProvider,
       aiApiKey = defaultAiApiKey,
@@ -214,6 +218,7 @@ class TimerSettings {
     String? customAccentColorHex,
     bool? useSystemAccent,
     bool? startMinimized,
+    bool? autoStartSchedule,
     bool? aiMotivationEnabled,
     String? aiProvider,
     String? aiApiKey,
@@ -264,6 +269,7 @@ class TimerSettings {
       customAccentColorHex: customAccentColorHex ?? this.customAccentColorHex,
       useSystemAccent: useSystemAccent ?? this.useSystemAccent,
       startMinimized: startMinimized ?? this.startMinimized,
+      autoStartSchedule: autoStartSchedule ?? this.autoStartSchedule,
       aiMotivationEnabled: aiMotivationEnabled ?? this.aiMotivationEnabled,
       aiProvider: aiProvider ?? this.aiProvider,
       aiApiKey: aiApiKey ?? this.aiApiKey,
