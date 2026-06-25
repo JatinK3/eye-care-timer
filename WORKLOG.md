@@ -513,5 +513,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Cleaned up break overlay screen layout to hide rotating static tip details subtext when `aiQuote` or `customMessage` is active, keeping a single clean focused quote.
   - Verified compilation, analyzer checks, and unit tests pass successfully.
 
-
-
+- Fixed desktop tray restore and blink reminder notification spam:
+  - Added a dedicated dashboard command for the system tray Show BlinkKind action so restoring from tray always returns to the main dashboard instead of the last visited Settings route.
+  - Kept the Settings tray action separate so it still opens Settings intentionally.
+  - Added blink reminder bucket/time throttling in the timer page so the animation ticker and desktop wall-clock ticker cannot both emit notifications for the same cadence boundary.
+  - Updated Linux blink reminders to reuse/replace the previous notification when notify-send supports notification IDs, with a fallback for older notify-send versions.
+  - Verified with flutter analyze.

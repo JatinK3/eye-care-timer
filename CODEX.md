@@ -252,3 +252,9 @@ Creative follow-ups after the core overlay is stable:
 - Use `rg --files` to confirm structure before assuming paths.
 - When touching timer behavior, run `flutter analyze` and run `flutter test` once after the module is complete and before committing.
 - When touching notifications or platform setup, test Android behavior specifically where possible.
+
+
+## Recent Desktop Reliability Notes
+
+- The system tray `Show BlinkKind` action should always restore the main dashboard. It now emits `DesktopCommand.showDashboard` after showing/focusing the window; the separate tray Settings action remains responsible for opening settings.
+- Blink reminder notifications are cadence-gated at the timer source with a bucket/time guard because both the animation listener and desktop tray ticker can observe the same elapsed boundary. On Linux, blink notifications try to replace the previous `notify-send` notification to avoid filling the notification shade.

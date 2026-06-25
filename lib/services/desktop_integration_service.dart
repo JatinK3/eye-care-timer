@@ -396,6 +396,9 @@ class DesktopIntegrationService extends WindowListener {
     DesktopControlsController.instance.triggerCommand(
       DesktopCommand.windowResumed,
     );
+    DesktopControlsController.instance.triggerCommand(
+      DesktopCommand.showDashboard,
+    );
   }
 
   Future<void> _quitApp() async {

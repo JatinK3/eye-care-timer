@@ -58,6 +58,11 @@ class SettingsPage extends StatefulWidget {
   final int blinkRemindersCadenceSeconds;
   final void Function(bool) setBlinkRemindersEnabled;
   final void Function(int) setBlinkRemindersCadenceSeconds;
+  final bool blinkReminderAiEnabled;
+  final String blinkReminderCustomMessage;
+  final bool cameraMicAutoPostponeEnabled;
+  final bool wellnessRemindersEnabled;
+  final int wellnessReminderCadenceSeconds;
   final bool canChangeDurations;
   final BreakMode breakMode;
   final void Function(BreakMode breakMode) setBreakMode;
@@ -186,6 +191,11 @@ class SettingsPage extends StatefulWidget {
     required this.blinkRemindersCadenceSeconds,
     required this.setBlinkRemindersEnabled,
     required this.setBlinkRemindersCadenceSeconds,
+    required this.blinkReminderAiEnabled,
+    required this.blinkReminderCustomMessage,
+    required this.cameraMicAutoPostponeEnabled,
+    required this.wellnessRemindersEnabled,
+    required this.wellnessReminderCadenceSeconds,
     required this.canChangeDurations,
     required this.toggleTheme,
     required this.setNotificationsEnabled,
@@ -2396,6 +2406,11 @@ class _SettingsPageState extends State<SettingsPage>
       aiModel: widget.aiModel,
       aiCustomSystemPrompt: widget.aiCustomSystemPrompt,
       twoStageWarningEnabled: widget.twoStageWarningEnabled,
+      blinkReminderAiEnabled: widget.blinkReminderAiEnabled,
+      blinkReminderCustomMessage: widget.blinkReminderCustomMessage,
+      cameraMicAutoPostponeEnabled: widget.cameraMicAutoPostponeEnabled,
+      wellnessRemindersEnabled: widget.wellnessRemindersEnabled,
+      wellnessReminderCadenceSeconds: widget.wellnessReminderCadenceSeconds,
     );
   }
 

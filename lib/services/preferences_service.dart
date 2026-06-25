@@ -72,6 +72,11 @@ class PreferencesService {
   static const String autoStartScheduleKey = 'autoStartSchedule';
   static const String osFocusDndEnabledKey = 'osFocusDndEnabled';
   static const String twoStageWarningEnabledKey = 'twoStageWarningEnabled';
+  static const String blinkReminderAiEnabledKey = 'blinkReminderAiEnabled';
+  static const String blinkReminderCustomMessageKey = 'blinkReminderCustomMessage';
+  static const String cameraMicAutoPostponeEnabledKey = 'cameraMicAutoPostponeEnabled';
+  static const String wellnessRemindersEnabledKey = 'wellnessRemindersEnabled';
+  static const String wellnessReminderCadenceSecondsKey = 'wellnessReminderCadenceSeconds';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -203,6 +208,11 @@ class PreferencesService {
       twoStageWarningEnabled:
           prefs.getBool(twoStageWarningEnabledKey) ??
           TimerSettings.defaultTwoStageWarningEnabled,
+      blinkReminderAiEnabled: prefs.getBool(blinkReminderAiEnabledKey) ?? TimerSettings.defaultBlinkReminderAiEnabled,
+      blinkReminderCustomMessage: prefs.getString(blinkReminderCustomMessageKey) ?? TimerSettings.defaultBlinkReminderCustomMessage,
+      cameraMicAutoPostponeEnabled: prefs.getBool(cameraMicAutoPostponeEnabledKey) ?? TimerSettings.defaultCameraMicAutoPostponeEnabled,
+      wellnessRemindersEnabled: prefs.getBool(wellnessRemindersEnabledKey) ?? TimerSettings.defaultWellnessRemindersEnabled,
+      wellnessReminderCadenceSeconds: prefs.getInt(wellnessReminderCadenceSecondsKey) ?? TimerSettings.defaultWellnessReminderCadenceSeconds,
     );
   }
 
@@ -359,6 +369,11 @@ class PreferencesService {
     await prefs.setBool(autoStartScheduleKey, TimerSettings.defaultAutoStartSchedule);
     await prefs.setBool(osFocusDndEnabledKey, TimerSettings.defaultOsFocusDndEnabled);
     await prefs.setBool(twoStageWarningEnabledKey, TimerSettings.defaultTwoStageWarningEnabled);
+    await prefs.setBool(blinkReminderAiEnabledKey, TimerSettings.defaultBlinkReminderAiEnabled);
+    await prefs.setString(blinkReminderCustomMessageKey, TimerSettings.defaultBlinkReminderCustomMessage);
+    await prefs.setBool(cameraMicAutoPostponeEnabledKey, TimerSettings.defaultCameraMicAutoPostponeEnabled);
+    await prefs.setBool(wellnessRemindersEnabledKey, TimerSettings.defaultWellnessRemindersEnabled);
+    await prefs.setInt(wellnessReminderCadenceSecondsKey, TimerSettings.defaultWellnessReminderCadenceSeconds);
 
     return const TimerSettings.defaults().copyWith(streakCount: currentStreak);
   }
@@ -410,6 +425,11 @@ class PreferencesService {
     await prefs.setBool(autoStartScheduleKey, settings.autoStartSchedule);
     await prefs.setBool(osFocusDndEnabledKey, settings.osFocusDndEnabled);
     await prefs.setBool(twoStageWarningEnabledKey, settings.twoStageWarningEnabled);
+    await prefs.setBool(blinkReminderAiEnabledKey, settings.blinkReminderAiEnabled);
+    await prefs.setString(blinkReminderCustomMessageKey, settings.blinkReminderCustomMessage);
+    await prefs.setBool(cameraMicAutoPostponeEnabledKey, settings.cameraMicAutoPostponeEnabled);
+    await prefs.setBool(wellnessRemindersEnabledKey, settings.wellnessRemindersEnabled);
+    await prefs.setInt(wellnessReminderCadenceSecondsKey, settings.wellnessReminderCadenceSeconds);
   }
 
   Future<bool> loadOnboardingCompleted() async {
@@ -535,6 +555,31 @@ class PreferencesService {
   Future<void> saveTwoStageWarningEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(twoStageWarningEnabledKey, enabled);
+  }
+
+  Future<void> saveBlinkReminderAiEnabled(bool v) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(blinkReminderAiEnabledKey, v);
+  }
+
+  Future<void> saveBlinkReminderCustomMessage(String v) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(blinkReminderCustomMessageKey, v);
+  }
+
+  Future<void> saveCameraMicAutoPostponeEnabled(bool v) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(cameraMicAutoPostponeEnabledKey, v);
+  }
+
+  Future<void> saveWellnessRemindersEnabled(bool v) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(wellnessRemindersEnabledKey, v);
+  }
+
+  Future<void> saveWellnessReminderCadenceSeconds(int v) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(wellnessReminderCadenceSecondsKey, v);
   }
 
   Future<void> saveHapticsEnabled(bool enabled) async {

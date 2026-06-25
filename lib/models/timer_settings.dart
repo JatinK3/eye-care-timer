@@ -37,6 +37,11 @@ class TimerSettings {
   static const bool defaultAiMotivationEnabled = false;
   static const bool defaultOsFocusDndEnabled = false;
   static const bool defaultTwoStageWarningEnabled = true;
+  static const bool defaultBlinkReminderAiEnabled = true;
+  static const String defaultBlinkReminderCustomMessage = '';
+  static const bool defaultCameraMicAutoPostponeEnabled = false;
+  static const bool defaultWellnessRemindersEnabled = false;
+  static const int defaultWellnessReminderCadenceSeconds = 3600;
   static const String defaultAiProvider = 'Gemini';
   static const String defaultAiApiKey = '';
   static const String defaultAiModel = 'gemini-1.5-flash';
@@ -89,6 +94,11 @@ class TimerSettings {
   final String aiModel;
   final String aiCustomSystemPrompt;
   final bool twoStageWarningEnabled;
+  final bool blinkReminderAiEnabled;
+  final String blinkReminderCustomMessage;
+  final bool cameraMicAutoPostponeEnabled;
+  final bool wellnessRemindersEnabled;
+  final int wellnessReminderCadenceSeconds;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -137,6 +147,11 @@ class TimerSettings {
     required this.aiModel,
     required this.aiCustomSystemPrompt,
     required this.twoStageWarningEnabled,
+    required this.blinkReminderAiEnabled,
+    required this.blinkReminderCustomMessage,
+    required this.cameraMicAutoPostponeEnabled,
+    required this.wellnessRemindersEnabled,
+    required this.wellnessReminderCadenceSeconds,
   });
 
   const TimerSettings.defaults()
@@ -185,7 +200,12 @@ class TimerSettings {
       aiApiKey = defaultAiApiKey,
       aiModel = defaultAiModel,
       aiCustomSystemPrompt = defaultAiCustomSystemPrompt,
-      twoStageWarningEnabled = defaultTwoStageWarningEnabled;
+      twoStageWarningEnabled = defaultTwoStageWarningEnabled,
+      blinkReminderAiEnabled = defaultBlinkReminderAiEnabled,
+      blinkReminderCustomMessage = defaultBlinkReminderCustomMessage,
+      cameraMicAutoPostponeEnabled = defaultCameraMicAutoPostponeEnabled,
+      wellnessRemindersEnabled = defaultWellnessRemindersEnabled,
+      wellnessReminderCadenceSeconds = defaultWellnessReminderCadenceSeconds;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -234,6 +254,11 @@ class TimerSettings {
     String? aiModel,
     String? aiCustomSystemPrompt,
     bool? twoStageWarningEnabled,
+    bool? blinkReminderAiEnabled,
+    String? blinkReminderCustomMessage,
+    bool? cameraMicAutoPostponeEnabled,
+    bool? wellnessRemindersEnabled,
+    int? wellnessReminderCadenceSeconds,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -287,6 +312,11 @@ class TimerSettings {
       aiModel: aiModel ?? this.aiModel,
       aiCustomSystemPrompt: aiCustomSystemPrompt ?? this.aiCustomSystemPrompt,
       twoStageWarningEnabled: twoStageWarningEnabled ?? this.twoStageWarningEnabled,
+      blinkReminderAiEnabled: blinkReminderAiEnabled ?? this.blinkReminderAiEnabled,
+      blinkReminderCustomMessage: blinkReminderCustomMessage ?? this.blinkReminderCustomMessage,
+      cameraMicAutoPostponeEnabled: cameraMicAutoPostponeEnabled ?? this.cameraMicAutoPostponeEnabled,
+      wellnessRemindersEnabled: wellnessRemindersEnabled ?? this.wellnessRemindersEnabled,
+      wellnessReminderCadenceSeconds: wellnessReminderCadenceSeconds ?? this.wellnessReminderCadenceSeconds,
     );
   }
 
@@ -337,6 +367,11 @@ class TimerSettings {
       'aiModel': aiModel,
       'aiCustomSystemPrompt': aiCustomSystemPrompt,
       'twoStageWarningEnabled': twoStageWarningEnabled,
+      'blinkReminderAiEnabled': blinkReminderAiEnabled,
+      'blinkReminderCustomMessage': blinkReminderCustomMessage,
+      'cameraMicAutoPostponeEnabled': cameraMicAutoPostponeEnabled,
+      'wellnessRemindersEnabled': wellnessRemindersEnabled,
+      'wellnessReminderCadenceSeconds': wellnessReminderCadenceSeconds,
     };
   }
 
@@ -388,6 +423,11 @@ class TimerSettings {
       aiModel: json['aiModel'] as String? ?? defaultAiModel,
       aiCustomSystemPrompt: json['aiCustomSystemPrompt'] as String? ?? defaultAiCustomSystemPrompt,
       twoStageWarningEnabled: json['twoStageWarningEnabled'] as bool? ?? defaultTwoStageWarningEnabled,
+      blinkReminderAiEnabled: json['blinkReminderAiEnabled'] as bool? ?? defaultBlinkReminderAiEnabled,
+      blinkReminderCustomMessage: json['blinkReminderCustomMessage'] as String? ?? defaultBlinkReminderCustomMessage,
+      cameraMicAutoPostponeEnabled: json['cameraMicAutoPostponeEnabled'] as bool? ?? defaultCameraMicAutoPostponeEnabled,
+      wellnessRemindersEnabled: json['wellnessRemindersEnabled'] as bool? ?? defaultWellnessRemindersEnabled,
+      wellnessReminderCadenceSeconds: json['wellnessReminderCadenceSeconds'] as int? ?? defaultWellnessReminderCadenceSeconds,
     );
   }
 

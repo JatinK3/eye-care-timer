@@ -14,6 +14,7 @@ enum DesktopCommand {
   snoozeUntilTomorrow,
   cancelSnooze,
   openSettings,
+  showDashboard,
 }
 
 class DesktopTimerState {

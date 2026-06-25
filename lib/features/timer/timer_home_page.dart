@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -87,6 +88,11 @@ class TimerHomePage extends StatefulWidget {
   final String aiModel;
   final String aiCustomSystemPrompt;
   final bool twoStageWarningEnabled;
+  final bool blinkReminderAiEnabled;
+  final String blinkReminderCustomMessage;
+  final bool cameraMicAutoPostponeEnabled;
+  final bool wellnessRemindersEnabled;
+  final int wellnessReminderCadenceSeconds;
 
   const TimerHomePage({
     super.key,
@@ -135,6 +141,11 @@ class TimerHomePage extends StatefulWidget {
     required this.aiModel,
     required this.aiCustomSystemPrompt,
     required this.twoStageWarningEnabled,
+    required this.blinkReminderAiEnabled,
+    required this.blinkReminderCustomMessage,
+    required this.cameraMicAutoPostponeEnabled,
+    required this.wellnessRemindersEnabled,
+    required this.wellnessReminderCadenceSeconds,
     this.breakOverlayService,
     required this.openSettings,
     required this.setPreset,
@@ -292,6 +303,10 @@ class TimerHomePageState extends State<TimerHomePage>
   // Phase text fade.
   double _phaseOpacity = 1.0;
   bool _isBlinkNudging = false;
+  Future<String?>? _blinkMessageFuture;
+  int? _lastBlinkReminderBucket;
+  DateTime? _lastBlinkReminderAt;
+  int _wellnessTypeIndex = 0;
   Timer? _phaseTransitionTimer;
   Timer? _phaseDeadlineTimer;
   // Wall-clock 1Hz ticker (desktop only) that keeps the tray/app-indicator
@@ -357,10 +372,30 @@ class TimerHomePageState extends State<TimerHomePage>
                   _isRunning) {
                 _pulseController.forward();
               }
-              if (widget.blinkRemindersEnabled && !_isBreak && _isRunning && !_isPaused && !_isSchedulePaused && !_isSystemIdlePaused) {
+              if (widget.blinkRemindersEnabled && !_isBreak && _isRunning && !_isPaused && !_isSchedulePaused && !_isSystemIdlePaused && !_isSnoozed) {
                 final elapsed = _initialDuration - _remainingSeconds;
+                // Pre-fetch AI blink message 2 seconds before cadence fires
+                if (widget.blinkReminderAiEnabled && widget.aiMotivationEnabled && widget.aiApiKey.isNotEmpty) {
+                  final preWarm = widget.blinkRemindersCadenceSeconds - 2;
+                  if (preWarm > 0 && elapsed > 0 && elapsed % widget.blinkRemindersCadenceSeconds == preWarm) {
+                    _blinkMessageFuture = AiService.instance.generateBlinkReminder(
+                      provider: widget.aiProvider,
+                      apiKey: widget.aiApiKey,
+                      model: widget.aiModel,
+                    ).timeout(const Duration(seconds: 3), onTimeout: () => '').catchError((_) => '');
+                  }
+                }
                 if (elapsed > 0 && elapsed % widget.blinkRemindersCadenceSeconds == 0) {
                   _triggerBlinkNudge();
+                }
+              }
+              // Wellness reminders (fires independently, including during breaks)
+              if (widget.wellnessRemindersEnabled && _isRunning && !_isPaused && !_isSchedulePaused && !_isSystemIdlePaused && !_isSnoozed) {
+                final elapsed = _initialDuration - _remainingSeconds;
+                if (elapsed > 0 && elapsed % widget.wellnessReminderCadenceSeconds == 0) {
+                  final type = WellnessType.values[_wellnessTypeIndex % WellnessType.values.length];
+                  _wellnessTypeIndex++;
+                  unawaited(widget.notificationService.showWellnessReminder(type));
                 }
               }
               _updateDesktopState();
@@ -453,6 +488,9 @@ class TimerHomePageState extends State<TimerHomePage>
                 unawaited(windowManager.focus());
                 widget.openSettings(context, _canChangeSettings);
                 break;
+              case DesktopCommand.showDashboard:
+                Navigator.of(context).popUntil((route) => route.isFirst);
+                break;
             }
           });
       _desktopTrayTicker = Timer.periodic(
@@ -508,10 +546,30 @@ class TimerHomePageState extends State<TimerHomePage>
     final clamped = (remainingMs / 1000).ceil().clamp(0, _initialDuration);
     if (clamped != _remainingSeconds) {
       _remainingSeconds = clamped;
-      if (widget.blinkRemindersEnabled && !_isBreak && _isRunning && !_isPaused && !_isSchedulePaused && !_isSystemIdlePaused) {
+      if (widget.blinkRemindersEnabled && !_isBreak && _isRunning && !_isPaused && !_isSchedulePaused && !_isSystemIdlePaused && !_isSnoozed) {
         final elapsed = _initialDuration - _remainingSeconds;
+        // Pre-fetch AI blink message 2 seconds before cadence fires
+        if (widget.blinkReminderAiEnabled && widget.aiMotivationEnabled && widget.aiApiKey.isNotEmpty) {
+          final preWarm = widget.blinkRemindersCadenceSeconds - 2;
+          if (preWarm > 0 && elapsed > 0 && elapsed % widget.blinkRemindersCadenceSeconds == preWarm) {
+            _blinkMessageFuture = AiService.instance.generateBlinkReminder(
+              provider: widget.aiProvider,
+              apiKey: widget.aiApiKey,
+              model: widget.aiModel,
+            ).timeout(const Duration(seconds: 3), onTimeout: () => '').catchError((_) => '');
+          }
+        }
         if (elapsed > 0 && elapsed % widget.blinkRemindersCadenceSeconds == 0) {
           _triggerBlinkNudge();
+        }
+      }
+      // Wellness reminders (fires independently, including during breaks)
+      if (widget.wellnessRemindersEnabled && _isRunning && !_isPaused && !_isSchedulePaused && !_isSystemIdlePaused && !_isSnoozed) {
+        final elapsed = _initialDuration - _remainingSeconds;
+        if (elapsed > 0 && elapsed % widget.wellnessReminderCadenceSeconds == 0) {
+          final type = WellnessType.values[_wellnessTypeIndex % WellnessType.values.length];
+          _wellnessTypeIndex++;
+          unawaited(widget.notificationService.showWellnessReminder(type));
         }
       }
       _updateDesktopState();
@@ -1180,6 +1238,8 @@ class TimerHomePageState extends State<TimerHomePage>
   void _startTimer(int duration, {bool isBreak = false}) {
     _phaseTransitionTimer?.cancel();
     _phaseTransitionTimer = null;
+    _lastBlinkReminderBucket = null;
+    _lastBlinkReminderAt = null;
     _cancelPhaseDeadlineTimer();
     _stopTimerCleanup(resetPulse: true);
     _cancelReminders();
@@ -1679,11 +1739,65 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   void _triggerBlinkNudge() {
+    // Guard: never nudge during breaks, snoozed state, or when not running.
+    if (!_isRunning ||
+        _isBreak ||
+        _isPaused ||
+        _isSnoozed ||
+        _isSchedulePaused ||
+        _isSystemIdlePaused) {
+      return;
+    }
+
+    final cadence = widget.blinkRemindersCadenceSeconds;
+    if (cadence <= 0) return;
+
+    final elapsed = _initialDuration - _remainingSeconds;
+    if (elapsed <= 0) return;
+
+    final bucket = elapsed ~/ cadence;
+    final now = DateTime.now();
+    final lastAt = _lastBlinkReminderAt;
+    if (_lastBlinkReminderBucket == bucket ||
+        (lastAt != null && now.difference(lastAt).inSeconds < cadence - 1)) {
+      return;
+    }
+    _lastBlinkReminderBucket = bucket;
+    _lastBlinkReminderAt = now;
+
     if (widget.hapticsEnabled) {
       unawaited(HapticFeedback.selectionClick());
     }
-    // Fire an OS-level notification so users see it even when the app is in the background.
-    unawaited(widget.notificationService.showBlinkReminder());
+
+    // Determine the notification message:
+    // 1. Custom message (user-typed) takes highest priority
+    // 2. AI pre-fetched message (if AI enabled and configured)
+    // 3. Built-in rotating fallback
+    final String? customMsg = widget.blinkReminderCustomMessage.isNotEmpty
+        ? widget.blinkReminderCustomMessage
+        : null;
+
+    if (customMsg != null) {
+      unawaited(widget.notificationService.showBlinkReminder(customMessage: customMsg));
+    } else if (_blinkMessageFuture != null) {
+      final future = _blinkMessageFuture!;
+      _blinkMessageFuture = null;
+      future.then((msg) {
+        if (mounted) {
+          unawaited(
+            widget.notificationService.showBlinkReminder(
+              customMessage: (msg != null && msg.isNotEmpty) ? msg : null,
+            ),
+          );
+        }
+      }).catchError((_) {
+        if (mounted) unawaited(widget.notificationService.showBlinkReminder());
+      });
+    } else {
+      // No AI message ready, send with built-in rotating message
+      unawaited(widget.notificationService.showBlinkReminder());
+    }
+
     setState(() {
       _isBlinkNudging = true;
     });
@@ -1706,6 +1820,21 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   bool get _isSnoozed => _snoozeEndsAt != null && DateTime.now().isBefore(_snoozeEndsAt!);
+
+  /// Returns true if a camera device is currently in active use (Linux only).
+  // ignore: unused_element
+  Future<bool> _isCameraOrMicInUse() async {
+    if (kIsWeb || !Platform.isLinux) return false;
+    try {
+      final result = await Process.run(
+        'bash',
+        ['-c', 'fuser /dev/video* 2>/dev/null | grep -q . && echo yes || echo no'],
+      ).timeout(const Duration(seconds: 2));
+      return (result.stdout as String).trim() == 'yes';
+    } catch (_) {
+      return false;
+    }
+  }
 
   String get _statusLabel {
     if (_isSnoozed) {

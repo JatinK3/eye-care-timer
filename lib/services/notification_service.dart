@@ -32,11 +32,43 @@ class NotificationReliabilityStatus {
   });
 }
 
+enum WellnessType { hydration, posture, stretch }
+
 class NotificationService {
   static const int _phaseReminderId = 1001;
   static const int _testReminderId = 1002;
   static const int _preBreakWarningReminderId = 1003;
   static const int _blinkReminderId = 1004;
+  static const int _wellnessReminderId = 1005;
+  static int? _linuxBlinkNotificationReplaceId;
+  static const String _wellnessChannelId = 'blinkkind_wellness_v1';
+  static const String _wellnessChannelName = 'Wellness reminders';
+  static const String _wellnessChannelDescription =
+      'Periodic hydration, posture, and stretch reminders.';
+  static const AndroidNotificationChannel _wellnessChannel =
+      AndroidNotificationChannel(
+        _wellnessChannelId,
+        _wellnessChannelName,
+        description: _wellnessChannelDescription,
+        importance: Importance.low,
+        playSound: false,
+        enableVibration: false,
+      );
+  static const NotificationDetails _wellnessNotificationDetails =
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _wellnessChannelId,
+          _wellnessChannelName,
+          channelDescription: _wellnessChannelDescription,
+          importance: Importance.low,
+          priority: Priority.low,
+          playSound: false,
+          enableVibration: false,
+          silent: true,
+        ),
+        iOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
+        macOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
+      );
 
   static const String _blinkChannelId = 'blinkkind_blink_reminders_v1';
   static const String _blinkChannelName = 'Blink reminders';
@@ -179,6 +211,7 @@ class NotificationService {
         >();
     await android?.createNotificationChannel(_phaseChannel);
     await android?.createNotificationChannel(_blinkChannel);
+    await android?.createNotificationChannel(_wellnessChannel);
     _isInitialized = true;
   }
 
@@ -393,7 +426,7 @@ class NotificationService {
   }
 
   /// Shows an immediate silent blink-conscious reminder notification.
-  Future<void> showBlinkReminder() async {
+  Future<void> showBlinkReminder({String? customMessage}) async {
     if (kIsWeb) return;
 
     const messages = [
@@ -405,11 +438,33 @@ class NotificationService {
       '👁️ Soft blink — close your eyes slowly, then open. Repeat 3×.',
     ];
     final idx = DateTime.now().second % messages.length;
-    final body = messages[idx];
+    final body = (customMessage != null && customMessage.isNotEmpty)
+        ? customMessage
+        : messages[idx];
 
     if (Platform.isLinux) {
       try {
-        await Process.run('notify-send', [
+        final replaceId = _linuxBlinkNotificationReplaceId;
+        final replaceArgs = [
+          '-a', 'BlinkKind',
+          '-i', 'blinkkind',
+          '-u', 'low',
+          '-t', '4000',
+          '-p',
+          if (replaceId != null) ...['-r', replaceId.toString()],
+          'Blink reminder',
+          body,
+        ];
+        final result = await Process.run('notify-send', replaceArgs);
+        if (result.exitCode == 0) {
+          final notificationId = int.tryParse((result.stdout as String).trim());
+          if (notificationId != null) {
+            _linuxBlinkNotificationReplaceId = notificationId;
+          }
+          return;
+        }
+
+        final fallback = await Process.run('notify-send', [
           '-a', 'BlinkKind',
           '-i', 'blinkkind',
           '-u', 'low',
@@ -417,8 +472,11 @@ class NotificationService {
           'Blink reminder',
           body,
         ]);
+        if (fallback.exitCode != 0) {
+          debugPrint('Failed to send Linux blink notification: ${fallback.stderr}');
+        }
       } catch (e) {
-        debugPrint('Failed to send Linux blink notification: \$e');
+        debugPrint('Failed to send Linux blink notification: $e');
       }
       return;
     }
@@ -434,6 +492,56 @@ class NotificationService {
       );
     } on PlatformException catch (e) {
       debugPrint('Unable to show blink reminder: $e');
+    }
+  }
+
+  Future<void> showWellnessReminder(WellnessType type, {String? aiMessage}) async {
+    if (kIsWeb) return;
+
+    String title;
+    String body;
+    switch (type) {
+      case WellnessType.hydration:
+        title = 'Hydration check';
+        body = aiMessage ?? 'Take a sip of water and stay hydrated!';
+        break;
+      case WellnessType.posture:
+        title = 'Posture check';
+        body = aiMessage ?? 'Sit up straight, shoulders relaxed, screen at eye level.';
+        break;
+      case WellnessType.stretch:
+        title = 'Stretch reminder';
+        body = aiMessage ?? 'Stand up and stretch for 30 seconds. Your body will thank you!';
+        break;
+    }
+
+    if (Platform.isLinux) {
+      try {
+        await Process.run('notify-send', [
+          '-a', 'BlinkKind',
+          '-i', 'blinkkind',
+          '-u', 'low',
+          '-t', '5000',
+          title,
+          body,
+        ]);
+      } catch (e) {
+        debugPrint('Failed to send Linux wellness notification: $e');
+      }
+      return;
+    }
+
+    await initialize();
+    try {
+      await _notificationsPlugin.show(
+        id: _wellnessReminderId,
+        title: title,
+        body: body,
+        notificationDetails: _wellnessNotificationDetails,
+        payload: 'wellness_reminder',
+      );
+    } on PlatformException catch (e) {
+      debugPrint('Unable to show wellness reminder: $e');
     }
   }
 

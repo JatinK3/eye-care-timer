@@ -886,6 +886,12 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           blinkRemindersCadenceSeconds: _settings.blinkRemindersCadenceSeconds,
           setBlinkRemindersEnabled: _setBlinkRemindersEnabled,
           setBlinkRemindersCadenceSeconds: _setBlinkRemindersCadenceSeconds,
+          blinkReminderAiEnabled: _settings.blinkReminderAiEnabled,
+          blinkReminderCustomMessage: _settings.blinkReminderCustomMessage,
+          cameraMicAutoPostponeEnabled: _settings.cameraMicAutoPostponeEnabled,
+          wellnessRemindersEnabled: _settings.wellnessRemindersEnabled,
+          wellnessReminderCadenceSeconds:
+              _settings.wellnessReminderCadenceSeconds,
           workHoursEnabled: _settings.workHoursEnabled,
           workHoursStartHour: _settings.workHoursStartHour,
           workHoursStartMinute: _settings.workHoursStartMinute,
@@ -1095,6 +1101,15 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   aiApiKey: _settings.aiApiKey,
                   aiModel: _settings.aiModel,
                   aiCustomSystemPrompt: _settings.aiCustomSystemPrompt,
+                  blinkReminderAiEnabled: _settings.blinkReminderAiEnabled,
+                  blinkReminderCustomMessage:
+                      _settings.blinkReminderCustomMessage,
+                  cameraMicAutoPostponeEnabled:
+                      _settings.cameraMicAutoPostponeEnabled,
+                  wellnessRemindersEnabled:
+                      _settings.wellnessRemindersEnabled,
+                  wellnessReminderCadenceSeconds:
+                      _settings.wellnessReminderCadenceSeconds,
                 ),
         );
       },

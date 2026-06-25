@@ -192,4 +192,25 @@ class AiService {
 
     throw UnsupportedError('Unsupported AI Provider: $provider');
   }
+
+  /// Generates a single blink-conscious reminder using low temperature.
+  Future<String> generateBlinkReminder({
+    required String provider,
+    required String apiKey,
+    required String model,
+  }) async {
+    const prompt =
+        'You are a wellness assistant for developers. Generate exactly ONE short, '
+        'warm, direct reminder for a developer to blink consciously right now. '
+        'Max 12 words. Vary between: eye moisture, dry eye prevention, conscious '
+        'blinking, or relaxing eye muscles. No emojis. No markdown. '
+        'Output only the reminder sentence.';
+    return generateMotivation(
+      provider: provider,
+      apiKey: apiKey,
+      model: model,
+      prompt: prompt,
+      temperature: 0.15,
+    );
+  }
 }
