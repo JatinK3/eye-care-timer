@@ -609,8 +609,10 @@ class TimerHomePageState extends State<TimerHomePage>
         unawaited(_systemUiService.setFocusModeEnabled(false));
       }
 
-      // If we are backgrounding the app during an active running break, trigger the native overlay
-      if (_isRunning &&
+      // If we are backgrounding the app during an active running break, trigger the native overlay (Android only)
+      if (!kIsWeb &&
+          defaultTargetPlatform == TargetPlatform.android &&
+          _isRunning &&
           _isBreak &&
           !_isPaused &&
           (state == AppLifecycleState.paused ||
