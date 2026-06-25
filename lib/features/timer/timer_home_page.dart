@@ -249,13 +249,24 @@ class TimerHomePageState extends State<TimerHomePage>
     });
 
     try {
-      const prompt = 'Generate a single, unique, practical, and highly engaging desk wellness tip (strict limit of 30 words) for a developer working at a computer. Focus on overall well-being, such as posture, stretching, hydration, eye rest, deep breathing, or quick physical movement. Make it highly specific, actionable, and encouraging.';
+      final focusAreas = [
+        'posture and ergonomics',
+        'stretching and flexibility',
+        'hydration and water intake',
+        'eye relaxation and vision rest',
+        'deep breathing and stress relief',
+        'quick physical movement and circulation',
+      ];
+      final randomFocus = focusAreas[math.Random().nextInt(focusAreas.length)];
+      final seed = math.Random().nextInt(1000000);
+      final prompt = 'Generate a single, unique, practical, and highly engaging desk wellness tip (strict limit of 30 words) for a developer working at a computer. Focus specifically on $randomFocus. Make it highly specific, actionable, and encouraging. [Seed: $seed]';
+
       final insight = await AiService.instance.generateMotivation(
         provider: widget.aiProvider,
         apiKey: widget.aiApiKey,
         model: widget.aiModel,
         prompt: prompt,
-        temperature: 0.3,
+        temperature: 0.7,
       );
       setState(() {
         _aiHealthInsight = insight;
