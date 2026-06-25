@@ -483,3 +483,11 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - Implemented Screen Lock and User Presence Inactivity Detection:
   - **Android**: Updated `TimerForegroundService.kt` to subscribe to `Intent.ACTION_USER_PRESENT` and integrated `KeyguardManager`. The app now waits to resume the timer until the user actually unlocks their device rather than immediately when the screen lights up for a notification.
   - **Linux Desktop**: Subscribed to system DBus session signals (`org.gnome.ScreenSaver`, `org.freedesktop.ScreenSaver`, `org.cinnamon.ScreenSaver`, and systemd `org.freedesktop.login1.Session` Lock/Unlock signals) inside `linux/runner/my_application.cc`. Relayed lock/unlock events through method channel `blinkkind/system_lock` directly to Dart, instantly pausing the active countdown when locked, and resuming it when unlocked.
+
+- Fixed desktop break overlay exit screen flicker:
+  - Guarded the background break overlay trigger in `didChangeAppLifecycleState` to execute on Android only. This prevents desktop window focus/state transitions during unfullscreening/hiding from re-triggering a secondary break overlay while the Dart-side timer completes its 300ms fade transition.
+
+- Further enlarged system tray indicator icon and progress ring thickness:
+  - Increased background circle radius to fill the 32x32 canvas completely to the edges.
+  - Increased progress ring stroke thickness from 2.5 to 3.5 for enhanced visual presence.
+  - Scaled the central remaining text font size from 12.5 to 14.5 to match the taskbar font height.
