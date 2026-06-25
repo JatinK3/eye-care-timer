@@ -283,4 +283,121 @@ class TimerSettings {
       aiCustomSystemPrompt: aiCustomSystemPrompt ?? this.aiCustomSystemPrompt,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'workDurationSeconds': workDurationSeconds,
+      'breakDurationSeconds': breakDurationSeconds,
+      'themeMode': themeMode.name,
+      'colorPreset': colorPreset,
+      'dailyGoal': dailyGoal,
+      'notificationsEnabled': notificationsEnabled,
+      'hapticsEnabled': hapticsEnabled,
+      'soundEnabled': soundEnabled,
+      'longBreakEnabled': longBreakEnabled,
+      'longBreakDurationSeconds': longBreakDurationSeconds,
+      'longBreakEveryCycles': longBreakEveryCycles,
+      'autoRunEnabled': autoRunEnabled,
+      'autoRunCycleLimit': autoRunCycleLimit,
+      'breakMode': breakMode.name,
+      'allowSkip': allowSkip,
+      'allowPostpone': allowPostpone,
+      'postponeDurationSeconds': postponeDurationSeconds,
+      'smartIdleEnabled': smartIdleEnabled,
+      'breakVisualizerStyle': breakVisualizerStyle,
+      'breakShowClock': breakShowClock,
+      'breakShowTips': breakShowTips,
+      'breakShowProgress': breakShowProgress,
+      'breakCustomMessage': breakCustomMessage,
+      'chimeStyle': chimeStyle,
+      'blinkRemindersEnabled': blinkRemindersEnabled,
+      'blinkRemindersCadenceSeconds': blinkRemindersCadenceSeconds,
+      'workHoursEnabled': workHoursEnabled,
+      'workHoursStartHour': workHoursStartHour,
+      'workHoursStartMinute': workHoursStartMinute,
+      'workHoursEndHour': workHoursEndHour,
+      'workHoursEndMinute': workHoursEndMinute,
+      'workDays': workDays,
+      'naturalBreakCreditEnabled': naturalBreakCreditEnabled,
+      'amoledDarkEnabled': amoledDarkEnabled,
+      'customAccentColorHex': customAccentColorHex,
+      'useSystemAccent': useSystemAccent,
+      'startMinimized': startMinimized,
+      'autoStartSchedule': autoStartSchedule,
+      'aiMotivationEnabled': aiMotivationEnabled,
+      'osFocusDndEnabled': osFocusDndEnabled,
+      'aiProvider': aiProvider,
+      'aiApiKey': aiApiKey,
+      'aiModel': aiModel,
+      'aiCustomSystemPrompt': aiCustomSystemPrompt,
+    };
+  }
+
+  static TimerSettings fromJson(Map<String, dynamic> json, {int currentStreak = 0}) {
+    return TimerSettings(
+      workDurationSeconds: json['workDurationSeconds'] as int? ?? defaultWorkDurationSeconds,
+      breakDurationSeconds: json['breakDurationSeconds'] as int? ?? defaultBreakDurationSeconds,
+      themeMode: _parseThemeMode(json['themeMode']),
+      colorPreset: json['colorPreset'] as String? ?? defaultColorPreset,
+      streakCount: currentStreak,
+      dailyGoal: json['dailyGoal'] as int? ?? 6,
+      notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
+      hapticsEnabled: json['hapticsEnabled'] as bool? ?? true,
+      soundEnabled: json['soundEnabled'] as bool? ?? false,
+      longBreakEnabled: json['longBreakEnabled'] as bool? ?? false,
+      longBreakDurationSeconds: json['longBreakDurationSeconds'] as int? ?? defaultLongBreakDurationSeconds,
+      longBreakEveryCycles: json['longBreakEveryCycles'] as int? ?? defaultLongBreakEveryCycles,
+      autoRunEnabled: json['autoRunEnabled'] as bool? ?? false,
+      autoRunCycleLimit: json['autoRunCycleLimit'] as int? ?? 0,
+      breakMode: _parseBreakMode(json['breakMode']),
+      allowSkip: json['allowSkip'] as bool? ?? defaultAllowSkip,
+      allowPostpone: json['allowPostpone'] as bool? ?? defaultAllowPostpone,
+      postponeDurationSeconds: json['postponeDurationSeconds'] as int? ?? defaultPostponeDurationSeconds,
+      smartIdleEnabled: json['smartIdleEnabled'] as bool? ?? defaultSmartIdleEnabled,
+      breakVisualizerStyle: json['breakVisualizerStyle'] as String? ?? defaultBreakVisualizerStyle,
+      breakShowClock: json['breakShowClock'] as bool? ?? defaultBreakShowClock,
+      breakShowTips: json['breakShowTips'] as bool? ?? defaultBreakShowTips,
+      breakShowProgress: json['breakShowProgress'] as bool? ?? defaultBreakShowProgress,
+      breakCustomMessage: json['breakCustomMessage'] as String? ?? defaultBreakCustomMessage,
+      chimeStyle: json['chimeStyle'] as String? ?? defaultChimeStyle,
+      blinkRemindersEnabled: json['blinkRemindersEnabled'] as bool? ?? defaultBlinkRemindersEnabled,
+      blinkRemindersCadenceSeconds: json['blinkRemindersCadenceSeconds'] as int? ?? defaultBlinkRemindersCadenceSeconds,
+      workHoursEnabled: json['workHoursEnabled'] as bool? ?? defaultWorkHoursEnabled,
+      workHoursStartHour: json['workHoursStartHour'] as int? ?? defaultWorkHoursStartHour,
+      workHoursStartMinute: json['workHoursStartMinute'] as int? ?? defaultWorkHoursStartMinute,
+      workHoursEndHour: json['workHoursEndHour'] as int? ?? defaultWorkHoursEndHour,
+      workHoursEndMinute: json['workHoursEndMinute'] as int? ?? defaultWorkHoursEndMinute,
+      workDays: json['workDays'] as String? ?? defaultWorkDays,
+      naturalBreakCreditEnabled: json['naturalBreakCreditEnabled'] as bool? ?? defaultNaturalBreakCreditEnabled,
+      amoledDarkEnabled: json['amoledDarkEnabled'] as bool? ?? defaultAmoledDarkEnabled,
+      customAccentColorHex: json['customAccentColorHex'] as String? ?? defaultCustomAccentColorHex,
+      useSystemAccent: json['useSystemAccent'] as bool? ?? defaultUseSystemAccent,
+      startMinimized: json['startMinimized'] as bool? ?? defaultStartMinimized,
+      autoStartSchedule: json['autoStartSchedule'] as bool? ?? defaultAutoStartSchedule,
+      aiMotivationEnabled: json['aiMotivationEnabled'] as bool? ?? defaultAiMotivationEnabled,
+      osFocusDndEnabled: json['osFocusDndEnabled'] as bool? ?? defaultOsFocusDndEnabled,
+      aiProvider: json['aiProvider'] as String? ?? defaultAiProvider,
+      aiApiKey: json['aiApiKey'] as String? ?? defaultAiApiKey,
+      aiModel: json['aiModel'] as String? ?? defaultAiModel,
+      aiCustomSystemPrompt: json['aiCustomSystemPrompt'] as String? ?? defaultAiCustomSystemPrompt,
+    );
+  }
+
+  static ThemeMode _parseThemeMode(dynamic value) {
+    if (value is String) {
+      for (final mode in ThemeMode.values) {
+        if (mode.name == value) return mode;
+      }
+    }
+    return ThemeMode.light;
+  }
+
+  static BreakMode _parseBreakMode(dynamic value) {
+    if (value is String) {
+      for (final mode in BreakMode.values) {
+        if (mode.name == value) return mode;
+      }
+    }
+    return BreakMode.gentle;
+  }
 }

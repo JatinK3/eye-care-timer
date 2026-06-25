@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../models/timer_settings.dart';
 import '../../services/ai_service.dart';
@@ -132,6 +136,7 @@ class SettingsPage extends StatefulWidget {
   final bool osFocusDndEnabled;
   final void Function(bool) setOsFocusDndEnabled;
   final VoidCallback restoreDefaultSettings;
+  final Future<void> Function(TimerSettings) importSettings;
 
   const SettingsPage({
     super.key,
@@ -245,6 +250,7 @@ class SettingsPage extends StatefulWidget {
     required this.osFocusDndEnabled,
     required this.setOsFocusDndEnabled,
     required this.restoreDefaultSettings,
+    required this.importSettings,
   });
 
   @override
@@ -2009,6 +2015,38 @@ class _SettingsPageState extends State<SettingsPage>
           ),
         ),
       ),
+      SettingItem(
+        title: 'Backup settings',
+        subtitle: 'Export your current configurations to a file',
+        keywords: ['backup', 'export', 'save', 'settings', 'json'],
+        category: 'System Options',
+        widget: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.backup_outlined),
+          title: const Text('Backup settings'),
+          subtitle: const Text('Export settings to your Downloads folder'),
+          trailing: ElevatedButton(
+            onPressed: () => _exportSettingsToFile(context),
+            child: const Text('Backup'),
+          ),
+        ),
+      ),
+      SettingItem(
+        title: 'Restore settings',
+        subtitle: 'Import configurations from a backup JSON file',
+        keywords: ['restore', 'import', 'load', 'settings', 'json', 'backup'],
+        category: 'System Options',
+        widget: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.settings_input_component_outlined),
+          title: const Text('Restore settings'),
+          subtitle: const Text('Load settings from a backup JSON file'),
+          trailing: ElevatedButton(
+            onPressed: () => _importSettingsFromFile(context),
+            child: const Text('Restore'),
+          ),
+        ),
+      ),
     ];
   }
 
@@ -2272,6 +2310,156 @@ class _SettingsPageState extends State<SettingsPage>
         ],
       ),
     );
+  }
+
+  TimerSettings _getCurrentSettings() {
+    return TimerSettings(
+      workDurationSeconds: widget.workDurationSeconds,
+      breakDurationSeconds: widget.breakDurationSeconds,
+      themeMode: widget.isDark ? ThemeMode.dark : ThemeMode.light,
+      colorPreset: widget.colorPreset,
+      streakCount: widget.streakCount,
+      dailyGoal: widget.dailyGoal,
+      notificationsEnabled: widget.notificationsEnabled,
+      hapticsEnabled: widget.hapticsEnabled,
+      soundEnabled: widget.soundEnabled,
+      longBreakEnabled: widget.longBreakEnabled,
+      longBreakDurationSeconds: widget.longBreakDurationSeconds,
+      longBreakEveryCycles: widget.longBreakEveryCycles,
+      autoRunEnabled: widget.autoRunEnabled,
+      autoRunCycleLimit: widget.autoRunCycleLimit,
+      breakMode: widget.breakMode,
+      allowSkip: widget.allowSkip,
+      allowPostpone: widget.allowPostpone,
+      postponeDurationSeconds: widget.postponeDurationSeconds,
+      smartIdleEnabled: widget.smartIdleEnabled,
+      breakVisualizerStyle: widget.breakVisualizerStyle,
+      breakShowClock: widget.breakShowClock,
+      breakShowTips: widget.breakShowTips,
+      breakShowProgress: widget.breakShowProgress,
+      breakCustomMessage: widget.breakCustomMessage,
+      chimeStyle: widget.chimeStyle,
+      blinkRemindersEnabled: widget.blinkRemindersEnabled,
+      blinkRemindersCadenceSeconds: widget.blinkRemindersCadenceSeconds,
+      workHoursEnabled: widget.workHoursEnabled,
+      workHoursStartHour: widget.workHoursStartHour,
+      workHoursStartMinute: widget.workHoursStartMinute,
+      workHoursEndHour: widget.workHoursEndHour,
+      workHoursEndMinute: widget.workHoursEndMinute,
+      workDays: widget.workDays,
+      naturalBreakCreditEnabled: widget.naturalBreakCreditEnabled,
+      amoledDarkEnabled: widget.amoledDarkEnabled,
+      customAccentColorHex: widget.customAccentColorHex,
+      useSystemAccent: widget.useSystemAccent,
+      startMinimized: widget.startMinimized,
+      autoStartSchedule: widget.autoStartSchedule,
+      aiMotivationEnabled: widget.aiMotivationEnabled,
+      osFocusDndEnabled: widget.osFocusDndEnabled,
+      aiProvider: widget.aiProvider,
+      aiApiKey: widget.aiApiKey,
+      aiModel: widget.aiModel,
+      aiCustomSystemPrompt: widget.aiCustomSystemPrompt,
+    );
+  }
+
+  Future<void> _exportSettingsToFile(BuildContext context) async {
+    try {
+      final settings = _getCurrentSettings();
+      final jsonMap = {
+        'version': 1,
+        'exportedAt': DateTime.now().toIso8601String(),
+        'settings': settings.toJson(),
+      };
+      final content = const JsonEncoder.withIndent('  ').convert(jsonMap);
+
+      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+      final fileName = 'blinkkind_settings_backup_$timestamp.json';
+
+      String? dirPath;
+      if (!kIsWeb) {
+        if (Platform.isWindows) {
+          dirPath = Platform.environment['USERPROFILE'] != null
+              ? '${Platform.environment['USERPROFILE']}\\Downloads'
+              : null;
+        } else if (Platform.isLinux || Platform.isMacOS) {
+          dirPath = Platform.environment['HOME'] != null
+              ? '${Platform.environment['HOME']}/Downloads'
+              : null;
+        }
+      }
+
+      if (dirPath == null) {
+        throw Exception("Could not determine Downloads directory path");
+      }
+
+      final dir = Directory(dirPath);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsString(content);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Exported settings to: $fileName"),
+          action: SnackBarAction(
+            label: "Open Folder",
+            onPressed: () {
+              if (Platform.isLinux) {
+                Process.run('xdg-open', [dir.path]);
+              } else if (Platform.isMacOS) {
+                Process.run('open', [dir.path]);
+              } else if (Platform.isWindows) {
+                Process.run('explorer.exe', [dir.path]);
+              }
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to backup settings: $e")),
+      );
+    }
+  }
+
+  Future<void> _importSettingsFromFile(BuildContext context) async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+
+      if (result == null || result.files.single.path == null) {
+        return;
+      }
+
+      final file = File(result.files.single.path!);
+      final content = await file.readAsString();
+      final decoded = json.decode(content) as Map<String, dynamic>;
+
+      if (!decoded.containsKey('settings')) {
+        throw Exception("Invalid backup file: settings data not found.");
+      }
+
+      final settingsMap = decoded['settings'] as Map<String, dynamic>;
+      final newSettings = TimerSettings.fromJson(settingsMap, currentStreak: widget.streakCount);
+
+      await widget.importSettings(newSettings);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Settings restored successfully!")),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to restore settings: $e")),
+      );
+    }
   }
 
   void _showCustomDailyGoalDialog() {

@@ -485,9 +485,15 @@ class DesktopIntegrationService extends WindowListener {
           final mins = (state.remainingSeconds / 60).ceil();
           text = mins.toString();
         } else {
-          ringColor = Colors.cyanAccent;
-          final mins = (state.remainingSeconds / 60).ceil();
-          text = mins.toString();
+          final isImminent = state.remainingSeconds < 60;
+          if (isImminent) {
+            ringColor = Colors.amberAccent;
+            text = state.remainingSeconds.toString();
+          } else {
+            ringColor = Colors.cyanAccent;
+            final mins = (state.remainingSeconds / 60).ceil();
+            text = mins.toString();
+          }
         }
         if (state.initialDurationSeconds > 0) {
           progress = (state.remainingSeconds / state.initialDurationSeconds)

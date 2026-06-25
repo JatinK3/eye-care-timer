@@ -1447,5 +1447,56 @@ void main() {
     expect(prefs.getInt(PreferencesService.breakDurationSecondsKey), TimerSettings.defaultBreakDurationSeconds);
     expect(prefs.getInt(PreferencesService.streakCountKey), 5);
   });
+
+  test('TimerSettings toJson and fromJson serialization works', () {
+    const settings = TimerSettings.defaults();
+    final jsonMap = settings.toJson();
+    
+    expect(jsonMap['workDurationSeconds'], TimerSettings.defaultWorkDurationSeconds);
+    expect(jsonMap['breakDurationSeconds'], TimerSettings.defaultBreakDurationSeconds);
+    expect(jsonMap['themeMode'], ThemeMode.light.name);
+
+    final restored = TimerSettings.fromJson(jsonMap, currentStreak: 12);
+    expect(restored.workDurationSeconds, TimerSettings.defaultWorkDurationSeconds);
+    expect(restored.breakDurationSeconds, TimerSettings.defaultBreakDurationSeconds);
+    expect(restored.themeMode, ThemeMode.light);
+    expect(restored.streakCount, 12);
+  });
+
+  testWidgets('settings screen displays Backup and Restore options', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+    });
+
+    await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    final settingsScrollable = find.descendant(
+      of: find.byType(SettingsPage),
+      matching: find.byType(Scrollable),
+    ).first;
+
+    final categoryHeader = find.text('System Options');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: settingsScrollable);
+    await tester.drag(settingsScrollable, const Offset(0, -150));
+    await tester.pumpAndSettle();
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    final backupFinder = find.text('Backup settings');
+    final restoreFinder = find.text('Restore settings');
+
+    await tester.scrollUntilVisible(backupFinder, 200, scrollable: settingsScrollable);
+    await tester.pumpAndSettle();
+    expect(backupFinder, findsOneWidget);
+
+    await tester.scrollUntilVisible(restoreFinder, 200, scrollable: settingsScrollable);
+    await tester.pumpAndSettle();
+    expect(restoreFinder, findsOneWidget);
+  });
 }
 

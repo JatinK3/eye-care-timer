@@ -552,6 +552,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     });
   }
 
+  Future<void> _importSettings(TimerSettings settings) async {
+    await _preferencesService.saveAllSettings(settings);
+    setState(() {
+      _settings = settings;
+    });
+  }
+
   void _setAiMotivationEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(aiMotivationEnabled: enabled);
@@ -931,6 +938,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           osFocusDndEnabled: _settings.osFocusDndEnabled,
           setOsFocusDndEnabled: _setOsFocusDndEnabled,
           restoreDefaultSettings: _restoreDefaultSettings,
+          importSettings: _importSettings,
         ),
       ),
     );
