@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../../models/timer_settings.dart';
 import '../../services/desktop_controls_controller.dart';
 import 'break_guides.dart';
+import 'eye_health_tips.dart';
 
 class DesktopBreakOverlay extends StatefulWidget {
   final int initialDurationSeconds;
@@ -30,7 +31,7 @@ class DesktopBreakOverlay extends StatefulWidget {
 
 class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   late int _remainingSeconds;
-  late String _currentExercise;
+  late int _tipOffset;
   StreamSubscription<DesktopTimerState>? _stateSubscription;
   Timer? _localTimer;
   double _holdProgress = 0.0;
@@ -39,21 +40,12 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   final FocusNode _focusNode = FocusNode(debugLabel: 'DesktopBreakOverlayFocus');
   bool _isSpacePressed = false;
 
-  final List<String> _exercises = [
-    "Look 20 feet away at something green.",
-    "Blink rapidly for 10 seconds to moisten your eyes.",
-    "Roll your eyes slowly in a circle, then reverse.",
-    "Close your eyes tightly and rest them.",
-    "Focus on a distant object, then a near object.",
-  ];
-
   @override
   void initState() {
     super.initState();
     _remainingSeconds = widget.initialDurationSeconds;
 
-    final random = math.Random();
-    _currentExercise = _exercises[random.nextInt(_exercises.length)];
+    _tipOffset = math.Random().nextInt(EyeHealthTips.all.length);
 
     // Listen to timer state changes to keep countdown synced
     _stateSubscription = DesktopControlsController.instance.states.listen((
@@ -137,6 +129,12 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
       _holdProgress = 0.0;
     });
   }
+
+  EyeHealthTip get _currentTip => EyeHealthTips.breakTipForRemaining(
+        remainingSeconds: _remainingSeconds,
+        totalDurationSeconds: widget.initialDurationSeconds,
+        offset: _tipOffset,
+      );
 
   String _formatDuration(int totalSeconds) {
     final m = totalSeconds ~/ 60;
@@ -293,6 +291,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     final theme = Theme.of(context);
     final textStyle = theme.textTheme;
     final showBreathingGuide = widget.breakVisualizerStyle == 'Breathing';
+    final tip = _currentTip;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -318,7 +317,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Text(
-              widget.aiQuote ?? _currentExercise,
+              widget.aiQuote ?? tip.action,
               style: textStyle.headlineSmall?.copyWith(
                 color: Colors.cyanAccent,
                 fontWeight: FontWeight.w300,
@@ -327,7 +326,19 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Text(
+              tip.detail,
+              style: textStyle.bodyMedium?.copyWith(
+                color: Colors.white54,
+                height: 1.45,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 40),
           if (!showBreathingGuide) ...[
             Stack(
               alignment: Alignment.center,

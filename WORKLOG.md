@@ -154,7 +154,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] **Blink reminders & blink-rate training** — the product is literally *BlinkKind*, yet blinking exists only as static break-screen text (`desktop_break_overlay.dart`, `timer_home_page.dart`). Add an opt-in, low-friction "blink now" micro-nudge (subtle tray pulse / brief on-screen cue) on a configurable cadence, plus a guided blink exercise. This is the clearest differentiator vs. generic Pomodoro/eye timers and the most on-brand missing feature.
 - [x] **Active work-hours & day schedule** — only run during configured hours/days (e.g. 09:00–18:00, Mon–Fri); auto-pause outside them. Removes the "why is it nagging me at night/weekend" friction. No time-of-day scheduling exists today.
 - [x] **Natural / idle break credit** — `system_idle` is already wired for pausing; extend it so that when the user has already been idle ≥ break length, that counts as a completed break and defers the next one instead of interrupting someone who just stepped away (à la Stretchly).
-- [ ] **Rotating eye-health tips & 20-20-20 education** — surface short, rotating eye-care tips on the break screen and a "Learn" card on home to reinforce the habit and the value proposition.
+- [x] **Rotating eye-health tips & 20-20-20 education** — surface short, rotating eye-care tips on the break screen and a "Learn" card on home to reinforce the habit and the value proposition.
 
 ### P1 — Retention, motivation & everyday UX
 - [ ] **Achievements, streak milestones & compliance stats** — badges/levels for streaks and breaks taken; add a compliance metric (breaks taken vs. skipped/postponed — the data already exists in `TimerEventRecord`) and a focus-time heatmap to History. No gamification exists today.
@@ -215,6 +215,12 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 5. **Settings backup/restore** (P2) — JSON config export/import (pairs naturally with existing history export).
 
 ## Completed
+
+- Implemented rotating eye-health tips and 20-20-20 education:
+  - Added `lib/features/timer/eye_health_tips.dart` as a shared static catalog for practical eye-care tips.
+  - Desktop break overlays now rotate through tip actions/details during the break while preserving AI quote priority when available.
+  - In-app break screens show a rotating tip panel, and the home screen includes a compact Learn card that cycles through education tips every 45 seconds.
+  - Added focused test coverage for tip rotation and home Learn-card rendering. Verification: `flutter analyze` clean; `flutter test` passes with 61 tests.
 
 - Added desktop **Start minimized** preference for launch-at-startup workflows: Settings now exposes a Desktop Options toggle, the value persists via `TimerSettings`/`PreferencesService`, and desktop startup reads it before initializing the tray/window integration so BlinkKind can launch directly into the system tray. Verified with `flutter analyze` and `flutter test` (59 passing).
 

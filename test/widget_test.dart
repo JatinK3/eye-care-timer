@@ -11,6 +11,7 @@ import 'package:eyeapptimer/services/preferences_service.dart';
 import 'package:eyeapptimer/models/work_session_record.dart';
 import 'package:eyeapptimer/models/timer_event_record.dart';
 import 'package:eyeapptimer/features/timer/timer_home_page.dart';
+import 'package:eyeapptimer/features/timer/eye_health_tips.dart';
 
 class FakeBreakOverlayService extends BreakOverlayService {
   OverlayPermissionStatus status;
@@ -172,10 +173,34 @@ double contrastRatio(Color first, Color second) {
 }
 
 void main() {
+  test('eye health tips rotate during a break window', () {
+    final first = EyeHealthTips.breakTipForRemaining(
+      remainingSeconds: 20,
+      totalDurationSeconds: 20,
+    );
+    final second = EyeHealthTips.breakTipForRemaining(
+      remainingSeconds: 11,
+      totalDurationSeconds: 20,
+    );
+
+    expect(first.title, isNot(second.title));
+  });
+
   setUp(() {
     SharedPreferences.setMockInitialValues({
       PreferencesService.onboardingCompletedKey: true,
     });
+  });
+
+  testWidgets('home screen shows rotating eye health education', (
+    WidgetTester tester,
+  ) async {
+    await pumpBlinkKindApp(tester);
+
+    final visibleTipTitles = EyeHealthTips.all.where(
+      (tip) => find.text(tip.title).evaluate().isNotEmpty,
+    );
+    expect(visibleTipTitles, isNotEmpty);
   });
 
   testWidgets('BlinkKind app renders initial timer state', (

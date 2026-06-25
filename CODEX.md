@@ -30,8 +30,9 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - `lib/features/splash/splash_quote_page.dart`: Short startup quote splash with a slide/fade animation and skip action, shown after onboarding on cold start.
 - `lib/features/timer/timer_home_page.dart`: Main timer UI, countdown state, phase-event orchestration, lifecycle reconciliation, overlay lifecycle, native deadline-owner synchronization, and notification scheduling hooks.
 - `lib/features/timer/phase_schedule.dart`: Pure wall-clock phase projection used to fast-forward restored/backgrounded sessions across every elapsed work and break boundary.
+- `lib/features/timer/eye_health_tips.dart`: Shared static catalog for rotating 20-20-20 education, break prompts, blink reminders, and home Learn-card copy.
 - `lib/features/timer/display_layout.dart`: Pure desktop display-union geometry used to span a break window across multiple monitors and translate each monitor into window-local coordinates.
-- `lib/features/timer/desktop_break_overlay.dart`: Desktop break surface that renders once for fullscreen fallback or replicates centered break content across every monitor in a spanning window.
+- `lib/features/timer/desktop_break_overlay.dart`: Desktop break surface that renders once for fullscreen fallback or replicates centered break content across every monitor in a spanning window, with rotating eye-health tips and optional AI quote text.
 - `lib/models/timer_settings.dart`: Persisted timer settings model and defaults, including color preset, notification, feedback, long-break, automatic-cycle, daily goal, and Off/Gentle/Strict break-screen preferences.
 - `lib/theme/color_presets.dart`: Shared preset names, seed colors, swatches, timer gradients, and progress colors.
 - `lib/features/settings/settings_page.dart`: Dedicated searchable/collapsible settings UI for durations, theme, presets, reminder permission recovery, automatic-cycle controls, smart idle, work schedule, blink reminders, AI motivation, Android break-overlay permission and preview controls, progress history entry point, and streak reset.
@@ -92,6 +93,7 @@ Keep this file updated when architecture, behavior, or roadmap decisions change.
 - Desktop break overlays use an immediately opaque route to avoid showing the underlying in-app break UI during presentation. Natural break completion explicitly stops the overlay and publishes idle desktop state. If the window was tray-hidden before the break, it is hidden back to tray after the break ends.
 - Desktop tray support includes dynamic countdown/status icons, next-break tooltip text, start/pause/resume/take-break-now/skip/postpone/snooze actions, global hotkeys, launch-at-startup, and an optional start-minimized setting for tray-first login workflows.
 - Optional blink reminders can show subtle in-app/tray nudges and a guided blink training visualizer.
+- The home screen includes a compact Learn card with rotating eye-health education, and break screens rotate through practical 20-20-20/blink/posture tips unless an AI quote is available.
 - Work-hours scheduling can pause outside configured days/hours, and natural break credit can count sufficient idle/screen-off time as a completed rest.
 
 ## Dependencies
@@ -169,7 +171,7 @@ Commands run after the current implementation:
 Current results:
 
 - `flutter analyze`: passing with no issues.
-- `flutter test`: passing, 59 tests.
+- `flutter test`: passing, 61 tests.
 - `flutter build apk --debug`: passing; generated `build/app/outputs/flutter-apk/app-debug.apk`.
 - `flutter build apk --release`: passing with AOT compilation and tree-shaking; generated `build/app/outputs/flutter-apk/app-release.apk` (49.5 MB).
 - `flutter build web`: passing; generated `build/web`.
@@ -217,7 +219,7 @@ Creative follow-ups after the core overlay is stable:
    - Quick timer presets and configurable long-break mode are implemented.
    - Automatic work/break scheduling is implemented with unlimited or configurable per-run cycle limits.
    - AI Motivation and startup splash quotes are implemented with provider selection, live model fetch, background prefetch, and static fallbacks.
-   - Remaining near-term product feature: rotating eye-health tips plus a Learn surface.
+   - Rotating eye-health tips plus a Learn surface are implemented through a shared static tip catalog.
 
 2. Stronger background/session restore.
    - Active session restore is implemented for launch and app resume.

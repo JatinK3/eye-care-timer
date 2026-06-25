@@ -18,6 +18,7 @@ import '../../services/system_ui_service.dart';
 import '../../services/timer_background_service.dart';
 import '../../theme/color_presets.dart';
 import 'break_guides.dart';
+import 'eye_health_tips.dart';
 import 'phase_schedule.dart';
 
 /// Home page with all timer logic and UI.
@@ -225,6 +226,8 @@ class TimerHomePageState extends State<TimerHomePage>
   // animation that normally drives the tray is frozen while the window isn't
   // rendering.
   Timer? _desktopTrayTicker;
+  Timer? _educationTipTimer;
+  int _educationTipIndex = 0;
   DateTime? _phaseStartedAt;
   DateTime? _phaseEndsAt;
 
@@ -252,6 +255,13 @@ class TimerHomePageState extends State<TimerHomePage>
     _initialDuration = _workDurationSeconds;
     _remainingSeconds = _initialDuration;
     _activeBreakVisualizerStyle = widget.breakVisualizerStyle;
+    _educationTipIndex = DateTime.now().minute % EyeHealthTips.all.length;
+    _educationTipTimer = Timer.periodic(const Duration(seconds: 45), (_) {
+      if (!mounted || _isFocusMode) return;
+      setState(() {
+        _educationTipIndex = (_educationTipIndex + 1) % EyeHealthTips.all.length;
+      });
+    });
 
     // Main progress controller
     _animationController = AnimationController(
@@ -470,6 +480,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _desktopIdleSubscription?.cancel();
     _desktopCommandSubscription?.cancel();
     _desktopTrayTicker?.cancel();
+    _educationTipTimer?.cancel();
     _scheduleCheckTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _phaseTransitionTimer?.cancel();
@@ -1624,12 +1635,102 @@ class TimerHomePageState extends State<TimerHomePage>
     return 'Every $workMinutes min, rest for $breakLabel. Long break after $_longBreakEveryCycles cycles.$autoRunLabel';
   }
 
+  EyeHealthTip get _currentEducationTip =>
+      EyeHealthTips.at(_educationTipIndex);
+
+  EyeHealthTip get _currentBreakTip => EyeHealthTips.breakTipForRemaining(
+        remainingSeconds: _remainingSeconds,
+        totalDurationSeconds: _initialDuration,
+        offset: _educationTipIndex,
+      );
+
   String _durationLabel(int seconds) {
     if (seconds < 60) {
       return '$seconds s';
     }
     final minutes = seconds ~/ 60;
     return '$minutes min';
+  }
+
+  Widget _buildLearnCard(ThemeData theme, bool isDark, Color accentColor) {
+    final tip = _currentEducationTip;
+    final surfaceColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.white.withValues(alpha: 0.72);
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.black.withValues(alpha: 0.08);
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 350),
+      child: Container(
+        key: ValueKey(tip.title),
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: borderColor),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.school_outlined, color: accentColor, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tip.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(tip.detail, style: theme.textTheme.bodySmall),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBreakTipPanel(ThemeData theme, bool isDark, Color accentColor) {
+    return AnimatedBuilder(
+      animation: _progressAnimation,
+      builder: (context, _) {
+        final tip = _currentBreakTip;
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: Column(
+            key: ValueKey(tip.title),
+            children: [
+              Text(
+                tip.action,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: accentColor,
+                  fontWeight: FontWeight.w700,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                tip.detail,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -1864,6 +1965,16 @@ class TimerHomePageState extends State<TimerHomePage>
                                                 ).textTheme.bodyMedium,
                                                 textAlign: TextAlign.center,
                                               ),
+                                              if (_isBreak &&
+                                                  _isRunning &&
+                                                  !_isPaused) ...[
+                                                const SizedBox(height: 10),
+                                                _buildBreakTipPanel(
+                                                  Theme.of(context),
+                                                  isDark,
+                                                  progressColor,
+                                                ),
+                                              ],
                                             ],
                                           ),
                                         ),
@@ -1897,6 +2008,12 @@ class TimerHomePageState extends State<TimerHomePage>
                                           style: Theme.of(
                                             context,
                                           ).textTheme.bodyMedium,
+                                        ),
+                                        const SizedBox(height: 12),
+                                        _buildLearnCard(
+                                          Theme.of(context),
+                                          isDark,
+                                          progressColor,
                                         ),
                                       ] else ...[
                                         Opacity(
@@ -1990,6 +2107,16 @@ class TimerHomePageState extends State<TimerHomePage>
                                       ).textTheme.bodyMedium,
                                       textAlign: TextAlign.center,
                                     ),
+                                    if (_isBreak &&
+                                        _isRunning &&
+                                        !_isPaused) ...[
+                                      const SizedBox(height: 10),
+                                      _buildBreakTipPanel(
+                                        Theme.of(context),
+                                        isDark,
+                                        progressColor,
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
@@ -2059,6 +2186,12 @@ class TimerHomePageState extends State<TimerHomePage>
                                     ? 'Goal reached for today'
                                     : 'Streak today: $_streakCount cycles',
                                 style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                              const SizedBox(height: 12),
+                              _buildLearnCard(
+                                Theme.of(context),
+                                isDark,
+                                progressColor,
                               ),
                             ] else ...[
                               Opacity(
