@@ -36,6 +36,40 @@ class NotificationService {
   static const int _phaseReminderId = 1001;
   static const int _testReminderId = 1002;
   static const int _preBreakWarningReminderId = 1003;
+  static const int _blinkReminderId = 1004;
+
+  static const String _blinkChannelId = 'blinkkind_blink_reminders_v1';
+  static const String _blinkChannelName = 'Blink reminders';
+  static const String _blinkChannelDescription =
+      'Gentle periodic reminders to blink consciously during work sessions.';
+  static const AndroidNotificationChannel _blinkChannel =
+      AndroidNotificationChannel(
+        _blinkChannelId,
+        _blinkChannelName,
+        description: _blinkChannelDescription,
+        importance: Importance.low,
+        playSound: false,
+        enableVibration: false,
+      );
+  static const NotificationDetails _blinkNotificationDetails =
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _blinkChannelId,
+          _blinkChannelName,
+          channelDescription: _blinkChannelDescription,
+          importance: Importance.low,
+          priority: Priority.low,
+          playSound: false,
+          enableVibration: false,
+          silent: true,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
+        macOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentSound: false,
+        ),
+      );
 
   Future<bool> schedulePreBreakWarningReminder(Duration delay, {bool isLongBreak = false}) {
     return _schedulePhaseReminder(
@@ -139,11 +173,12 @@ class NotificationService {
     );
 
     await _notificationsPlugin.initialize(settings: initializationSettings);
-    await _notificationsPlugin
+    final android = _notificationsPlugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(_phaseChannel);
+        >();
+    await android?.createNotificationChannel(_phaseChannel);
+    await android?.createNotificationChannel(_blinkChannel);
     _isInitialized = true;
   }
 
@@ -355,6 +390,51 @@ class NotificationService {
       body: 'You can return to your task.',
       payload: 'break_complete',
     );
+  }
+
+  /// Shows an immediate silent blink-conscious reminder notification.
+  Future<void> showBlinkReminder() async {
+    if (kIsWeb) return;
+
+    const messages = [
+      'Remember to blink! 👁️ Give your eyes some moisture.',
+      '👁️ Blink consciously — your eyes will thank you!',
+      'Time to blink! Dry eyes cause fatigue. Blink fully now.',
+      '👀 Blink reminder — close and open your eyes fully.',
+      '💧 Moisture check! Blink a few times to refresh your eyes.',
+      '👁️ Soft blink — close your eyes slowly, then open. Repeat 3×.',
+    ];
+    final idx = DateTime.now().second % messages.length;
+    final body = messages[idx];
+
+    if (Platform.isLinux) {
+      try {
+        await Process.run('notify-send', [
+          '-a', 'BlinkKind',
+          '-i', 'blinkkind',
+          '-u', 'low',
+          '-t', '4000',
+          'Blink reminder',
+          body,
+        ]);
+      } catch (e) {
+        debugPrint('Failed to send Linux blink notification: \$e');
+      }
+      return;
+    }
+
+    await initialize();
+    try {
+      await _notificationsPlugin.show(
+        id: _blinkReminderId,
+        title: 'Blink reminder 👁️',
+        body: body,
+        notificationDetails: _blinkNotificationDetails,
+        payload: 'blink_reminder',
+      );
+    } on PlatformException catch (error) {
+      debugPrint('Unable to show blink reminder: \$error');
+    }
   }
 
   Future<void> cancelPhaseReminder() async {

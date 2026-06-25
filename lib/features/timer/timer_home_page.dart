@@ -1683,6 +1683,8 @@ class TimerHomePageState extends State<TimerHomePage>
     if (widget.hapticsEnabled) {
       unawaited(HapticFeedback.selectionClick());
     }
+    // Fire an OS-level notification so users see it even when the app is in the background.
+    unawaited(widget.notificationService.showBlinkReminder());
     setState(() {
       _isBlinkNudging = true;
     });

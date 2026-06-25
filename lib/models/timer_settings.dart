@@ -20,8 +20,8 @@ class TimerSettings {
   static const bool defaultBreakShowProgress = true;
   static const String defaultBreakCustomMessage = '';
   static const String defaultChimeStyle = 'tibetan_bowl';
-  static const bool defaultBlinkRemindersEnabled = false;
-  static const int defaultBlinkRemindersCadenceSeconds = 5;
+  static const bool defaultBlinkRemindersEnabled = true;
+  static const int defaultBlinkRemindersCadenceSeconds = 120;
   static const bool defaultWorkHoursEnabled = false;
   static const int defaultWorkHoursStartHour = 9;
   static const int defaultWorkHoursStartMinute = 0;

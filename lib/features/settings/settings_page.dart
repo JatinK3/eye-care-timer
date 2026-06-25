@@ -282,6 +282,17 @@ class _SettingsPageState extends State<SettingsPage>
   static const List<int> _dailyGoals = [3, 4, 6, 8, 10, 12];
   static const List<int> _postponeDurations = [60, 120, 300, 600];
 
+  // Snap a stored cadence value (possibly old seconds-based) to the nearest
+  // valid minute-based dropdown option.
+  static int _nearestBlinkCadence(int seconds) {
+    const valid = [60, 120, 180, 300, 600, 900];
+    // If already one of the valid minute values, return as-is.
+    if (valid.contains(seconds)) return seconds;
+    // Otherwise snap to closest valid value.
+    return valid.reduce((a, b) =>
+        (a - seconds).abs() < (b - seconds).abs() ? a : b);
+  }
+
   late NotificationPermissionStatus _permissionStatus;
   late ExactAlarmStatus _exactAlarmStatus;
   late BatteryOptimizationStatus _batteryOptimizationStatus;
@@ -1772,16 +1783,17 @@ class _SettingsPageState extends State<SettingsPage>
         ),
       ),
       SettingItem(
-        title: 'Blink nudges (micro-reminders)',
+        title: 'Conscious blinking reminders',
         subtitle:
-            'Flashes the system tray icon or pulses UI to encourage healthy blinking',
+            'Sends periodic OS notifications to remind you to blink during work sessions',
         keywords: [
           'blink',
           'nudges',
           'micro-reminders',
-          'tray',
-          'flash',
+          'notification',
           'eye',
+          'conscious',
+          'moisture',
         ],
         category: 'Notifications & Sounds',
         widget: Column(
@@ -1789,9 +1801,9 @@ class _SettingsPageState extends State<SettingsPage>
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               secondary: const Icon(Icons.remove_red_eye_outlined),
-              title: const Text('Blink nudges (micro-reminders)'),
+              title: const Text('Conscious blinking reminders'),
               subtitle: const Text(
-                'Flashes the system tray icon or pulses UI to encourage healthy blinking',
+                'Sends OS notifications reminding you to blink during work, keeping your eyes moist and reducing fatigue',
               ),
               value: widget.blinkRemindersEnabled,
               onChanged: widget.setBlinkRemindersEnabled,
@@ -1801,17 +1813,17 @@ class _SettingsPageState extends State<SettingsPage>
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.timer_outlined),
-                title: const Text('Nudge cadence'),
-                subtitle: const Text('Interval between blink reminders'),
+                title: const Text('Reminder interval'),
+                subtitle: const Text('How often to send a blink reminder'),
                 trailing: DropdownButton<int>(
-                  value: widget.blinkRemindersCadenceSeconds,
+                  value: _nearestBlinkCadence(widget.blinkRemindersCadenceSeconds),
                   items: const [
-                    DropdownMenuItem(value: 3, child: Text('Every 3s')),
-                    DropdownMenuItem(value: 4, child: Text('Every 4s')),
-                    DropdownMenuItem(value: 5, child: Text('Every 5s')),
-                    DropdownMenuItem(value: 6, child: Text('Every 6s')),
-                    DropdownMenuItem(value: 8, child: Text('Every 8s')),
-                    DropdownMenuItem(value: 10, child: Text('Every 10s')),
+                    DropdownMenuItem(value: 60, child: Text('Every 1 min')),
+                    DropdownMenuItem(value: 120, child: Text('Every 2 min')),
+                    DropdownMenuItem(value: 180, child: Text('Every 3 min')),
+                    DropdownMenuItem(value: 300, child: Text('Every 5 min')),
+                    DropdownMenuItem(value: 600, child: Text('Every 10 min')),
+                    DropdownMenuItem(value: 900, child: Text('Every 15 min')),
                   ],
                   onChanged: (value) {
                     if (value != null) {
