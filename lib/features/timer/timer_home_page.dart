@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:system_idle/system_idle.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../../models/timer_session.dart';
 import '../../models/timer_settings.dart';
@@ -388,6 +389,11 @@ class TimerHomePageState extends State<TimerHomePage>
                 break;
               case DesktopCommand.cancelSnooze:
                 _cancelSnooze();
+                break;
+              case DesktopCommand.openSettings:
+                unawaited(windowManager.show());
+                unawaited(windowManager.focus());
+                widget.openSettings(context, _canChangeSettings);
                 break;
             }
           });

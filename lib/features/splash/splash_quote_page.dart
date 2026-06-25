@@ -63,8 +63,8 @@ class _SplashQuotePageState extends State<SplashQuotePage>
 
     _animationController.forward();
 
-    // Auto advance after 1.8 seconds (1000ms animation + 800ms display)
-    _autoAdvanceTimer = Timer(const Duration(milliseconds: 1800), () {
+    // Auto advance after 2.5 seconds (1000ms animation + 1500ms display)
+    _autoAdvanceTimer = Timer(const Duration(milliseconds: 2500), () {
       if (mounted) {
         widget.onComplete();
       }

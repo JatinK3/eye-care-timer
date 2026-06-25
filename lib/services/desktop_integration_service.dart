@@ -96,6 +96,14 @@ class DesktopIntegrationService extends WindowListener {
       // Build initial menu
       await _menu.buildFrom([
         MenuItemLabel(label: 'Show BlinkKind', onClicked: (_) => _showWindow()),
+        MenuItemLabel(
+          label: 'Settings',
+          onClicked: (_) {
+            DesktopControlsController.instance.triggerCommand(
+              DesktopCommand.openSettings,
+            );
+          },
+        ),
         MenuSeparator(),
         MenuItemLabel(label: 'Exit', onClicked: (_) => _quitApp()),
       ]);
@@ -207,6 +215,14 @@ class DesktopIntegrationService extends WindowListener {
 
       final List<MenuItemBase> items = [
         MenuItemLabel(label: 'Show BlinkKind', onClicked: (_) => _showWindow()),
+        MenuItemLabel(
+          label: 'Settings',
+          onClicked: (_) {
+            DesktopControlsController.instance.triggerCommand(
+              DesktopCommand.openSettings,
+            );
+          },
+        ),
         MenuSeparator(),
       ];
 
