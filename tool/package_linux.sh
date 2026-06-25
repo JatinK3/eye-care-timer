@@ -7,12 +7,33 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$PROJECT_DIR/build/linux/x64/release/bundle"
 DIST_DIR="$PROJECT_DIR/dist"
 
-# Parse command line arguments (e.g., -y or --yes)
+# Parse command line arguments
 AUTO_YES=false
+AUTO_NO=false
+CLEAR_STATE_ARG=""
+INSTALL_DEB_ARG=""
+
 for arg in "$@"; do
-    if [ "$arg" = "-y" ] || [ "$arg" = "--yes" ]; then
-        AUTO_YES=true
-    fi
+    case "$arg" in
+        -y|--yes|-Y|--YES)
+            AUTO_YES=true
+            ;;
+        -n|--no|-N|--NO)
+            AUTO_NO=true
+            ;;
+        -c|--clear|--clear-state)
+            CLEAR_STATE_ARG="true"
+            ;;
+        -nc|--no-clear|--no-clear-state)
+            CLEAR_STATE_ARG="false"
+            ;;
+        -i|--install)
+            INSTALL_DEB_ARG="true"
+            ;;
+        -ni|--no-install)
+            INSTALL_DEB_ARG="false"
+            ;;
+    esac
 done
 
 # Extract version from pubspec.yaml (e.g., version: 1.0.0+1 -> 1.0.0)
@@ -26,12 +47,20 @@ echo "Building BlinkKind version $VERSION..."
 echo "========================================="
 cd "$PROJECT_DIR"
 
-# Option to reset application states (only if running interactively or requested via -y)
-clear_state="n"
-if [ "$AUTO_YES" = true ]; then
+# Option to reset application states
+clear_state=""
+if [ "$CLEAR_STATE_ARG" = "true" ]; then
     clear_state="y"
+elif [ "$CLEAR_STATE_ARG" = "false" ]; then
+    clear_state="n"
+elif [ "$AUTO_YES" = true ]; then
+    clear_state="y"
+elif [ "$AUTO_NO" = true ]; then
+    clear_state="n"
 elif [ -t 0 ]; then
     read -p "Would you like to clear local user preferences/timer state (resets settings and history)? (y/N): " clear_state
+else
+    clear_state="n"
 fi
 
 if [[ "$clear_state" =~ ^[Yy]$ ]]; then
@@ -201,11 +230,19 @@ fi
 if [ -f "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" ]; then
     echo ""
     echo "========================================="
-    install_deb="n"
-    if [ "$AUTO_YES" = true ]; then
+    install_deb=""
+    if [ "$INSTALL_DEB_ARG" = "true" ]; then
         install_deb="y"
+    elif [ "$INSTALL_DEB_ARG" = "false" ]; then
+        install_deb="n"
+    elif [ "$AUTO_YES" = true ]; then
+        install_deb="y"
+    elif [ "$AUTO_NO" = true ]; then
+        install_deb="n"
     elif [ -t 0 ]; then
         read -p "Would you like to install the generated DEB package now? (y/N): " install_deb
+    else
+        install_deb="n"
     fi
 
     if [[ "$install_deb" =~ ^[Yy]$ ]]; then
