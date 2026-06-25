@@ -129,6 +129,10 @@ class SettingsPage extends StatefulWidget {
   final void Function(String) setAiModel;
   final void Function(String) setAiCustomSystemPrompt;
 
+  final bool osFocusDndEnabled;
+  final void Function(bool) setOsFocusDndEnabled;
+  final VoidCallback restoreDefaultSettings;
+
   const SettingsPage({
     super.key,
     required this.isDark,
@@ -238,6 +242,9 @@ class SettingsPage extends StatefulWidget {
     required this.setAiApiKey,
     required this.setAiModel,
     required this.setAiCustomSystemPrompt,
+    required this.osFocusDndEnabled,
+    required this.setOsFocusDndEnabled,
+    required this.restoreDefaultSettings,
   });
 
   @override
@@ -929,6 +936,20 @@ class _SettingsPageState extends State<SettingsPage>
           subtitle: const Text('Automatically start the timer on launch'),
           value: widget.autoStartSchedule,
           onChanged: widget.setAutoStartSchedule,
+        ),
+      ),
+      SettingItem(
+        title: 'OS Focus Mode (DND)',
+        subtitle: 'Toggle system Do Not Disturb (DND) automatically during work phases (Linux GNOME)',
+        keywords: ['focus', 'dnd', 'do not disturb', 'os', 'notification', 'quiet', 'system'],
+        category: 'General Schedule',
+        widget: SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.do_not_disturb_on),
+          title: const Text('OS Focus Mode (DND)'),
+          subtitle: const Text('Toggle system DND during work phases'),
+          value: widget.osFocusDndEnabled,
+          onChanged: widget.setOsFocusDndEnabled,
         ),
       ),
 
@@ -1946,6 +1967,30 @@ class _SettingsPageState extends State<SettingsPage>
         category: 'AI Motivation & Prompts',
         widget: _buildAiMotivationSettings(theme),
       ),
+      SettingItem(
+        title: 'Reset settings',
+        subtitle: 'Restore all configurations to factory defaults',
+        keywords: ['reset', 'restore', 'default', 'factory', 'settings', 'clear'],
+        category: 'System Options',
+        widget: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.settings_backup_restore, color: Colors.red),
+          title: const Text(
+            'Reset settings',
+            style: TextStyle(color: Colors.red),
+          ),
+          subtitle: const Text('Restore all settings to factory defaults'),
+          trailing: ElevatedButton(
+            onPressed: () => _showResetConfirmationDialog(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.withAlpha(26),
+              foregroundColor: Colors.red,
+              elevation: 0,
+            ),
+            child: const Text('Reset'),
+          ),
+        ),
+      ),
     ];
   }
 
@@ -2176,6 +2221,41 @@ class _SettingsPageState extends State<SettingsPage>
     );
   }
 
+  void _showResetConfirmationDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restore defaults?'),
+        content: const Text(
+          'This will reset all preferences (durations, presets, sound settings, theme presets, AI configurations, auto-start options) back to factory defaults.\n\n'
+          'Your streak, history, and recorded activity will NOT be erased.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              widget.restoreDefaultSettings();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Settings restored to factory defaults'),
+                ),
+              );
+            },
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showCustomDailyGoalDialog() {
     _dailyGoalCustomController.text = widget.dailyGoal.toString();
     showDialog<void>(
@@ -2291,6 +2371,7 @@ class _SettingsPageState extends State<SettingsPage>
       'Auto Run & Long Breaks',
       if (groups.containsKey('Desktop Options')) 'Desktop Options',
       'AI Motivation & Prompts',
+      if (groups.containsKey('System Options')) 'System Options',
     ];
 
     return ListView.builder(
@@ -2349,6 +2430,8 @@ class _SettingsPageState extends State<SettingsPage>
         return Icons.desktop_windows;
       case 'AI Motivation & Prompts':
         return Icons.auto_awesome;
+      case 'System Options':
+        return Icons.settings;
       default:
         return Icons.settings;
     }

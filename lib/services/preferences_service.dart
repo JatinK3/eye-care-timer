@@ -70,6 +70,7 @@ class PreferencesService {
   static const String aiModelKey = 'aiModel';
   static const String aiCustomSystemPromptKey = 'aiCustomSystemPrompt';
   static const String autoStartScheduleKey = 'autoStartSchedule';
+  static const String osFocusDndEnabledKey = 'osFocusDndEnabled';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -188,6 +189,9 @@ class PreferencesService {
       autoStartSchedule:
           prefs.getBool(autoStartScheduleKey) ??
           TimerSettings.defaultAutoStartSchedule,
+      osFocusDndEnabled:
+          prefs.getBool(osFocusDndEnabledKey) ??
+          TimerSettings.defaultOsFocusDndEnabled,
     );
   }
 
@@ -294,6 +298,57 @@ class PreferencesService {
     await prefs.remove(dailyHistoryKey);
     await prefs.remove(workSessionHistoryKey);
     await prefs.remove(timerEventsHistoryKey);
+  }
+
+  Future<TimerSettings> resetToDefaultSettings(int currentStreak) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    await prefs.setInt(workDurationSecondsKey, TimerSettings.defaultWorkDurationSeconds);
+    await prefs.setInt(breakDurationSecondsKey, TimerSettings.defaultBreakDurationSeconds);
+    await prefs.setString(themeModeKey, _themeModeToString(ThemeMode.light));
+    await prefs.setString(colorPresetKey, TimerSettings.defaultColorPreset);
+    await prefs.setInt(dailyGoalKey, 6);
+    await prefs.setBool(notificationsEnabledKey, true);
+    await prefs.setBool(hapticsEnabledKey, true);
+    await prefs.setBool(soundEnabledKey, false);
+    await prefs.setBool(longBreakEnabledKey, false);
+    await prefs.setInt(longBreakDurationSecondsKey, TimerSettings.defaultLongBreakDurationSeconds);
+    await prefs.setInt(longBreakEveryCyclesKey, TimerSettings.defaultLongBreakEveryCycles);
+    await prefs.setBool(autoRunEnabledKey, false);
+    await prefs.setInt(autoRunCycleLimitKey, 0);
+    await prefs.setString(breakModeKey, _breakModeToString(TimerSettings.defaultBreakMode));
+    await prefs.setBool(allowSkipKey, TimerSettings.defaultAllowSkip);
+    await prefs.setBool(allowPostponeKey, TimerSettings.defaultAllowPostpone);
+    await prefs.setInt(postponeDurationSecondsKey, TimerSettings.defaultPostponeDurationSeconds);
+    await prefs.setBool(smartIdleEnabledKey, TimerSettings.defaultSmartIdleEnabled);
+    await prefs.setString(breakVisualizerStyleKey, TimerSettings.defaultBreakVisualizerStyle);
+    await prefs.setBool(breakShowClockKey, TimerSettings.defaultBreakShowClock);
+    await prefs.setBool(breakShowTipsKey, TimerSettings.defaultBreakShowTips);
+    await prefs.setBool(breakShowProgressKey, TimerSettings.defaultBreakShowProgress);
+    await prefs.setString(breakCustomMessageKey, TimerSettings.defaultBreakCustomMessage);
+    await prefs.setString(chimeStyleKey, TimerSettings.defaultChimeStyle);
+    await prefs.setBool(blinkRemindersEnabledKey, TimerSettings.defaultBlinkRemindersEnabled);
+    await prefs.setInt(blinkRemindersCadenceSecondsKey, TimerSettings.defaultBlinkRemindersCadenceSeconds);
+    await prefs.setBool(workHoursEnabledKey, TimerSettings.defaultWorkHoursEnabled);
+    await prefs.setInt(workHoursStartHourKey, TimerSettings.defaultWorkHoursStartHour);
+    await prefs.setInt(workHoursStartMinuteKey, TimerSettings.defaultWorkHoursStartMinute);
+    await prefs.setInt(workHoursEndHourKey, TimerSettings.defaultWorkHoursEndHour);
+    await prefs.setInt(workHoursEndMinuteKey, TimerSettings.defaultWorkHoursEndMinute);
+    await prefs.setString(workDaysKey, TimerSettings.defaultWorkDays);
+    await prefs.setBool(naturalBreakCreditEnabledKey, TimerSettings.defaultNaturalBreakCreditEnabled);
+    await prefs.setBool(amoledDarkEnabledKey, TimerSettings.defaultAmoledDarkEnabled);
+    await prefs.setString(customAccentColorHexKey, TimerSettings.defaultCustomAccentColorHex);
+    await prefs.setBool(useSystemAccentKey, TimerSettings.defaultUseSystemAccent);
+    await prefs.setBool(startMinimizedKey, TimerSettings.defaultStartMinimized);
+    await prefs.setBool(aiMotivationEnabledKey, TimerSettings.defaultAiMotivationEnabled);
+    await prefs.setString(aiProviderKey, TimerSettings.defaultAiProvider);
+    await prefs.setString(aiApiKeyKey, TimerSettings.defaultAiApiKey);
+    await prefs.setString(aiModelKey, TimerSettings.defaultAiModel);
+    await prefs.setString(aiCustomSystemPromptKey, TimerSettings.defaultAiCustomSystemPrompt);
+    await prefs.setBool(autoStartScheduleKey, TimerSettings.defaultAutoStartSchedule);
+    await prefs.setBool(osFocusDndEnabledKey, TimerSettings.defaultOsFocusDndEnabled);
+
+    return const TimerSettings.defaults().copyWith(streakCount: currentStreak);
   }
 
   Future<bool> loadOnboardingCompleted() async {
@@ -574,6 +629,11 @@ class PreferencesService {
   Future<void> saveAutoStartSchedule(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(autoStartScheduleKey, enabled);
+  }
+
+  Future<void> saveOsFocusDndEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(osFocusDndEnabledKey, enabled);
   }
 
   Future<void> saveStreakCount(int streakCount) async {

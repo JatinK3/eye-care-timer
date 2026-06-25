@@ -14,6 +14,7 @@ import '../../services/ai_service.dart';
 import '../../services/break_overlay_service.dart';
 import '../../services/desktop_controls_controller.dart';
 import '../../services/notification_service.dart';
+import '../../services/os_focus_service.dart';
 import '../../services/system_ui_service.dart';
 import '../../services/timer_background_service.dart';
 import '../../theme/color_presets.dart';
@@ -78,6 +79,7 @@ class TimerHomePage extends StatefulWidget {
   final bool useSystemAccent;
   final bool autoStartSchedule;
   final bool aiMotivationEnabled;
+  final bool osFocusDndEnabled;
   final String aiProvider;
   final String aiApiKey;
   final String aiModel;
@@ -124,6 +126,7 @@ class TimerHomePage extends StatefulWidget {
     required this.naturalBreakCreditEnabled,
     required this.autoStartSchedule,
     required this.aiMotivationEnabled,
+    required this.osFocusDndEnabled,
     required this.aiProvider,
     required this.aiApiKey,
     required this.aiModel,
@@ -185,6 +188,8 @@ class TimerHomePageState extends State<TimerHomePage>
 
   // AI-generated break quote, pre-fetched during work phase.
   String? _cachedAiQuote;
+
+  bool _lastDndState = false;
 
   String _resolveVisualizerStyle() {
     if (widget.breakVisualizerStyle == 'Random') {
@@ -451,6 +456,9 @@ class TimerHomePageState extends State<TimerHomePage>
         _activeBreakVisualizerStyle = _resolveVisualizerStyle();
       });
     }
+    if (oldWidget.osFocusDndEnabled != widget.osFocusDndEnabled) {
+      _updateOsFocusDnd();
+    }
     if (_isRunning) {
       return;
     }
@@ -487,6 +495,7 @@ class TimerHomePageState extends State<TimerHomePage>
     if (_isFocusMode) {
       unawaited(_systemUiService.setFocusModeEnabled(false));
     }
+    unawaited(OsFocusService.instance.setDndEnabled(false));
     _desktopIdleSubscription?.cancel();
     _desktopCommandSubscription?.cancel();
     _desktopTrayTicker?.cancel();
@@ -2468,7 +2477,21 @@ class TimerHomePageState extends State<TimerHomePage>
 );
   }
 
+  void _updateOsFocusDnd() {
+    final shouldBeEnabled = widget.osFocusDndEnabled &&
+        _isRunning &&
+        !_isPaused &&
+        !_isBreak &&
+        !_isSchedulePaused &&
+        !_isSystemIdlePaused;
+    if (shouldBeEnabled != _lastDndState) {
+      _lastDndState = shouldBeEnabled;
+      unawaited(OsFocusService.instance.setDndEnabled(shouldBeEnabled));
+    }
+  }
+
   void _updateDesktopState() {
+    _updateOsFocusDnd();
     if (kIsWeb) return;
     if (defaultTargetPlatform == TargetPlatform.linux ||
         defaultTargetPlatform == TargetPlatform.macOS ||

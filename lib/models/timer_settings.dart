@@ -35,6 +35,7 @@ class TimerSettings {
   static const bool defaultStartMinimized = false;
   static const bool defaultAutoStartSchedule = false;
   static const bool defaultAiMotivationEnabled = false;
+  static const bool defaultOsFocusDndEnabled = false;
   static const String defaultAiProvider = 'Gemini';
   static const String defaultAiApiKey = '';
   static const String defaultAiModel = 'gemini-1.5-flash';
@@ -81,6 +82,7 @@ class TimerSettings {
   final bool startMinimized;
   final bool autoStartSchedule;
   final bool aiMotivationEnabled;
+  final bool osFocusDndEnabled;
   final String aiProvider;
   final String aiApiKey;
   final String aiModel;
@@ -127,6 +129,7 @@ class TimerSettings {
     required this.startMinimized,
     required this.autoStartSchedule,
     required this.aiMotivationEnabled,
+    required this.osFocusDndEnabled,
     required this.aiProvider,
     required this.aiApiKey,
     required this.aiModel,
@@ -174,6 +177,7 @@ class TimerSettings {
       startMinimized = defaultStartMinimized,
       autoStartSchedule = defaultAutoStartSchedule,
       aiMotivationEnabled = defaultAiMotivationEnabled,
+      osFocusDndEnabled = defaultOsFocusDndEnabled,
       aiProvider = defaultAiProvider,
       aiApiKey = defaultAiApiKey,
       aiModel = defaultAiModel,
@@ -220,6 +224,7 @@ class TimerSettings {
     bool? startMinimized,
     bool? autoStartSchedule,
     bool? aiMotivationEnabled,
+    bool? osFocusDndEnabled,
     String? aiProvider,
     String? aiApiKey,
     String? aiModel,
@@ -271,6 +276,7 @@ class TimerSettings {
       startMinimized: startMinimized ?? this.startMinimized,
       autoStartSchedule: autoStartSchedule ?? this.autoStartSchedule,
       aiMotivationEnabled: aiMotivationEnabled ?? this.aiMotivationEnabled,
+      osFocusDndEnabled: osFocusDndEnabled ?? this.osFocusDndEnabled,
       aiProvider: aiProvider ?? this.aiProvider,
       aiApiKey: aiApiKey ?? this.aiApiKey,
       aiModel: aiModel ?? this.aiModel,

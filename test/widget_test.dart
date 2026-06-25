@@ -13,6 +13,7 @@ import 'package:eyeapptimer/models/timer_event_record.dart';
 import 'package:eyeapptimer/models/timer_settings.dart';
 import 'package:eyeapptimer/features/timer/timer_home_page.dart';
 import 'package:eyeapptimer/features/timer/eye_health_tips.dart';
+import 'package:eyeapptimer/features/settings/settings_page.dart';
 
 class FakeBreakOverlayService extends BreakOverlayService {
   OverlayPermissionStatus status;
@@ -1349,6 +1350,102 @@ void main() {
     final records = await PreferencesService().loadTimerEventHistory();
     expect(records, isNotEmpty);
     expect(records.any((r) => r.type == TimerEventType.breakPostponed), isTrue);
+  });
+
+  testWidgets('settings screen toggles OS Focus Mode DND preference', (
+    WidgetTester tester,
+  ) async {
+    await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    final settingsScrollable = find.descendant(
+      of: find.byType(SettingsPage),
+      matching: find.byType(Scrollable),
+    ).first;
+
+    final categoryHeader = find.text('General Schedule');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: settingsScrollable);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    final finder = find.text('OS Focus Mode (DND)');
+    await tester.scrollUntilVisible(finder, 200, scrollable: settingsScrollable);
+    await tester.pumpAndSettle();
+    expect(finder, findsOneWidget);
+
+    // Toggle on (since default is off)
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool(PreferencesService.osFocusDndEnabledKey), true);
+
+    // Toggle off
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+    expect(prefs.getBool(PreferencesService.osFocusDndEnabledKey), false);
+  });
+
+  testWidgets('settings screen restores factory defaults', (
+    WidgetTester tester,
+  ) async {
+    final today = DateTime.now();
+    final year = today.year.toString().padLeft(4, '0');
+    final month = today.month.toString().padLeft(2, '0');
+    final day = today.day.toString().padLeft(2, '0');
+    final todayStr = '$year-$month-$day';
+
+    // Write some non-default initial preferences
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 25 * 60,
+      PreferencesService.breakDurationSecondsKey: 5 * 60,
+      PreferencesService.streakCountKey: 5,
+      PreferencesService.streakDateKey: todayStr,
+    });
+
+    await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    final settingsScrollable = find.descendant(
+      of: find.byType(SettingsPage),
+      matching: find.byType(Scrollable),
+    ).first;
+
+    final categoryHeader = find.text('System Options');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: settingsScrollable);
+    await tester.drag(settingsScrollable, const Offset(0, -150));
+    await tester.pumpAndSettle();
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    final finder = find.text('Reset settings');
+    await tester.scrollUntilVisible(finder, 200, scrollable: settingsScrollable);
+    await tester.pumpAndSettle();
+    expect(finder, findsOneWidget);
+
+    await tester.tap(find.text('Reset'));
+    await tester.pumpAndSettle();
+
+    // Confirm dialog is shown
+    expect(find.text('Restore defaults?'), findsOneWidget);
+    
+    // Tap Reset in dialog
+    await tester.tap(find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.text('Reset'),
+    ));
+    await tester.pumpAndSettle();
+
+    // Verify preferences returned to defaults, but streak count is retained
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getInt(PreferencesService.workDurationSecondsKey), TimerSettings.defaultWorkDurationSeconds);
+    expect(prefs.getInt(PreferencesService.breakDurationSecondsKey), TimerSettings.defaultBreakDurationSeconds);
+    expect(prefs.getInt(PreferencesService.streakCountKey), 5);
   });
 }
 

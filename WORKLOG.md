@@ -171,7 +171,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [ ] **Per-app rules & profiles** — don't interrupt while chosen apps are focused; "Work" vs "Gaming" profiles with different cadences.
 - [ ] **Home-screen widgets & OS surfaces** — Android home widget, iOS widget + Live Activity, macOS menu-bar extra, Windows taskbar progress.
 - [ ] **Wellness micro-breaks (modular)** — optional hydration / posture / stretch reminders alongside eye breaks (opt-in modules).
-- [ ] **OS DND / Focus integration** — set system Do-Not-Disturb / Focus during work phases.
+- [x] **OS DND / Focus integration** — set system Do-Not-Disturb / Focus during work phases.
 
 ### P3 — Quality, distribution & infrastructure
 - [ ] **Physical-device validation** (also tracked above) — Android OEM background restrictions, iOS immersive restore, desktop Wayland/X11 edge cases.
@@ -182,13 +182,27 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ### Quick wins (low effort, near-term)
 - [x] Promote "Take a break now" and a "Snooze for…" action to the main home screen (currently tray-only).
-- [ ] Add a one-tap "Restore defaults" in Settings and reconsider defaults (e.g. in-app sound defaults to off).
+- [x] Add a one-tap "Restore defaults" in Settings and reconsider defaults (e.g. in-app sound defaults to off).
 - [x] Show a "breaks taken today" count on home.
 - [ ] Add a pre-break countdown indication on the tray icon.
 
 ---
 
 ## Session Log
+
+### 2026-06-25 (Session end ~12:30 IST)
+
+**Completed this session:**
+- Fully implemented **Restore Defaults Settings Option**:
+  - `PreferencesService.resetToDefaultSettings()` resets all keys back to factory defaults while retaining streak count and onboarding status.
+  - `SettingsPage` displays a new `"System Options"` category containing a `"Reset settings"` option that presents a user-friendly warning dialog before triggering the reset.
+- Fully implemented **OS Focus & DND Integration**:
+  - `OsFocusService` executes GNOME Shell commands (`gsettings set org.gnome.desktop.notifications show-banners false/true`) to toggle system DND automatically on Linux.
+  - `TimerHomePageState` tracks the active phase and automatically enables DND during active work phases, disabling DND when paused, stopped, or on break.
+  - Added an `"OS Focus Mode (DND)"` switch toggle under the `"General Schedule"` settings category.
+- Cleaned and verified the entire codebase:
+  - Added new widget test coverage for the DND toggle and Settings reset features.
+  - Verified static analysis (`flutter analyze` is clean with 0 issues) and ran all 69 unit/widget tests successfully.
 
 ### 2026-06-24 (Session end ~18:30 IST)
 

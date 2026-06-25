@@ -538,6 +538,20 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveAutoStartSchedule(enabled));
   }
 
+  void _setOsFocusDndEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(osFocusDndEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveOsFocusDndEnabled(enabled));
+  }
+
+  Future<void> _restoreDefaultSettings() async {
+    final defaults = await _preferencesService.resetToDefaultSettings(_settings.streakCount);
+    setState(() {
+      _settings = defaults;
+    });
+  }
+
   void _setAiMotivationEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(aiMotivationEnabled: enabled);
@@ -914,6 +928,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           setAiApiKey: _setAiApiKey,
           setAiModel: _setAiModel,
           setAiCustomSystemPrompt: _setAiCustomSystemPrompt,
+          osFocusDndEnabled: _settings.osFocusDndEnabled,
+          setOsFocusDndEnabled: _setOsFocusDndEnabled,
+          restoreDefaultSettings: _restoreDefaultSettings,
         ),
       ),
     );
@@ -1054,6 +1071,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   notificationService: _notificationService,
                   breakOverlayService: _breakOverlayService,
                   aiMotivationEnabled: _settings.aiMotivationEnabled,
+                  osFocusDndEnabled: _settings.osFocusDndEnabled,
                   aiProvider: _settings.aiProvider,
                   aiApiKey: _settings.aiApiKey,
                   aiModel: _settings.aiModel,
