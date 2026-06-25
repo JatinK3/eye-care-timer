@@ -157,11 +157,11 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] **Rotating eye-health tips & 20-20-20 education** — surface short, rotating eye-care tips on the break screen and a "Learn" card on home to reinforce the habit and the value proposition.
 
 ### P1 — Retention, motivation & everyday UX
-- [ ] **Achievements, streak milestones & compliance stats** — badges/levels for streaks and breaks taken; add a compliance metric (breaks taken vs. skipped/postponed — the data already exists in `TimerEventRecord`) and a focus-time heatmap to History. No gamification exists today.
+- [x] **Achievements, streak milestones & compliance stats** — badges/levels for streaks and breaks taken; add a compliance metric (breaks taken vs. skipped/postponed — the data already exists in `TimerEventRecord`) and a focus-time heatmap to History. No gamification exists today.
 - [x] **Global hotkeys + richer tray/menubar** — system-wide start/pause/skip/take-break-now; tray tooltip showing "next break at HH:MM" and a "snooze all for 1h / until tomorrow" quick action.
 - [x] **Settings redesign with search & grouping** — `settings_page.dart` is ~1.2k lines and growing; add search and collapsible categories so the surface stays usable.
 - [x] **Theme expansion** — custom accent-color picker, true-black AMOLED variant, and Material You / system-accent dynamic color.
-- [ ] **Break-screen customization** — optional motivational quotes / custom messages, choice of background, and toggles for which info (clock, next phase, tips) is shown during a break.
+- [x] **Break-screen customization** — optional motivational quotes / custom messages, choice of background, and toggles for which info (clock, next phase, tips) is shown during a break.
 - [ ] **Localization (i18n) scaffolding** — app is English-only (no `flutter_localizations`/ARB); extract strings and add localization. Large reach multiplier.
 
 ### P2 — Cross-device, ecosystem & context intelligence
@@ -180,9 +180,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [ ] **Accessibility & performance audit** — screen-reader pass, reduced-motion option, colorblind-safe palettes; revisit the once-per-second tray PNG render cadence on desktop.
 
 ### Quick wins (low effort, near-term)
-- [ ] Promote "Take a break now" and a "Snooze for…" action to the main home screen (currently tray-only).
+- [x] Promote "Take a break now" and a "Snooze for…" action to the main home screen (currently tray-only).
 - [ ] Add a one-tap "Restore defaults" in Settings and reconsider defaults (e.g. in-app sound defaults to off).
-- [ ] Show a "breaks taken today" count on home, and a pre-break countdown indication on the tray icon.
+- [x] Show a "breaks taken today" count on home.
+- [ ] Add a pre-break countdown indication on the tray icon.
 
 ---
 
@@ -215,6 +216,13 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 5. **Settings backup/restore** (P2) — JSON config export/import (pairs naturally with existing history export).
 
 ## Completed
+
+- Implemented the next P1/P2 product-depth batch:
+  - History now shows break compliance, achievements/milestones, milestone count, and richer insights based on existing `TimerEventRecord` and completed session history.
+  - Break-screen customization settings now persist show-clock, show-tips, show-progress, and custom break-message preferences. Flutter in-app/desktop break surfaces consume these settings.
+  - The default break visualizer style is now `Random/All` for new/unset preferences.
+  - Home now exposes `Take break now`, `Snooze 1h`, `Tomorrow`, and `Cancel snooze` quick actions, plus a compact breaks-taken-today summary.
+  - Added focused coverage for default visualizer, home quick action, break customization settings, and History achievements/compliance. Verification pending final full test run.
 
 - Implemented rotating eye-health tips and 20-20-20 education:
   - Added `lib/features/timer/eye_health_tips.dart` as a shared static catalog for practical eye-care tips.

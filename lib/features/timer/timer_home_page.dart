@@ -60,6 +60,10 @@ class TimerHomePage extends StatefulWidget {
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
   final String breakVisualizerStyle;
+  final bool breakShowClock;
+  final bool breakShowTips;
+  final bool breakShowProgress;
+  final String breakCustomMessage;
   final String chimeStyle;
   final bool blinkRemindersEnabled;
   final int blinkRemindersCadenceSeconds;
@@ -103,6 +107,10 @@ class TimerHomePage extends StatefulWidget {
     required this.postponeDurationSeconds,
     required this.smartIdleEnabled,
     required this.breakVisualizerStyle,
+    required this.breakShowClock,
+    required this.breakShowTips,
+    required this.breakShowProgress,
+    required this.breakCustomMessage,
     required this.chimeStyle,
     required this.blinkRemindersEnabled,
     required this.blinkRemindersCadenceSeconds,
@@ -540,6 +548,10 @@ class TimerHomePageState extends State<TimerHomePage>
             breakMode: widget.breakMode,
             breakVisualizerStyle: _activeBreakVisualizerStyle,
             aiQuote: _cachedAiQuote,
+            showClock: widget.breakShowClock,
+            showTips: widget.breakShowTips,
+            showProgress: widget.breakShowProgress,
+            customMessage: widget.breakCustomMessage,
           ),
         );
       }
@@ -808,6 +820,10 @@ class TimerHomePageState extends State<TimerHomePage>
           breakMode: widget.breakMode,
           breakVisualizerStyle: _activeBreakVisualizerStyle,
           aiQuote: _cachedAiQuote,
+          showClock: widget.breakShowClock,
+          showTips: widget.breakShowTips,
+          showProgress: widget.breakShowProgress,
+          customMessage: widget.breakCustomMessage,
         ),
       );
     } else {
@@ -1097,6 +1113,20 @@ class TimerHomePageState extends State<TimerHomePage>
     // Pre-fetch AI quote for the upcoming break in background.
     unawaited(_preFetchAiQuote());
     _updateDesktopState();
+  }
+
+  void _takeBreakNow() {
+    if (_isBreak) return;
+    if (_isSnoozed) {
+      _snoozeEndsAt = null;
+      _lastSnoozeRemaining = null;
+    }
+    _activeBreakVisualizerStyle = _resolveVisualizerStyle();
+    _startTimer(_breakDurationSeconds, isBreak: true);
+  }
+
+  void _pauseTimerForSnooze(Duration duration) {
+    _snoozeBreaks(duration);
   }
 
   void _pauseOrResume() {
@@ -1652,6 +1682,107 @@ class TimerHomePageState extends State<TimerHomePage>
     return '$minutes min';
   }
 
+  Widget _buildTodayBreakSummary(ThemeData theme, Color accentColor) {
+    final goalReached = widget.dailyGoal > 0 && _streakCount >= widget.dailyGoal;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: accentColor.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            goalReached ? Icons.emoji_events_outlined : Icons.visibility_outlined,
+            color: accentColor,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Breaks taken today',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$_streakCount / ${widget.dailyGoal} breaks',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            goalReached ? 'Goal met' : 'Keep going',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: accentColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHomeQuickActions(ThemeData theme, bool isDark, Color accentColor) {
+    final canTakeBreak = !_isBreak && !_isSchedulePaused;
+    final foreground = accentColor.computeLuminance() > 0.45
+        ? Colors.black87
+        : Colors.white;
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 10,
+      runSpacing: 8,
+      children: [
+        FilledButton.icon(
+          onPressed: canTakeBreak ? _takeBreakNow : null,
+          icon: const Icon(Icons.visibility_outlined),
+          label: const Text('Take break now'),
+          style: FilledButton.styleFrom(
+            backgroundColor: accentColor,
+            foregroundColor: foreground,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        ),
+        if (_isSnoozed)
+          OutlinedButton.icon(
+            onPressed: _cancelSnooze,
+            icon: const Icon(Icons.notifications_active_outlined),
+            label: const Text('Cancel snooze'),
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          )
+        else ...[
+          OutlinedButton.icon(
+            onPressed: _isBreak ? null : () => _pauseTimerForSnooze(const Duration(hours: 1)),
+            icon: const Icon(Icons.snooze_outlined),
+            label: const Text('Snooze 1h'),
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+          OutlinedButton.icon(
+            onPressed: _isBreak ? null : _snoozeUntilTomorrow,
+            icon: const Icon(Icons.nights_stay_outlined),
+            label: const Text('Tomorrow'),
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildLearnCard(ThemeData theme, bool isDark, Color accentColor) {
     final tip = _currentEducationTip;
     final surfaceColor = isDark
@@ -1703,13 +1834,16 @@ class TimerHomePageState extends State<TimerHomePage>
       animation: _progressAnimation,
       builder: (context, _) {
         final tip = _currentBreakTip;
+        final message = widget.breakCustomMessage.trim().isNotEmpty
+            ? widget.breakCustomMessage.trim()
+            : tip.action;
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: Column(
             key: ValueKey(tip.title),
             children: [
               Text(
-                tip.action,
+                message,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: accentColor,
@@ -1717,8 +1851,9 @@ class TimerHomePageState extends State<TimerHomePage>
                   height: 1.35,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
+              if (widget.breakShowTips) ...[
+                const SizedBox(height: 4),
+                Text(
                 tip.detail,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -1726,6 +1861,7 @@ class TimerHomePageState extends State<TimerHomePage>
                   height: 1.4,
                 ),
               ),
+              ],
             ],
           ),
         );
@@ -1967,7 +2103,9 @@ class TimerHomePageState extends State<TimerHomePage>
                                               ),
                                               if (_isBreak &&
                                                   _isRunning &&
-                                                  !_isPaused) ...[
+                                                  !_isPaused &&
+                                                  (widget.breakShowTips ||
+                                                      widget.breakCustomMessage.trim().isNotEmpty)) ...[
                                                 const SizedBox(height: 10),
                                                 _buildBreakTipPanel(
                                                   Theme.of(context),
@@ -1990,24 +2128,16 @@ class TimerHomePageState extends State<TimerHomePage>
                                             context,
                                           ).textTheme.bodyMedium,
                                         ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Daily goal: $_streakCount / ${widget.dailyGoal} breaks',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w700,
-                                              ),
+                                        const SizedBox(height: 12),
+                                        _buildTodayBreakSummary(
+                                          Theme.of(context),
+                                          progressColor,
                                         ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          _streakCount >= widget.dailyGoal
-                                              ? 'Goal reached for today'
-                                              : 'Streak today: $_streakCount cycles',
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.bodyMedium,
+                                        const SizedBox(height: 12),
+                                        _buildHomeQuickActions(
+                                          Theme.of(context),
+                                          isDark,
+                                          progressColor,
                                         ),
                                         const SizedBox(height: 12),
                                         _buildLearnCard(
@@ -2109,7 +2239,9 @@ class TimerHomePageState extends State<TimerHomePage>
                                     ),
                                     if (_isBreak &&
                                         _isRunning &&
-                                        !_isPaused) ...[
+                                        !_isPaused &&
+                                        (widget.breakShowTips ||
+                                            widget.breakCustomMessage.trim().isNotEmpty)) ...[
                                       const SizedBox(height: 10),
                                       _buildBreakTipPanel(
                                         Theme.of(context),
@@ -2174,18 +2306,16 @@ class TimerHomePageState extends State<TimerHomePage>
                                   style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Daily goal: $_streakCount / ${widget.dailyGoal} breaks',
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              const SizedBox(height: 12),
+                              _buildTodayBreakSummary(
+                                Theme.of(context),
+                                progressColor,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _streakCount >= widget.dailyGoal
-                                    ? 'Goal reached for today'
-                                    : 'Streak today: $_streakCount cycles',
-                                style: Theme.of(context).textTheme.bodyMedium,
+                              const SizedBox(height: 12),
+                              _buildHomeQuickActions(
+                                Theme.of(context),
+                                isDark,
+                                progressColor,
                               ),
                               const SizedBox(height: 12),
                               _buildLearnCard(

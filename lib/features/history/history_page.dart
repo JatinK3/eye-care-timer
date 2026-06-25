@@ -71,6 +71,20 @@ class _HistoryPageState extends State<HistoryPage> {
     final longestStreak = _longestGoalStreak(dates);
     final peakHour = _peakFocusHour(rangeSessions);
 
+    final breakDecisionCount = completedWorkCount + skippedBreakCount + postponedBreakCount;
+    final complianceRate = breakDecisionCount == 0
+        ? 0
+        : ((completedWorkCount / breakDecisionCount) * 100).round();
+    final achievements = _achievementsFor(
+      completedWorkCount: completedWorkCount,
+      totalFocusSeconds: totalFocusSeconds,
+      goalDays: goalDays,
+      longestStreak: longestStreak,
+      complianceRate: complianceRate,
+      skippedBreakCount: skippedBreakCount,
+      postponedBreakCount: postponedBreakCount,
+    );
+
     final recentSessions = rangeSessions.take(10);
 
     return Scaffold(
@@ -148,6 +162,27 @@ class _HistoryPageState extends State<HistoryPage> {
               detail: "Most active time",
             ),
           ),
+          const SizedBox(height: 12),
+          _MetricRow(
+            first: _MetricCard(
+              icon: Icons.verified_outlined,
+              label: "Break compliance",
+              value: "$complianceRate%",
+              detail: "$completedWorkCount taken, ${skippedBreakCount + postponedBreakCount} deferred",
+            ),
+            second: _MetricCard(
+              icon: Icons.emoji_events_outlined,
+              label: "Milestones earned",
+              value: "${achievements.where((item) => item.unlocked).length}/${achievements.length}",
+              detail: "Based on this range",
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          _HistorySection(
+            title: "Achievements",
+            child: _AchievementGrid(achievements: achievements),
+          ),
           const SizedBox(height: 16),
 
           // Insights Card
@@ -178,6 +213,12 @@ class _HistoryPageState extends State<HistoryPage> {
                   value: "$postponedBreakCount",
                   icon: Icons.snooze_outlined,
                   color: Colors.blue,
+                ),
+                _InsightRow(
+                  label: "Compliance Rate",
+                  value: "$complianceRate%",
+                  icon: Icons.verified_outlined,
+                  color: Colors.teal,
                 ),
               ],
             ),
@@ -407,6 +448,55 @@ class _HistoryPageState extends State<HistoryPage> {
     return "${formatHour(peakHour)} - ${formatHour(endHour)}";
   }
 
+  List<_Achievement> _achievementsFor({
+    required int completedWorkCount,
+    required int totalFocusSeconds,
+    required int goalDays,
+    required int longestStreak,
+    required int complianceRate,
+    required int skippedBreakCount,
+    required int postponedBreakCount,
+  }) {
+    return [
+      _Achievement(
+        icon: Icons.visibility_outlined,
+        title: "First reset",
+        detail: "Complete one eye break",
+        unlocked: completedWorkCount >= 1,
+      ),
+      _Achievement(
+        icon: Icons.local_fire_department_outlined,
+        title: "Goal streak",
+        detail: "Meet your daily goal 3 days in a row",
+        unlocked: longestStreak >= 3,
+      ),
+      _Achievement(
+        icon: Icons.timelapse_outlined,
+        title: "Focused hour",
+        detail: "Record 1 hour of focus time",
+        unlocked: totalFocusSeconds >= 3600,
+      ),
+      _Achievement(
+        icon: Icons.workspace_premium_outlined,
+        title: "Consistency",
+        detail: "Hit your daily goal on 5 days",
+        unlocked: goalDays >= 5,
+      ),
+      _Achievement(
+        icon: Icons.verified_outlined,
+        title: "Kind discipline",
+        detail: "Keep break compliance at 80% or higher",
+        unlocked: completedWorkCount > 0 && complianceRate >= 80,
+      ),
+      _Achievement(
+        icon: Icons.spa_outlined,
+        title: "No rush rest",
+        detail: "Avoid skips and postpones in this range",
+        unlocked: completedWorkCount > 0 && skippedBreakCount == 0 && postponedBreakCount == 0,
+      ),
+    ];
+  }
+
   String _formatTotalFocusTime(int totalSeconds) {
     if (totalSeconds < 60) {
       return "${totalSeconds}s";
@@ -606,6 +696,103 @@ class _HistoryPageState extends State<HistoryPage> {
       "timerEvents": events.map((e) => e.toJson()).toList(),
     };
     return const JsonEncoder.withIndent('  ').convert(exportData);
+  }
+}
+
+class _Achievement {
+  final IconData icon;
+  final String title;
+  final String detail;
+  final bool unlocked;
+
+  const _Achievement({
+    required this.icon,
+    required this.title,
+    required this.detail,
+    required this.unlocked,
+  });
+}
+
+class _AchievementGrid extends StatelessWidget {
+  final List<_Achievement> achievements;
+
+  const _AchievementGrid({required this.achievements});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useTwoColumns = constraints.maxWidth >= 560;
+        final children = achievements
+            .map((achievement) => _AchievementTile(achievement: achievement))
+            .toList();
+        if (!useTwoColumns) {
+          return Column(children: children);
+        }
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: children
+              .map(
+                (child) => SizedBox(
+                  width: (constraints.maxWidth - 12) / 2,
+                  child: child,
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _AchievementTile extends StatelessWidget {
+  final _Achievement achievement;
+
+  const _AchievementTile({required this.achievement});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = achievement.unlocked
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: achievement.unlocked
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.28)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: achievement.unlocked
+              ? theme.colorScheme.primary.withValues(alpha: 0.28)
+              : theme.colorScheme.outlineVariant,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(achievement.unlocked ? achievement.icon : Icons.lock_outline, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  achievement.title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(achievement.detail, style: theme.textTheme.bodySmall),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

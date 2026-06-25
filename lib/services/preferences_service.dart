@@ -32,6 +32,10 @@ class PreferencesService {
   static const String postponeDurationSecondsKey = 'postponeDurationSeconds';
   static const String smartIdleEnabledKey = 'smartIdleEnabled';
   static const String breakVisualizerStyleKey = 'breakVisualizerStyle';
+  static const String breakShowClockKey = 'breakShowClock';
+  static const String breakShowTipsKey = 'breakShowTips';
+  static const String breakShowProgressKey = 'breakShowProgress';
+  static const String breakCustomMessageKey = 'breakCustomMessage';
   static const String chimeStyleKey = 'chimeStyle';
   static const String blinkRemindersEnabledKey = 'blinkRemindersEnabled';
   static const String blinkRemindersCadenceSecondsKey =
@@ -119,6 +123,18 @@ class PreferencesService {
       breakVisualizerStyle:
           prefs.getString(breakVisualizerStyleKey) ??
           TimerSettings.defaultBreakVisualizerStyle,
+      breakShowClock:
+          prefs.getBool(breakShowClockKey) ??
+          TimerSettings.defaultBreakShowClock,
+      breakShowTips:
+          prefs.getBool(breakShowTipsKey) ??
+          TimerSettings.defaultBreakShowTips,
+      breakShowProgress:
+          prefs.getBool(breakShowProgressKey) ??
+          TimerSettings.defaultBreakShowProgress,
+      breakCustomMessage:
+          prefs.getString(breakCustomMessageKey) ??
+          TimerSettings.defaultBreakCustomMessage,
       chimeStyle:
           prefs.getString(chimeStyleKey) ?? TimerSettings.defaultChimeStyle,
       blinkRemindersEnabled:
@@ -454,6 +470,26 @@ class PreferencesService {
   Future<void> saveBreakVisualizerStyle(String style) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(breakVisualizerStyleKey, style);
+  }
+
+  Future<void> saveBreakShowClock(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(breakShowClockKey, enabled);
+  }
+
+  Future<void> saveBreakShowTips(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(breakShowTipsKey, enabled);
+  }
+
+  Future<void> saveBreakShowProgress(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(breakShowProgressKey, enabled);
+  }
+
+  Future<void> saveBreakCustomMessage(String message) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(breakCustomMessageKey, message);
   }
 
   Future<void> saveChimeStyle(String style) async {

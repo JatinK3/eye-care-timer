@@ -14,6 +14,10 @@ class DesktopBreakOverlay extends StatefulWidget {
   final List<Rect> monitorRects;
   final String breakVisualizerStyle;
   final String? aiQuote;
+  final bool showClock;
+  final bool showTips;
+  final bool showProgress;
+  final String customMessage;
 
   const DesktopBreakOverlay({
     super.key,
@@ -23,6 +27,10 @@ class DesktopBreakOverlay extends StatefulWidget {
     this.monitorRects = const [],
     this.breakVisualizerStyle = 'Breathing',
     this.aiQuote,
+    this.showClock = true,
+    this.showTips = true,
+    this.showProgress = true,
+    this.customMessage = '',
   });
 
   @override
@@ -292,6 +300,9 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     final textStyle = theme.textTheme;
     final showBreathingGuide = widget.breakVisualizerStyle == 'Breathing';
     final tip = _currentTip;
+    final message = widget.customMessage.trim().isNotEmpty
+        ? widget.customMessage.trim()
+        : widget.aiQuote ?? tip.action;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -317,7 +328,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Text(
-              widget.aiQuote ?? tip.action,
+              message,
               style: textStyle.headlineSmall?.copyWith(
                 color: Colors.cyanAccent,
                 fontWeight: FontWeight.w300,
@@ -326,20 +337,23 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(height: 12),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Text(
-              tip.detail,
-              style: textStyle.bodyMedium?.copyWith(
-                color: Colors.white54,
-                height: 1.45,
+          if (widget.showTips) ...[
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Text(
+                tip.detail,
+                style: textStyle.bodyMedium?.copyWith(
+                  color: Colors.white54,
+                  height: 1.45,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
-          ),
+          ],
           const SizedBox(height: 40),
-          if (!showBreathingGuide) ...[
+          if (!showBreathingGuide &&
+              (widget.showClock || widget.showProgress)) ...[
             Stack(
               alignment: Alignment.center,
               children: [
@@ -347,7 +361,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
                   width: 150,
                   height: 150,
                   child: CircularProgressIndicator(
-                    value: widget.initialDurationSeconds > 0
+                    value: widget.showProgress && widget.initialDurationSeconds > 0
                         ? _remainingSeconds / widget.initialDurationSeconds
                         : 0.0,
                     strokeWidth: 8,
@@ -355,6 +369,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
                     backgroundColor: Colors.white12,
                   ),
                 ),
+                if (widget.showClock)
                 Text(
                   _formatDuration(_remainingSeconds),
                   style: textStyle.displaySmall?.copyWith(

@@ -23,11 +23,19 @@ class SettingsPage extends StatefulWidget {
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
   final String breakVisualizerStyle;
+  final bool breakShowClock;
+  final bool breakShowTips;
+  final bool breakShowProgress;
+  final String breakCustomMessage;
   final void Function(bool) setAllowSkip;
   final void Function(bool) setAllowPostpone;
   final void Function(int) setPostponeDurationSeconds;
   final void Function(bool) setSmartIdleEnabled;
   final void Function(String) setBreakVisualizerStyle;
+  final void Function(bool) setBreakShowClock;
+  final void Function(bool) setBreakShowTips;
+  final void Function(bool) setBreakShowProgress;
+  final void Function(String) setBreakCustomMessage;
   final bool notificationsEnabled;
   final bool longBreakEnabled;
   final int longBreakDurationSeconds;
@@ -140,11 +148,19 @@ class SettingsPage extends StatefulWidget {
     required this.postponeDurationSeconds,
     required this.smartIdleEnabled,
     required this.breakVisualizerStyle,
+    required this.breakShowClock,
+    required this.breakShowTips,
+    required this.breakShowProgress,
+    required this.breakCustomMessage,
     required this.setAllowSkip,
     required this.setAllowPostpone,
     required this.setPostponeDurationSeconds,
     required this.setSmartIdleEnabled,
     required this.setBreakVisualizerStyle,
+    required this.setBreakShowClock,
+    required this.setBreakShowTips,
+    required this.setBreakShowProgress,
+    required this.setBreakCustomMessage,
     required this.notificationPermissionStatus,
     required this.exactAlarmStatus,
     required this.batteryOptimizationStatus,
@@ -1035,6 +1051,61 @@ class _SettingsPageState extends State<SettingsPage>
                 DropdownMenuItem(value: 'Starry', child: Text('Starry Sky')),
               ],
             ),
+          ),
+        ),
+        SettingItem(
+          title: 'Break screen content',
+          subtitle: 'Choose what appears during an eye break',
+          keywords: ['break', 'screen', 'content', 'clock', 'tips', 'progress'],
+          category: 'Break Screen & Behavior',
+          widget: Column(
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.schedule_outlined),
+                title: const Text('Show countdown clock'),
+                subtitle: const Text('Display remaining break time'),
+                value: widget.breakShowClock,
+                onChanged: widget.setBreakShowClock,
+              ),
+              const Divider(height: 1),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.lightbulb_outline),
+                title: const Text('Show eye-care tips'),
+                subtitle: const Text('Rotate guidance during the break'),
+                value: widget.breakShowTips,
+                onChanged: widget.setBreakShowTips,
+              ),
+              const Divider(height: 1),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.donut_large_outlined),
+                title: const Text('Show progress ring'),
+                subtitle: const Text('Visualize break progress on classic layouts'),
+                value: widget.breakShowProgress,
+                onChanged: widget.setBreakShowProgress,
+              ),
+            ],
+          ),
+        ),
+        SettingItem(
+          title: 'Custom break message',
+          subtitle: 'Optional text shown before rotating tips',
+          keywords: ['custom', 'message', 'quote', 'break', 'text'],
+          category: 'Break Screen & Behavior',
+          widget: TextFormField(
+            initialValue: widget.breakCustomMessage,
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.edit_note_outlined),
+              labelText: 'Custom break message',
+              hintText: 'Close your eyes and breathe slowly.',
+              border: OutlineInputBorder(),
+            ),
+            maxLength: 120,
+            minLines: 1,
+            maxLines: 3,
+            onChanged: widget.setBreakCustomMessage,
           ),
         ),
         if (widget.allowPostpone)

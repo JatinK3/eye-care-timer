@@ -10,6 +10,7 @@ import 'package:eyeapptimer/services/notification_service.dart';
 import 'package:eyeapptimer/services/preferences_service.dart';
 import 'package:eyeapptimer/models/work_session_record.dart';
 import 'package:eyeapptimer/models/timer_event_record.dart';
+import 'package:eyeapptimer/models/timer_settings.dart';
 import 'package:eyeapptimer/features/timer/timer_home_page.dart';
 import 'package:eyeapptimer/features/timer/eye_health_tips.dart';
 
@@ -17,6 +18,8 @@ class FakeBreakOverlayService extends BreakOverlayService {
   OverlayPermissionStatus status;
   int openSettingsCount = 0;
   int previewCount = 0;
+  int breakOverlayCount = 0;
+  String? lastCustomMessage;
 
   FakeBreakOverlayService({this.status = OverlayPermissionStatus.allowed});
 
@@ -30,11 +33,35 @@ class FakeBreakOverlayService extends BreakOverlayService {
   }
 
   @override
-  Future<bool> showPreview({String breakVisualizerStyle = 'Breathing'}) async {
+  Future<bool> showPreview({
+    String breakVisualizerStyle = 'Breathing',
+    bool showClock = true,
+    bool showTips = true,
+    bool showProgress = true,
+    String customMessage = '',
+  }) async {
     previewCount++;
+    lastCustomMessage = customMessage;
+    return status == OverlayPermissionStatus.allowed;
+  }
+
+  @override
+  Future<bool> showBreakOverlay({
+    required int durationSeconds,
+    required BreakMode breakMode,
+    String breakVisualizerStyle = 'Breathing',
+    String? aiQuote,
+    bool showClock = true,
+    bool showTips = true,
+    bool showProgress = true,
+    String customMessage = '',
+  }) async {
+    breakOverlayCount++;
+    lastCustomMessage = customMessage;
     return status == OverlayPermissionStatus.allowed;
   }
 }
+
 
 class FakeNotificationService extends NotificationService {
   NotificationPermissionStatus status;
@@ -173,6 +200,11 @@ double contrastRatio(Color first, Color second) {
 }
 
 void main() {
+  test('break visualizer defaults to Random/All', () {
+    expect(TimerSettings.defaultBreakVisualizerStyle, 'Random');
+    expect(const TimerSettings.defaults().breakVisualizerStyle, 'Random');
+  });
+
   test('eye health tips rotate during a break window', () {
     final first = EyeHealthTips.breakTipForRemaining(
       remainingSeconds: 20,
@@ -203,6 +235,19 @@ void main() {
     expect(visibleTipTitles, isNotEmpty);
   });
 
+  testWidgets('home quick action can start an immediate break', (
+    WidgetTester tester,
+  ) async {
+    final overlayService = FakeBreakOverlayService();
+    await pumpBlinkKindApp(tester, breakOverlayService: overlayService);
+
+    await tester.tap(find.text('Take break now'));
+    await tester.pump();
+
+    expect(overlayService.breakOverlayCount, 1);
+    expect(find.text('Break'), findsOneWidget);
+  });
+
   testWidgets('BlinkKind app renders initial timer state', (
     WidgetTester tester,
   ) async {
@@ -216,8 +261,8 @@ void main() {
     expect(find.text('20:00'), findsOneWidget);
     expect(find.text('Start'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
-    expect(find.textContaining('Daily goal: 0 / 6 breaks'), findsOneWidget);
-    expect(find.textContaining('Streak today: 0 cycles'), findsOneWidget);
+    expect(find.text('Breaks taken today'), findsOneWidget);
+    expect(find.text('0 / 6 breaks'), findsOneWidget);
   });
 
   testWidgets('first run onboarding can request reminders', (
@@ -270,8 +315,8 @@ void main() {
     await pumpBlinkKindApp(tester);
 
     expect(find.text('05:00'), findsOneWidget);
-    expect(find.textContaining('Daily goal: 2 / 8 breaks'), findsOneWidget);
-    expect(find.textContaining('Streak today: 2 cycles'), findsOneWidget);
+    expect(find.text('Breaks taken today'), findsOneWidget);
+    expect(find.text('2 / 8 breaks'), findsOneWidget);
   });
 
   testWidgets('restores a paused work session', (WidgetTester tester) async {
@@ -342,7 +387,7 @@ void main() {
 
     expect(find.textContaining('Break Time'), findsOneWidget);
     expect(find.text('Pause'), findsOneWidget);
-    expect(find.textContaining('Streak today: 1 cycles'), findsOneWidget);
+    expect(find.text('1 / 6 breaks'), findsOneWidget);
     expect(notificationService.breakReminderCount, 1);
   });
 
@@ -543,6 +588,38 @@ void main() {
 
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString(PreferencesService.breakModeKey), 'strict');
+  });
+
+  testWidgets('settings customizes break screen content', (
+    WidgetTester tester,
+  ) async {
+    await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    final categoryHeader = find.text('Break Screen & Behavior');
+    await tester.scrollUntilVisible(categoryHeader, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    final showTips = find.widgetWithText(SwitchListTile, 'Show eye-care tips');
+    await tester.scrollUntilVisible(showTips, 300, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    await tester.tap(showTips);
+    await tester.pumpAndSettle();
+
+    final messageField = find.widgetWithText(TextFormField, 'Custom break message');
+    await tester.scrollUntilVisible(messageField, 300, scrollable: find.byType(Scrollable).first);
+    await tester.enterText(messageField, 'Look outside and breathe.');
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool(PreferencesService.breakShowTipsKey), isFalse);
+    expect(
+      prefs.getString(PreferencesService.breakCustomMessageKey),
+      'Look outside and breathe.',
+    );
   });
 
   testWidgets('settings applies quick timer presets', (
@@ -766,7 +843,7 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Daily goal: 0 / 10 breaks'), findsOneWidget);
+    expect(find.text('0 / 10 breaks'), findsOneWidget);
   });
 
   testWidgets('settings opens recent break history', (
@@ -813,6 +890,16 @@ void main() {
     expect(find.text('Peak focus hour'), findsOneWidget);
     expect(find.text('30 days'), findsOneWidget);
     expect(find.text('20m'), findsOneWidget);
+
+    final complianceTitle = find.text('Break compliance');
+    await tester.scrollUntilVisible(
+      complianceTitle,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(complianceTitle, findsOneWidget);
+    expect(find.text('Achievements'), findsOneWidget);
 
     final logsTitle = find.text('Last 7 days logs');
     await tester.scrollUntilVisible(logsTitle, 300, scrollable: find.byType(Scrollable).first);
@@ -941,20 +1028,20 @@ void main() {
       await pumpBlinkKindApp(tester);
 
       expect(find.byIcon(Icons.settings), findsOneWidget);
-      expect(find.textContaining('Daily goal'), findsOneWidget);
+      expect(find.text('Breaks taken today'), findsOneWidget);
 
       await tester.tap(find.text('20:00'));
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.settings), findsNothing);
-      expect(find.textContaining('Daily goal'), findsNothing);
+      expect(find.text('Breaks taken today'), findsNothing);
       expect(find.text('Tap dial to exit focus mode'), findsOneWidget);
 
       await tester.tap(find.text('20:00'));
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.settings), findsOneWidget);
-      expect(find.textContaining('Daily goal'), findsOneWidget);
+      expect(find.text('Breaks taken today'), findsOneWidget);
       expect(find.text('Tap dial to exit focus mode'), findsNothing);
     },
   );
@@ -1063,9 +1150,9 @@ void main() {
     await tester.scrollUntilVisible(find.text('Break visualizer style'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Calm Breathing'), findsOneWidget);
+    expect(find.text('Random/All'), findsOneWidget);
 
-    await tester.tap(find.text('Calm Breathing'));
+    await tester.tap(find.text('Random/All'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Starry Sky').last);
     await tester.pumpAndSettle();
@@ -1093,9 +1180,13 @@ void main() {
     await tester.scrollUntilVisible(find.text('Break visualizer style'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Calm Breathing'), findsOneWidget);
+    expect(find.text('Random/All'), findsOneWidget);
 
-    await tester.tap(find.text('Calm Breathing'));
+    await tester.tap(find.text('Random/All'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Starry Sky').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Starry Sky'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Random/All').last);
     await tester.pumpAndSettle();

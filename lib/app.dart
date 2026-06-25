@@ -321,6 +321,10 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     }
     return _breakOverlayService.showPreview(
       breakVisualizerStyle: resolvedStyle,
+      showClock: _settings.breakShowClock,
+      showTips: _settings.breakShowTips,
+      showProgress: _settings.breakShowProgress,
+      customMessage: _settings.breakCustomMessage,
     );
   }
 
@@ -340,6 +344,10 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       durationSeconds: 20,
       breakMode: _settings.breakMode,
       breakVisualizerStyle: resolvedStyle,
+      showClock: _settings.breakShowClock,
+      showTips: _settings.breakShowTips,
+      showProgress: _settings.breakShowProgress,
+      customMessage: _settings.breakCustomMessage,
     );
   }
 
@@ -664,6 +672,34 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveBreakVisualizerStyle(style));
   }
 
+  void _setBreakShowClock(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(breakShowClock: enabled);
+    });
+    unawaited(_preferencesService.saveBreakShowClock(enabled));
+  }
+
+  void _setBreakShowTips(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(breakShowTips: enabled);
+    });
+    unawaited(_preferencesService.saveBreakShowTips(enabled));
+  }
+
+  void _setBreakShowProgress(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(breakShowProgress: enabled);
+    });
+    unawaited(_preferencesService.saveBreakShowProgress(enabled));
+  }
+
+  void _setBreakCustomMessage(String message) {
+    setState(() {
+      _settings = _settings.copyWith(breakCustomMessage: message);
+    });
+    unawaited(_preferencesService.saveBreakCustomMessage(message));
+  }
+
   void _saveSession(TimerSession session) {
     setState(() {
       _session = session;
@@ -785,11 +821,19 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           postponeDurationSeconds: _settings.postponeDurationSeconds,
           smartIdleEnabled: _settings.smartIdleEnabled,
           breakVisualizerStyle: _settings.breakVisualizerStyle,
+          breakShowClock: _settings.breakShowClock,
+          breakShowTips: _settings.breakShowTips,
+          breakShowProgress: _settings.breakShowProgress,
+          breakCustomMessage: _settings.breakCustomMessage,
           setAllowSkip: _setAllowSkip,
           setAllowPostpone: _setAllowPostpone,
           setPostponeDurationSeconds: _setPostponeDurationSeconds,
           setSmartIdleEnabled: _setSmartIdleEnabled,
           setBreakVisualizerStyle: _setBreakVisualizerStyle,
+          setBreakShowClock: _setBreakShowClock,
+          setBreakShowTips: _setBreakShowTips,
+          setBreakShowProgress: _setBreakShowProgress,
+          setBreakCustomMessage: _setBreakCustomMessage,
           notificationsEnabled: _settings.notificationsEnabled,
           notificationPermissionStatus: _notificationPermissionStatus,
           exactAlarmStatus: _exactAlarmStatus,
@@ -982,6 +1026,10 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   postponeDurationSeconds: _settings.postponeDurationSeconds,
                   smartIdleEnabled: _settings.smartIdleEnabled,
                   breakVisualizerStyle: _settings.breakVisualizerStyle,
+                  breakShowClock: _settings.breakShowClock,
+                  breakShowTips: _settings.breakShowTips,
+                  breakShowProgress: _settings.breakShowProgress,
+                  breakCustomMessage: _settings.breakCustomMessage,
                   initialSession: _session,
                   openSettings: _openSettings,
                   setPreset: _setPreset,

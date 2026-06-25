@@ -51,7 +51,13 @@ class BreakOverlayService {
     return _invokeBoolean("openOverlayPermissionSettings");
   }
 
-  Future<bool> showPreview({String breakVisualizerStyle = 'Breathing'}) async {
+  Future<bool> showPreview({
+    String breakVisualizerStyle = 'Breathing',
+    bool showClock = true,
+    bool showTips = true,
+    bool showProgress = true,
+    String customMessage = '',
+  }) async {
     final bool isAppInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
 
     if (_isSupportedOnDesktop) {
@@ -59,11 +65,23 @@ class BreakOverlayService {
         durationSeconds: 10,
         breakMode: BreakMode.gentle,
         breakVisualizerStyle: breakVisualizerStyle,
+        showClock: showClock,
+        showTips: showTips,
+        showProgress: showProgress,
+        customMessage: customMessage,
       );
     }
 
     if (isAppInForeground) {
-      _pushBreakOverlayRoute(10, BreakMode.gentle, breakVisualizerStyle);
+      _pushBreakOverlayRoute(
+        10,
+        BreakMode.gentle,
+        breakVisualizerStyle,
+        showClock: showClock,
+        showTips: showTips,
+        showProgress: showProgress,
+        customMessage: customMessage,
+      );
       return true;
     }
     return _invokeBoolean("showOverlayPreview");
@@ -83,12 +101,25 @@ class BreakOverlayService {
     required BreakMode breakMode,
     String breakVisualizerStyle = 'Breathing',
     String? aiQuote,
+    bool showClock = true,
+    bool showTips = true,
+    bool showProgress = true,
+    String customMessage = '',
   }) async {
     final bool isAppInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
 
     if (_isSupportedOnDesktop) {
       await DesktopIntegrationService.instance.showBreakOverlay(true);
-      _pushBreakOverlayRoute(durationSeconds, breakMode, breakVisualizerStyle, aiQuote);
+      _pushBreakOverlayRoute(
+        durationSeconds,
+        breakMode,
+        breakVisualizerStyle,
+        aiQuote: aiQuote,
+        showClock: showClock,
+        showTips: showTips,
+        showProgress: showProgress,
+        customMessage: customMessage,
+      );
       return true;
     }
 
@@ -102,6 +133,10 @@ class BreakOverlayService {
       return await _channel.invokeMethod<bool>("showBreakOverlay", {
             "durationSeconds": durationSeconds,
             "breakMode": breakMode.name,
+            "showClock": showClock,
+            "showTips": showTips,
+            "showProgress": showProgress,
+            "customMessage": customMessage,
           }) ??
           false;
     } on PlatformException {
@@ -124,9 +159,13 @@ class BreakOverlayService {
   void _pushBreakOverlayRoute(
     int durationSeconds,
     BreakMode breakMode,
-    String breakVisualizerStyle, [
+    String breakVisualizerStyle, {
     String? aiQuote,
-  ]) {
+    bool showClock = true,
+    bool showTips = true,
+    bool showProgress = true,
+    String customMessage = '',
+  }) {
     final navigator = navigatorKey.currentState;
     if (navigator == null) return;
 
@@ -147,6 +186,10 @@ class BreakOverlayService {
           monitorRects: monitorRects,
           breakVisualizerStyle: breakVisualizerStyle,
           aiQuote: aiQuote,
+          showClock: showClock,
+          showTips: showTips,
+          showProgress: showProgress,
+          customMessage: customMessage,
           onDismiss: () {
             unawaited(stopBreakOverlay());
           },

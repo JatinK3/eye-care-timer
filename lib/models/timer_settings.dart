@@ -14,7 +14,11 @@ class TimerSettings {
   static const bool defaultAllowPostpone = true;
   static const int defaultPostponeDurationSeconds = 2 * 60;
   static const bool defaultSmartIdleEnabled = true;
-  static const String defaultBreakVisualizerStyle = 'Breathing';
+  static const String defaultBreakVisualizerStyle = 'Random';
+  static const bool defaultBreakShowClock = true;
+  static const bool defaultBreakShowTips = true;
+  static const bool defaultBreakShowProgress = true;
+  static const String defaultBreakCustomMessage = '';
   static const String defaultChimeStyle = 'tibetan_bowl';
   static const bool defaultBlinkRemindersEnabled = false;
   static const int defaultBlinkRemindersCadenceSeconds = 5;
@@ -56,6 +60,10 @@ class TimerSettings {
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
   final String breakVisualizerStyle;
+  final bool breakShowClock;
+  final bool breakShowTips;
+  final bool breakShowProgress;
+  final String breakCustomMessage;
   final String chimeStyle;
   final bool blinkRemindersEnabled;
   final int blinkRemindersCadenceSeconds;
@@ -97,6 +105,10 @@ class TimerSettings {
     required this.postponeDurationSeconds,
     required this.smartIdleEnabled,
     required this.breakVisualizerStyle,
+    required this.breakShowClock,
+    required this.breakShowTips,
+    required this.breakShowProgress,
+    required this.breakCustomMessage,
     required this.chimeStyle,
     required this.blinkRemindersEnabled,
     required this.blinkRemindersCadenceSeconds,
@@ -139,6 +151,10 @@ class TimerSettings {
       postponeDurationSeconds = defaultPostponeDurationSeconds,
       smartIdleEnabled = defaultSmartIdleEnabled,
       breakVisualizerStyle = defaultBreakVisualizerStyle,
+      breakShowClock = defaultBreakShowClock,
+      breakShowTips = defaultBreakShowTips,
+      breakShowProgress = defaultBreakShowProgress,
+      breakCustomMessage = defaultBreakCustomMessage,
       chimeStyle = defaultChimeStyle,
       blinkRemindersEnabled = defaultBlinkRemindersEnabled,
       blinkRemindersCadenceSeconds = defaultBlinkRemindersCadenceSeconds,
@@ -180,6 +196,10 @@ class TimerSettings {
     int? postponeDurationSeconds,
     bool? smartIdleEnabled,
     String? breakVisualizerStyle,
+    bool? breakShowClock,
+    bool? breakShowTips,
+    bool? breakShowProgress,
+    String? breakCustomMessage,
     String? chimeStyle,
     bool? blinkRemindersEnabled,
     int? blinkRemindersCadenceSeconds,
@@ -223,6 +243,10 @@ class TimerSettings {
           postponeDurationSeconds ?? this.postponeDurationSeconds,
       smartIdleEnabled: smartIdleEnabled ?? this.smartIdleEnabled,
       breakVisualizerStyle: breakVisualizerStyle ?? this.breakVisualizerStyle,
+      breakShowClock: breakShowClock ?? this.breakShowClock,
+      breakShowTips: breakShowTips ?? this.breakShowTips,
+      breakShowProgress: breakShowProgress ?? this.breakShowProgress,
+      breakCustomMessage: breakCustomMessage ?? this.breakCustomMessage,
       chimeStyle: chimeStyle ?? this.chimeStyle,
       blinkRemindersEnabled:
           blinkRemindersEnabled ?? this.blinkRemindersEnabled,
