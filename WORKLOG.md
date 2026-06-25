@@ -470,3 +470,12 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Features dynamic post-frame loading on app initialization and instant configuration updates when settings are modified.
   - Fully supports manual regeneration/refresh and graceful fallback handling (displaying error messages and retry states, including instructions when the API key is missing).
   - Equipment of full widget and unit test coverage verifying display states (enabled, disabled, loading, missing API key error cases).
+
+- Documented Linux build/install options:
+  - Created a new [installation.txt](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/installation.txt) file at the root of the project outlining the packaging script and direct DEB installation guide.
+  - Documented all command line flags added to `package_linux.sh` (automatic YES/NO modes `-y`/`-n`, state reset control `-c`/`-nc`, and automatic install `-i`/`-ni`).
+
+- Enlarged system tray indicator icon:
+  - Increased dynamic system tray icon canvas size from 24x24 to 32x32 in `lib/services/desktop_integration_service.dart`.
+  - Scaled the background circle and progress ring bounds, reducing margins/paddings so the icon occupies more vertical space.
+  - Increased progress ring stroke thickness to 2.5 and scaled text font sizes (10.0 to 12.5) and graphics for higher contrast, sharpness, and visual appeal in the dock/system tray.

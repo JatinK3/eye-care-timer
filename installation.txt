@@ -1,0 +1,62 @@
+BlinkKind: Eye Break Timer - Linux Installation Guide & Packaging Script Reference
+===================================================================================
+
+This document provides a guide for building, packaging, and installing BlinkKind on Linux systems.
+
+-----------------------------------------------------------------------------------
+1. Direct Installation of Pre-built DEB Package
+-----------------------------------------------------------------------------------
+If you already have a compiled .deb package, install it by running:
+  sudo dpkg -i dist/blinkkind_1.0.0_amd64.deb
+
+If there are any missing dependencies during installation, run:
+  sudo apt-get install -f -y
+
+-----------------------------------------------------------------------------------
+2. Using the Linux Packaging Script (tool/package_linux.sh)
+-----------------------------------------------------------------------------------
+A packaging script is provided at `tool/package_linux.sh` to compile, package (.deb and .rpm), and optionally install the application.
+
+Usage:
+  ./tool/package_linux.sh [options]
+
+Command-line Flags & Options:
+  -y, --yes, -Y, --YES
+      Runs in fully automatic non-interactive mode. Automatically answers "Yes" to
+      clearing preferences and installing the generated package.
+
+  -n, --no, -N, --NO
+      Runs in fully automatic non-interactive mode. Automatically answers "No" to
+      clearing preferences and installing the generated package.
+
+  -c, --clear, --clear-state
+      Explicitly clears local application preferences and timer history files before building.
+
+  -nc, --no-clear, --no-clear-state
+      Explicitly keeps local application preferences and timer history files (no reset).
+
+  -i, --install
+      Automatically installs the compiled package upon completion.
+      Handles upgrades cleanly by removing old versions first and restarting any running
+      desktop processes or system services.
+
+  -ni, --no-install
+      Generates the packages but does not perform the installation step.
+
+Examples:
+  - Clean build without resetting local settings, and install the package immediately:
+      ./tool/package_linux.sh -nc -i
+
+  - Build packages only, with no installation and no state reset:
+      ./tool/package_linux.sh -nc -ni
+
+  - Interactive Mode (Prompt for choices):
+      ./tool/package_linux.sh
+
+-----------------------------------------------------------------------------------
+3. Clean Upgrades & Process Restarts
+-----------------------------------------------------------------------------------
+When using the `--install` (-i) option, the script automatically:
+  1. Detects and removes older installed versions of the app for a clean installation.
+  2. Restarts running background user/system services (`blinkkind`/`blinkind`).
+  3. Detects running app processes and restarts the application in the current GUI session.

@@ -464,8 +464,8 @@ class DesktopIntegrationService extends WindowListener {
     if (!isSupported) return;
 
     try {
-      final width = 24.0;
-      final height = 24.0;
+      final width = 32.0;
+      final height = 32.0;
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, width, height));
 
@@ -475,7 +475,7 @@ class DesktopIntegrationService extends WindowListener {
         ..style = ui.PaintingStyle.fill;
       canvas.drawCircle(
         Offset(width / 2, height / 2),
-        (width / 2) - 1.0,
+        (width / 2) - 0.5,
         bgPaint,
       );
 
@@ -520,29 +520,29 @@ class DesktopIntegrationService extends WindowListener {
         text = '';
       }
 
-      // 3. Draw progress ring
+      // 3. Draw progress ring (thicker stroke, less margin)
       final ringPaint = Paint()
         ..style = ui.PaintingStyle.stroke
-        ..strokeWidth = 2.0
+        ..strokeWidth = 2.5
         ..strokeCap = ui.StrokeCap.round
         ..color = ringColor.withValues(alpha: 0.25);
       canvas.drawCircle(
         Offset(width / 2, height / 2),
-        (width / 2) - 2.5,
+        (width / 2) - 1.75,
         ringPaint,
       );
 
       if (progress > 0) {
         final activeRingPaint = Paint()
           ..style = ui.PaintingStyle.stroke
-          ..strokeWidth = 2.0
+          ..strokeWidth = 2.5
           ..strokeCap = ui.StrokeCap.round
           ..color = ringColor;
 
         canvas.drawArc(
           Rect.fromCircle(
             center: Offset(width / 2, height / 2),
-            radius: (width / 2) - 2.5,
+            radius: (width / 2) - 1.75,
           ),
           -math.pi / 2,
           2 * math.pi * progress,
@@ -551,12 +551,12 @@ class DesktopIntegrationService extends WindowListener {
         );
       }
 
-      // 4. Draw central remaining text or dot
+      // 4. Draw central remaining text or dot (scaled font sizes & strokes)
       if (state.isBlinkNudging) {
         final eyePaint = Paint()
           ..color = ringColor
           ..style = ui.PaintingStyle.stroke
-          ..strokeWidth = 1.8
+          ..strokeWidth = 2.2
           ..strokeCap = ui.StrokeCap.round;
 
         canvas.drawArc(
@@ -574,17 +574,17 @@ class DesktopIntegrationService extends WindowListener {
         canvas.drawLine(
           Offset(width * 0.35, height * 0.51),
           Offset(width * 0.3, height * 0.61),
-          eyePaint..strokeWidth = 1.2,
+          eyePaint..strokeWidth = 1.5,
         );
         canvas.drawLine(
           Offset(width * 0.5, height * 0.52),
           Offset(width * 0.5, height * 0.65),
-          eyePaint..strokeWidth = 1.2,
+          eyePaint..strokeWidth = 1.5,
         );
         canvas.drawLine(
           Offset(width * 0.65, height * 0.51),
           Offset(width * 0.7, height * 0.61),
-          eyePaint..strokeWidth = 1.2,
+          eyePaint..strokeWidth = 1.5,
         );
       } else if (text.isNotEmpty) {
         final textPainter = TextPainter(
@@ -592,7 +592,7 @@ class DesktopIntegrationService extends WindowListener {
             text: text,
             style: TextStyle(
               color: Colors.white,
-              fontSize: text.length > 2 ? 8.0 : 10.0,
+              fontSize: text.length > 2 ? 10.0 : 12.5,
               fontWeight: ui.FontWeight.bold,
               height: 1.0,
             ),
@@ -610,7 +610,7 @@ class DesktopIntegrationService extends WindowListener {
       } else {
         canvas.drawCircle(
           Offset(width / 2, height / 2),
-          3.0,
+          4.0,
           Paint()
             ..color = ringColor
             ..style = ui.PaintingStyle.fill,
