@@ -705,7 +705,7 @@ class _SettingsPageState extends State<SettingsPage>
             '${widget.streakCount} / ${widget.dailyGoal} breaks today',
           ),
           trailing: DropdownButton<int>(
-            value: _dailyGoals.contains(widget.dailyGoal) ? widget.dailyGoal : null,
+            value: widget.dailyGoal,
             items: [
               ..._dailyGoals.map(
                 (goal) => DropdownMenuItem<int>(
@@ -720,7 +720,7 @@ class _SettingsPageState extends State<SettingsPage>
               if (!_dailyGoals.contains(widget.dailyGoal))
                 DropdownMenuItem<int>(
                   value: widget.dailyGoal,
-                  child: Text('${widget.dailyGoal} (Custom)'),
+                  child: Text('${widget.dailyGoal}'),
                 ),
             ],
             onChanged: (value) {
