@@ -190,7 +190,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Session Log
 
-### 2026-06-25 (Session end ~13:10 IST)
+### 2026-06-25 (Session end ~13:20 IST)
 
 **Completed this session:**
 - Fully implemented **Restore Defaults Settings Option**:
@@ -209,6 +209,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - Fully implemented **Pre-Break Tray Icon Countdown**:
   - Enhanced `DesktopIntegrationService._updateDynamicTrayIcon(state)` to detect when a work phase is imminent (< 60 seconds remaining).
   - The tray icon dynamically shifts its ring color to a warn color (`Colors.amberAccent`) and displays remaining seconds instead of rounded minutes in real-time.
+- Added **Tray Settings Navigation**:
+  - Added a `"Settings"` context menu item to the desktop tray. Tapping it automatically restores/focuses the app window and navigates directly to the settings screen.
+- Extended **Splash Screen Quote Duration**:
+  - Increased the auto-advance timer on the startup quote splash screen from 1.8 seconds to 2.5 seconds, giving you plenty of time to read the motivational quotes on launch.
 - Cleaned and verified the entire codebase:
   - Added unit/widget tests for the settings JSON serialization, UI backup/restore entries, DND toggle, and Settings reset features.
   - Verified static analysis (`flutter analyze` is clean with 0 issues) and ran all 71 unit/widget tests successfully (100% passing).
