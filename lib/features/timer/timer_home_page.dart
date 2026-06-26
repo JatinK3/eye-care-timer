@@ -96,6 +96,7 @@ class TimerHomePage extends StatefulWidget {
   final bool cameraMicAutoPostponeEnabled;
   final bool wellnessRemindersEnabled;
   final int wellnessReminderCadenceSeconds;
+  final bool blinkReminderInteractiveEnabled;
 
   const TimerHomePage({
     super.key,
@@ -151,6 +152,7 @@ class TimerHomePage extends StatefulWidget {
     required this.cameraMicAutoPostponeEnabled,
     required this.wellnessRemindersEnabled,
     required this.wellnessReminderCadenceSeconds,
+    required this.blinkReminderInteractiveEnabled,
     this.breakOverlayService,
     required this.openSettings,
     required this.setPreset,
@@ -1291,7 +1293,6 @@ class TimerHomePageState extends State<TimerHomePage>
       _animationController.duration = Duration(seconds: duration);
     });
 
-
     _animationController.forward(from: 0.0);
     _saveActiveSession(remainingSeconds: duration);
     _schedulePhaseDeadlineTimer(_phaseEndsAt!);
@@ -1857,7 +1858,10 @@ class TimerHomePageState extends State<TimerHomePage>
 
     if (customMsg != null) {
       unawaited(
-        widget.notificationService.showBlinkReminder(customMessage: customMsg),
+        widget.notificationService.showBlinkReminder(
+          customMessage: customMsg,
+          interactive: widget.blinkReminderInteractiveEnabled,
+        ),
       );
     } else if (_blinkMessageFuture != null) {
       final future = _blinkMessageFuture!;
@@ -1868,16 +1872,25 @@ class TimerHomePageState extends State<TimerHomePage>
             unawaited(
               widget.notificationService.showBlinkReminder(
                 customMessage: (msg != null && msg.isNotEmpty) ? msg : null,
+                interactive: widget.blinkReminderInteractiveEnabled,
               ),
             );
           })
           .catchError((_) {
             if (mounted && _canRunBlinkReminderCadences) {
-              unawaited(widget.notificationService.showBlinkReminder());
+              unawaited(
+                widget.notificationService.showBlinkReminder(
+                  interactive: widget.blinkReminderInteractiveEnabled,
+                ),
+              );
             }
           });
     } else {
-      unawaited(widget.notificationService.showBlinkReminder());
+      unawaited(
+        widget.notificationService.showBlinkReminder(
+          interactive: widget.blinkReminderInteractiveEnabled,
+        ),
+      );
     }
   }
 
@@ -2527,7 +2540,9 @@ class TimerHomePageState extends State<TimerHomePage>
                                 ElevatedButton.icon(
                                   onPressed: _startWorkTimer,
                                   icon: const Icon(Icons.play_arrow),
-                                  label: Text(AppLocalizations.of(context)!.start),
+                                  label: Text(
+                                    AppLocalizations.of(context)!.start,
+                                  ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: progressColor,
                                     foregroundColor: primaryButtonForeground,
@@ -2542,18 +2557,22 @@ class TimerHomePageState extends State<TimerHomePage>
                                     ),
                                   ),
                                 )
-                              else if (_isSchedulePaused) ...[ 
+                              else if (_isSchedulePaused) ...[
                                 // Schedule-paused: no Pause/Resume (already effectively
                                 // paused). Only allow cancelling the session entirely.
                                 OutlinedButton.icon(
                                   onPressed: _cancelTimer,
                                   icon: const Icon(Icons.stop),
-                                  label: Text(AppLocalizations.of(context)!.stopTimer),
+                                  label: Text(
+                                    AppLocalizations.of(context)!.stopTimer,
+                                  ),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: isDark
                                         ? Colors.red.shade200
                                         : Colors.red.shade700,
-                                    side: BorderSide(color: Colors.red.shade300),
+                                    side: BorderSide(
+                                      color: Colors.red.shade300,
+                                    ),
                                     padding: EdgeInsets.symmetric(
                                       horizontal: isLandscape ? 14 : 18,
                                       vertical: isLandscape ? 8 : 12,
@@ -2563,15 +2582,17 @@ class TimerHomePageState extends State<TimerHomePage>
                                     ),
                                   ),
                                 ),
-                              ] else ...[ 
+                              ] else ...[
                                 ElevatedButton.icon(
                                   onPressed: _pauseOrResume,
                                   icon: Icon(
                                     _isPaused ? Icons.play_arrow : Icons.pause,
                                   ),
-                                  label: Text(_isPaused
-                                      ? AppLocalizations.of(context)!.resume
-                                      : AppLocalizations.of(context)!.pause),
+                                  label: Text(
+                                    _isPaused
+                                        ? AppLocalizations.of(context)!.resume
+                                        : AppLocalizations.of(context)!.pause,
+                                  ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: isDark
                                         ? Colors.white24
@@ -2591,7 +2612,9 @@ class TimerHomePageState extends State<TimerHomePage>
                                     ElevatedButton.icon(
                                       onPressed: _skipBreak,
                                       icon: const Icon(Icons.skip_next),
-                                      label: Text(AppLocalizations.of(context)!.skip),
+                                      label: Text(
+                                        AppLocalizations.of(context)!.skip,
+                                      ),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.green.shade600,
                                         foregroundColor: Colors.white,
@@ -2610,7 +2633,9 @@ class TimerHomePageState extends State<TimerHomePage>
                                     ElevatedButton.icon(
                                       onPressed: _postponeBreak,
                                       icon: const Icon(Icons.snooze),
-                                      label: Text(AppLocalizations.of(context)!.postpone),
+                                      label: Text(
+                                        AppLocalizations.of(context)!.postpone,
+                                      ),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.orange.shade700,
                                         foregroundColor: Colors.white,
@@ -2629,12 +2654,16 @@ class TimerHomePageState extends State<TimerHomePage>
                                 OutlinedButton.icon(
                                   onPressed: _cancelTimer,
                                   icon: const Icon(Icons.stop),
-                                  label: Text(AppLocalizations.of(context)!.cancel),
+                                  label: Text(
+                                    AppLocalizations.of(context)!.cancel,
+                                  ),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: isDark
                                         ? Colors.red.shade200
                                         : Colors.red.shade700,
-                                    side: BorderSide(color: Colors.red.shade300),
+                                    side: BorderSide(
+                                      color: Colors.red.shade300,
+                                    ),
                                     padding: EdgeInsets.symmetric(
                                       horizontal: isLandscape ? 14 : 18,
                                       vertical: isLandscape ? 8 : 12,

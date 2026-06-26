@@ -209,9 +209,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   Future<void> _initializeNotifications() async {
     await _notificationService.initialize();
     await _refreshNotificationReliabilityStatus();
-    _notificationSubscription = _notificationService.onNotificationResponse.listen(
-      _handleNotificationResponse,
-    );
+    _notificationSubscription = _notificationService.onNotificationResponse
+        .listen(_handleNotificationResponse);
   }
 
   @override
@@ -286,9 +285,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           final l10n = AppLocalizations.of(ctx)!;
           return AlertDialog(
             title: Text(l10n.notificationPermissionTitle),
-            content: Text(
-              l10n.notificationPermissionMessage,
-            ),
+            content: Text(l10n.notificationPermissionMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
@@ -583,6 +580,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       _settings = _settings.copyWith(twoStageWarningEnabled: enabled);
     });
     unawaited(_preferencesService.saveTwoStageWarningEnabled(enabled));
+  }
+
+  void _setBlinkReminderInteractiveEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(blinkReminderInteractiveEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveBlinkReminderInteractiveEnabled(enabled));
   }
 
   void _setOsFocusDndEnabled(bool enabled) {
@@ -937,6 +941,10 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           wellnessRemindersEnabled: _settings.wellnessRemindersEnabled,
           wellnessReminderCadenceSeconds:
               _settings.wellnessReminderCadenceSeconds,
+          blinkReminderInteractiveEnabled:
+              _settings.blinkReminderInteractiveEnabled,
+          setBlinkReminderInteractiveEnabled:
+              _setBlinkReminderInteractiveEnabled,
           workHoursEnabled: _settings.workHoursEnabled,
           workHoursStartHour: _settings.workHoursStartHour,
           workHoursStartMinute: _settings.workHoursStartMinute,
@@ -1164,6 +1172,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   wellnessRemindersEnabled: _settings.wellnessRemindersEnabled,
                   wellnessReminderCadenceSeconds:
                       _settings.wellnessReminderCadenceSeconds,
+                  blinkReminderInteractiveEnabled:
+                      _settings.blinkReminderInteractiveEnabled,
                 ),
         );
       },

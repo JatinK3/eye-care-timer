@@ -83,6 +83,8 @@ class PreferencesService {
   static const String wellnessRemindersEnabledKey = 'wellnessRemindersEnabled';
   static const String wellnessReminderCadenceSecondsKey =
       'wellnessReminderCadenceSeconds';
+  static const String blinkReminderInteractiveEnabledKey =
+      'blinkReminderInteractiveEnabled';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -234,6 +236,9 @@ class PreferencesService {
       wellnessReminderCadenceSeconds:
           prefs.getInt(wellnessReminderCadenceSecondsKey) ??
           TimerSettings.defaultWellnessReminderCadenceSeconds,
+      blinkReminderInteractiveEnabled:
+          prefs.getBool(blinkReminderInteractiveEnabledKey) ??
+          TimerSettings.defaultBlinkReminderInteractiveEnabled,
     );
   }
 
@@ -496,6 +501,10 @@ class PreferencesService {
       wellnessReminderCadenceSecondsKey,
       TimerSettings.defaultWellnessReminderCadenceSeconds,
     );
+    await prefs.setBool(
+      blinkReminderInteractiveEnabledKey,
+      TimerSettings.defaultBlinkReminderInteractiveEnabled,
+    );
 
     return const TimerSettings.defaults().copyWith(streakCount: currentStreak);
   }
@@ -601,6 +610,10 @@ class PreferencesService {
     await prefs.setInt(
       wellnessReminderCadenceSecondsKey,
       settings.wellnessReminderCadenceSeconds,
+    );
+    await prefs.setBool(
+      blinkReminderInteractiveEnabledKey,
+      settings.blinkReminderInteractiveEnabled,
     );
   }
 
@@ -752,6 +765,11 @@ class PreferencesService {
   Future<void> saveWellnessReminderCadenceSeconds(int v) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(wellnessReminderCadenceSecondsKey, v);
+  }
+
+  Future<void> saveBlinkReminderInteractiveEnabled(bool v) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(blinkReminderInteractiveEnabledKey, v);
   }
 
   Future<void> saveHapticsEnabled(bool enabled) async {

@@ -44,6 +44,7 @@ class TimerSettings {
   static const bool defaultCameraMicAutoPostponeEnabled = false;
   static const bool defaultWellnessRemindersEnabled = false;
   static const int defaultWellnessReminderCadenceSeconds = 3600;
+  static const bool defaultBlinkReminderInteractiveEnabled = true;
   static const String defaultAiProvider = 'Gemini';
   static const String defaultAiApiKey = '';
   static const String defaultAiModel = 'gemini-1.5-flash';
@@ -103,6 +104,7 @@ class TimerSettings {
   final bool cameraMicAutoPostponeEnabled;
   final bool wellnessRemindersEnabled;
   final int wellnessReminderCadenceSeconds;
+  final bool blinkReminderInteractiveEnabled;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -158,6 +160,7 @@ class TimerSettings {
     required this.cameraMicAutoPostponeEnabled,
     required this.wellnessRemindersEnabled,
     required this.wellnessReminderCadenceSeconds,
+    required this.blinkReminderInteractiveEnabled,
   });
 
   const TimerSettings.defaults()
@@ -213,7 +216,8 @@ class TimerSettings {
       blinkReminderCustomMessage = defaultBlinkReminderCustomMessage,
       cameraMicAutoPostponeEnabled = defaultCameraMicAutoPostponeEnabled,
       wellnessRemindersEnabled = defaultWellnessRemindersEnabled,
-      wellnessReminderCadenceSeconds = defaultWellnessReminderCadenceSeconds;
+      wellnessReminderCadenceSeconds = defaultWellnessReminderCadenceSeconds,
+      blinkReminderInteractiveEnabled = defaultBlinkReminderInteractiveEnabled;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -269,6 +273,7 @@ class TimerSettings {
     bool? cameraMicAutoPostponeEnabled,
     bool? wellnessRemindersEnabled,
     int? wellnessReminderCadenceSeconds,
+    bool? blinkReminderInteractiveEnabled,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -337,6 +342,9 @@ class TimerSettings {
           wellnessRemindersEnabled ?? this.wellnessRemindersEnabled,
       wellnessReminderCadenceSeconds:
           wellnessReminderCadenceSeconds ?? this.wellnessReminderCadenceSeconds,
+      blinkReminderInteractiveEnabled:
+          blinkReminderInteractiveEnabled ??
+          this.blinkReminderInteractiveEnabled,
     );
   }
 
@@ -394,6 +402,7 @@ class TimerSettings {
       'cameraMicAutoPostponeEnabled': cameraMicAutoPostponeEnabled,
       'wellnessRemindersEnabled': wellnessRemindersEnabled,
       'wellnessReminderCadenceSeconds': wellnessReminderCadenceSeconds,
+      'blinkReminderInteractiveEnabled': blinkReminderInteractiveEnabled,
     };
   }
 
@@ -503,6 +512,9 @@ class TimerSettings {
       wellnessReminderCadenceSeconds:
           json['wellnessReminderCadenceSeconds'] as int? ??
           defaultWellnessReminderCadenceSeconds,
+      blinkReminderInteractiveEnabled:
+          json['blinkReminderInteractiveEnabled'] as bool? ??
+          defaultBlinkReminderInteractiveEnabled,
     );
   }
 

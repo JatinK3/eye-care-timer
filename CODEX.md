@@ -264,3 +264,9 @@ Creative follow-ups after the core overlay is stable:
 
 - OS blink reminders and tray blink nudges are intentionally separate controls. OS reminders use `blinkRemindersEnabled` / `blinkRemindersCadenceSeconds` and should present as visible silent banners where the OS permits. Tray nudges use `trayBlinkNudgesEnabled` / `trayBlinkNudgeCadenceSeconds` and only pulse the dial/tray eye indicator.
 - Keep duplicate prevention separate for both systems: notification buckets use `_lastBlinkReminderBucket`, while tray pulse buckets use `_lastTrayBlinkNudgeBucket`.
+
+
+## Notification Action Preference
+
+- Blink reminder notification action buttons are optional through `blinkReminderInteractiveEnabled`. Keep both interactive and non-interactive blink notification details on a high-importance silent channel so disabling the action button does not also hide the banner.
+- The `blink_done` action only exists on Android local notifications. Linux `notify-send` blink reminders remain banner-only and are unaffected by the interactive toggle.

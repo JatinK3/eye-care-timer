@@ -597,6 +597,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsShowBlinkBanner => 'How often to show the OS blink banner';
 
   @override
+  String get settingsInteractiveBlinkReminders => 'Interactive blink actions';
+
+  @override
+  String get settingsInteractiveBlinkRemindersSubtitle =>
+      'Add a button to check off blink reminders directly from notifications';
+
+  @override
   String get settingsTrayBlinkNudges => 'Tray blink nudges';
 
   @override

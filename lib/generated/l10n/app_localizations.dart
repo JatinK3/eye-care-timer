@@ -1174,6 +1174,18 @@ abstract class AppLocalizations {
   /// **'How often to show the OS blink banner'**
   String get settingsShowBlinkBanner;
 
+  /// Setting title to toggle interactive buttons on blink notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Interactive blink actions'**
+  String get settingsInteractiveBlinkReminders;
+
+  /// Setting subtitle to toggle interactive buttons on blink notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Add a button to check off blink reminders directly from notifications'**
+  String get settingsInteractiveBlinkRemindersSubtitle;
+
   /// Title for tray blink nudges setting
   ///
   /// In en, this message translates to:

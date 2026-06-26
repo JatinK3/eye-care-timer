@@ -526,3 +526,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Updated Settings with separate controls for banner interval and tray nudge interval.
   - Raised blink reminder notifications to a visible banner-style channel/urgency while keeping them silent.
   - Verified with flutter analyze and focused settings/model tests.
+
+- Made blink notification action buttons optional:
+  - Added a persisted `blinkReminderInteractiveEnabled` setting and Settings switch under blink reminders.
+  - Threaded the setting from App to TimerHomePage and into `NotificationService.showBlinkReminder()`.
+  - Split Android blink notification details into interactive and non-interactive variants; both remain silent high-importance banner notifications, but the non-interactive path has no action button.
+  - Included the setting in backup/restore JSON and default reset paths.
+  - Verified with flutter analyze plus focused settings/model tests.

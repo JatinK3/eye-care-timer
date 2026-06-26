@@ -73,7 +73,7 @@ class NotificationService {
         ),
       );
 
-  static const String _blinkChannelId = 'blinkkind_blink_reminders_v2';
+  static const String _blinkChannelId = 'blinkkind_blink_reminders_v3';
   static const String _blinkChannelName = 'Blink reminders';
   static const String _blinkChannelDescription =
       'Visible periodic banner reminders to blink consciously during work sessions.';
@@ -82,7 +82,7 @@ class NotificationService {
         _blinkChannelId,
         _blinkChannelName,
         description: _blinkChannelDescription,
-        importance: Importance.low,
+        importance: Importance.high,
         playSound: false,
         enableVibration: false,
       );
@@ -92,8 +92,28 @@ class NotificationService {
           _blinkChannelId,
           _blinkChannelName,
           channelDescription: _blinkChannelDescription,
-          importance: Importance.low,
-          priority: Priority.low,
+          importance: Importance.high,
+          priority: Priority.high,
+          playSound: false,
+          enableVibration: false,
+          silent: true,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
+        macOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentSound: false,
+        ),
+      );
+
+  static const NotificationDetails _blinkNotificationDetailsInteractive =
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _blinkChannelId,
+          _blinkChannelName,
+          channelDescription: _blinkChannelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
           playSound: false,
           enableVibration: false,
           silent: true,
@@ -462,7 +482,10 @@ class NotificationService {
   }
 
   /// Shows an immediate silent blink-conscious reminder notification.
-  Future<void> showBlinkReminder({String? customMessage}) async {
+  Future<void> showBlinkReminder({
+    String? customMessage,
+    bool interactive = true,
+  }) async {
     if (kIsWeb) return;
 
     const messages = [
@@ -533,7 +556,9 @@ class NotificationService {
         id: _blinkReminderId,
         title: 'Blink reminder 👁️',
         body: body,
-        notificationDetails: _blinkNotificationDetails,
+        notificationDetails: interactive
+            ? _blinkNotificationDetailsInteractive
+            : _blinkNotificationDetails,
         payload: 'blink_reminder',
       );
     } on PlatformException catch (e) {
