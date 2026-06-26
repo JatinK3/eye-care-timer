@@ -75,6 +75,10 @@ class FakeNotificationService extends NotificationService {
   int openSettingsCount = 0;
   int openChannelSettingsCount = 0;
   int testReminderCount = 0;
+  int wellnessReminderCount = 0;
+  WellnessType? lastWellnessType;
+  String? lastAiMessage;
+  int autoPostponeNotificationCount = 0;
 
   FakeNotificationService({this.status = NotificationPermissionStatus.allowed});
 
@@ -151,6 +155,21 @@ class FakeNotificationService extends NotificationService {
     openSettingsCount++;
     return true;
   }
+
+  @override
+  Future<void> showWellnessReminder(
+    WellnessType type, {
+    String? aiMessage,
+  }) async {
+    wellnessReminderCount++;
+    lastWellnessType = type;
+    lastAiMessage = aiMessage;
+  }
+
+  @override
+  Future<void> showAutoPostponeNotification() async {
+    autoPostponeNotificationCount++;
+  }
 }
 
 Future<FakeNotificationService> pumpBlinkKindApp(
@@ -158,6 +177,8 @@ Future<FakeNotificationService> pumpBlinkKindApp(
   NotificationPermissionStatus permissionStatus =
       NotificationPermissionStatus.allowed,
   FakeBreakOverlayService? breakOverlayService,
+  Future<bool> Function()? isCameraInUseOverride,
+  Future<bool> Function()? isMicInUseOverride,
 }) async {
   final notificationService = FakeNotificationService(status: permissionStatus);
   final overlayService = breakOverlayService ?? FakeBreakOverlayService();
@@ -165,6 +186,8 @@ Future<FakeNotificationService> pumpBlinkKindApp(
     BlinkKindApp(
       notificationService: notificationService,
       breakOverlayService: overlayService,
+      isCameraInUseOverride: isCameraInUseOverride,
+      isMicInUseOverride: isMicInUseOverride,
     ),
   );
   await tester.pump();
@@ -1854,5 +1877,133 @@ void main() {
       findsOneWidget,
     );
     expect(find.widgetWithText(FilledButton, 'Generate 7-Day Report'), findsOneWidget);
+  });
+
+  testWidgets('Auto-postpone break when camera is in use', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 1,
+      PreferencesService.cameraMicAutoPostponeEnabledKey: true,
+    });
+
+    int cameraCheckCount = 0;
+    final notificationService = await pumpBlinkKindApp(
+      tester,
+      isCameraInUseOverride: () async {
+        cameraCheckCount++;
+        return cameraCheckCount == 1;
+      },
+      isMicInUseOverride: () async => false,
+    );
+
+    await tester.tap(find.text('Start'));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    // The break should be auto-postponed, and we stay/return to work phase.
+    expect(notificationService.autoPostponeNotificationCount, 1);
+  });
+
+  testWidgets('Auto-postpone break when microphone is in use', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 1,
+      PreferencesService.cameraMicAutoPostponeEnabledKey: true,
+    });
+
+    int micCheckCount = 0;
+    final notificationService = await pumpBlinkKindApp(
+      tester,
+      isCameraInUseOverride: () async => false,
+      isMicInUseOverride: () async {
+        micCheckCount++;
+        return micCheckCount == 1;
+      },
+    );
+
+    await tester.tap(find.text('Start'));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(notificationService.autoPostponeNotificationCount, 1);
+  });
+
+  testWidgets('No auto-postpone when camera and microphone are NOT in use', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 1,
+      PreferencesService.cameraMicAutoPostponeEnabledKey: true,
+    });
+
+    final notificationService = await pumpBlinkKindApp(
+      tester,
+      isCameraInUseOverride: () async => false,
+      isMicInUseOverride: () async => false,
+    );
+
+    await tester.tap(find.text('Start'));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(notificationService.autoPostponeNotificationCount, 0);
+  });
+
+  testWidgets('Wellness reminders trigger static tips when AI is disabled', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 20,
+      'wellnessRemindersEnabled': true,
+      'wellnessReminderCadenceSeconds': 5,
+      'aiMotivationEnabled': false,
+    });
+
+    final notificationService = await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.text('Start'));
+    await tester.pump();
+
+    // Advance time by 6 seconds in 1-second ticks to trigger the cadence checker
+    for (int i = 0; i < 6; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    await tester.idle();
+    await tester.pump();
+
+    expect(notificationService.wellnessReminderCount, greaterThan(0));
+    expect(notificationService.lastAiMessage, isNull);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('Wellness reminders trigger and attempt AI fetching when enabled', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 20,
+      'wellnessRemindersEnabled': true,
+      'wellnessReminderCadenceSeconds': 5,
+      'aiMotivationEnabled': true,
+      'aiApiKey': 'mock_key',
+    });
+
+    final notificationService = await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.text('Start'));
+    await tester.pump();
+
+    // Advance time by 6 seconds in 1-second ticks to trigger the cadence checker
+    for (int i = 0; i < 6; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    await tester.idle();
+    await tester.pump();
+
+    expect(notificationService.wellnessReminderCount, greaterThan(0));
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
   });
 }

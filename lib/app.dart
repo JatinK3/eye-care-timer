@@ -159,11 +159,15 @@ class _BlinkKindScrollBehavior extends MaterialScrollBehavior {
 class BlinkKindApp extends StatefulWidget {
   final NotificationService? notificationService;
   final BreakOverlayService? breakOverlayService;
+  final Future<bool> Function()? isCameraInUseOverride;
+  final Future<bool> Function()? isMicInUseOverride;
 
   const BlinkKindApp({
     super.key,
     this.notificationService,
     this.breakOverlayService,
+    this.isCameraInUseOverride,
+    this.isMicInUseOverride,
   });
 
   @override
@@ -1223,6 +1227,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   blinkReminderInteractiveEnabled:
                       _settings.blinkReminderInteractiveEnabled,
                   openHistory: _openHistory,
+                  isCameraInUseOverride: widget.isCameraInUseOverride,
+                  isMicInUseOverride: widget.isMicInUseOverride,
                 ),
         );
       },

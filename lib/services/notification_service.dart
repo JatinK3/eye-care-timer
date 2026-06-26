@@ -41,6 +41,7 @@ class NotificationService {
   static const int _preBreakWarningReminderId = 1003;
   static const int _blinkReminderId = 1004;
   static const int _wellnessReminderId = 1005;
+  static const int _autoPostponeReminderId = 1006;
   static int? _linuxBlinkNotificationReplaceId;
   static const String _wellnessChannelId = 'blinkkind_wellness_v1';
   static const String _wellnessChannelName = 'Wellness reminders';
@@ -781,6 +782,46 @@ class NotificationService {
       );
     } on PlatformException catch (e) {
       debugPrint('Unable to show wellness reminder: $e');
+    }
+  }
+
+  Future<void> showAutoPostponeNotification() async {
+    if (kIsWeb) return;
+
+    const title = 'Break Auto-Postponed 🎥';
+    const body = 'Your eye break was postponed because your camera or microphone is in use.';
+
+    if (Platform.isLinux) {
+      try {
+        await Process.run('notify-send', [
+          '-a',
+          'BlinkKind',
+          '-i',
+          'blinkkind',
+          '-u',
+          'normal',
+          '-t',
+          '5000',
+          title,
+          body,
+        ]);
+      } catch (e) {
+        debugPrint('Failed to send Linux auto-postpone notification: $e');
+      }
+      return;
+    }
+
+    await initialize();
+    try {
+      await _notificationsPlugin.show(
+        id: _autoPostponeReminderId,
+        title: title,
+        body: body,
+        notificationDetails: _wellnessNotificationDetails,
+        payload: 'auto_postpone',
+      );
+    } on PlatformException catch (e) {
+      debugPrint('Unable to show auto-postpone notification: $e');
     }
   }
 

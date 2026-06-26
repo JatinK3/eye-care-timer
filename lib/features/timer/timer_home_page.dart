@@ -98,6 +98,8 @@ class TimerHomePage extends StatefulWidget {
   final bool wellnessRemindersEnabled;
   final int wellnessReminderCadenceSeconds;
   final bool blinkReminderInteractiveEnabled;
+  final Future<bool> Function()? isCameraInUseOverride;
+  final Future<bool> Function()? isMicInUseOverride;
 
   const TimerHomePage({
     super.key,
@@ -154,6 +156,8 @@ class TimerHomePage extends StatefulWidget {
     required this.wellnessRemindersEnabled,
     required this.wellnessReminderCadenceSeconds,
     required this.blinkReminderInteractiveEnabled,
+    this.isCameraInUseOverride,
+    this.isMicInUseOverride,
     this.breakOverlayService,
     required this.openSettings,
     required this.openHistory,
@@ -404,9 +408,7 @@ class TimerHomePageState extends State<TimerHomePage>
                   final type = WellnessType
                       .values[_wellnessTypeIndex % WellnessType.values.length];
                   _wellnessTypeIndex++;
-                  unawaited(
-                    widget.notificationService.showWellnessReminder(type),
-                  );
+                  unawaited(_triggerWellnessReminder(type));
                 }
               }
               _updateDesktopState();
@@ -572,7 +574,7 @@ class TimerHomePageState extends State<TimerHomePage>
           final type = WellnessType
               .values[_wellnessTypeIndex % WellnessType.values.length];
           _wellnessTypeIndex++;
-          unawaited(widget.notificationService.showWellnessReminder(type));
+          unawaited(_triggerWellnessReminder(type));
         }
       }
       _updateDesktopState();
@@ -1634,7 +1636,7 @@ class TimerHomePageState extends State<TimerHomePage>
     );
   }
 
-  void _onPhaseComplete() {
+  Future<void> _onPhaseComplete() async {
     if (!_isRunning || _phaseEndsAt == null || _isCancelled || !mounted) {
       return;
     }
@@ -1650,6 +1652,30 @@ class TimerHomePageState extends State<TimerHomePage>
     _pulseController.stop();
 
     setState(() => _phaseOpacity = 0.0);
+
+    // Camera/mic auto postpone check
+    bool shouldAutoPostpone = false;
+    int upcomingBreakDuration = 0;
+    bool wasPostponedWork = false;
+    if (!completedBreakPhase && widget.cameraMicAutoPostponeEnabled) {
+      final camInUse = await _isCameraInUse();
+      final micInUse = await _isMicInUse();
+      if (camInUse || micInUse) {
+        shouldAutoPostpone = true;
+        upcomingBreakDuration = _postponedBreakDuration ??
+            _breakDurationForCompletedCycle(_streakCount + 1);
+        wasPostponedWork = _postponedBreakDuration != null;
+      }
+    }
+
+    if (!mounted || _isCancelled || !_isRunning) {
+      return;
+    }
+
+    if (shouldAutoPostpone) {
+      _autoPostponeBreak(completedPhaseAt, upcomingBreakDuration, wasPostponedWork);
+      return;
+    }
 
     _phaseTransitionTimer?.cancel();
     _phaseTransitionTimer = Timer(const Duration(milliseconds: 300), () {
@@ -1937,9 +1963,10 @@ class TimerHomePageState extends State<TimerHomePage>
   bool get _isSnoozed =>
       _snoozeEndsAt != null && DateTime.now().isBefore(_snoozeEndsAt!);
 
-  /// Returns true if a camera device is currently in active use (Linux only).
-  // ignore: unused_element
-  Future<bool> _isCameraOrMicInUse() async {
+  Future<bool> _isCameraInUse() async {
+    if (widget.isCameraInUseOverride != null) {
+      return widget.isCameraInUseOverride!();
+    }
     if (kIsWeb || !Platform.isLinux) return false;
     try {
       final result = await Process.run('bash', [
@@ -1949,6 +1976,113 @@ class TimerHomePageState extends State<TimerHomePage>
       return (result.stdout as String).trim() == 'yes';
     } catch (_) {
       return false;
+    }
+  }
+
+  Future<bool> _isMicInUse() async {
+    if (widget.isMicInUseOverride != null) {
+      return widget.isMicInUseOverride!();
+    }
+    if (kIsWeb || !Platform.isLinux) return false;
+    try {
+      final result = await Process.run('bash', [
+        '-c',
+        'pactl list source-outputs 2>/dev/null | grep -q "Source Output #" && echo yes || echo no',
+      ]).timeout(const Duration(seconds: 2));
+      return (result.stdout as String).trim() == 'yes';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _autoPostponeBreak(
+    DateTime completedPhaseAt,
+    int upcomingBreakDuration,
+    bool wasPostponedWork,
+  ) {
+    final postponeSeconds = widget.postponeDurationSeconds;
+
+    // 1. Save completed work session & streak count (if it wasn't already a postponed work)
+    if (!wasPostponedWork) {
+      setState(() {
+        _streakCount = _streakCount + 1;
+        _autoRunCompletedCycles++;
+      });
+      widget.saveStreakCount(_streakCount);
+      widget.saveCompletedWorkSession(completedPhaseAt, _initialDuration);
+      widget.saveTimerEventRecord(
+        TimerEventRecord(
+          id: completedPhaseAt.millisecondsSinceEpoch.toString(),
+          timestamp: completedPhaseAt,
+          type: TimerEventType.workCompleted,
+          durationSeconds: _initialDuration,
+        ),
+      );
+    }
+
+    // 2. Save break postponed event
+    widget.saveTimerEventRecord(
+      TimerEventRecord(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        timestamp: DateTime.now(),
+        type: TimerEventType.breakPostponed,
+        durationSeconds: postponeSeconds,
+      ),
+    );
+
+    // 3. Set the state for the new postponed work phase
+    setState(() {
+      _isBreak = false;
+      _postponedBreakDuration = upcomingBreakDuration;
+      _phaseOpacity = 1.0;
+      _initialDuration = postponeSeconds;
+      _remainingSeconds = _initialDuration;
+      _phaseStartedAt = DateTime.now();
+      _phaseEndsAt = _phaseStartedAt!.add(Duration(seconds: _initialDuration));
+      _animationController.duration = Duration(seconds: _initialDuration);
+      _animationController.reset();
+      _animationController.forward(from: 0.0);
+    });
+
+    _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: false);
+    _saveActiveSession(remainingSeconds: _remainingSeconds);
+    _schedulePhaseDeadlineTimer(_phaseEndsAt!);
+
+    // 4. Schedule phase reminder for work
+    unawaited(_schedulePhaseReminder(postponeSeconds, isBreak: false));
+    unawaited(_preFetchAiQuote());
+    _updateDesktopState();
+
+    // 5. Show notification
+    unawaited(widget.notificationService.showAutoPostponeNotification());
+  }
+
+  Future<void> _triggerWellnessReminder(WellnessType type) async {
+    String? aiMessage;
+    if (widget.aiMotivationEnabled && widget.aiApiKey.isNotEmpty) {
+      try {
+        final prompt = _getWellnessPrompt(type);
+        aiMessage = await AiService.instance.generateMotivation(
+          provider: widget.aiProvider,
+          apiKey: widget.aiApiKey,
+          model: widget.aiModel,
+          prompt: prompt,
+        );
+      } catch (e) {
+        debugPrint('Failed to generate AI wellness reminder: $e');
+      }
+    }
+    unawaited(widget.notificationService.showWellnessReminder(type, aiMessage: aiMessage));
+  }
+
+  String _getWellnessPrompt(WellnessType type) {
+    switch (type) {
+      case WellnessType.hydration:
+        return 'Generate a short, friendly, and motivational reminder (max 15 words) for a developer to take a sip of water and stay hydrated right now. Speak directly to a developer.';
+      case WellnessType.posture:
+        return 'Generate a short, friendly, and motivational reminder (max 15 words) for a developer to check their sitting posture right now (e.g. relax shoulders, sit up straight). Speak directly to a developer.';
+      case WellnessType.stretch:
+        return 'Generate a short, friendly, and motivational reminder (max 15 words) for a developer to stand up and stretch right now. Speak directly to a developer.';
     }
   }
 
