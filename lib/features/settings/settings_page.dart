@@ -303,10 +303,8 @@ class _SettingsPageState extends State<SettingsPage>
   // Snap a stored cadence value (possibly old seconds-based) to the nearest
   // valid minute-based dropdown option.
   static int _nearestBlinkCadence(int seconds) {
-    const valid = [60, 120, 180, 300, 600, 900];
-    // If already one of the valid minute values, return as-is.
+    const valid = [2, 3, 5, 10, 15, 20, 30, 60, 120, 300, 600, 900];
     if (valid.contains(seconds)) return seconds;
-    // Otherwise snap to closest valid value.
     return valid.reduce(
       (a, b) => (a - seconds).abs() < (b - seconds).abs() ? a : b,
     );
@@ -1864,9 +1862,15 @@ class _SettingsPageState extends State<SettingsPage>
                     widget.blinkRemindersCadenceSeconds,
                   ),
                   items: const [
-                    DropdownMenuItem(value: 60, child: Text('Every 1 min')),
+                    DropdownMenuItem(value: 2,   child: Text('Every 2 sec')),
+                    DropdownMenuItem(value: 3,   child: Text('Every 3 sec')),
+                    DropdownMenuItem(value: 5,   child: Text('Every 5 sec')),
+                    DropdownMenuItem(value: 10,  child: Text('Every 10 sec')),
+                    DropdownMenuItem(value: 15,  child: Text('Every 15 sec')),
+                    DropdownMenuItem(value: 20,  child: Text('Every 20 sec')),
+                    DropdownMenuItem(value: 30,  child: Text('Every 30 sec')),
+                    DropdownMenuItem(value: 60,  child: Text('Every 1 min')),
                     DropdownMenuItem(value: 120, child: Text('Every 2 min')),
-                    DropdownMenuItem(value: 180, child: Text('Every 3 min')),
                     DropdownMenuItem(value: 300, child: Text('Every 5 min')),
                     DropdownMenuItem(value: 600, child: Text('Every 10 min')),
                     DropdownMenuItem(value: 900, child: Text('Every 15 min')),
@@ -1902,7 +1906,14 @@ class _SettingsPageState extends State<SettingsPage>
                     widget.trayBlinkNudgeCadenceSeconds,
                   ),
                   items: const [
-                    DropdownMenuItem(value: 60, child: Text('Every 1 min')),
+                    DropdownMenuItem(value: 2,   child: Text('Every 2 sec')),
+                    DropdownMenuItem(value: 3,   child: Text('Every 3 sec')),
+                    DropdownMenuItem(value: 5,   child: Text('Every 5 sec')),
+                    DropdownMenuItem(value: 10,  child: Text('Every 10 sec')),
+                    DropdownMenuItem(value: 15,  child: Text('Every 15 sec')),
+                    DropdownMenuItem(value: 20,  child: Text('Every 20 sec')),
+                    DropdownMenuItem(value: 30,  child: Text('Every 30 sec')),
+                    DropdownMenuItem(value: 60,  child: Text('Every 1 min')),
                     DropdownMenuItem(value: 120, child: Text('Every 2 min')),
                     DropdownMenuItem(value: 300, child: Text('Every 5 min')),
                     DropdownMenuItem(value: 600, child: Text('Every 10 min')),
