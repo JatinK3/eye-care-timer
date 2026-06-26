@@ -418,6 +418,12 @@ abstract class AppLocalizations {
   /// **'Postponed Breaks'**
   String get postponedBreaks;
 
+  /// Insight item for conscious blinks logged by user response
+  ///
+  /// In en, this message translates to:
+  /// **'Conscious blinks logged'**
+  String get consciousBlinksLogged;
+
   /// Title for the recent sessions list
   ///
   /// In en, this message translates to:

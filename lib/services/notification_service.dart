@@ -98,6 +98,14 @@ class NotificationService {
           enableVibration: false,
           silent: true,
           icon: '@mipmap/ic_launcher',
+          actions: <AndroidNotificationAction>[
+            AndroidNotificationAction(
+              'blink_done',
+              'I blinked! 👁️',
+              cancelNotification: true,
+              showsUserInterface: true,
+            ),
+          ],
         ),
         iOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
         macOS: DarwinNotificationDetails(
@@ -182,6 +190,12 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin;
   bool _isInitialized = false;
 
+  final StreamController<NotificationResponse> _notificationResponseController =
+      StreamController<NotificationResponse>.broadcast();
+
+  Stream<NotificationResponse> get onNotificationResponse =>
+      _notificationResponseController.stream;
+
   Timer? _linuxPhaseTimer;
   Timer? _linuxWarningTimer;
 
@@ -214,7 +228,12 @@ class NotificationService {
       ),
     );
 
-    await _notificationsPlugin.initialize(settings: initializationSettings);
+    await _notificationsPlugin.initialize(
+      settings: initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        _notificationResponseController.add(response);
+      },
+    );
     final android = _notificationsPlugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin

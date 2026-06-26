@@ -178,6 +178,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get postponedBreaks => 'Postponed Breaks';
 
   @override
+  String get consciousBlinksLogged => 'Conscious blinks logged';
+
+  @override
   String get recentCompletedSessions => 'Recent completed sessions';
 
   @override

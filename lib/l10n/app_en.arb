@@ -222,6 +222,10 @@
   "@postponedBreaks": {
     "description": "Insight item for postponed breaks"
   },
+  "consciousBlinksLogged": "Conscious blinks logged",
+  "@consciousBlinksLogged": {
+    "description": "Insight item for conscious blinks logged by user response"
+  },
   "recentCompletedSessions": "Recent completed sessions",
   "@recentCompletedSessions": {
     "description": "Title for the recent sessions list"

@@ -3,6 +3,7 @@ enum TimerEventType {
   workCancelled,
   breakSkipped,
   breakPostponed,
+  blinkReminderAcknowledged,
 }
 
 class TimerEventRecord {

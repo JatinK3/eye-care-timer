@@ -23,6 +23,7 @@ import 'services/permissions_service.dart';
 import 'services/preferences_service.dart';
 import 'theme/color_presets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'generated/l10n/app_localizations.dart';
 
 const PageTransitionsTheme _smoothPageTransitionsTheme = PageTransitionsTheme(
@@ -192,6 +193,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   bool _showSplash = true;
 
   final PermissionsService _permissionsService = PermissionsService();
+  StreamSubscription<NotificationResponse>? _notificationSubscription;
 
   @override
   void initState() {
@@ -207,6 +209,27 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   Future<void> _initializeNotifications() async {
     await _notificationService.initialize();
     await _refreshNotificationReliabilityStatus();
+    _notificationSubscription = _notificationService.onNotificationResponse.listen(
+      _handleNotificationResponse,
+    );
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _handleNotificationResponse(NotificationResponse response) {
+    if (response.actionId == 'blink_done') {
+      final record = TimerEventRecord(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        timestamp: DateTime.now(),
+        type: TimerEventType.blinkReminderAcknowledged,
+        durationSeconds: 0,
+      );
+      _saveTimerEventRecord(record);
+    }
   }
 
   Future<NotificationReliabilityStatus>

@@ -59,6 +59,8 @@ class _HistoryPageState extends State<HistoryPage> {
         rangeEvents.where((e) => e.type == TimerEventType.breakSkipped).length;
     final postponedBreakCount =
         rangeEvents.where((e) => e.type == TimerEventType.breakPostponed).length;
+    final blinksLoggedCount =
+        rangeEvents.where((e) => e.type == TimerEventType.blinkReminderAcknowledged).length;
 
     // Calculate range-specific statistics
     final goalDays = dates
@@ -214,6 +216,12 @@ class _HistoryPageState extends State<HistoryPage> {
                   value: "$postponedBreakCount",
                   icon: Icons.snooze_outlined,
                   color: Colors.blue,
+                ),
+                _InsightRow(
+                  label: AppLocalizations.of(context)!.consciousBlinksLogged,
+                  value: "$blinksLoggedCount",
+                  icon: Icons.remove_red_eye_outlined,
+                  color: Colors.teal,
                 ),
                 _InsightRow(
                   label: AppLocalizations.of(context)!.complianceRate,
