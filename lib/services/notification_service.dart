@@ -502,51 +502,7 @@ class NotificationService {
         : messages[idx];
 
     if (Platform.isLinux) {
-      try {
-        final replaceId = _linuxBlinkNotificationReplaceId;
-        final replaceArgs = [
-          '-a',
-          'BlinkKind',
-          '-i',
-          'blinkkind',
-          '-u',
-          'normal',
-          '-t',
-          '7000',
-          '-p',
-          if (replaceId != null) ...['-r', replaceId.toString()],
-          'Blink reminder',
-          body,
-        ];
-        final result = await Process.run('notify-send', replaceArgs);
-        if (result.exitCode == 0) {
-          final notificationId = int.tryParse((result.stdout as String).trim());
-          if (notificationId != null) {
-            _linuxBlinkNotificationReplaceId = notificationId;
-          }
-          return;
-        }
-
-        final fallback = await Process.run('notify-send', [
-          '-a',
-          'BlinkKind',
-          '-i',
-          'blinkkind',
-          '-u',
-          'normal',
-          '-t',
-          '7000',
-          'Blink reminder',
-          body,
-        ]);
-        if (fallback.exitCode != 0) {
-          debugPrint(
-            'Failed to send Linux blink notification: ${fallback.stderr}',
-          );
-        }
-      } catch (e) {
-        debugPrint('Failed to send Linux blink notification: $e');
-      }
+      await _showLinuxBlinkReminder(body: body, interactive: interactive);
       return;
     }
 
@@ -563,6 +519,111 @@ class NotificationService {
       );
     } on PlatformException catch (e) {
       debugPrint('Unable to show blink reminder: $e');
+    }
+  }
+
+  Future<void> _showLinuxBlinkReminder({
+    required String body,
+    required bool interactive,
+  }) async {
+    try {
+      final id = await _showLinuxNotificationViaDbus(
+        body: body,
+        interactive: interactive,
+      );
+      if (id != null) {
+        _linuxBlinkNotificationReplaceId = id;
+        return;
+      }
+    } catch (e) {
+      debugPrint('Failed to send Linux blink notification via DBus: $e');
+    }
+
+    await _showLinuxBlinkReminderViaNotifySend(
+      body: body,
+      interactive: interactive,
+    );
+  }
+
+  Future<int?> _showLinuxNotificationViaDbus({
+    required String body,
+    required bool interactive,
+  }) async {
+    final replaceId = _linuxBlinkNotificationReplaceId ?? 0;
+    final actions = interactive ? "['blink_done', 'I blinked']" : '[]';
+    final result = await Process.run('gdbus', [
+      'call',
+      '--session',
+      '--dest',
+      'org.freedesktop.Notifications',
+      '--object-path',
+      '/org/freedesktop/Notifications',
+      '--method',
+      'org.freedesktop.Notifications.Notify',
+      'BlinkKind',
+      replaceId.toString(),
+      'blinkkind',
+      'Blink reminder',
+      body,
+      actions,
+      "{'urgency': <byte 1>}",
+      '7000',
+    ]);
+    if (result.exitCode != 0) {
+      debugPrint('Failed to send Linux blink notification: ${result.stderr}');
+      return null;
+    }
+
+    final stdout = result.stdout as String;
+    final match = RegExp(r'uint32\s+(\d+)').firstMatch(stdout);
+    if (match == null) return null;
+    return int.tryParse(match.group(1)!);
+  }
+
+  Future<void> _showLinuxBlinkReminderViaNotifySend({
+    required String body,
+    required bool interactive,
+  }) async {
+    try {
+      final replaceId = _linuxBlinkNotificationReplaceId;
+      final args = [
+        '-a',
+        'BlinkKind',
+        '-i',
+        'blinkkind',
+        '-u',
+        'normal',
+        '-t',
+        '7000',
+        if (interactive) '-A',
+        if (interactive) 'blink_done=I blinked',
+        if (!interactive) '-p',
+        if (!interactive && replaceId != null) ...['-r', replaceId.toString()],
+        'Blink reminder',
+        body,
+      ];
+
+      if (interactive) {
+        await Process.start(
+          'notify-send',
+          args,
+          mode: ProcessStartMode.detached,
+        );
+        return;
+      }
+
+      final result = await Process.run('notify-send', args);
+      if (result.exitCode == 0) {
+        final notificationId = int.tryParse((result.stdout as String).trim());
+        if (notificationId != null) {
+          _linuxBlinkNotificationReplaceId = notificationId;
+        }
+        return;
+      }
+
+      debugPrint('Failed to send Linux blink notification: ${result.stderr}');
+    } catch (e) {
+      debugPrint('Failed to send Linux blink notification: $e');
     }
   }
 

@@ -533,3 +533,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Split Android blink notification details into interactive and non-interactive variants; both remain silent high-importance banner notifications, but the non-interactive path has no action button.
   - Included the setting in backup/restore JSON and default reset paths.
   - Verified with flutter analyze plus focused settings/model tests.
+
+- Added Linux support for interactive blink notification actions:
+  - Replaced the Linux blink reminder path with a freedesktop notification DBus call when available, allowing the `I blinked` action to be included while still receiving a replacement notification ID.
+  - Kept a notify-send fallback for environments where DBus notification calls fail.
+  - Preserved non-interactive Linux reminders by sending an empty action list when the interactive toggle is disabled.
+  - Verified with flutter analyze.

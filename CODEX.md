@@ -269,4 +269,4 @@ Creative follow-ups after the core overlay is stable:
 ## Notification Action Preference
 
 - Blink reminder notification action buttons are optional through `blinkReminderInteractiveEnabled`. Keep both interactive and non-interactive blink notification details on a high-importance silent channel so disabling the action button does not also hide the banner.
-- The `blink_done` action only exists on Android local notifications. Linux `notify-send` blink reminders remain banner-only and are unaffected by the interactive toggle.
+- The `blink_done` action exists on Android local notifications and Linux freedesktop notifications. Linux uses DBus `org.freedesktop.Notifications.Notify` so it can include the action while still receiving a replacement ID; desktop shells may render actions in the notification list instead of the transient banner.
