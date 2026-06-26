@@ -12,6 +12,7 @@ AUTO_YES=false
 AUTO_NO=false
 CLEAR_STATE_ARG=""
 INSTALL_DEB_ARG=""
+DEV_MODE=false
 
 for arg in "$@"; do
     case "$arg" in
@@ -33,6 +34,9 @@ for arg in "$@"; do
         -ni|--no-install)
             INSTALL_DEB_ARG="false"
             ;;
+        -d|--dev|--local)
+            DEV_MODE=true
+            ;;
     esac
 done
 
@@ -40,6 +44,50 @@ done
 VERSION=$(grep 'version: ' "$PROJECT_DIR/pubspec.yaml" | sed 's/version: //' | cut -d'+' -f1 | tr -d '[:space:]')
 if [ -z "$VERSION" ]; then
     VERSION="1.0.0"
+fi
+
+if [ "$DEV_MODE" = "true" ]; then
+    echo "========================================="
+    echo "Setting up local developer desktop launcher..."
+    echo "========================================="
+    cd "$PROJECT_DIR"
+    /home/jatin/development/flutter/bin/flutter clean
+    /home/jatin/development/flutter/bin/flutter build linux
+    
+    mkdir -p "$HOME/.local/share/applications"
+    
+    cat << EOF > "$HOME/.local/share/applications/blinkkind.desktop"
+[Desktop Entry]
+Name=BlinkKind
+Comment=A focused eye break timer for healthier screen sessions
+Exec=$PROJECT_DIR/build/linux/x64/release/bundle/eye_care_timer %u
+Icon=$PROJECT_DIR/assets/app_icon.png
+Terminal=false
+Type=Application
+Categories=Utility;
+StartupNotify=true
+StartupWMClass=com.jatin.eyecaretimer
+EOF
+    chmod +x "$HOME/.local/share/applications/blinkkind.desktop"
+    
+    if command -v update-desktop-database &> /dev/null; then
+        update-desktop-database "$HOME/.local/share/applications"
+    fi
+    
+    if pgrep -x eye_care_timer >/dev/null 2>&1; then
+        echo "Stopping running application..."
+        pkill -x eye_care_timer || true
+        sleep 1
+    fi
+    
+    echo "Restarting BlinkKind application..."
+    gtk-launch blinkkind.desktop >/dev/null 2>&1 || gtk-launch blinkkind >/dev/null 2>&1 || ("$PROJECT_DIR/build/linux/x64/release/bundle/eye_care_timer" >/dev/null 2>&1 &)
+    
+    echo "========================================="
+    echo "✓ Local developer desktop launcher ready!"
+    echo "You can now run BlinkKind from your system Application Menu"
+    echo "========================================="
+    exit 0
 fi
 
 echo "========================================="
