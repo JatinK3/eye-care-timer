@@ -522,6 +522,40 @@ class NotificationService {
     }
   }
 
+  Future<void> cancelBlinkReminder() async {
+    if (kIsWeb) return;
+
+    if (Platform.isLinux) {
+      final id = _linuxBlinkNotificationReplaceId;
+      if (id != null) {
+        try {
+          await Process.run('gdbus', [
+            'call',
+            '--session',
+            '--dest',
+            'org.freedesktop.Notifications',
+            '--object-path',
+            '/org/freedesktop/Notifications',
+            '--method',
+            'org.freedesktop.Notifications.CloseNotification',
+            id.toString(),
+          ]);
+          _linuxBlinkNotificationReplaceId = null;
+        } catch (e) {
+          debugPrint('Failed to close Linux blink notification: $e');
+        }
+      }
+      return;
+    }
+
+    await initialize();
+    try {
+      await _notificationsPlugin.cancel(id: _blinkReminderId);
+    } on PlatformException catch (e) {
+      debugPrint('Unable to cancel blink reminder: $e');
+    }
+  }
+
   Future<void> showWellnessReminder(
     WellnessType type, {
     String? aiMessage,

@@ -1422,6 +1422,7 @@ class TimerHomePageState extends State<TimerHomePage>
   void _cancelReminders() {
     unawaited(widget.notificationService.cancelPhaseReminder());
     unawaited(widget.notificationService.cancelPreBreakWarningReminder());
+    unawaited(widget.notificationService.cancelBlinkReminder());
   }
 
   void _skipBreak() {
@@ -1862,7 +1863,7 @@ class TimerHomePageState extends State<TimerHomePage>
       _blinkMessageFuture = null;
       future
           .then((msg) {
-            if (!mounted) return;
+            if (!mounted || !_canRunBlinkReminderCadences) return;
             unawaited(
               widget.notificationService.showBlinkReminder(
                 customMessage: (msg != null && msg.isNotEmpty) ? msg : null,
@@ -1870,7 +1871,7 @@ class TimerHomePageState extends State<TimerHomePage>
             );
           })
           .catchError((_) {
-            if (mounted) {
+            if (mounted && _canRunBlinkReminderCadences) {
               unawaited(widget.notificationService.showBlinkReminder());
             }
           });

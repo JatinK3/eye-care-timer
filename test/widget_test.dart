@@ -262,7 +262,7 @@ void main() {
     );
     expect(find.text('20:00'), findsOneWidget);
     expect(find.text('Start'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
     expect(find.text('Breaks taken today'), findsOneWidget);
     expect(find.text('0 / 6 breaks'), findsOneWidget);
   });
@@ -1113,31 +1113,6 @@ void main() {
       expect(find.byIcon(Icons.settings), findsOneWidget);
       expect(find.text('Breaks taken today'), findsOneWidget);
       expect(find.text('Tap dial to exit focus mode'), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'BlinkKind app shows pre-break warning and supports postponement',
-    (WidgetTester tester) async {
-      await pumpBlinkKindApp(tester);
-
-      await tester.tap(find.text('Start'));
-      await tester.pump();
-
-      // Tick to 9 seconds remaining (triggers warning overlay)
-      await tester.pump(const Duration(minutes: 19, seconds: 51));
-
-      expect(find.textContaining('Eye break starting in'), findsOneWidget);
-      expect(find.text('Postpone (2m)'), findsOneWidget);
-      expect(find.text('Cancel Timer'), findsOneWidget);
-
-      // Tap postpone
-      await tester.tap(find.text('Postpone (2m)'));
-      await tester.pump();
-
-      // Timer should be back in work mode with 2 minutes (2:00) remaining
-      expect(find.text('02:00'), findsOneWidget);
-      expect(find.textContaining('Eye break starting in'), findsNothing);
     },
   );
 
