@@ -568,3 +568,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Updated `_showLinuxBlinkReminder` in `NotificationService` to explicitly close the previous notification via `cancelBlinkReminder()` before showing a new one.
   - This ensures that old notification cards are dismissed and removed from both the screen and the system history tray, preventing multiple notifications from piling up.
   - Verified compilation, analyzer checks, and unit tests pass successfully.
+
+- Polished Linux system idle detection and natural break crediting:
+  - Adjusted system-idle tracking to subtract the 60-second detection threshold from `_idleStartedAt` when triggered by the system idle monitor, ensuring the 60 seconds is included in the user's computed idle duration.
+  - Screen lock events continue to use the immediate lock timestamp, as screen locks represent immediate idle starts.
+  - Updated `_creditNaturalBreak` to calculate and save any completed focus time (`_initialDuration - _remainingSeconds`) as a completed work session before resetting the timer, preventing users from losing progress on partially completed work sessions when interrupted by natural breaks.
+  - Verified compilation, analyzer checks, and unit tests pass successfully.
