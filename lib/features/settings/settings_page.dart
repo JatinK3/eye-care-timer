@@ -70,6 +70,9 @@ class SettingsPage extends StatefulWidget {
   final int wellnessReminderCadenceSeconds;
   final bool blinkReminderInteractiveEnabled;
   final void Function(bool) setBlinkReminderInteractiveEnabled;
+  final void Function(bool) setCameraMicAutoPostponeEnabled;
+  final void Function(bool) setWellnessRemindersEnabled;
+  final void Function(int) setWellnessReminderCadenceSeconds;
   final bool canChangeDurations;
   final BreakMode breakMode;
   final void Function(BreakMode breakMode) setBreakMode;
@@ -207,6 +210,9 @@ class SettingsPage extends StatefulWidget {
     required this.wellnessReminderCadenceSeconds,
     required this.blinkReminderInteractiveEnabled,
     required this.setBlinkReminderInteractiveEnabled,
+    required this.setCameraMicAutoPostponeEnabled,
+    required this.setWellnessRemindersEnabled,
+    required this.setWellnessReminderCadenceSeconds,
     required this.canChangeDurations,
     required this.toggleTheme,
     required this.setNotificationsEnabled,
@@ -1125,6 +1131,46 @@ class _SettingsPageState extends State<SettingsPage>
           ),
         ),
         SettingItem(
+          title: l10n.settingsCameraMicAutoPostpone,
+          subtitle: l10n.settingsCameraMicAutoPostponeSubtitle,
+          keywords: [
+            'camera',
+            'mic',
+            'microphone',
+            'video',
+            'call',
+            'meeting',
+            'zoom',
+            'teams',
+            'postpone',
+          ],
+          category: 'Break Screen & Behavior',
+          widget: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.videocam_outlined),
+                title: Text(l10n.settingsCameraMicAutoPostpone),
+                subtitle: Text(l10n.settingsCameraMicAutoPostponeSubtitle),
+                value: widget.cameraMicAutoPostponeEnabled,
+                onChanged: widget.setCameraMicAutoPostponeEnabled,
+              ),
+              if (widget.cameraMicAutoPostponeEnabled)
+                Padding(
+                  padding: const EdgeInsets.only(left: 48.0, top: 4.0, bottom: 8.0),
+                  child: Text(
+                    l10n.settingsCameraMicAutoPostponeDesc,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SettingItem(
           title: l10n.settingsNaturalBreakCredit,
           subtitle: l10n.settingsNaturalBreakCreditSubtitle,
           keywords: ['natural', 'break', 'credit', 'idle', 'away', 'keyboard'],
@@ -1922,6 +1968,68 @@ class _SettingsPageState extends State<SettingsPage>
                   onChanged: (value) {
                     if (value != null) {
                       widget.setTrayBlinkNudgeCadenceSeconds(value);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      SettingItem(
+        title: l10n.settingsWellnessReminders,
+        subtitle: l10n.settingsWellnessRemindersSubtitle,
+        keywords: [
+          'wellness',
+          'reminders',
+          'hydration',
+          'posture',
+          'stretch',
+          'water',
+          'stand',
+          'sit',
+        ],
+        category: 'Notifications & Sounds',
+        widget: Column(
+          children: [
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.accessibility_new_outlined),
+              title: Text(l10n.settingsWellnessReminders),
+              subtitle: Text(l10n.settingsWellnessRemindersSubtitle),
+              value: widget.wellnessRemindersEnabled,
+              onChanged: widget.setWellnessRemindersEnabled,
+            ),
+            if (widget.wellnessRemindersEnabled) ...[
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.timer_outlined),
+                title: Text(l10n.settingsReminderInterval),
+                subtitle: Text(l10n.settingsReminderIntervalDesc),
+                trailing: DropdownButton<int>(
+                  value: widget.wellnessReminderCadenceSeconds,
+                  items: [1800, 2700, 3600, 5400, 7200].map((value) {
+                    String label;
+                    if (value == 1800) {
+                      label = l10n.settingsWellnessEvery30Min;
+                    } else if (value == 2700) {
+                      label = l10n.settingsWellnessEvery45Min;
+                    } else if (value == 3600) {
+                      label = l10n.settingsWellnessEvery1Hour;
+                    } else if (value == 5400) {
+                      label = l10n.settingsWellnessEvery15Hours;
+                    } else {
+                      label = l10n.settingsWellnessEvery2Hours;
+                    }
+                    return DropdownMenuItem<int>(
+                      value: value,
+                      child: Text(label),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      widget.setWellnessReminderCadenceSeconds(val);
                     }
                   },
                 ),

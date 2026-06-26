@@ -1999,32 +1999,54 @@ class TimerHomePageState extends State<TimerHomePage>
     if (widget.isCameraInUseOverride != null) {
       return widget.isCameraInUseOverride!();
     }
-    if (kIsWeb || !Platform.isLinux) return false;
-    try {
-      final result = await Process.run('bash', [
-        '-c',
-        'fuser /dev/video* 2>/dev/null | grep -q . && echo yes || echo no',
-      ]).timeout(const Duration(seconds: 2));
-      return (result.stdout as String).trim() == 'yes';
-    } catch (_) {
-      return false;
+    if (kIsWeb) return false;
+    if (Platform.isLinux) {
+      try {
+        final result = await Process.run('bash', [
+          '-c',
+          'fuser /dev/video* 2>/dev/null | grep -q . && echo yes || echo no',
+        ]).timeout(const Duration(seconds: 2));
+        return (result.stdout as String).trim() == 'yes';
+      } catch (_) {
+        return false;
+      }
+    } else if (Platform.isAndroid) {
+      try {
+        final bool inUse = await const MethodChannel('blinkkind/break_overlay')
+            .invokeMethod('isCameraInUse');
+        return inUse;
+      } catch (_) {
+        return false;
+      }
     }
+    return false;
   }
 
   Future<bool> _isMicInUse() async {
     if (widget.isMicInUseOverride != null) {
       return widget.isMicInUseOverride!();
     }
-    if (kIsWeb || !Platform.isLinux) return false;
-    try {
-      final result = await Process.run('bash', [
-        '-c',
-        'pactl list source-outputs 2>/dev/null | grep -q "Source Output #" && echo yes || echo no',
-      ]).timeout(const Duration(seconds: 2));
-      return (result.stdout as String).trim() == 'yes';
-    } catch (_) {
-      return false;
+    if (kIsWeb) return false;
+    if (Platform.isLinux) {
+      try {
+        final result = await Process.run('bash', [
+          '-c',
+          'pactl list source-outputs 2>/dev/null | grep -q "Source Output #" && echo yes || echo no',
+        ]).timeout(const Duration(seconds: 2));
+        return (result.stdout as String).trim() == 'yes';
+      } catch (_) {
+        return false;
+      }
+    } else if (Platform.isAndroid) {
+      try {
+        final bool inUse = await const MethodChannel('blinkkind/break_overlay')
+            .invokeMethod('isMicInUse');
+        return inUse;
+      } catch (_) {
+        return false;
+      }
     }
+    return false;
   }
 
   void _autoPostponeBreak(

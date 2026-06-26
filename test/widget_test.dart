@@ -2006,4 +2006,116 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
   });
+
+  testWidgets('settings screen toggles camera/mic auto-postpone preference', (
+    WidgetTester tester,
+  ) async {
+    await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    final settingsScrollable = find
+        .descendant(
+          of: find.byType(SettingsPage),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+
+    final categoryHeader = find.text('Break Screen & Behavior');
+    await tester.scrollUntilVisible(
+      categoryHeader,
+      200,
+      scrollable: settingsScrollable,
+    );
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    final finder = find.text('Camera/mic auto-postpone');
+    await tester.scrollUntilVisible(
+      finder,
+      200,
+      scrollable: settingsScrollable,
+    );
+    await tester.pumpAndSettle();
+    expect(finder, findsOneWidget);
+
+    // Toggle on (since default is off)
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool(PreferencesService.cameraMicAutoPostponeEnabledKey), true);
+
+    // Toggle off
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+    expect(prefs.getBool(PreferencesService.cameraMicAutoPostponeEnabledKey), false);
+  });
+
+  testWidgets('settings screen toggles wellness reminders preference and interval', (
+    WidgetTester tester,
+  ) async {
+    await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    final settingsScrollable = find
+        .descendant(
+          of: find.byType(SettingsPage),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+
+    final categoryHeader = find.text('Notifications & Sounds');
+    await tester.scrollUntilVisible(
+      categoryHeader,
+      200,
+      scrollable: settingsScrollable,
+    );
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    final finder = find.text('Wellness reminders');
+    await tester.scrollUntilVisible(
+      finder,
+      200,
+      scrollable: settingsScrollable,
+    );
+    await tester.pumpAndSettle();
+    expect(finder, findsOneWidget);
+
+    // Toggle on (since default is off)
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool(PreferencesService.wellnessRemindersEnabledKey), true);
+
+    // Check that dropdown is present and change interval
+    final intervalListTile = find.ancestor(
+      of: find.text('Reminder interval'),
+      matching: find.byType(ListTile),
+    );
+    final dropdownFinder = find.descendant(
+      of: intervalListTile,
+      matching: find.byType(DropdownButton<int>),
+    );
+    expect(dropdownFinder, findsOneWidget);
+
+    await tester.tap(dropdownFinder);
+    await tester.pumpAndSettle();
+
+    // Select "Every 45 min" (2700 seconds)
+    await tester.tap(find.text('Every 45 min').last);
+    await tester.pumpAndSettle();
+
+    expect(prefs.getInt(PreferencesService.wellnessReminderCadenceSecondsKey), 2700);
+
+    // Toggle off
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+    expect(prefs.getBool(PreferencesService.wellnessRemindersEnabledKey), false);
+  });
 }

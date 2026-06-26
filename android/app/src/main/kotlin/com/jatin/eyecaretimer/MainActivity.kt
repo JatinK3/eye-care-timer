@@ -7,6 +7,9 @@ import android.os.Build
 import android.os.PowerManager
 import android.os.Process
 import android.provider.Settings
+import android.content.Context
+import android.hardware.camera2.CameraManager
+import android.media.AudioManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -17,6 +20,33 @@ class MainActivity : FlutterActivity() {
     private val timerBackgroundChannel = "blinkkind/timer_background"
     private val permissionsChannel = "blinkkind/permissions"
     private val reminderChannelId = "blinkkind_phase_reminders_v2"
+
+    private var isCameraActive = false
+    private val cameraCallback = object : CameraManager.AvailabilityCallback() {
+        private val activeCameras = mutableSetOf<String>()
+
+        override fun onCameraAvailable(cameraId: String) {
+            super.onCameraAvailable(cameraId)
+            activeCameras.remove(cameraId)
+            isCameraActive = activeCameras.isNotEmpty()
+        }
+
+        override fun onCameraUnavailable(cameraId: String) {
+            super.onCameraUnavailable(cameraId)
+            activeCameras.add(cameraId)
+            isCameraActive = activeCameras.isNotEmpty()
+        }
+    }
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        try {
+            val cameraManager = getSystemService(Context.CAMERA_SERVICE) as? CameraManager
+            cameraManager?.registerAvailabilityCallback(cameraCallback, null)
+        } catch (e: Exception) {
+            // Fallback for devices where camera service is unavailable
+        }
+    }
 
     override fun onResume() {
         super.onResume()
@@ -29,8 +59,25 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        try {
+            val cameraManager = getSystemService(Context.CAMERA_SERVICE) as? CameraManager
+            cameraManager?.unregisterAvailabilityCallback(cameraCallback)
+        } catch (e: Exception) {
+        }
         AppVisibility.isActivityResumed = false
         super.onDestroy()
+    }
+
+    private fun isMicInUse(): Boolean {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return false
+        val isCallActive = audioManager.mode == AudioManager.MODE_IN_COMMUNICATION ||
+                audioManager.mode == AudioManager.MODE_IN_CALL
+        val isMicActive = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            audioManager.isMicrophoneActive
+        } else {
+            false
+        }
+        return isMicActive || isCallActive
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -67,6 +114,10 @@ class MainActivity : FlutterActivity() {
                 }
                 "stopBreakOverlay" ->
                     result.success(BreakOverlayController.hide())
+                "isCameraInUse" ->
+                    result.success(isCameraActive)
+                "isMicInUse" ->
+                    result.success(isMicInUse())
                 else -> result.notImplemented()
             }
         }

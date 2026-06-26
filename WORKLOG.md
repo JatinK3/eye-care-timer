@@ -167,10 +167,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ### P2 — Cross-device, ecosystem & context intelligence
 - [x] **Settings backup/restore, then cloud sync** — start with config export/import (JSON) to complement the existing history export; later add optional account-based sync of settings + history across devices.
-- [ ] **Meeting / camera-in-use auto-postpone** — detect an active camera/mic (video calls) or a calendar event and postpone the break, extending the existing smart-idle/DND logic.
+- [x] **Meeting / camera-in-use auto-postpone** — detect an active camera/mic (video calls) or a calendar event and postpone the break, extending the existing smart-idle/DND logic.
 - [ ] **Per-app rules & profiles** — don't interrupt while chosen apps are focused; "Work" vs "Gaming" profiles with different cadences.
 - [ ] **Home-screen widgets & OS surfaces** — Android home widget, iOS widget + Live Activity, macOS menu-bar extra, Windows taskbar progress.
-- [ ] **Wellness micro-breaks (modular)** — optional hydration / posture / stretch reminders alongside eye breaks (opt-in modules).
+- [x] **Wellness micro-breaks (modular)** — optional hydration / posture / stretch reminders alongside eye breaks (opt-in modules).
 - [x] **OS DND / Focus integration** — set system Do-Not-Disturb / Focus during work phases.
 
 ### P3 — Quality, distribution & infrastructure
@@ -189,6 +189,20 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 ---
 
 ## Session Log
+
+### 2026-06-26 (Session end ~17:20 IST)
+
+**Completed this session:**
+- Fully implemented **Meeting / camera-in-use auto-postpone** on Android and Linux:
+  - Registered a global `CameraManager.AvailabilityCallback` in Android `MainActivity` to track camera active status dynamically without requiring permissions.
+  - Queried `AudioManager` active calls (`MODE_IN_COMMUNICATION`/`MODE_IN_CALL`) and microphone recording status (`isMicrophoneActive`) dynamically.
+  - Updated Flutter `isCameraInUse` and `isMicInUse` logic to query Android via method channel.
+  - Exposed `"Camera/mic auto-postpone"` toggle switch under `"Break Screen & Behavior"` settings category.
+- Fully implemented **Wellness micro-breaks (modular)**:
+  - Exposed `"Wellness reminders"` toggle switch and interval selector (dropdown selecting 30m, 45m, 1h, 1.5h, 2h) under `"Notifications & Sounds"` settings category.
+  - Persisted preferences properly via `SharedPreferences`.
+- Added full widget test coverage for the settings toggles and dropdown selections.
+- Ran static analysis (`flutter analyze`) and all tests successfully (84/84 passing).
 
 ### 2026-06-25 (Session end ~13:25 IST)
 
