@@ -43,6 +43,7 @@ class DesktopBreakOverlay extends StatefulWidget {
 class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   late int _remainingSeconds;
   late int _tipOffset;
+  late EyeHealthTip _frozenTip;
   StreamSubscription<DesktopTimerState>? _stateSubscription;
   Timer? _localTimer;
   double _holdProgress = 0.0;
@@ -58,6 +59,10 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     _remainingSeconds = widget.initialDurationSeconds;
 
     _tipOffset = math.Random().nextInt(EyeHealthTips.all.length);
+    // Freeze the break tip at break start — we pick one and show it
+    // throughout the entire break. This prevents the message from changing
+    // mid-break and avoids repeated LLM calls for tip rotation.
+    _frozenTip = EyeHealthTips.at(_tipOffset);
 
     if (widget.isPreview) {
       final latest = DesktopIntegrationService.instance.latestState;
@@ -153,11 +158,10 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     });
   }
 
-  EyeHealthTip get _currentTip => EyeHealthTips.breakTipForRemaining(
-        remainingSeconds: _remainingSeconds,
-        totalDurationSeconds: widget.initialDurationSeconds,
-        offset: _tipOffset,
-      );
+  // Returns the single tip frozen at break start. Using remainingSeconds-based
+  // rotation caused the message to change every 8s and could trigger extra LLM
+  // calls via rebuilt widgets. _frozenTip is set once in initState.
+  EyeHealthTip get _currentTip => _frozenTip;
 
   String _formatDuration(int totalSeconds) {
     final m = totalSeconds ~/ 60;

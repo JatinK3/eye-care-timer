@@ -325,6 +325,9 @@ class TimerHomePageState extends State<TimerHomePage>
   Timer? _desktopTrayTicker;
   Timer? _educationTipTimer;
   int _educationTipIndex = 0;
+  // Tip frozen at break start — stays the same for the whole break so the
+  // message never changes mid-break and no extra LLM calls are triggered.
+  EyeHealthTip? _frozenBreakTip;
   DateTime? _phaseStartedAt;
   DateTime? _phaseEndsAt;
 
@@ -1266,6 +1269,14 @@ class TimerHomePageState extends State<TimerHomePage>
       _isBreak = isBreak;
       if (isBreak) {
         _activeBreakVisualizerStyle = _resolveVisualizerStyle();
+        // Freeze a tip at break start \u2014 stays fixed for the entire break.
+        // Pick the next tip from the rotating index so each break shows a
+        // different one, then advance the index for the following break.
+        _frozenBreakTip = EyeHealthTips.at(_educationTipIndex);
+        _educationTipIndex =
+            (_educationTipIndex + 1) % EyeHealthTips.all.length;
+      } else {
+        _frozenBreakTip = null; // clear for next break
       }
       _isRunning = true;
       _isPaused = false;
@@ -1278,6 +1289,7 @@ class TimerHomePageState extends State<TimerHomePage>
       _remainingSeconds = duration;
       _animationController.duration = Duration(seconds: duration);
     });
+
 
     _animationController.forward(from: 0.0);
     _saveActiveSession(remainingSeconds: duration);
@@ -2027,11 +2039,10 @@ class TimerHomePageState extends State<TimerHomePage>
 
   EyeHealthTip get _currentEducationTip => EyeHealthTips.at(_educationTipIndex);
 
-  EyeHealthTip get _currentBreakTip => EyeHealthTips.breakTipForRemaining(
-    remainingSeconds: _remainingSeconds,
-    totalDurationSeconds: _initialDuration,
-    offset: _educationTipIndex,
-  );
+  // Returns the tip frozen when the current break started.
+  // Falls back to a random tip in case it wasn't set (shouldn't happen).
+  EyeHealthTip get _currentBreakTip =>
+      _frozenBreakTip ?? EyeHealthTips.at(_educationTipIndex);
 
   String _durationLabel(int seconds) {
     if (seconds < 60) {

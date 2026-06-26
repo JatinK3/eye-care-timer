@@ -32,8 +32,9 @@ Offset _dotPositionFor(_EyeExercise exercise, double t, double hw, double hh) {
       final y = math.sin(t * 2 * math.pi) * hh * r;
       return Offset(0, y);
     case _EyeExercise.figureSixteen:
-      // Lemniscate of Bernoulli
-      final angle = t * 2 * math.pi;
+      // Lemniscate of Bernoulli — 2 full cycles in 8 s so the ∞ shape is
+      // always clearly visible regardless of when the user starts watching.
+      final angle = t * 4 * math.pi;
       final scale = 1.0 / (1 + math.sin(angle) * math.sin(angle));
       final x = math.cos(angle) * scale * hw * r;
       final y = math.sin(angle) * math.cos(angle) * scale * hh * r;
@@ -384,109 +385,129 @@ class _BoxBreathingPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    const cornerRadius = 16.0;
-    final rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, w, h),
-      const Radius.circular(cornerRadius),
-    );
+    const r = 16.0; // corner radius — matches the visual box
 
-    // Draw dim base box
+    // ── Draw dim base rounded-rectangle box ──────────────────────────────
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, w, h),
+      const Radius.circular(r),
+    );
     final basePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0
       ..color = Colors.white.withValues(alpha: 0.08);
-    canvas.drawRRect(rect, basePaint);
+    canvas.drawRRect(rrect, basePaint);
 
-    // Compute perimeter segments for 4 sides (ignoring corners for simplicity)
-    final perimeter = 2 * (w + h);
-    final phaseStartFraction = phaseIndex / 4.0;
-    final phaseEndFraction =
-        phaseStartFraction + phaseProgress / 4.0;
+    // ── Build the perimeter path that follows the rounded rectangle ───────
+    // We split the perimeter into 8 segments per side:
+    //   straight segment + corner arc (quarter circle, length = r * π/2)
+    // Layout (starting from top-left arc, going clockwise):
+    //   TL arc → top straight → TR arc → right straight →
+    //   BR arc → bottom straight → BL arc → left straight
+    final arcLen = r * math.pi / 2; // length of one quarter-circle arc
+    final straightTop = w - 2 * r;
+    final straightRight = h - 2 * r;
+    final straightBottom = w - 2 * r;
+    final totalPerimeter =
+        4 * arcLen + 2 * straightTop + 2 * straightRight;
 
-    final startDist = phaseStartFraction * perimeter;
-    final endDist = phaseEndFraction * perimeter;
 
-    // Draw active path line (clean vector line without blurs)
+    // Each of the 4 breathing phases maps to exactly 1/4 of the perimeter.
+    final phaseStart = phaseIndex / 4.0 * totalPerimeter;
+    final phaseEnd = phaseStart + phaseProgress / 4.0 * totalPerimeter;
+
+    // Helper: point on the rounded-rect perimeter at distance [d] from
+    // top-left corner (clockwise).
+    Offset perimeterPoint(double d) {
+      d = d % totalPerimeter;
+      // 1. TL arc: from (r,0) sweeping 270°→360° (i.e. left col going up then over)
+      //    Actually we start at top-left going right: arc centre (r, r), from 180°→270°
+      double cursor = 0;
+      // Segment A: TL corner arc (centre r,r, from 180° to 270°)
+      double segLen = arcLen;
+      if (d < cursor + segLen) {
+        final t = (d - cursor) / segLen; // 0..1
+        final angle = math.pi + t * math.pi / 2; // 180°→270°
+        return Offset(r + r * math.cos(angle), r + r * math.sin(angle));
+      }
+      cursor += segLen;
+      // Segment B: top straight  (r,0) → (w-r, 0)
+      segLen = straightTop;
+      if (d < cursor + segLen) {
+        return Offset(r + (d - cursor), 0);
+      }
+      cursor += segLen;
+      // Segment C: TR corner arc (centre w-r, r, from 270°→0°)
+      segLen = arcLen;
+      if (d < cursor + segLen) {
+        final t = (d - cursor) / segLen;
+        final angle = -math.pi / 2 + t * math.pi / 2;
+        return Offset((w - r) + r * math.cos(angle), r + r * math.sin(angle));
+      }
+      cursor += segLen;
+      // Segment D: right straight  (w, r) → (w, h-r)
+      segLen = straightRight;
+      if (d < cursor + segLen) {
+        return Offset(w, r + (d - cursor));
+      }
+      cursor += segLen;
+      // Segment E: BR corner arc (centre w-r, h-r, from 0°→90°)
+      segLen = arcLen;
+      if (d < cursor + segLen) {
+        final t = (d - cursor) / segLen;
+        final angle = t * math.pi / 2;
+        return Offset((w - r) + r * math.cos(angle), (h - r) + r * math.sin(angle));
+      }
+      cursor += segLen;
+      // Segment F: bottom straight  (w-r, h) → (r, h)
+      segLen = straightBottom;
+      if (d < cursor + segLen) {
+        return Offset(w - r - (d - cursor), h);
+      }
+      cursor += segLen;
+      // Segment G: BL corner arc (centre r, h-r, from 90°→180°)
+      segLen = arcLen;
+      if (d < cursor + segLen) {
+        final t = (d - cursor) / segLen;
+        final angle = math.pi / 2 + t * math.pi / 2;
+        return Offset(r + r * math.cos(angle), (h - r) + r * math.sin(angle));
+      }
+      cursor += segLen;
+      // Segment H: left straight  (0, h-r) → (0, r)
+      return Offset(0, h - r - (d - cursor));
+    }
+
+    // ── Draw active progress arc along the rounded-rect ───────────────────
     final activePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0
       ..color = color
       ..strokeCap = StrokeCap.round;
 
-    final path = _buildPerimeterPath(w, h, startDist, endDist);
+    // Sample the path between phaseStart and phaseEnd
+    final path = Path();
+    const steps = 60;
+    for (int i = 0; i <= steps; i++) {
+      final d = phaseStart + (phaseEnd - phaseStart) * i / steps;
+      final pt = perimeterPoint(d.clamp(0.0, totalPerimeter));
+      if (i == 0) {
+        path.moveTo(pt.dx, pt.dy);
+      } else {
+        path.lineTo(pt.dx, pt.dy);
+      }
+    }
     canvas.drawPath(path, activePaint);
 
-    // Solid dot at leading edge (clean double-circle vector without blurs)
-    final dotPos = _perimeterPoint(w, h, endDist % perimeter);
-    
-    final outerDotPaint = Paint()
-      ..color = color.withValues(alpha: 0.3)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(dotPos, 9, outerDotPaint);
-
-    final innerDotPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(dotPos, 4.5, innerDotPaint);
-  }
-
-  Path _buildPerimeterPath(
-    double w,
-    double h,
-    double startDist,
-    double endDist,
-  ) {
-    final path = Path();
-    final perimeter = 2 * (w + h);
-    // Clamp
-    final s = startDist.clamp(0.0, perimeter);
-    final e = endDist.clamp(0.0, perimeter);
-    if (s >= e) return path;
-
-    // Walk the perimeter: top → right → bottom → left
-    final segments = [
-      (Offset(0, 0), Offset(w, 0), w),         // top  0..w
-      (Offset(w, 0), Offset(w, h), h),          // right w..w+h
-      (Offset(w, h), Offset(0, h), w),          // bottom w+h..2w+h
-      (Offset(0, h), Offset(0, 0), h),          // left  2w+h..2w+2h
-    ];
-
-    double cursor = 0;
-    bool started = false;
-    for (final (from, to, len) in segments) {
-      final segEnd = cursor + len;
-      if (segEnd < s) {
-        cursor = segEnd;
-        continue;
-      }
-      final segS = (s - cursor).clamp(0.0, len) / len;
-      final segE = (e - cursor).clamp(0.0, len) / len;
-      final p1 = Offset(
-        from.dx + (to.dx - from.dx) * segS,
-        from.dy + (to.dy - from.dy) * segS,
-      );
-      final p2 = Offset(
-        from.dx + (to.dx - from.dx) * math.min(segE, 1.0),
-        from.dy + (to.dy - from.dy) * math.min(segE, 1.0),
-      );
-      if (!started) {
-        path.moveTo(p1.dx, p1.dy);
-        started = true;
-      }
-      path.lineTo(p2.dx, p2.dy);
-      cursor = segEnd;
-      if (cursor >= e) break;
-    }
-    return path;
-  }
-
-  Offset _perimeterPoint(double w, double h, double dist) {
-    final perimeter = 2 * (w + h);
-    final d = dist.clamp(0.0, perimeter);
-    if (d <= w) return Offset(d, 0); // top
-    if (d <= w + h) return Offset(w, d - w); // right
-    if (d <= 2 * w + h) return Offset(w - (d - w - h), h); // bottom
-    return Offset(0, h - (d - 2 * w - h)); // left
+    // ── Leading dot at the tip of the progress line ───────────────────────
+    final dotPos = perimeterPoint(phaseEnd.clamp(0.0, totalPerimeter));
+    canvas.drawCircle(
+      dotPos, 9,
+      Paint()..color = color.withValues(alpha: 0.3)..style = PaintingStyle.fill,
+    );
+    canvas.drawCircle(
+      dotPos, 4.5,
+      Paint()..color = Colors.white..style = PaintingStyle.fill,
+    );
   }
 
   @override
