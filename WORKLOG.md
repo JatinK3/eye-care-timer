@@ -558,3 +558,13 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Fed range-specific statistics (focus time, goal rate, daily streak, peak focus hour, break compliance rate, skipped/postponed breaks, and conscious blinks) into the `AiService` LLM call to generate a customized, occupational health-focused wellness report.
   - Implemented loading, error-fallback, retry, and stale-range regeneration states for the AI report.
   - Added focused widget test coverage to verify direct dashboard navigation and all states of the AI report card.
+
+- Fixed Linux desktop tray countdown skipping seconds:
+  - Added a vsync frame rendering tick/heartbeat field `_lastAnimationTickAt` in `_TimerHomePageState` that updates on every frame draw.
+  - Refactored the periodic desktop tray ticker `_onDesktopTrayTick` to check if frame animation rendering is frozen (e.g. when minimized/hidden on Linux).
+  - If frozen, the tray ticker updates the remaining seconds and tray state on every tick, ensuring a smooth, correct-to-the-second countdown display.
+
+- Fixed Linux blink reminders stacking in history tray:
+  - Updated `_showLinuxBlinkReminder` in `NotificationService` to explicitly close the previous notification via `cancelBlinkReminder()` before showing a new one.
+  - This ensures that old notification cards are dismissed and removed from both the screen and the system history tray, preventing multiple notifications from piling up.
+  - Verified compilation, analyzer checks, and unit tests pass successfully.
