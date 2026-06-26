@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+import '../../generated/l10n/app_localizations.dart';
+
 class SplashQuotePage extends StatefulWidget {
   final VoidCallback onComplete;
 
@@ -156,7 +158,7 @@ class _SplashQuotePageState extends State<SplashQuotePage>
                 style: TextButton.styleFrom(
                   foregroundColor: theme.colorScheme.primary.withValues(alpha: 0.6),
                 ),
-                child: const Text('Skip'),
+                child: Text(AppLocalizations.of(context)!.skip),
               ),
             ),
           ),

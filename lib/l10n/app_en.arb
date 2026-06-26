@@ -1285,5 +1285,41 @@
   "settingsRestore": "Restore",
   "@settingsRestore": {
     "description": "Button label to import/restore settings"
+  },
+  "timerTakeBreakNow": "Take break now",
+  "@timerTakeBreakNow": {
+    "description": "Button label to start break immediately"
+  },
+  "timerCancelSnooze": "Cancel snooze",
+  "@timerCancelSnooze": {
+    "description": "Button label to cancel active snooze"
+  },
+  "timerSnooze1h": "Snooze 1h",
+  "@timerSnooze1h": {
+    "description": "Button label to snooze timer for 1 hour"
+  },
+  "timerTomorrow": "Tomorrow",
+  "@timerTomorrow": {
+    "description": "Button label to snooze timer until tomorrow"
+  },
+  "timerNaturalBreakCredited": "Natural break detected and credited! Timer reset.",
+  "@timerNaturalBreakCredited": {
+    "description": "Snackbar message when a natural break is credited"
+  },
+  "notificationPermissionTitle": "Enable notifications?",
+  "@notificationPermissionTitle": {
+    "description": "Title of notification permission prompt dialog"
+  },
+  "notificationPermissionMessage": "BlinkKind uses notifications to remind you when your eye break is about to start. Without this permission the reminder will only appear while the app is open.\n\nYou can change this at any time in Settings.",
+  "@notificationPermissionMessage": {
+    "description": "Content of notification permission prompt dialog"
+  },
+  "notNow": "Not now",
+  "@notNow": {
+    "description": "Label for not now button"
+  },
+  "openSettings": "Open Settings",
+  "@openSettings": {
+    "description": "Label for open settings button"
   }
 }

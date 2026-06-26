@@ -259,28 +259,28 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       if (navigator == null || !navigator.mounted) return;
       await showDialog<void>(
         context: navigator,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Enable notifications?'),
-          content: const Text(
-            'BlinkKind uses notifications to remind you when your eye break '
-            'is about to start. Without this permission the reminder '
-            'will only appear while the app is open.\n\n'
-            'You can change this at any time in Settings.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Not now'),
+        builder: (ctx) {
+          final l10n = AppLocalizations.of(ctx)!;
+          return AlertDialog(
+            title: Text(l10n.notificationPermissionTitle),
+            content: Text(
+              l10n.notificationPermissionMessage,
             ),
-            FilledButton(
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                await _notificationService.openNotificationSettings();
-              },
-              child: const Text('Open Settings'),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(l10n.notNow),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  await _notificationService.openNotificationSettings();
+                },
+                child: Text(l10n.openSettings),
+              ),
+            ],
+          );
+        },
       );
     }
   }

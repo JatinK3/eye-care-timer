@@ -1887,6 +1887,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restore'**
   String get settingsRestore;
+
+  /// Button label to start break immediately
+  ///
+  /// In en, this message translates to:
+  /// **'Take break now'**
+  String get timerTakeBreakNow;
+
+  /// Button label to cancel active snooze
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel snooze'**
+  String get timerCancelSnooze;
+
+  /// Button label to snooze timer for 1 hour
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze 1h'**
+  String get timerSnooze1h;
+
+  /// Button label to snooze timer until tomorrow
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get timerTomorrow;
+
+  /// Snackbar message when a natural break is credited
+  ///
+  /// In en, this message translates to:
+  /// **'Natural break detected and credited! Timer reset.'**
+  String get timerNaturalBreakCredited;
+
+  /// Title of notification permission prompt dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Enable notifications?'**
+  String get notificationPermissionTitle;
+
+  /// Content of notification permission prompt dialog
+  ///
+  /// In en, this message translates to:
+  /// **'BlinkKind uses notifications to remind you when your eye break is about to start. Without this permission the reminder will only appear while the app is open.\n\nYou can change this at any time in Settings.'**
+  String get notificationPermissionMessage;
+
+  /// Label for not now button
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notNow;
+
+  /// Label for open settings button
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get openSettings;
 }
 
 class _AppLocalizationsDelegate

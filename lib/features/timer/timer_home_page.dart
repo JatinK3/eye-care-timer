@@ -1248,9 +1248,9 @@ class TimerHomePageState extends State<TimerHomePage>
     _updateDesktopState();
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Natural break detected and credited! Timer reset.'),
-        duration: Duration(seconds: 4),
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.timerNaturalBreakCredited),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -2124,7 +2124,7 @@ class TimerHomePageState extends State<TimerHomePage>
         FilledButton.icon(
           onPressed: canTakeBreak ? _takeBreakNow : null,
           icon: const Icon(Icons.visibility_outlined),
-          label: const Text('Take break now'),
+          label: Text(AppLocalizations.of(context)!.timerTakeBreakNow),
           style: FilledButton.styleFrom(
             backgroundColor: accentColor,
             foregroundColor: foreground,
@@ -2137,7 +2137,7 @@ class TimerHomePageState extends State<TimerHomePage>
           OutlinedButton.icon(
             onPressed: _cancelSnooze,
             icon: const Icon(Icons.notifications_active_outlined),
-            label: const Text('Cancel snooze'),
+            label: Text(AppLocalizations.of(context)!.timerCancelSnooze),
             style: OutlinedButton.styleFrom(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -2150,7 +2150,7 @@ class TimerHomePageState extends State<TimerHomePage>
                 ? null
                 : () => _pauseTimerForSnooze(const Duration(hours: 1)),
             icon: const Icon(Icons.snooze_outlined),
-            label: const Text('Snooze 1h'),
+            label: Text(AppLocalizations.of(context)!.timerSnooze1h),
             style: OutlinedButton.styleFrom(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -2160,7 +2160,7 @@ class TimerHomePageState extends State<TimerHomePage>
           OutlinedButton.icon(
             onPressed: _isBreak ? null : _snoozeUntilTomorrow,
             icon: const Icon(Icons.nights_stay_outlined),
-            label: const Text('Tomorrow'),
+            label: Text(AppLocalizations.of(context)!.timerTomorrow),
             style: OutlinedButton.styleFrom(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

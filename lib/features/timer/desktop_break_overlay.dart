@@ -8,6 +8,8 @@ import '../../services/desktop_integration_service.dart';
 import 'break_guides.dart';
 import 'eye_health_tips.dart';
 
+import '../../generated/l10n/app_localizations.dart';
+
 class DesktopBreakOverlay extends StatefulWidget {
   final int initialDurationSeconds;
   final BreakMode breakMode;
@@ -434,7 +436,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               _dismiss();
             },
             icon: const Icon(Icons.snooze),
-            label: const Text('Postpone'),
+            label: Text(AppLocalizations.of(context)!.postpone),
           ),
           const SizedBox(width: 24),
           ElevatedButton.icon(
@@ -454,7 +456,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               _dismiss();
             },
             icon: const Icon(Icons.skip_next),
-            label: const Text('Skip'),
+            label: Text(AppLocalizations.of(context)!.skip),
           ),
         ],
       );

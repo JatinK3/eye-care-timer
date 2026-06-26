@@ -1000,4 +1000,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsRestore => 'Restore';
+
+  @override
+  String get timerTakeBreakNow => 'Take break now';
+
+  @override
+  String get timerCancelSnooze => 'Cancel snooze';
+
+  @override
+  String get timerSnooze1h => 'Snooze 1h';
+
+  @override
+  String get timerTomorrow => 'Tomorrow';
+
+  @override
+  String get timerNaturalBreakCredited =>
+      'Natural break detected and credited! Timer reset.';
+
+  @override
+  String get notificationPermissionTitle => 'Enable notifications?';
+
+  @override
+  String get notificationPermissionMessage =>
+      'BlinkKind uses notifications to remind you when your eye break is about to start. Without this permission the reminder will only appear while the app is open.\n\nYou can change this at any time in Settings.';
+
+  @override
+  String get notNow => 'Not now';
+
+  @override
+  String get openSettings => 'Open Settings';
 }
