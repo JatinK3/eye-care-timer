@@ -599,4 +599,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Placed the `showDashboard` trigger explicitly on the "Show BlinkKind" tray menu items and non-Linux tray click/double-click events.
   - This prevents the Linux tray icon's click event (which fires when showing/opening the menu) from queuing a dashboard redirect that immediately pops the user back to the dashboard when they click the "Settings" menu item.
   - Verified compilation and test suite continues to pass.
-
+- Fixed countdown timer floating point precision bug:
+  - Replaced the countdown timer remaining seconds calculation in the animation listener with a robust integer rounding of the elapsed controller value fraction (`_initialDuration - (_animationController.value * _initialDuration).round()`).
+  - This prevents double precision floating point inaccuracies (e.g., at the 5-second tick of a 15-second timer, 15 * (1.0 - 0.3333333333333333).ceil() evaluated to 11 instead of 10), which previously skipped certain integer seconds (like 10) entirely and broke warning curtain widget expectations.
+  - Verified compilation and confirmed all unit/widget tests (including the warning curtain test) pass successfully.

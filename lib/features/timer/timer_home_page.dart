@@ -212,6 +212,7 @@ class TimerHomePageState extends State<TimerHomePage>
   bool _isCancelled = false;
   bool _isFocusMode = false;
   bool _isSystemIdlePaused = false;
+  bool _isWarningOverlayActive = false;
   final SystemUiService _systemUiService = const SystemUiService();
 
   // AI-generated break quote, pre-fetched during work phase.
@@ -385,12 +386,22 @@ class TimerHomePageState extends State<TimerHomePage>
         Tween<double>(begin: 1.0, end: 0.0).animate(_animationController)
           ..addListener(() {
             _lastAnimationTickAt = DateTime.now();
-            // Update remaining seconds and pulse trigger without setState —
-            // only fields that non-animation widgets need to read.
-            final nextRemaining = (_initialDuration * _progressAnimation.value)
-                .ceil();
+            // Update remaining seconds and pulse trigger.
+            final elapsedSeconds =
+                (_animationController.value * _initialDuration).round();
+            final nextRemaining = _initialDuration - elapsedSeconds;
             if (nextRemaining != _remainingSeconds) {
+              final oldRemaining = _remainingSeconds;
               _remainingSeconds = nextRemaining;
+              
+              final isInWarning = _isRunning && !_isBreak && _remainingSeconds <= 10 && _remainingSeconds > 0;
+              _updateWarningOverlay(isInWarning);
+              
+              final wasInWarning = _isRunning && !_isBreak && oldRemaining <= 10 && oldRemaining > 0;
+              if (isInWarning || wasInWarning != isInWarning) {
+                setState(() {});
+              }
+              
               if (_remainingSeconds <= 5 &&
                   !_pulseController.isAnimating &&
                   _isRunning) {
@@ -566,7 +577,17 @@ class TimerHomePageState extends State<TimerHomePage>
       final isAnimationTicking = lastTick != null &&
           DateTime.now().difference(lastTick).inMilliseconds < 200;
       if (!isAnimationTicking || (clamped - _remainingSeconds).abs() > 1) {
+        final oldRemaining = _remainingSeconds;
         _remainingSeconds = clamped;
+        
+        final isInWarning = _isRunning && !_isBreak && _remainingSeconds <= 10 && _remainingSeconds > 0;
+        _updateWarningOverlay(isInWarning);
+        
+        final wasInWarning = _isRunning && !_isBreak && oldRemaining <= 10 && oldRemaining > 0;
+        if (isInWarning || wasInWarning != isInWarning) {
+          setState(() {});
+        }
+        
         _processBlinkReminderCadences();
         // Wellness reminders (fires independently, including during breaks)
         if (widget.wellnessRemindersEnabled &&
@@ -1378,6 +1399,7 @@ class TimerHomePageState extends State<TimerHomePage>
         _animationController.stop();
         _pulseController.stop();
         _cancelPhaseDeadlineTimer();
+        _updateWarningOverlay(false);
         _phaseStartedAt = null;
         _phaseEndsAt = null;
         _saveActiveSession(isPaused: true);
@@ -1563,6 +1585,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _animationController.stop();
     _pulseController.stop();
     _cancelPhaseDeadlineTimer();
+    _updateWarningOverlay(false);
     if (resetPulse) {
       _pulseController.reset();
     }
@@ -1783,6 +1806,13 @@ class TimerHomePageState extends State<TimerHomePage>
         postponedBreakDuration: _postponedBreakDuration,
       ),
     );
+  }
+
+  void _updateWarningOverlay(bool show) {
+    if (!widget.twoStageWarningEnabled) return;
+    if (_isWarningOverlayActive == show) return;
+    _isWarningOverlayActive = show;
+    unawaited(DesktopIntegrationService.instance.showWarningOverlay(show));
   }
 
   bool _isNextBreakLong() {
@@ -3158,6 +3188,12 @@ class TimerHomePageState extends State<TimerHomePage>
                   ),
                 ),
               ),
+              if (_isRunning &&
+                  !_isBreak &&
+                  _remainingSeconds <= 10 &&
+                  _remainingSeconds > 0 &&
+                  widget.twoStageWarningEnabled)
+                _WarningCurtain(remainingSeconds: _remainingSeconds),
             ],
           ),
         ),
@@ -3351,6 +3387,112 @@ class _AnimatedTimerDial extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _WarningCurtain extends StatefulWidget {
+  final int remainingSeconds;
+
+  const _WarningCurtain({required this.remainingSeconds});
+
+  @override
+  State<_WarningCurtain> createState() => _WarningCurtainState();
+}
+
+class _WarningCurtainState extends State<_WarningCurtain>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    _opacityAnimation = Tween<double>(begin: 0.1, end: 0.45).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _opacityAnimation,
+        builder: (context, child) {
+          final opacity = _opacityAnimation.value;
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              // Edge Vignette Glow
+              Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment.center,
+                    radius: 1.2,
+                    colors: [
+                      Colors.transparent,
+                      Colors.amber.withValues(alpha: opacity * 0.4),
+                      Colors.deepOrange.withValues(alpha: opacity),
+                    ],
+                    stops: const [0.5, 0.8, 1.0],
+                  ),
+                ),
+              ),
+              // Top Warning Banner
+              Positioned(
+                top: 80,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.black.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.amber.withValues(alpha: opacity),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      'Break starting in ${widget.remainingSeconds}s',
+                      style: TextStyle(
+                        color: isDark ? Colors.amber : Colors.deepOrange.shade800,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
