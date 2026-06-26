@@ -15,6 +15,7 @@ class HistoryPage extends StatefulWidget {
   final Map<String, int> history;
   final List<WorkSessionRecord> workSessions;
   final List<TimerEventRecord> timerEvents;
+  final ValueListenable<List<TimerEventRecord>>? timerEventsListenable;
   final int dailyGoal;
   final VoidCallback resetHistory;
 
@@ -23,6 +24,7 @@ class HistoryPage extends StatefulWidget {
     required this.history,
     required this.workSessions,
     required this.timerEvents,
+    this.timerEventsListenable,
     required this.dailyGoal,
     required this.resetHistory,
   });
@@ -43,6 +45,35 @@ class _HistoryPageState extends State<HistoryPage> {
     _history = Map<String, int>.from(widget.history);
     _workSessions = List<WorkSessionRecord>.from(widget.workSessions);
     _timerEvents = List<TimerEventRecord>.from(widget.timerEvents);
+    widget.timerEventsListenable?.addListener(_syncTimerEvents);
+  }
+
+  @override
+  void didUpdateWidget(covariant HistoryPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.timerEventsListenable != widget.timerEventsListenable) {
+      oldWidget.timerEventsListenable?.removeListener(_syncTimerEvents);
+      widget.timerEventsListenable?.addListener(_syncTimerEvents);
+    }
+    _history = Map<String, int>.from(widget.history);
+    _workSessions = List<WorkSessionRecord>.from(widget.workSessions);
+    _timerEvents = List<TimerEventRecord>.from(
+      widget.timerEventsListenable?.value ?? widget.timerEvents,
+    );
+  }
+
+  @override
+  void dispose() {
+    widget.timerEventsListenable?.removeListener(_syncTimerEvents);
+    super.dispose();
+  }
+
+  void _syncTimerEvents() {
+    final listenable = widget.timerEventsListenable;
+    if (listenable == null || !mounted) return;
+    setState(() {
+      _timerEvents = List<TimerEventRecord>.from(listenable.value);
+    });
   }
 
   @override
@@ -51,16 +82,21 @@ class _HistoryPageState extends State<HistoryPage> {
     final rangeSessions = _sessionsForRange();
     final rangeEvents = _eventsForRange();
 
-    final completedWorkCount =
-        rangeEvents.where((e) => e.type == TimerEventType.workCompleted).length;
-    final cancelledWorkCount =
-        rangeEvents.where((e) => e.type == TimerEventType.workCancelled).length;
-    final skippedBreakCount =
-        rangeEvents.where((e) => e.type == TimerEventType.breakSkipped).length;
-    final postponedBreakCount =
-        rangeEvents.where((e) => e.type == TimerEventType.breakPostponed).length;
-    final blinksLoggedCount =
-        rangeEvents.where((e) => e.type == TimerEventType.blinkReminderAcknowledged).length;
+    final completedWorkCount = rangeEvents
+        .where((e) => e.type == TimerEventType.workCompleted)
+        .length;
+    final cancelledWorkCount = rangeEvents
+        .where((e) => e.type == TimerEventType.workCancelled)
+        .length;
+    final skippedBreakCount = rangeEvents
+        .where((e) => e.type == TimerEventType.breakSkipped)
+        .length;
+    final postponedBreakCount = rangeEvents
+        .where((e) => e.type == TimerEventType.breakPostponed)
+        .length;
+    final blinksLoggedCount = rangeEvents
+        .where((e) => e.type == TimerEventType.blinkReminderAcknowledged)
+        .length;
 
     // Calculate range-specific statistics
     final goalDays = dates
@@ -70,11 +106,15 @@ class _HistoryPageState extends State<HistoryPage> {
         ? 0
         : ((goalDays / dates.length) * 100).round();
 
-    final totalFocusSeconds = rangeSessions.fold<int>(0, (sum, record) => sum + record.durationSeconds);
+    final totalFocusSeconds = rangeSessions.fold<int>(
+      0,
+      (sum, record) => sum + record.durationSeconds,
+    );
     final longestStreak = _longestGoalStreak(dates);
     final peakHour = _peakFocusHour(rangeSessions);
 
-    final breakDecisionCount = completedWorkCount + skippedBreakCount + postponedBreakCount;
+    final breakDecisionCount =
+        completedWorkCount + skippedBreakCount + postponedBreakCount;
     final complianceRate = breakDecisionCount == 0
         ? 0
         : ((completedWorkCount / breakDecisionCount) * 100).round();
@@ -171,12 +211,14 @@ class _HistoryPageState extends State<HistoryPage> {
               icon: Icons.verified_outlined,
               label: AppLocalizations.of(context)!.breakComplianceLabel,
               value: "$complianceRate%",
-              detail: "$completedWorkCount taken, ${skippedBreakCount + postponedBreakCount} deferred",
+              detail:
+                  "$completedWorkCount taken, ${skippedBreakCount + postponedBreakCount} deferred",
             ),
             second: _MetricCard(
               icon: Icons.emoji_events_outlined,
               label: AppLocalizations.of(context)!.milestonesEarnedLabel,
-              value: "${achievements.where((item) => item.unlocked).length}/${achievements.length}",
+              value:
+                  "${achievements.where((item) => item.unlocked).length}/${achievements.length}",
               detail: "Based on this range",
             ),
           ),
@@ -257,7 +299,9 @@ class _HistoryPageState extends State<HistoryPage> {
           _HistorySection(
             title: AppLocalizations.of(context)!.recentCompletedSessions,
             child: recentSessions.isEmpty
-                ? _EmptyMessage(AppLocalizations.of(context)!.newSessionsAppearHere)
+                ? _EmptyMessage(
+                    AppLocalizations.of(context)!.newSessionsAppearHere,
+                  )
                 : Column(
                     children: recentSessions
                         .map(
@@ -282,9 +326,7 @@ class _HistoryPageState extends State<HistoryPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  AppLocalizations.of(context)!.exportActivityDescription,
-                ),
+                Text(AppLocalizations.of(context)!.exportActivityDescription),
                 const SizedBox(height: 16),
                 if (!kIsWeb) ...[
                   Row(
@@ -292,8 +334,12 @@ class _HistoryPageState extends State<HistoryPage> {
                       Expanded(
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -332,7 +378,8 @@ class _HistoryPageState extends State<HistoryPage> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () => _exportToClipboard(context, isCsv: true),
+                        onPressed: () =>
+                            _exportToClipboard(context, isCsv: true),
                         icon: const Icon(Icons.description_outlined),
                         label: Text(AppLocalizations.of(context)!.copyCsv),
                       ),
@@ -346,7 +393,8 @@ class _HistoryPageState extends State<HistoryPage> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () => _exportToClipboard(context, isCsv: false),
+                        onPressed: () =>
+                            _exportToClipboard(context, isCsv: false),
                         icon: const Icon(Icons.code_outlined),
                         label: Text(AppLocalizations.of(context)!.copyJson),
                       ),
@@ -391,12 +439,13 @@ class _HistoryPageState extends State<HistoryPage> {
         (index) => today.subtract(Duration(days: index)),
       );
     }
-    final dates = _history.keys
-        .map(DateTime.tryParse)
-        .whereType<DateTime>()
-        .map(_startOfDay)
-        .toList()
-      ..sort((a, b) => b.compareTo(a));
+    final dates =
+        _history.keys
+            .map(DateTime.tryParse)
+            .whereType<DateTime>()
+            .map(_startOfDay)
+            .toList()
+          ..sort((a, b) => b.compareTo(a));
     return dates;
   }
 
@@ -447,13 +496,16 @@ class _HistoryPageState extends State<HistoryPage> {
       final hour = session.completedAt.hour;
       hourCounts[hour] = (hourCounts[hour] ?? 0) + 1;
     }
-    final peakHour = hourCounts.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+    final peakHour = hourCounts.entries
+        .reduce((a, b) => a.value > b.value ? a : b)
+        .key;
     final endHour = (peakHour + 1) % 24;
     String formatHour(int h) {
       final suffix = h >= 12 ? "PM" : "AM";
       final displayH = h == 0 ? 12 : (h > 12 ? h - 12 : h);
       return "$displayH $suffix";
     }
+
     return "${formatHour(peakHour)} - ${formatHour(endHour)}";
   }
 
@@ -501,7 +553,10 @@ class _HistoryPageState extends State<HistoryPage> {
         icon: Icons.spa_outlined,
         title: "No rush rest",
         detail: "Avoid skips and postpones in this range",
-        unlocked: completedWorkCount > 0 && skippedBreakCount == 0 && postponedBreakCount == 0,
+        unlocked:
+            completedWorkCount > 0 &&
+            skippedBreakCount == 0 &&
+            postponedBreakCount == 0,
       ),
     ];
   }
@@ -524,9 +579,7 @@ class _HistoryPageState extends State<HistoryPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(AppLocalizations.of(context)!.clearHistoryConfirmTitle),
-        content: Text(
-          AppLocalizations.of(context)!.clearHistoryConfirmBody,
-        ),
+        content: Text(AppLocalizations.of(context)!.clearHistoryConfirmBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -558,10 +611,10 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   String _rangeTitle() => switch (_range) {
-        HistoryRange.sevenDays => "Last 7 days logs",
-        HistoryRange.thirtyDays => "Last 30 days logs",
-        HistoryRange.all => "All active days logs",
-      };
+    HistoryRange.sevenDays => "Last 7 days logs",
+    HistoryRange.thirtyDays => "Last 30 days logs",
+    HistoryRange.all => "All active days logs",
+  };
 
   String _friendlyDateLabel(DateTime date) {
     final difference = _startOfDay(
@@ -583,8 +636,8 @@ class _HistoryPageState extends State<HistoryPage> {
     final hour = date.hour == 0
         ? 12
         : date.hour > 12
-            ? date.hour - 12
-            : date.hour;
+        ? date.hour - 12
+        : date.hour;
     final minute = date.minute.toString().padLeft(2, "0");
     return "$hour:$minute ${date.hour >= 12 ? "PM" : "AM"}";
   }
@@ -598,9 +651,7 @@ class _HistoryPageState extends State<HistoryPage> {
     final cutoff = _startOfDay(
       DateTime.now(),
     ).subtract(Duration(days: days - 1));
-    return _timerEvents.where(
-      (record) => !record.timestamp.isBefore(cutoff),
-    );
+    return _timerEvents.where((record) => !record.timestamp.isBefore(cutoff));
   }
 
   void _exportToClipboard(BuildContext context, {required bool isCsv}) {
@@ -616,20 +667,31 @@ class _HistoryPageState extends State<HistoryPage> {
 
     Clipboard.setData(ClipboardData(text: content));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.copiedToClipboard(formatName))),
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context)!.copiedToClipboard(formatName),
+        ),
+      ),
     );
   }
 
-  Future<void> _exportToFile(BuildContext context, {required bool isCsv}) async {
+  Future<void> _exportToFile(
+    BuildContext context, {
+    required bool isCsv,
+  }) async {
     try {
       final String content = isCsv
           ? _generateCSV(_workSessions, _timerEvents)
           : _generateJSON(_workSessions, _timerEvents);
 
       final extension = isCsv ? 'csv' : 'json';
-      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+      final timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .split('.')
+          .first;
       final fileName = 'blinkkind_history_$timestamp.$extension';
-      
+
       String? dirPath;
       if (!kIsWeb) {
         if (Platform.isWindows) {
@@ -670,7 +732,11 @@ class _HistoryPageState extends State<HistoryPage> {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.failedToExport(e.toString()))),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.failedToExport(e.toString()),
+          ),
+        ),
       );
     }
   }
@@ -686,7 +752,10 @@ class _HistoryPageState extends State<HistoryPage> {
     }
   }
 
-  String _generateCSV(List<WorkSessionRecord> workSessions, List<TimerEventRecord> events) {
+  String _generateCSV(
+    List<WorkSessionRecord> workSessions,
+    List<TimerEventRecord> events,
+  ) {
     final buffer = StringBuffer();
     buffer.writeln("Event Type,Timestamp,Duration (seconds)");
     for (final event in events) {
@@ -698,7 +767,10 @@ class _HistoryPageState extends State<HistoryPage> {
     return buffer.toString();
   }
 
-  String _generateJSON(List<WorkSessionRecord> workSessions, List<TimerEventRecord> events) {
+  String _generateJSON(
+    List<WorkSessionRecord> workSessions,
+    List<TimerEventRecord> events,
+  ) {
     final Map<String, dynamic> exportData = {
       "exportDate": DateTime.now().toIso8601String(),
       "completedWorkSessions": workSessions.map((s) => s.toJson()).toList(),
@@ -782,7 +854,10 @@ class _AchievementTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(achievement.unlocked ? achievement.icon : Icons.lock_outline, color: color),
+          Icon(
+            achievement.unlocked ? achievement.icon : Icons.lock_outline,
+            color: color,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -827,16 +902,13 @@ class _InsightRow extends StatelessWidget {
           Icon(icon, color: color, size: 20),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
           ),
           Text(
             value,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -851,13 +923,13 @@ class _MetricRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: first),
-          const SizedBox(width: 12),
-          Expanded(child: second),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Expanded(child: first),
+      const SizedBox(width: 12),
+      Expanded(child: second),
+    ],
+  );
 }
 
 class _MetricCard extends StatelessWidget {
@@ -874,39 +946,41 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-        elevation: 1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(height: 10),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                detail,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                    ),
-              ),
-            ],
+    elevation: 1,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    child: Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
-      );
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            detail,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _HistorySection extends StatelessWidget {
@@ -916,26 +990,26 @@ class _HistorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-        elevation: 1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-              ),
-              const SizedBox(height: 12),
-              child,
-            ],
+    elevation: 1,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
-        ),
-      );
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    ),
+  );
 }
 
 class _EmptyMessage extends StatelessWidget {
@@ -944,17 +1018,17 @@ class _EmptyMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 30),
-        child: Center(
-          child: Text(
-            message,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
+    padding: const EdgeInsets.symmetric(vertical: 30),
+    child: Center(
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _HistoryRow extends StatelessWidget {
@@ -989,14 +1063,18 @@ class _HistoryRow extends StatelessWidget {
                 size: 18,
                 color: goalReached
                     ? Colors.green
-                    : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    : Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
             ],
           ),
           const SizedBox(height: 6),
           LinearProgressIndicator(
             value: progress,
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest,
             valueColor: AlwaysStoppedAnimation<Color>(
               goalReached
                   ? Colors.green
@@ -1053,11 +1131,14 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_selectedIndex != null && _selectedIndex! < chronologicalDates.length) ...[
+        if (_selectedIndex != null &&
+            _selectedIndex! < chronologicalDates.length) ...[
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -1065,16 +1146,16 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
               children: [
                 Text(
                   _fullDateLabel(chronologicalDates[_selectedIndex!]),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   "${counts[_selectedIndex!]} cycles / goal: ${widget.dailyGoal}",
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -1091,14 +1172,17 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text("$maxCount", style: Theme.of(context).textTheme.labelSmall),
+                  Text(
+                    "$maxCount",
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
                   if (widget.dailyGoal > 0 && widget.dailyGoal < maxCount)
                     Text(
                       "${widget.dailyGoal}",
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   Text("0", style: Theme.of(context).textTheme.labelSmall),
                 ],
@@ -1109,7 +1193,9 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final chartHeight = constraints.maxHeight - 24;
-                    final goalRatio = maxCount > 0 ? widget.dailyGoal / maxCount : 0.0;
+                    final goalRatio = maxCount > 0
+                        ? widget.dailyGoal / maxCount
+                        : 0.0;
                     final goalY = chartHeight * (1 - goalRatio);
 
                     final barWidth = widget.dates.length > 7 ? 24.0 : 36.0;
@@ -1120,7 +1206,8 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                       final count = counts[index];
                       final ratio = maxCount > 0 ? count / maxCount : 0.0;
                       final barHeight = chartHeight * ratio;
-                      final isGoalReached = widget.dailyGoal > 0 && count >= widget.dailyGoal;
+                      final isGoalReached =
+                          widget.dailyGoal > 0 && count >= widget.dailyGoal;
                       final isSelected = _selectedIndex == index;
 
                       return GestureDetector(
@@ -1149,27 +1236,42 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                         ? LinearGradient(
                                             colors: [
                                               Colors.green,
-                                              Colors.green.withValues(alpha: 0.8),
+                                              Colors.green.withValues(
+                                                alpha: 0.8,
+                                              ),
                                             ],
                                             begin: Alignment.topCenter,
                                             end: Alignment.bottomCenter,
                                           )
                                         : LinearGradient(
                                             colors: [
-                                              Theme.of(context).colorScheme.primary,
-                                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
+                                              Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                                  .withValues(alpha: 0.7),
                                             ],
                                             begin: Alignment.topCenter,
                                             end: Alignment.bottomCenter,
                                           ),
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(4),
+                                    ),
                                     boxShadow: isSelected
                                         ? [
                                             BoxShadow(
-                                              color: (isGoalReached ? Colors.green : Theme.of(context).colorScheme.primary).withValues(alpha: 0.4),
+                                              color:
+                                                  (isGoalReached
+                                                          ? Colors.green
+                                                          : Theme.of(context)
+                                                                .colorScheme
+                                                                .primary)
+                                                      .withValues(alpha: 0.4),
                                               blurRadius: 8,
                                               spreadRadius: 2,
-                                            )
+                                            ),
                                           ]
                                         : null,
                                   ),
@@ -1182,11 +1284,19 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                               child: Text(
                                 _shortDateLabel(date),
                                 textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
                                       color: isSelected
-                                          ? Theme.of(context).colorScheme.primary
-                                          : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                                      fontWeight: isSelected ? FontWeight.bold : null,
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant
+                                                .withValues(alpha: 0.7),
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : null,
                                     ),
                               ),
                             ),
@@ -1224,24 +1334,36 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                   scrollDirection: Axis.horizontal,
                                   physics: const BouncingScrollPhysics(),
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
                                     child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                      children: List.generate(chronologicalDates.length, (index) {
-                                        return Padding(
-                                          padding: EdgeInsets.symmetric(horizontal: spacing / 2),
-                                          child: buildBar(index),
-                                        );
-                                      }),
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: List.generate(
+                                        chronologicalDates.length,
+                                        (index) {
+                                          return Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: spacing / 2,
+                                            ),
+                                            child: buildBar(index),
+                                          );
+                                        },
+                                      ),
                                     ),
                                   ),
                                 )
                               : Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
                                   crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: List.generate(chronologicalDates.length, (index) {
-                                    return buildBar(index);
-                                  }),
+                                  children: List.generate(
+                                    chronologicalDates.length,
+                                    (index) {
+                                      return buildBar(index);
+                                    },
+                                  ),
                                 ),
                         ),
                       ],
@@ -1272,8 +1394,29 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
   }
 
   String _fullDateLabel(DateTime date) {
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const weekdays = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ];
     return "${weekdays[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}";
   }
 }

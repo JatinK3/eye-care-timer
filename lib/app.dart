@@ -180,6 +180,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   Map<String, int> _history = <String, int>{};
   List<WorkSessionRecord> _workSessionHistory = <WorkSessionRecord>[];
   List<TimerEventRecord> _timerEventHistory = <TimerEventRecord>[];
+  final ValueNotifier<List<TimerEventRecord>> _timerEventHistoryListenable =
+      ValueNotifier<List<TimerEventRecord>>(<TimerEventRecord>[]);
   NotificationPermissionStatus _notificationPermissionStatus =
       NotificationPermissionStatus.unknown;
   ExactAlarmStatus _exactAlarmStatus = ExactAlarmStatus.unknown;
@@ -194,6 +196,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
 
   final PermissionsService _permissionsService = PermissionsService();
   StreamSubscription<NotificationResponse>? _notificationSubscription;
+  StreamSubscription<void>? _blinkReminderAcknowledgedSubscription;
 
   @override
   void initState() {
@@ -211,24 +214,34 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     await _refreshNotificationReliabilityStatus();
     _notificationSubscription = _notificationService.onNotificationResponse
         .listen(_handleNotificationResponse);
+    _blinkReminderAcknowledgedSubscription = _notificationService
+        .onBlinkReminderAcknowledged
+        .listen((_) => _recordBlinkReminderAcknowledged());
   }
 
   @override
   void dispose() {
     _notificationSubscription?.cancel();
+    _blinkReminderAcknowledgedSubscription?.cancel();
+    _timerEventHistoryListenable.dispose();
     super.dispose();
   }
 
   void _handleNotificationResponse(NotificationResponse response) {
     if (response.actionId == 'blink_done') {
-      final record = TimerEventRecord(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        timestamp: DateTime.now(),
-        type: TimerEventType.blinkReminderAcknowledged,
-        durationSeconds: 0,
-      );
-      _saveTimerEventRecord(record);
+      _recordBlinkReminderAcknowledged();
     }
+  }
+
+  void _recordBlinkReminderAcknowledged() {
+    final now = DateTime.now();
+    final record = TimerEventRecord(
+      id: now.microsecondsSinceEpoch.toString(),
+      timestamp: now,
+      type: TimerEventType.blinkReminderAcknowledged,
+      durationSeconds: 0,
+    );
+    _saveTimerEventRecord(record);
   }
 
   Future<NotificationReliabilityStatus>
@@ -413,6 +426,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       _history = history;
       _workSessionHistory = workSessionHistory;
       _timerEventHistory = timerEventHistory;
+      _timerEventHistoryListenable.value = List<TimerEventRecord>.unmodifiable(
+        timerEventHistory,
+      );
       _hasCompletedOnboarding = hasCompletedOnboarding;
       _isLoadingSettings = false;
     });
@@ -827,6 +843,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       _timerEventHistory = updated.length > 1000
           ? updated.sublist(0, 1000)
           : updated;
+      _timerEventHistoryListenable.value = List<TimerEventRecord>.unmodifiable(
+        _timerEventHistory,
+      );
     });
     unawaited(_preferencesService.saveTimerEventRecord(record));
   }
@@ -836,6 +855,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       _history = <String, int>{};
       _workSessionHistory = <WorkSessionRecord>[];
       _timerEventHistory = <TimerEventRecord>[];
+      _timerEventHistoryListenable.value = const <TimerEventRecord>[];
       _settings = _settings.copyWith(streakCount: 0);
     });
     unawaited(_preferencesService.clearHistory());
@@ -873,6 +893,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           history: _history,
           workSessions: _workSessionHistory,
           timerEvents: _timerEventHistory,
+          timerEventsListenable: _timerEventHistoryListenable,
           dailyGoal: _settings.dailyGoal,
           resetHistory: _resetHistory,
         ),

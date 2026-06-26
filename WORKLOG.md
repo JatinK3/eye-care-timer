@@ -539,3 +539,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Kept a notify-send fallback for environments where DBus notification calls fail.
   - Preserved non-interactive Linux reminders by sending an empty action list when the interactive toggle is disabled.
   - Verified with flutter analyze.
+
+- Fixed conscious blink history updates from notification actions:
+  - Added Linux DBus `ActionInvoked` monitoring for blink reminder notification IDs so clicking `I blinked` emits an acknowledgement event.
+  - Routed Linux acknowledgements into the same `TimerEventType.blinkReminderAcknowledged` history path used by Android notification actions.
+  - Added a live timer event notifier from `App` to `HistoryPage` so an already-open Productivity Insights view updates immediately when a blink is logged.
+  - Verified with flutter analyze and a focused timer-event persistence test.

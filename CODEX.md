@@ -270,3 +270,9 @@ Creative follow-ups after the core overlay is stable:
 
 - Blink reminder notification action buttons are optional through `blinkReminderInteractiveEnabled`. Keep both interactive and non-interactive blink notification details on a high-importance silent channel so disabling the action button does not also hide the banner.
 - The `blink_done` action exists on Android local notifications and Linux freedesktop notifications. Linux uses DBus `org.freedesktop.Notifications.Notify` so it can include the action while still receiving a replacement ID; desktop shells may render actions in the notification list instead of the transient banner.
+
+
+## Blink History Updates
+
+- Conscious blink history is driven by `TimerEventType.blinkReminderAcknowledged`. Android emits this through `flutter_local_notifications` action responses; Linux emits it by watching DBus `org.freedesktop.Notifications.ActionInvoked` for the active blink notification ID.
+- `HistoryPage` receives a live `ValueListenable<List<TimerEventRecord>>` from `App` so Productivity Insights updates while the page is already open.
