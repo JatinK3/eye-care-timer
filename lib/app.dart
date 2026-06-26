@@ -18,6 +18,7 @@ import 'models/timer_settings.dart';
 import 'models/timer_event_record.dart';
 import 'models/work_session_record.dart';
 import 'services/break_overlay_service.dart';
+import 'services/desktop_controls_controller.dart';
 import 'services/notification_service.dart';
 import 'services/permissions_service.dart';
 import 'services/preferences_service.dart';
@@ -234,6 +235,10 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   void _handleNotificationResponse(NotificationResponse response) {
     if (response.actionId == 'blink_done') {
       _recordBlinkReminderAcknowledged();
+    } else if (response.actionId == 'postpone_break') {
+      DesktopControlsController.instance.triggerCommand(DesktopCommand.postponeBreak);
+    } else if (response.actionId == 'skip_break') {
+      DesktopControlsController.instance.triggerCommand(DesktopCommand.skipBreak);
     }
   }
 

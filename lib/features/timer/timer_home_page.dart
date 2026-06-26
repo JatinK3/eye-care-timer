@@ -449,71 +449,72 @@ class TimerHomePageState extends State<TimerHomePage>
             defaultTargetPlatform == TargetPlatform.macOS ||
             defaultTargetPlatform == TargetPlatform.windows)) {
       _initDesktopIdleDetection();
-      _desktopCommandSubscription = DesktopControlsController.instance.commands
-          .listen((command) {
-            if (!mounted) return;
-            switch (command) {
-              case DesktopCommand.pause:
-                if (_isRunning && !_isPaused) {
-                  _pauseOrResume();
-                }
-                break;
-              case DesktopCommand.resume:
-                if (_isSnoozed) {
-                  _cancelSnooze();
-                } else if (_isPaused || !_isRunning) {
-                  if (!_isRunning) {
-                    _startWorkTimer();
-                  } else {
-                    _pauseOrResume();
-                  }
-                }
-                break;
-              case DesktopCommand.skipBreak:
-                if (_isRunning && _isBreak) {
-                  _skipBreak();
-                }
-                break;
-              case DesktopCommand.postponeBreak:
-                if (_isRunning && _isBreak) {
-                  _postponeBreak();
-                }
-                break;
-              case DesktopCommand.startBreak:
-                if (_isRunning && !_isBreak) {
-                  _startTimer(_breakDurationSeconds, isBreak: true);
-                }
-                break;
-              case DesktopCommand.windowResumed:
-                // Window was just shown from the tray; the countdown animation
-                // was frozen while hidden, so snap it back to the wall clock.
-                _realignAnimationToClock();
-                break;
-              case DesktopCommand.snooze1Hour:
-                _snoozeBreaks(const Duration(hours: 1));
-                break;
-              case DesktopCommand.snoozeUntilTomorrow:
-                _snoozeUntilTomorrow();
-                break;
-              case DesktopCommand.cancelSnooze:
-                _cancelSnooze();
-                break;
-              case DesktopCommand.openSettings:
-                unawaited(windowManager.show());
-                unawaited(windowManager.focus());
-                widget.openSettings(context, _canChangeSettings);
-                break;
-              case DesktopCommand.showDashboard:
-                Navigator.of(context).popUntil((route) => route.isFirst);
-                break;
-            }
-          });
       _desktopTrayTicker = Timer.periodic(
         const Duration(seconds: 1),
         (_) => _onDesktopTrayTick(),
       );
       _updateDesktopState();
     }
+
+    _desktopCommandSubscription = DesktopControlsController.instance.commands
+        .listen((command) {
+          if (!mounted) return;
+          switch (command) {
+            case DesktopCommand.pause:
+              if (_isRunning && !_isPaused) {
+                _pauseOrResume();
+              }
+              break;
+            case DesktopCommand.resume:
+              if (_isSnoozed) {
+                _cancelSnooze();
+              } else if (_isPaused || !_isRunning) {
+                if (!_isRunning) {
+                  _startWorkTimer();
+                } else {
+                  _pauseOrResume();
+                }
+              }
+              break;
+            case DesktopCommand.skipBreak:
+              if (_isRunning && _isBreak) {
+                _skipBreak();
+              }
+              break;
+            case DesktopCommand.postponeBreak:
+              if (_isRunning && _isBreak) {
+                _postponeBreak();
+              }
+              break;
+            case DesktopCommand.startBreak:
+              if (_isRunning && !_isBreak) {
+                _startTimer(_breakDurationSeconds, isBreak: true);
+              }
+              break;
+            case DesktopCommand.windowResumed:
+              // Window was just shown from the tray; the countdown animation
+              // was frozen while hidden, so snap it back to the wall clock.
+              _realignAnimationToClock();
+              break;
+            case DesktopCommand.snooze1Hour:
+              _snoozeBreaks(const Duration(hours: 1));
+              break;
+            case DesktopCommand.snoozeUntilTomorrow:
+              _snoozeUntilTomorrow();
+              break;
+            case DesktopCommand.cancelSnooze:
+              _cancelSnooze();
+              break;
+            case DesktopCommand.openSettings:
+              unawaited(windowManager.show());
+              unawaited(windowManager.focus());
+              widget.openSettings(context, _canChangeSettings);
+              break;
+            case DesktopCommand.showDashboard:
+              Navigator.of(context).popUntil((route) => route.isFirst);
+              break;
+          }
+        });
     _scheduleCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _checkSchedule();
     });

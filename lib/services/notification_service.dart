@@ -205,6 +205,38 @@ class NotificationService {
         ),
       );
 
+  static const NotificationDetails _workCompleteNotificationDetails =
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          category: AndroidNotificationCategory.alarm,
+          audioAttributesUsage: AudioAttributesUsage.alarm,
+          actions: <AndroidNotificationAction>[
+            AndroidNotificationAction(
+              'postpone_break',
+              'Postpone',
+              showsUserInterface: false,
+            ),
+            AndroidNotificationAction(
+              'skip_break',
+              'Skip',
+              showsUserInterface: false,
+            ),
+          ],
+        ),
+        iOS: DarwinNotificationDetails(presentAlert: true, presentSound: true),
+        macOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentSound: true,
+        ),
+      );
+
   static const MethodChannel _settingsChannel = MethodChannel(
     'eye_care_timer/notification_settings',
   );
@@ -626,9 +658,23 @@ class NotificationService {
               .substring(_linuxBlinkActionMonitorBuffer.length - 4096);
         }
 
-        if (_linuxBlinkActionMonitorBuffer.contains('ActionInvoked') &&
-            _linuxBlinkActionMonitorBuffer.contains('blink_done')) {
-          _blinkReminderAcknowledgedController.add(null);
+        final regExp = RegExp(r'member=ActionInvoked[\s\S]*?string\s+"([^"]+)"');
+        final matches = regExp.allMatches(_linuxBlinkActionMonitorBuffer);
+        for (final match in matches) {
+          final actionId = match.group(1);
+          if (actionId != null) {
+            if (actionId == 'blink_done') {
+              _blinkReminderAcknowledgedController.add(null);
+            }
+            _notificationResponseController.add(
+              NotificationResponse(
+                notificationResponseType: NotificationResponseType.selectedNotificationAction,
+                actionId: actionId,
+              ),
+            );
+          }
+        }
+        if (matches.isNotEmpty) {
           _linuxBlinkActionMonitorBuffer = '';
         }
       });
@@ -858,6 +904,7 @@ class NotificationService {
       return false;
     }
     if (Platform.isLinux) {
+      final isWorkComplete = payload == 'work_complete';
       if (id == _preBreakWarningReminderId) {
         _linuxWarningTimer?.cancel();
         _linuxWarningTimer = Timer(delay, () {
@@ -878,6 +925,12 @@ class NotificationService {
             'BlinkKind',
             '-i',
             'blinkkind',
+            if (isWorkComplete) ...[
+              '-A',
+              'postpone_break=Postpone',
+              '-A',
+              'skip_break=Skip',
+            ],
             title,
             body,
           ]);
@@ -891,12 +944,15 @@ class NotificationService {
       await _notificationsPlugin.cancel(id: id);
       final exactAlarmsAllowed =
           await exactAlarmStatus() == ExactAlarmStatus.allowed;
+      final isWorkComplete = payload == 'work_complete';
       await _notificationsPlugin.zonedSchedule(
         id: id,
         title: title,
         body: body,
         scheduledDate: tz.TZDateTime.now(tz.local).add(delay),
-        notificationDetails: _phaseNotificationDetails,
+        notificationDetails: isWorkComplete
+            ? _workCompleteNotificationDetails
+            : _phaseNotificationDetails,
         androidScheduleMode: exactAlarmsAllowed
             ? AndroidScheduleMode.exactAllowWhileIdle
             : AndroidScheduleMode.inexactAllowWhileIdle,
