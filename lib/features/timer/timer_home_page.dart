@@ -324,6 +324,7 @@ class TimerHomePageState extends State<TimerHomePage>
   DateTime? _lastBlinkReminderAt;
   int? _lastTrayBlinkNudgeBucket;
   DateTime? _lastTrayBlinkNudgeAt;
+  DateTime? _lastAnimationTickAt;
   int _wellnessTypeIndex = 0;
   Timer? _phaseTransitionTimer;
   Timer? _phaseDeadlineTimer;
@@ -383,6 +384,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _progressAnimation =
         Tween<double>(begin: 1.0, end: 0.0).animate(_animationController)
           ..addListener(() {
+            _lastAnimationTickAt = DateTime.now();
             // Update remaining seconds and pulse trigger without setState —
             // only fields that non-animation widgets need to read.
             final nextRemaining = (_initialDuration * _progressAnimation.value)
@@ -559,8 +561,10 @@ class TimerHomePageState extends State<TimerHomePage>
     final remainingMs = _phaseEndsAt!.difference(DateTime.now()).inMilliseconds;
     final clamped = (remainingMs / 1000).ceil().clamp(0, _initialDuration);
     if (clamped != _remainingSeconds) {
-      final isAnimationRunning = _animationController.isAnimating;
-      if (!isAnimationRunning || (clamped - _remainingSeconds).abs() > 1) {
+      final lastTick = _lastAnimationTickAt;
+      final isAnimationTicking = lastTick != null &&
+          DateTime.now().difference(lastTick).inMilliseconds < 200;
+      if (!isAnimationTicking || (clamped - _remainingSeconds).abs() > 1) {
         _remainingSeconds = clamped;
         _processBlinkReminderCadences();
         // Wellness reminders (fires independently, including during breaks)
