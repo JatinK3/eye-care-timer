@@ -594,3 +594,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - This ensures that when the user chooses "Exit" from the system tray menu, any active/on-screen blink reminder notifications are dismissed automatically via D-Bus instead of remaining in the notification center.
   - Verified compilation and test suite continues to pass.
 
+- Fixed tray Settings menu item not opening Settings page on Linux:
+  - Separated the dashboard redirection logic (`showDashboard`) from the general `_showWindow` window restoration method.
+  - Placed the `showDashboard` trigger explicitly on the "Show BlinkKind" tray menu items and non-Linux tray click/double-click events.
+  - This prevents the Linux tray icon's click event (which fires when showing/opening the menu) from queuing a dashboard redirect that immediately pops the user back to the dashboard when they click the "Settings" menu item.
+  - Verified compilation and test suite continues to pass.
+

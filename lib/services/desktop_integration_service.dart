@@ -111,12 +111,25 @@ class DesktopIntegrationService extends WindowListener {
       _systemTray.registerSystemTrayEventHandler((eventName) {
         if (eventName == 'click' || eventName == 'double-click') {
           unawaited(_showWindow());
+          if (!Platform.isLinux) {
+            DesktopControlsController.instance.triggerCommand(
+              DesktopCommand.showDashboard,
+            );
+          }
         }
       });
 
       // Build initial menu
       await _menu.buildFrom([
-        MenuItemLabel(label: 'Show BlinkKind', onClicked: (_) => _showWindow()),
+        MenuItemLabel(
+          label: 'Show BlinkKind',
+          onClicked: (_) {
+            unawaited(_showWindow());
+            DesktopControlsController.instance.triggerCommand(
+              DesktopCommand.showDashboard,
+            );
+          },
+        ),
         MenuItemLabel(
           label: 'Settings',
           onClicked: (_) {
@@ -235,7 +248,15 @@ class DesktopIntegrationService extends WindowListener {
       _lastIsSnoozed = state.isSnoozed;
 
       final List<MenuItemBase> items = [
-        MenuItemLabel(label: 'Show BlinkKind', onClicked: (_) => _showWindow()),
+        MenuItemLabel(
+          label: 'Show BlinkKind',
+          onClicked: (_) {
+            unawaited(_showWindow());
+            DesktopControlsController.instance.triggerCommand(
+              DesktopCommand.showDashboard,
+            );
+          },
+        ),
         MenuItemLabel(
           label: 'Settings',
           onClicked: (_) {
@@ -396,9 +417,6 @@ class DesktopIntegrationService extends WindowListener {
     // the window is visible again.
     DesktopControlsController.instance.triggerCommand(
       DesktopCommand.windowResumed,
-    );
-    DesktopControlsController.instance.triggerCommand(
-      DesktopCommand.showDashboard,
     );
   }
 
