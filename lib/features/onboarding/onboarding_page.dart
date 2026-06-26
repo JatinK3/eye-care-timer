@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/notification_service.dart';
+import '../../generated/l10n/app_localizations.dart';
 
 class OnboardingPage extends StatelessWidget {
   final NotificationPermissionStatus notificationPermissionStatus;
@@ -33,46 +34,46 @@ class OnboardingPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'BlinkKind: Eye Break Timer',
+              '${AppLocalizations.of(context)!.appTitle}: Eye Break Timer',
               style: Theme.of(
                 context,
               ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
             Text(
-              'Follow the 20-20-20 habit with gentle reminders while you work.',
+              AppLocalizations.of(context)!.onboardingSubtitle,
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 24),
             _OnboardingItem(
               icon: Icons.timer_outlined,
-              title: 'Focus first',
-              body:
-                  'Start a focus session and keep the timer running in the app.',
+              title: AppLocalizations.of(context)!.onboardingFocusFirstTitle,
+              body: AppLocalizations.of(context)!.onboardingFocusFirstBody,
             ),
             _OnboardingItem(
               icon: Icons.remove_red_eye_outlined,
-              title: 'Rest your eyes',
-              body:
-                  'When work time ends, look away and relax your focus during the break.',
+              title: AppLocalizations.of(context)!.onboardingRestEyesTitle,
+              body: AppLocalizations.of(context)!.onboardingRestEyesBody,
             ),
             _OnboardingItem(
               icon: Icons.notifications_active_outlined,
-              title: 'Allow reminders',
+              title: AppLocalizations.of(context)!.onboardingAllowRemindersTitle,
               body: permissionBlocked
-                  ? 'Notifications are blocked in system settings. You can recover them from Settings later.'
-                  : 'Notifications help the timer still remind you when the app is not on screen.',
+                  ? AppLocalizations.of(context)!.onboardingNotificationsBlocked
+                  : AppLocalizations.of(context)!.onboardingNotificationsHelp,
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: continueToApp,
               icon: const Icon(Icons.notifications_active_outlined),
-              label: const Text('Allow reminders and start'),
+              label: Text(AppLocalizations.of(context)!.onboardingAllowAndStart),
             ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: skipNotifications,
-              child: const Text('Continue without reminders'),
+              child: Text(
+                AppLocalizations.of(context)!.onboardingContinueWithoutReminders,
+              ),
             ),
           ],
         ),

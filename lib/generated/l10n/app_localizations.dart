@@ -243,6 +243,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Work Time - focus on your task'**
   String get workTimeMessage;
+
+  /// Subtitle description of the 20-20-20 rule on onboarding screen
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the 20-20-20 habit with gentle reminders while you work.'**
+  String get onboardingSubtitle;
+
+  /// Title of the first onboarding item
+  ///
+  /// In en, this message translates to:
+  /// **'Focus first'**
+  String get onboardingFocusFirstTitle;
+
+  /// Body description of the focus first step on onboarding screen
+  ///
+  /// In en, this message translates to:
+  /// **'Start a focus session and keep the timer running in the app.'**
+  String get onboardingFocusFirstBody;
+
+  /// Title of the second onboarding item
+  ///
+  /// In en, this message translates to:
+  /// **'Rest your eyes'**
+  String get onboardingRestEyesTitle;
+
+  /// Body description of the rest your eyes step on onboarding screen
+  ///
+  /// In en, this message translates to:
+  /// **'When work time ends, look away and relax your focus during the break.'**
+  String get onboardingRestEyesBody;
+
+  /// Title of the third onboarding item
+  ///
+  /// In en, this message translates to:
+  /// **'Allow reminders'**
+  String get onboardingAllowRemindersTitle;
+
+  /// Warning message when notification permissions are blocked in system settings
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are blocked in system settings. You can recover them from Settings later.'**
+  String get onboardingNotificationsBlocked;
+
+  /// Informational message about why notification permission is useful
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications help the timer still remind you when the app is not on screen.'**
+  String get onboardingNotificationsHelp;
+
+  /// Label for the onboarding main action button
+  ///
+  /// In en, this message translates to:
+  /// **'Allow reminders and start'**
+  String get onboardingAllowAndStart;
+
+  /// Label for the onboarding secondary text button to skip notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Continue without reminders'**
+  String get onboardingContinueWithoutReminders;
+
+  /// Title of the history page
+  ///
+  /// In en, this message translates to:
+  /// **'History & Insights'**
+  String get historyTitle;
+
+  /// Segment label for 7 days history range
+  ///
+  /// In en, this message translates to:
+  /// **'7 days'**
+  String get sevenDays;
+
+  /// Segment label for 30 days history range
+  ///
+  /// In en, this message translates to:
+  /// **'30 days'**
+  String get thirtyDays;
+
+  /// Segment label for all time history range
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get allTime;
+
+  /// Title of the activity pattern section
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Activity Pattern'**
+  String get dailyActivityPattern;
+
+  /// Message shown when there is no activity data
+  ///
+  /// In en, this message translates to:
+  /// **'No activity recorded in this range'**
+  String get noActivityRange;
+
+  /// Metric label for total focus time
+  ///
+  /// In en, this message translates to:
+  /// **'Focus duration'**
+  String get focusDuration;
+
+  /// Metric label for percentage of days goal was met
+  ///
+  /// In en, this message translates to:
+  /// **'Goal rate'**
+  String get goalRate;
+
+  /// Metric label for longest daily goal streak
+  ///
+  /// In en, this message translates to:
+  /// **'Longest streak'**
+  String get longestStreakLabel;
+
+  /// Metric label for the hour user is most focused
+  ///
+  /// In en, this message translates to:
+  /// **'Peak focus hour'**
+  String get peakFocusHourLabel;
+
+  /// Metric label for compliance rate
+  ///
+  /// In en, this message translates to:
+  /// **'Break compliance'**
+  String get breakComplianceLabel;
+
+  /// Insight label for compliance rate
+  ///
+  /// In en, this message translates to:
+  /// **'Compliance Rate'**
+  String get complianceRate;
+
+  /// Metric label for milestones count
+  ///
+  /// In en, this message translates to:
+  /// **'Milestones earned'**
+  String get milestonesEarnedLabel;
+
+  /// Title of the achievements section
+  ///
+  /// In en, this message translates to:
+  /// **'Achievements'**
+  String get achievementsTitle;
+
+  /// Title of the productivity insights section
+  ///
+  /// In en, this message translates to:
+  /// **'Productivity Insights'**
+  String get productivityInsights;
+
+  /// Insight item for completed sessions
+  ///
+  /// In en, this message translates to:
+  /// **'Completed Focus Sessions'**
+  String get completedFocusSessions;
+
+  /// Insight item for cancelled sessions
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled Sessions'**
+  String get cancelledSessions;
+
+  /// Insight item for skipped breaks
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped Breaks'**
+  String get skippedBreaks;
+
+  /// Insight item for postponed breaks
+  ///
+  /// In en, this message translates to:
+  /// **'Postponed Breaks'**
+  String get postponedBreaks;
+
+  /// Title for the recent sessions list
+  ///
+  /// In en, this message translates to:
+  /// **'Recent completed sessions'**
+  String get recentCompletedSessions;
+
+  /// Placeholder when recent sessions list is empty
+  ///
+  /// In en, this message translates to:
+  /// **'New completed sessions will appear here'**
+  String get newSessionsAppearHere;
+
+  /// Title of the export section
+  ///
+  /// In en, this message translates to:
+  /// **'Export Activity Data'**
+  String get exportActivityData;
+
+  /// Description of export functionality
+  ///
+  /// In en, this message translates to:
+  /// **'Export your focus sessions and break activity events. You can save them directly to your Downloads folder or copy them to your clipboard.'**
+  String get exportActivityDescription;
+
+  /// Button to save activity as CSV file
+  ///
+  /// In en, this message translates to:
+  /// **'Save CSV'**
+  String get saveCsv;
+
+  /// Button to save activity as JSON file
+  ///
+  /// In en, this message translates to:
+  /// **'Save JSON'**
+  String get saveJson;
+
+  /// Button to copy activity to clipboard as CSV
+  ///
+  /// In en, this message translates to:
+  /// **'Copy CSV'**
+  String get copyCsv;
+
+  /// Button to copy activity to clipboard as JSON
+  ///
+  /// In en, this message translates to:
+  /// **'Copy JSON'**
+  String get copyJson;
+
+  /// Button to clear all activity history
+  ///
+  /// In en, this message translates to:
+  /// **'Clear activity history'**
+  String get clearActivityHistory;
+
+  /// Title of clear history dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Clear activity history?'**
+  String get clearHistoryConfirmTitle;
+
+  /// Message inside clear history dialog
+  ///
+  /// In en, this message translates to:
+  /// **'This removes daily totals and completed session details. This cannot be undone.'**
+  String get clearHistoryConfirmBody;
+
+  /// Confirm button label in clear history dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
+  /// Snackbar message when copying data succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'{formatName} copied to clipboard!'**
+  String copiedToClipboard(String formatName);
+
+  /// Snackbar message when file export succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'Exported to file: {fileName}'**
+  String exportedToFile(String fileName);
+
+  /// Action button in export success snackbar
+  ///
+  /// In en, this message translates to:
+  /// **'Open Folder'**
+  String get openFolder;
+
+  /// Snackbar message when file export fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to export to file: {error}'**
+  String failedToExport(String error);
 }
 
 class _AppLocalizationsDelegate

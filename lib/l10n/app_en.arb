@@ -105,5 +105,203 @@
   "workTimeMessage": "Work Time - focus on your task",
   "@workTimeMessage": {
     "description": "Message encouraging user to focus during work session"
+  },
+  "onboardingSubtitle": "Follow the 20-20-20 habit with gentle reminders while you work.",
+  "@onboardingSubtitle": {
+    "description": "Subtitle description of the 20-20-20 rule on onboarding screen"
+  },
+  "onboardingFocusFirstTitle": "Focus first",
+  "@onboardingFocusFirstTitle": {
+    "description": "Title of the first onboarding item"
+  },
+  "onboardingFocusFirstBody": "Start a focus session and keep the timer running in the app.",
+  "@onboardingFocusFirstBody": {
+    "description": "Body description of the focus first step on onboarding screen"
+  },
+  "onboardingRestEyesTitle": "Rest your eyes",
+  "@onboardingRestEyesTitle": {
+    "description": "Title of the second onboarding item"
+  },
+  "onboardingRestEyesBody": "When work time ends, look away and relax your focus during the break.",
+  "@onboardingRestEyesBody": {
+    "description": "Body description of the rest your eyes step on onboarding screen"
+  },
+  "onboardingAllowRemindersTitle": "Allow reminders",
+  "@onboardingAllowRemindersTitle": {
+    "description": "Title of the third onboarding item"
+  },
+  "onboardingNotificationsBlocked": "Notifications are blocked in system settings. You can recover them from Settings later.",
+  "@onboardingNotificationsBlocked": {
+    "description": "Warning message when notification permissions are blocked in system settings"
+  },
+  "onboardingNotificationsHelp": "Notifications help the timer still remind you when the app is not on screen.",
+  "@onboardingNotificationsHelp": {
+    "description": "Informational message about why notification permission is useful"
+  },
+  "onboardingAllowAndStart": "Allow reminders and start",
+  "@onboardingAllowAndStart": {
+    "description": "Label for the onboarding main action button"
+  },
+  "onboardingContinueWithoutReminders": "Continue without reminders",
+  "@onboardingContinueWithoutReminders": {
+    "description": "Label for the onboarding secondary text button to skip notifications"
+  },
+  "historyTitle": "History & Insights",
+  "@historyTitle": {
+    "description": "Title of the history page"
+  },
+  "sevenDays": "7 days",
+  "@sevenDays": {
+    "description": "Segment label for 7 days history range"
+  },
+  "thirtyDays": "30 days",
+  "@thirtyDays": {
+    "description": "Segment label for 30 days history range"
+  },
+  "allTime": "All",
+  "@allTime": {
+    "description": "Segment label for all time history range"
+  },
+  "dailyActivityPattern": "Daily Activity Pattern",
+  "@dailyActivityPattern": {
+    "description": "Title of the activity pattern section"
+  },
+  "noActivityRange": "No activity recorded in this range",
+  "@noActivityRange": {
+    "description": "Message shown when there is no activity data"
+  },
+  "focusDuration": "Focus duration",
+  "@focusDuration": {
+    "description": "Metric label for total focus time"
+  },
+  "goalRate": "Goal rate",
+  "@goalRate": {
+    "description": "Metric label for percentage of days goal was met"
+  },
+  "longestStreakLabel": "Longest streak",
+  "@longestStreakLabel": {
+    "description": "Metric label for longest daily goal streak"
+  },
+  "peakFocusHourLabel": "Peak focus hour",
+  "@peakFocusHourLabel": {
+    "description": "Metric label for the hour user is most focused"
+  },
+  "breakComplianceLabel": "Break compliance",
+  "@breakComplianceLabel": {
+    "description": "Metric label for compliance rate"
+  },
+  "complianceRate": "Compliance Rate",
+  "@complianceRate": {
+    "description": "Insight label for compliance rate"
+  },
+  "milestonesEarnedLabel": "Milestones earned",
+  "@milestonesEarnedLabel": {
+    "description": "Metric label for milestones count"
+  },
+  "achievementsTitle": "Achievements",
+  "@achievementsTitle": {
+    "description": "Title of the achievements section"
+  },
+  "productivityInsights": "Productivity Insights",
+  "@productivityInsights": {
+    "description": "Title of the productivity insights section"
+  },
+  "completedFocusSessions": "Completed Focus Sessions",
+  "@completedFocusSessions": {
+    "description": "Insight item for completed sessions"
+  },
+  "cancelledSessions": "Cancelled Sessions",
+  "@cancelledSessions": {
+    "description": "Insight item for cancelled sessions"
+  },
+  "skippedBreaks": "Skipped Breaks",
+  "@skippedBreaks": {
+    "description": "Insight item for skipped breaks"
+  },
+  "postponedBreaks": "Postponed Breaks",
+  "@postponedBreaks": {
+    "description": "Insight item for postponed breaks"
+  },
+  "recentCompletedSessions": "Recent completed sessions",
+  "@recentCompletedSessions": {
+    "description": "Title for the recent sessions list"
+  },
+  "newSessionsAppearHere": "New completed sessions will appear here",
+  "@newSessionsAppearHere": {
+    "description": "Placeholder when recent sessions list is empty"
+  },
+  "exportActivityData": "Export Activity Data",
+  "@exportActivityData": {
+    "description": "Title of the export section"
+  },
+  "exportActivityDescription": "Export your focus sessions and break activity events. You can save them directly to your Downloads folder or copy them to your clipboard.",
+  "@exportActivityDescription": {
+    "description": "Description of export functionality"
+  },
+  "saveCsv": "Save CSV",
+  "@saveCsv": {
+    "description": "Button to save activity as CSV file"
+  },
+  "saveJson": "Save JSON",
+  "@saveJson": {
+    "description": "Button to save activity as JSON file"
+  },
+  "copyCsv": "Copy CSV",
+  "@copyCsv": {
+    "description": "Button to copy activity to clipboard as CSV"
+  },
+  "copyJson": "Copy JSON",
+  "@copyJson": {
+    "description": "Button to copy activity to clipboard as JSON"
+  },
+  "clearActivityHistory": "Clear activity history",
+  "@clearActivityHistory": {
+    "description": "Button to clear all activity history"
+  },
+  "clearHistoryConfirmTitle": "Clear activity history?",
+  "@clearHistoryConfirmTitle": {
+    "description": "Title of clear history dialog"
+  },
+  "clearHistoryConfirmBody": "This removes daily totals and completed session details. This cannot be undone.",
+  "@clearHistoryConfirmBody": {
+    "description": "Message inside clear history dialog"
+  },
+  "clear": "Clear",
+  "@clear": {
+    "description": "Confirm button label in clear history dialog"
+  },
+  "copiedToClipboard": "{formatName} copied to clipboard!",
+  "@copiedToClipboard": {
+    "description": "Snackbar message when copying data succeeds",
+    "placeholders": {
+      "formatName": {
+        "type": "String",
+        "example": "CSV"
+      }
+    }
+  },
+  "exportedToFile": "Exported to file: {fileName}",
+  "@exportedToFile": {
+    "description": "Snackbar message when file export succeeds",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "history.csv"
+      }
+    }
+  },
+  "openFolder": "Open Folder",
+  "@openFolder": {
+    "description": "Action button in export success snackbar"
+  },
+  "failedToExport": "Failed to export to file: {error}",
+  "@failedToExport": {
+    "description": "Snackbar message when file export fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Permission denied"
+      }
+    }
   }
 }

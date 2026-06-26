@@ -7,6 +7,7 @@ import "package:flutter/services.dart";
 
 import "../../models/timer_event_record.dart";
 import "../../models/work_session_record.dart";
+import "../../generated/l10n/app_localizations.dart";
 
 enum HistoryRange { sevenDays, thirtyDays, all }
 
@@ -89,7 +90,7 @@ class _HistoryPageState extends State<HistoryPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("History & Insights"),
+        title: Text(AppLocalizations.of(context)!.historyTitle),
         elevation: 0,
       ),
       body: ListView(
@@ -98,18 +99,18 @@ class _HistoryPageState extends State<HistoryPage> {
           // Range Switcher
           Center(
             child: SegmentedButton<HistoryRange>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: HistoryRange.sevenDays,
-                  label: Text("7 days"),
+                  label: Text(AppLocalizations.of(context)!.sevenDays),
                 ),
                 ButtonSegment(
                   value: HistoryRange.thirtyDays,
-                  label: Text("30 days"),
+                  label: Text(AppLocalizations.of(context)!.thirtyDays),
                 ),
                 ButtonSegment(
                   value: HistoryRange.all,
-                  label: Text("All"),
+                  label: Text(AppLocalizations.of(context)!.allTime),
                 ),
               ],
               selected: {_range},
@@ -121,9 +122,9 @@ class _HistoryPageState extends State<HistoryPage> {
 
           // Visual Activity Chart
           _HistorySection(
-            title: "Daily Activity Pattern",
+            title: AppLocalizations.of(context)!.dailyActivityPattern,
             child: dates.isEmpty
-                ? const _EmptyMessage("No activity recorded in this range")
+                ? _EmptyMessage(AppLocalizations.of(context)!.noActivityRange)
                 : _ActivityBarChart(
                     dates: dates,
                     history: _history,
@@ -136,13 +137,13 @@ class _HistoryPageState extends State<HistoryPage> {
           _MetricRow(
             first: _MetricCard(
               icon: Icons.access_time_outlined,
-              label: "Focus duration",
+              label: AppLocalizations.of(context)!.focusDuration,
               value: _formatTotalFocusTime(totalFocusSeconds),
               detail: "${rangeSessions.length} total sessions",
             ),
             second: _MetricCard(
               icon: Icons.track_changes_outlined,
-              label: "Goal rate",
+              label: AppLocalizations.of(context)!.goalRate,
               value: "$goalRate%",
               detail: "$goalDays of ${dates.length} days met",
             ),
@@ -151,13 +152,13 @@ class _HistoryPageState extends State<HistoryPage> {
           _MetricRow(
             first: _MetricCard(
               icon: Icons.bolt_outlined,
-              label: "Longest streak",
+              label: AppLocalizations.of(context)!.longestStreakLabel,
               value: "$longestStreak days",
               detail: "Consecutive goal days",
             ),
             second: _MetricCard(
               icon: Icons.star_outline,
-              label: "Peak focus hour",
+              label: AppLocalizations.of(context)!.peakFocusHourLabel,
               value: peakHour,
               detail: "Most active time",
             ),
@@ -166,13 +167,13 @@ class _HistoryPageState extends State<HistoryPage> {
           _MetricRow(
             first: _MetricCard(
               icon: Icons.verified_outlined,
-              label: "Break compliance",
+              label: AppLocalizations.of(context)!.breakComplianceLabel,
               value: "$complianceRate%",
               detail: "$completedWorkCount taken, ${skippedBreakCount + postponedBreakCount} deferred",
             ),
             second: _MetricCard(
               icon: Icons.emoji_events_outlined,
-              label: "Milestones earned",
+              label: AppLocalizations.of(context)!.milestonesEarnedLabel,
               value: "${achievements.where((item) => item.unlocked).length}/${achievements.length}",
               detail: "Based on this range",
             ),
@@ -180,42 +181,42 @@ class _HistoryPageState extends State<HistoryPage> {
           const SizedBox(height: 16),
 
           _HistorySection(
-            title: "Achievements",
+            title: AppLocalizations.of(context)!.achievementsTitle,
             child: _AchievementGrid(achievements: achievements),
           ),
           const SizedBox(height: 16),
 
           // Insights Card
           _HistorySection(
-            title: "Productivity Insights",
+            title: AppLocalizations.of(context)!.productivityInsights,
             child: Column(
               children: [
                 _InsightRow(
-                  label: "Completed Focus Sessions",
+                  label: AppLocalizations.of(context)!.completedFocusSessions,
                   value: "$completedWorkCount",
                   icon: Icons.check_circle_outline,
                   color: Colors.green,
                 ),
                 _InsightRow(
-                  label: "Cancelled Sessions",
+                  label: AppLocalizations.of(context)!.cancelledSessions,
                   value: "$cancelledWorkCount",
                   icon: Icons.cancel_outlined,
                   color: Colors.red,
                 ),
                 _InsightRow(
-                  label: "Skipped Breaks",
+                  label: AppLocalizations.of(context)!.skippedBreaks,
                   value: "$skippedBreakCount",
                   icon: Icons.skip_next_outlined,
                   color: Colors.orange,
                 ),
                 _InsightRow(
-                  label: "Postponed Breaks",
+                  label: AppLocalizations.of(context)!.postponedBreaks,
                   value: "$postponedBreakCount",
                   icon: Icons.snooze_outlined,
                   color: Colors.blue,
                 ),
                 _InsightRow(
-                  label: "Compliance Rate",
+                  label: AppLocalizations.of(context)!.complianceRate,
                   value: "$complianceRate%",
                   icon: Icons.verified_outlined,
                   color: Colors.teal,
@@ -229,7 +230,7 @@ class _HistoryPageState extends State<HistoryPage> {
           _HistorySection(
             title: _rangeTitle(),
             child: dates.isEmpty
-                ? const _EmptyMessage("No activity in this range")
+                ? _EmptyMessage(AppLocalizations.of(context)!.noActivityRange)
                 : Column(
                     children: dates
                         .map(
@@ -246,9 +247,9 @@ class _HistoryPageState extends State<HistoryPage> {
 
           // Recent Completed Sessions
           _HistorySection(
-            title: "Recent completed sessions",
+            title: AppLocalizations.of(context)!.recentCompletedSessions,
             child: recentSessions.isEmpty
-                ? const _EmptyMessage("New completed sessions will appear here")
+                ? _EmptyMessage(AppLocalizations.of(context)!.newSessionsAppearHere)
                 : Column(
                     children: recentSessions
                         .map(
@@ -269,12 +270,12 @@ class _HistoryPageState extends State<HistoryPage> {
 
           // Export Card
           _HistorySection(
-            title: "Export Activity Data",
+            title: AppLocalizations.of(context)!.exportActivityData,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Export your focus sessions and break activity events. You can save them directly to your Downloads folder or copy them to your clipboard.",
+                Text(
+                  AppLocalizations.of(context)!.exportActivityDescription,
                 ),
                 const SizedBox(height: 16),
                 if (!kIsWeb) ...[
@@ -292,7 +293,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                           onPressed: () => _exportToFile(context, isCsv: true),
                           icon: const Icon(Icons.download_outlined),
-                          label: const Text("Save CSV"),
+                          label: Text(AppLocalizations.of(context)!.saveCsv),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -306,7 +307,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                           onPressed: () => _exportToFile(context, isCsv: false),
                           icon: const Icon(Icons.download_outlined),
-                          label: const Text("Save JSON"),
+                          label: Text(AppLocalizations.of(context)!.saveJson),
                         ),
                       ),
                     ],
@@ -325,7 +326,7 @@ class _HistoryPageState extends State<HistoryPage> {
                         ),
                         onPressed: () => _exportToClipboard(context, isCsv: true),
                         icon: const Icon(Icons.description_outlined),
-                        label: const Text("Copy CSV"),
+                        label: Text(AppLocalizations.of(context)!.copyCsv),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -339,7 +340,7 @@ class _HistoryPageState extends State<HistoryPage> {
                         ),
                         onPressed: () => _exportToClipboard(context, isCsv: false),
                         icon: const Icon(Icons.code_outlined),
-                        label: const Text("Copy JSON"),
+                        label: Text(AppLocalizations.of(context)!.copyJson),
                       ),
                     ),
                   ],
@@ -355,7 +356,7 @@ class _HistoryPageState extends State<HistoryPage> {
                 ? null
                 : _confirmResetHistory,
             icon: const Icon(Icons.delete_outline),
-            label: const Text("Clear activity history"),
+            label: Text(AppLocalizations.of(context)!.clearActivityHistory),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
@@ -514,18 +515,18 @@ class _HistoryPageState extends State<HistoryPage> {
     final shouldReset = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Clear activity history?"),
-        content: const Text(
-          "This removes daily totals and completed session details. This cannot be undone.",
+        title: Text(AppLocalizations.of(context)!.clearHistoryConfirmTitle),
+        content: Text(
+          AppLocalizations.of(context)!.clearHistoryConfirmBody,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text("Cancel"),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text("Clear"),
+            child: Text(AppLocalizations.of(context)!.clear),
           ),
         ],
       ),
@@ -607,7 +608,7 @@ class _HistoryPageState extends State<HistoryPage> {
 
     Clipboard.setData(ClipboardData(text: content));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("$formatName copied to clipboard!")),
+      SnackBar(content: Text(AppLocalizations.of(context)!.copiedToClipboard(formatName))),
     );
   }
 
@@ -649,9 +650,9 @@ class _HistoryPageState extends State<HistoryPage> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Exported to file: $fileName"),
+          content: Text(AppLocalizations.of(context)!.exportedToFile(fileName)),
           action: SnackBarAction(
-            label: "Open Folder",
+            label: AppLocalizations.of(context)!.openFolder,
             onPressed: () {
               _openFolder(dir.path);
             },
@@ -661,7 +662,7 @@ class _HistoryPageState extends State<HistoryPage> {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to export to file: $e")),
+        SnackBar(content: Text(AppLocalizations.of(context)!.failedToExport(e.toString()))),
       );
     }
   }
