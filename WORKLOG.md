@@ -574,3 +574,11 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Screen lock events continue to use the immediate lock timestamp, as screen locks represent immediate idle starts.
   - Updated `_creditNaturalBreak` to calculate and save any completed focus time (`_initialDuration - _remainingSeconds`) as a completed work session before resetting the timer, preventing users from losing progress on partially completed work sessions when interrupted by natural breaks.
   - Verified compilation, analyzer checks, and unit tests pass successfully.
+
+- Implemented Postpone and Skip action buttons on work-complete notifications:
+  - Created a new `_workCompleteNotificationDetails` in `NotificationService` that includes "Postpone" and "Skip" action buttons for Android local notifications.
+  - Generalized the Linux D-Bus `ActionInvoked` stream monitor using a RegExp to extract the invoked action ID and propagate it to `_notificationResponseController`.
+  - Added `-A` action button flags to the `notify-send` CLI command on Linux when scheduling work-complete reminders.
+  - Updated `_handleNotificationResponse` in `app.dart` to listen to `'postpone_break'` and `'skip_break'` responses and trigger command execution.
+  - Exposed `_desktopCommandSubscription` unconditionally in `TimerHomePageState` so that notification actions can trigger timer phase changes on all platforms.
+  - Verified compilation, analyzer checks, and unit tests pass successfully.
