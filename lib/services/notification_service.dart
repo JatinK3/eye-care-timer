@@ -597,14 +597,19 @@ class NotificationService {
     }
 
     try {
-      final process = await Process.start('gdbus', [
-        'monitor',
-        '--session',
-        '--dest',
-        'org.freedesktop.Notifications',
-        '--object-path',
-        '/org/freedesktop/Notifications',
-      ]);
+      Process process;
+      const watchExpr =
+          "type='signal',interface='org.freedesktop.Notifications',member='ActionInvoked'";
+      try {
+        process = await Process.start('stdbuf', [
+          '-o0',
+          'dbus-monitor',
+          watchExpr,
+        ]);
+      } catch (e) {
+        debugPrint('stdbuf not available, starting dbus-monitor directly: $e');
+        process = await Process.start('dbus-monitor', [watchExpr]);
+      }
       _linuxBlinkActionMonitor = process;
       _linuxBlinkActionMonitorBuffer = '';
 
