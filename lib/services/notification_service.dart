@@ -539,6 +539,7 @@ class NotificationService {
       if (interactive) {
         await _ensureLinuxBlinkActionMonitor();
       }
+      await cancelBlinkReminder();
       final id = await _showLinuxNotificationViaDbus(
         body: body,
         interactive: interactive,
