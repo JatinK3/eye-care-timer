@@ -303,5 +303,987 @@
         "example": "Permission denied"
       }
     }
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Title of the settings page"
+  },
+  "settingsSearchPlaceholder": "Search settings...",
+  "@settingsSearchPlaceholder": {
+    "description": "Placeholder for settings search input"
+  },
+  "settingsNoResults": "No settings matching \"{query}\"",
+  "@settingsNoResults": {
+    "description": "Message shown when search returns no results",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsCategoryGeneralSchedule": "General Schedule",
+  "@settingsCategoryGeneralSchedule": {
+    "description": "Category for schedule settings"
+  },
+  "settingsCategoryBreakBehavior": "Break Screen & Behavior",
+  "@settingsCategoryBreakBehavior": {
+    "description": "Category for break behavior settings"
+  },
+  "settingsCategoryThemeAppearance": "Theme & Appearance",
+  "@settingsCategoryThemeAppearance": {
+    "description": "Category for theme settings"
+  },
+  "settingsCategoryNotificationsSounds": "Notifications & Sounds",
+  "@settingsCategoryNotificationsSounds": {
+    "description": "Category for notifications settings"
+  },
+  "settingsCategoryAutoRunLongBreaks": "Auto Run & Long Breaks",
+  "@settingsCategoryAutoRunLongBreaks": {
+    "description": "Category for auto run settings"
+  },
+  "settingsCategoryDesktopOptions": "Desktop Options",
+  "@settingsCategoryDesktopOptions": {
+    "description": "Category for desktop options"
+  },
+  "settingsCategoryAiMotivation": "AI Motivation & Prompts",
+  "@settingsCategoryAiMotivation": {
+    "description": "Category for AI motivation settings"
+  },
+  "settingsCategorySystemOptions": "System Options",
+  "@settingsCategorySystemOptions": {
+    "description": "Category for system options"
+  },
+  "settingsQuickPresets": "Quick presets",
+  "@settingsQuickPresets": {
+    "description": "Title for quick presets setting"
+  },
+  "settingsQuickPresetsSubtitle": "20-20-20, 25/5, 45/5, 10s/10s (Test)",
+  "@settingsQuickPresetsSubtitle": {
+    "description": "Subtitle for quick presets setting"
+  },
+  "settingsWorkDuration": "Work duration",
+  "@settingsWorkDuration": {
+    "description": "Title for work duration setting"
+  },
+  "settingsWorkDurationChoose": "Choose work interval",
+  "@settingsWorkDurationChoose": {
+    "description": "Subtitle when work duration can be changed"
+  },
+  "settingsPauseCancelToChange": "Pause/cancel timer to change",
+  "@settingsPauseCancelToChange": {
+    "description": "Subtitle when durations are locked"
+  },
+  "settingsPauseCancelToChangeDesc": "Pause or cancel the timer to change this",
+  "@settingsPauseCancelToChangeDesc": {
+    "description": "Detailed text when duration changes are locked"
+  },
+  "settingsBreakDuration": "Break duration",
+  "@settingsBreakDuration": {
+    "description": "Title for break duration setting"
+  },
+  "settingsBreakDurationChoose": "Choose break length",
+  "@settingsBreakDurationChoose": {
+    "description": "Subtitle when break duration can be changed"
+  },
+  "settingsDailyGoal": "Daily goal",
+  "@settingsDailyGoal": {
+    "description": "Title for daily goal setting"
+  },
+  "settingsDailyGoalProgress": "{streak} / {goal} breaks today",
+  "@settingsDailyGoalProgress": {
+    "description": "Subtitle showing daily goal progress",
+    "placeholders": {
+      "streak": {
+        "type": "int"
+      },
+      "goal": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsCustom": "Custom...",
+  "@settingsCustom": {
+    "description": "Label for custom option"
+  },
+  "settingsHistory": "History",
+  "@settingsHistory": {
+    "description": "Title for history setting"
+  },
+  "settingsHistorySubtitle": "Review your recent eye breaks",
+  "@settingsHistorySubtitle": {
+    "description": "Subtitle for history setting"
+  },
+  "settingsTodayProgress": "Today: {count} cycles",
+  "@settingsTodayProgress": {
+    "description": "Label showing daily cycles count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsTodayProgressTitle": "Today''s progress",
+  "@settingsTodayProgressTitle": {
+    "description": "Title for today's progress setting"
+  },
+  "settingsResetStreak": "Reset today''s streak",
+  "@settingsResetStreak": {
+    "description": "Subtitle for today's progress setting"
+  },
+  "settingsReset": "Reset",
+  "@settingsReset": {
+    "description": "Button label to reset"
+  },
+  "settingsActiveWorkHours": "Active work hours & days",
+  "@settingsActiveWorkHours": {
+    "description": "Title for active work hours setting"
+  },
+  "settingsActiveWorkHoursSubtitle": "Only run the timer cycles during specific hours and days",
+  "@settingsActiveWorkHoursSubtitle": {
+    "description": "Subtitle for active work hours setting"
+  },
+  "settingsActiveDays": "Active Days",
+  "@settingsActiveDays": {
+    "description": "Label for active days section"
+  },
+  "settingsStartTime": "Start Time",
+  "@settingsStartTime": {
+    "description": "Label for start time selector"
+  },
+  "settingsEndTime": "End Time",
+  "@settingsEndTime": {
+    "description": "Label for end time selector"
+  },
+  "settingsAutoStartSchedule": "Auto-start schedule",
+  "@settingsAutoStartSchedule": {
+    "description": "Title for auto-start schedule setting"
+  },
+  "settingsAutoStartScheduleSubtitle": "Automatically start the timer on launch",
+  "@settingsAutoStartScheduleSubtitle": {
+    "description": "Subtitle for auto-start schedule setting"
+  },
+  "settingsOsFocusMode": "OS Focus Mode (DND)",
+  "@settingsOsFocusMode": {
+    "description": "Title for OS Focus Mode setting"
+  },
+  "settingsOsFocusModeSubtitle": "Toggle system Do Not Disturb (DND) automatically during work phases (Linux GNOME)",
+  "@settingsOsFocusModeSubtitle": {
+    "description": "Subtitle for OS Focus Mode setting"
+  },
+  "settingsOsFocusModeToggle": "Toggle system DND during work phases",
+  "@settingsOsFocusModeToggle": {
+    "description": "Switch label for OS Focus Mode setting"
+  },
+  "settingsOsFocusModeGnomeNote": "Note: Ubuntu/GNOME does not natively support DND exceptions/whitelist. If you want specific apps to bypass DND, turn this toggle off and instead manually silence noisy apps under Ubuntu System Settings -> Notifications.",
+  "@settingsOsFocusModeGnomeNote": {
+    "description": "Helpful note about GNOME DND behavior"
+  },
+  "settingsBreakScreenMode": "Break screen mode",
+  "@settingsBreakScreenMode": {
+    "description": "Title for break screen mode setting"
+  },
+  "settingsBreakScreenModeSubtitle": "Off, Gentle, or Strict break enforcement mode",
+  "@settingsBreakScreenModeSubtitle": {
+    "description": "Subtitle for break screen mode setting"
+  },
+  "settingsStrictBlocksExit": "Strict mode blocks easy exit",
+  "@settingsStrictBlocksExit": {
+    "description": "Dropdown explanation for break screen mode"
+  },
+  "settingsPreBreakAlert": "Pre-break notification alert",
+  "@settingsPreBreakAlert": {
+    "description": "Title for pre-break notification setting"
+  },
+  "settingsPreBreakAlertSubtitle": "Get a warning notification 10 seconds before the break start",
+  "@settingsPreBreakAlertSubtitle": {
+    "description": "Subtitle for pre-break notification setting"
+  },
+  "settingsAllowSkip": "Allow skip",
+  "@settingsAllowSkip": {
+    "description": "Title for allow skip setting"
+  },
+  "settingsAllowSkipSubtitle": "Allow skipping the break early",
+  "@settingsAllowSkipSubtitle": {
+    "description": "Subtitle for allow skip setting"
+  },
+  "settingsAllowPostpone": "Allow postpone",
+  "@settingsAllowPostpone": {
+    "description": "Title for allow postpone setting"
+  },
+  "settingsAllowPostponeSubtitle": "Allow postponing the break",
+  "@settingsAllowPostponeSubtitle": {
+    "description": "Subtitle for allow postpone setting"
+  },
+  "settingsSmartPausePostpone": "Smart Pause & Postpone",
+  "@settingsSmartPausePostpone": {
+    "description": "Title for smart pause setting"
+  },
+  "settingsSmartPausePostponeSubtitle": "Pause work timer automatically when you are idle",
+  "@settingsSmartPausePostponeSubtitle": {
+    "description": "Subtitle for smart pause setting"
+  },
+  "settingsNaturalBreakCredit": "Natural break credit",
+  "@settingsNaturalBreakCredit": {
+    "description": "Title for natural break credit setting"
+  },
+  "settingsNaturalBreakCreditSubtitle": "Credit away time as a break if away for more than 5 minutes",
+  "@settingsNaturalBreakCreditSubtitle": {
+    "description": "Subtitle for natural break credit setting"
+  },
+  "settingsBreakVisualizerStyle": "Break visualizer style",
+  "@settingsBreakVisualizerStyle": {
+    "description": "Title for break visualizer style setting"
+  },
+  "settingsBreakVisualizerStyleSubtitle": "Choose ambient effect during breaks",
+  "@settingsBreakVisualizerStyleSubtitle": {
+    "description": "Subtitle for break visualizer style setting"
+  },
+  "settingsBreakScreenContent": "Break screen content",
+  "@settingsBreakScreenContent": {
+    "description": "Title for break screen content settings"
+  },
+  "settingsBreakScreenContentSubtitle": "Choose widgets shown on the break overlay",
+  "@settingsBreakScreenContentSubtitle": {
+    "description": "Subtitle for break screen content settings"
+  },
+  "settingsShowCountdown": "Show countdown clock",
+  "@settingsShowCountdown": {
+    "description": "Switch label for showing countdown clock"
+  },
+  "settingsShowTips": "Show eye-care tips",
+  "@settingsShowTips": {
+    "description": "Switch label for showing eye-care tips"
+  },
+  "settingsShowProgress": "Show progress ring",
+  "@settingsShowProgress": {
+    "description": "Switch label for showing progress ring"
+  },
+  "settingsCustomReminderText": "Custom reminder text",
+  "@settingsCustomReminderText": {
+    "description": "Title for custom reminder text setting"
+  },
+  "settingsBuiltInRotatingMessages": "Using built-in rotating messages",
+  "@settingsBuiltInRotatingMessages": {
+    "description": "Label when custom reminder is empty"
+  },
+  "settingsPostponeDuration": "Postpone duration",
+  "@settingsPostponeDuration": {
+    "description": "Title for postpone duration setting"
+  },
+  "settingsPostponeDurationSubtitle": "How long to delay the break",
+  "@settingsPostponeDurationSubtitle": {
+    "description": "Subtitle for postpone duration setting"
+  },
+  "settingsDisplayOverApps": "Display over other apps",
+  "@settingsDisplayOverApps": {
+    "description": "Title for display over other apps setting"
+  },
+  "settingsAllow": "Allow",
+  "@settingsAllow": {
+    "description": "Button label to allow permission"
+  },
+  "settingsPreviewBreakScreen": "Preview break screen",
+  "@settingsPreviewBreakScreen": {
+    "description": "Title for preview break screen setting"
+  },
+  "settingsPreviewBreakScreenSubtitle": "Show a 10-second black overlay",
+  "@settingsPreviewBreakScreenSubtitle": {
+    "description": "Subtitle for preview break screen setting"
+  },
+  "settingsTest20sBreak": "Test 20s break screen",
+  "@settingsTest20sBreak": {
+    "description": "Title for test 20s break setting"
+  },
+  "settingsTest20sBreakSubtitle": "Launch a real 20-second eye break",
+  "@settingsTest20sBreakSubtitle": {
+    "description": "Subtitle for test 20s break setting"
+  },
+  "settingsUsageAccess": "Usage access",
+  "@settingsUsageAccess": {
+    "description": "Title for usage access setting"
+  },
+  "settingsUsageAccessEnabled": "App detection enabled",
+  "@settingsUsageAccessEnabled": {
+    "description": "Label when usage access is allowed"
+  },
+  "settingsUsageAccessRequired": "Required to detect games & videos",
+  "@settingsUsageAccessRequired": {
+    "description": "Label when usage access is required"
+  },
+  "settingsDarkMode": "Dark mode",
+  "@settingsDarkMode": {
+    "description": "Title for dark mode setting"
+  },
+  "settingsDarkModeSubtitle": "Toggle dark or light theme interface",
+  "@settingsDarkModeSubtitle": {
+    "description": "Subtitle for dark mode setting"
+  },
+  "settingsAmoledDarkMode": "AMOLED dark mode",
+  "@settingsAmoledDarkMode": {
+    "description": "Title for AMOLED dark mode setting"
+  },
+  "settingsAmoledDarkModeSubtitle": "Use pure black backgrounds for battery saving",
+  "@settingsAmoledDarkModeSubtitle": {
+    "description": "Subtitle for AMOLED dark mode setting"
+  },
+  "settingsUseSystemAccent": "Use system accent color",
+  "@settingsUseSystemAccent": {
+    "description": "Title for system accent setting"
+  },
+  "settingsUseSystemAccentSubtitle": "Follow OS system-accent dynamic colors",
+  "@settingsUseSystemAccentSubtitle": {
+    "description": "Subtitle for system accent setting"
+  },
+  "settingsColorPreset": "Color preset",
+  "@settingsColorPreset": {
+    "description": "Title for color preset setting"
+  },
+  "settingsColorPresetSubtitle": "Choose your preferred accent color theme preset",
+  "@settingsColorPresetSubtitle": {
+    "description": "Subtitle for color preset setting"
+  },
+  "settingsCustomAccentPalette": "Custom Accent Palette",
+  "@settingsCustomAccentPalette": {
+    "description": "Header for custom accent colors"
+  },
+  "settingsAccentColorHex": "Accent Color Hex Code",
+  "@settingsAccentColorHex": {
+    "description": "Label for custom hex code field"
+  },
+  "settingsNotifications": "Notifications",
+  "@settingsNotifications": {
+    "description": "Title for notifications setting"
+  },
+  "settingsNotificationsSubtitle": "Remind me when work or break time ends",
+  "@settingsNotificationsSubtitle": {
+    "description": "Subtitle for notifications setting"
+  },
+  "settingsNotificationSound": "Notification sound",
+  "@settingsNotificationSound": {
+    "description": "Title for notification sound setting"
+  },
+  "settingsNotificationSoundSubtitle": "Uses system notification sound settings",
+  "@settingsNotificationSoundSubtitle": {
+    "description": "Subtitle for notification sound setting"
+  },
+  "settingsTestReminderAlert": "Test reminder alert",
+  "@settingsTestReminderAlert": {
+    "description": "Title for test reminder alert setting"
+  },
+  "settingsPlayReminderSound": "Play the actual reminder sound now",
+  "@settingsPlayReminderSound": {
+    "description": "Subtitle for test reminder alert setting"
+  },
+  "settingsTestReminder": "Test reminder",
+  "@settingsTestReminder": {
+    "description": "Label for test reminder"
+  },
+  "settingsPermissionStatus": "Permission status",
+  "@settingsPermissionStatus": {
+    "description": "Title for notification permission status"
+  },
+  "settingsOpenSystemSettings": "Open system settings",
+  "@settingsOpenSystemSettings": {
+    "description": "Button label to open settings"
+  },
+  "settingsTimerAlertsOff": "Timer alerts are off. The countdown still works in the app.",
+  "@settingsTimerAlertsOff": {
+    "description": "Information text when notifications are disabled"
+  },
+  "settingsPreciseReminders": "Precise reminders",
+  "@settingsPreciseReminders": {
+    "description": "Title for precise reminders setting"
+  },
+  "settingsPreciseAllowed": "Exact timing allowed",
+  "@settingsPreciseAllowed": {
+    "description": "Label when precise timing is allowed"
+  },
+  "settingsPreciseLate": "May arrive a little late",
+  "@settingsPreciseLate": {
+    "description": "Label when precise timing is disabled"
+  },
+  "settingsBackgroundReliability": "Background reliability",
+  "@settingsBackgroundReliability": {
+    "description": "Title for battery optimization setting"
+  },
+  "settingsBatteryUnrestricted": "Battery use is unrestricted",
+  "@settingsBatteryUnrestricted": {
+    "description": "Label when battery is unrestricted"
+  },
+  "settingsBatteryOptimized": "Battery optimization may delay alerts",
+  "@settingsBatteryOptimized": {
+    "description": "Label when battery is optimized"
+  },
+  "settingsReview": "Review",
+  "@settingsReview": {
+    "description": "Button label to review battery settings"
+  },
+  "settingsHaptics": "Haptics",
+  "@settingsHaptics": {
+    "description": "Title for haptic feedback setting"
+  },
+  "settingsVibratePhaseEnd": "Vibrate when a timer phase ends",
+  "@settingsVibratePhaseEnd": {
+    "description": "Subtitle for haptic feedback setting"
+  },
+  "settingsInAppSound": "In-app sound",
+  "@settingsInAppSound": {
+    "description": "Title for in-app sound setting"
+  },
+  "settingsPlayExtraAlert": "Play an extra system alert while BlinkKind is open",
+  "@settingsPlayExtraAlert": {
+    "description": "Subtitle for in-app sound setting"
+  },
+  "settingsChimeStyle": "Chime style",
+  "@settingsChimeStyle": {
+    "description": "Label for chime style selector"
+  },
+  "settingsChimeStyleSubtitle": "Sound to play when a break starts or ends",
+  "@settingsChimeStyleSubtitle": {
+    "description": "Subtitle for chime style selector"
+  },
+  "settingsConsciousBlinkingReminders": "Conscious blinking reminders",
+  "@settingsConsciousBlinkingReminders": {
+    "description": "Title for conscious blinking reminders setting"
+  },
+  "settingsConsciousBlinkingSubtitle": "Shows visible OS banner reminders during work, keeping your eyes moist and reducing fatigue",
+  "@settingsConsciousBlinkingSubtitle": {
+    "description": "Subtitle for conscious blinking reminders setting"
+  },
+  "settingsBannerInterval": "Banner interval",
+  "@settingsBannerInterval": {
+    "description": "Label for banner interval setting"
+  },
+  "settingsShowBlinkBanner": "How often to show the OS blink banner",
+  "@settingsShowBlinkBanner": {
+    "description": "Subtitle for banner interval setting"
+  },
+  "settingsTrayBlinkNudges": "Tray blink nudges",
+  "@settingsTrayBlinkNudges": {
+    "description": "Title for tray blink nudges setting"
+  },
+  "settingsTrayBlinkNudgesSubtitle": "Pulses the system tray icon independently from OS banner reminders",
+  "@settingsTrayBlinkNudgesSubtitle": {
+    "description": "Subtitle for tray blink nudges setting"
+  },
+  "settingsTrayNudgeInterval": "Tray nudge interval",
+  "@settingsTrayNudgeInterval": {
+    "description": "Label for tray nudge interval setting"
+  },
+  "settingsTrayIconPulse": "How often the tray icon should pulse",
+  "@settingsTrayIconPulse": {
+    "description": "Subtitle for tray nudge interval setting"
+  },
+  "settingsRunScheduleAutomatically": "Run schedule automatically",
+  "@settingsRunScheduleAutomatically": {
+    "description": "Title for auto run schedule setting"
+  },
+  "settingsRunScheduleAutomaticallySubtitle": "Continue work and break cycles until stopped or limit is reached",
+  "@settingsRunScheduleAutomaticallySubtitle": {
+    "description": "Subtitle for auto run schedule setting"
+  },
+  "settingsCycleLimit": "Cycle limit",
+  "@settingsCycleLimit": {
+    "description": "Label for cycle limit setting"
+  },
+  "settingsCycleLimitSubtitle": "Completed work cycles in one run",
+  "@settingsCycleLimitSubtitle": {
+    "description": "Subtitle for cycle limit setting"
+  },
+  "settingsLongBreakMode": "Long break mode",
+  "@settingsLongBreakMode": {
+    "description": "Title for long break mode setting"
+  },
+  "settingsLongBreakModeSubtitle": "After {count} work cycles, rest for {duration}",
+  "@settingsLongBreakModeSubtitle": {
+    "description": "Subtitle for long break mode setting",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsCycleInterval": "Cycle interval",
+  "@settingsCycleInterval": {
+    "description": "Label for cycle interval setting"
+  },
+  "settingsLongBreakDuration": "Long break duration",
+  "@settingsLongBreakDuration": {
+    "description": "Label for long break duration setting"
+  },
+  "settingsLaunchAtStartup": "Launch at Startup",
+  "@settingsLaunchAtStartup": {
+    "description": "Switch label for startup launching"
+  },
+  "settingsStartBlinkKindAutomatically": "Start BlinkKind automatically when you log in",
+  "@settingsStartBlinkKindAutomatically": {
+    "description": "Subtitle for startup launching"
+  },
+  "settingsStartMinimized": "Start minimized",
+  "@settingsStartMinimized": {
+    "description": "Switch label for starting minimized in tray"
+  },
+  "settingsOpenIntoTray": "Open into the tray on app startup",
+  "@settingsOpenIntoTray": {
+    "description": "Subtitle for starting minimized"
+  },
+  "settingsEnableAiMotivation": "Enable AI motivation",
+  "@settingsEnableAiMotivation": {
+    "description": "Switch label for AI motivation"
+  },
+  "settingsAiProvider": "AI Provider",
+  "@settingsAiProvider": {
+    "description": "Label for AI provider dropdown"
+  },
+  "settingsAiApiKey": "API Key",
+  "@settingsAiApiKey": {
+    "description": "Label for API key text field"
+  },
+  "settingsAiApiKeyHint": "Paste your API key here",
+  "@settingsAiApiKeyHint": {
+    "description": "Hint text for API key input"
+  },
+  "settingsAiModel": "Model",
+  "@settingsAiModel": {
+    "description": "Label for AI model selector"
+  },
+  "settingsAiSystemPrompt": "System prompt",
+  "@settingsAiSystemPrompt": {
+    "description": "Label for AI system prompt input"
+  },
+  "settingsAiSystemPromptHint": "Describe what kind of quote you want...",
+  "@settingsAiSystemPromptHint": {
+    "description": "Hint text for AI system prompt input"
+  },
+  "settingsResetSettings": "Reset settings",
+  "@settingsResetSettings": {
+    "description": "Title/Button to reset settings"
+  },
+  "settingsRestoreFactoryDefaults": "Restore all settings to factory defaults",
+  "@settingsRestoreFactoryDefaults": {
+    "description": "Subtitle for reset settings option"
+  },
+  "settingsBackupSettings": "Backup settings",
+  "@settingsBackupSettings": {
+    "description": "Title/Button for backing up settings"
+  },
+  "settingsExportDownloadsFolder": "Export settings to your Downloads folder",
+  "@settingsExportDownloadsFolder": {
+    "description": "Subtitle for backing up settings"
+  },
+  "settingsRestoreSettings": "Restore settings",
+  "@settingsRestoreSettings": {
+    "description": "Title/Button for restoring settings"
+  },
+  "settingsLoadBackupJson": "Load settings from a backup JSON file",
+  "@settingsLoadBackupJson": {
+    "description": "Subtitle for restoring settings"
+  },
+  "settingsCustomModelDialogTitle": "Custom model",
+  "@settingsCustomModelDialogTitle": {
+    "description": "Title for custom model dialog"
+  },
+  "settingsModelName": "Model name",
+  "@settingsModelName": {
+    "description": "Label for custom model name field"
+  },
+  "settingsModelNameHint": "e.g. gpt-4o, gemini-2.0-flash",
+  "@settingsModelNameHint": {
+    "description": "Hint for custom model name field"
+  },
+  "settingsSet": "Set",
+  "@settingsSet": {
+    "description": "Button label to confirm selection"
+  },
+  "settingsRestoreDefaultsTitle": "Restore defaults?",
+  "@settingsRestoreDefaultsTitle": {
+    "description": "Title of restore defaults dialog"
+  },
+  "settingsRestoreDefaultsDesc": "This will reset all preferences (durations, presets, sound settings, theme presets, AI configurations, auto-start options) back to factory defaults.\n\nYour streak, history, and recorded activity will NOT be erased.",
+  "@settingsRestoreDefaultsDesc": {
+    "description": "Body description of restore defaults dialog"
+  },
+  "settingsRestoredSnackbar": "Settings restored to factory defaults",
+  "@settingsRestoredSnackbar": {
+    "description": "Snackbar message after resetting settings"
+  },
+  "settingsRestoredSuccessSnackbar": "Settings restored successfully!",
+  "@settingsRestoredSuccessSnackbar": {
+    "description": "Snackbar message after importing backup"
+  },
+  "settingsRestoredFailedSnackbar": "Failed to restore settings: {error}",
+  "@settingsRestoredFailedSnackbar": {
+    "description": "Snackbar message when importing backup fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsCustomDailyGoalTitle": "Custom daily goal",
+  "@settingsCustomDailyGoalTitle": {
+    "description": "Title of custom daily goal dialog"
+  },
+  "settingsNumberOfBreaks": "Number of breaks",
+  "@settingsNumberOfBreaks": {
+    "description": "Label for number of breaks field"
+  },
+  "settingsNumberOfBreaksHint": "e.g. 15, 20",
+  "@settingsNumberOfBreaksHint": {
+    "description": "Hint for number of breaks field"
+  },
+  "settingsCustomBlinkReminderTitle": "Custom blink reminder",
+  "@settingsCustomBlinkReminderTitle": {
+    "description": "Title of custom blink reminder dialog"
+  },
+  "settingsCustomBlinkReminderHint": "e.g. Time to blink! Rest your eyes.",
+  "@settingsCustomBlinkReminderHint": {
+    "description": "Hint for custom blink reminder field"
+  },
+  "settingsCustomBlinkReminderHelper": "Leave blank to use built-in messages",
+  "@settingsCustomBlinkReminderHelper": {
+    "description": "Helper for custom blink reminder field"
+  },
+  "settingsSave": "Save",
+  "@settingsSave": {
+    "description": "Button label to save settings"
+  },
+  "settingsCameraAutoPostponeSnackbar": "Camera in use — break postponed automatically",
+  "@settingsCameraAutoPostponeSnackbar": {
+    "description": "Snackbar message when break is automatically postponed due to camera usage"
+  },
+  "settingsAllowOverlaySnackbar": "Allow display over other apps first.",
+  "@settingsAllowOverlaySnackbar": {
+    "description": "Snackbar warning when overlay permission is missing"
+  },
+  "settingsDurationSeconds": "{seconds}s",
+  "@settingsDurationSeconds": {
+    "description": "Label formatting duration in seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsDurationMinutes": "{minutes} min",
+  "@settingsDurationMinutes": {
+    "description": "Label formatting duration in minutes",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsDurationEverySeconds": "Every {seconds} sec",
+  "@settingsDurationEverySeconds": {
+    "description": "Label formatting interval in seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsDurationEveryMinutes": "Every {minutes} min",
+  "@settingsDurationEveryMinutes": {
+    "description": "Label formatting interval in minutes",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsCycleNoLimit": "No limit",
+  "@settingsCycleNoLimit": {
+    "description": "Label when cycle limit is disabled"
+  },
+  "settingsCycleLimitCount": "{count} cycles",
+  "@settingsCycleLimitCount": {
+    "description": "Label showing cycle count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsWellnessReminders": "Wellness reminders",
+  "@settingsWellnessReminders": {
+    "description": "Title for wellness reminders setting"
+  },
+  "settingsWellnessRemindersSubtitle": "Periodic hydration, posture, and stretch reminders during work",
+  "@settingsWellnessRemindersSubtitle": {
+    "description": "Subtitle for wellness reminders setting"
+  },
+  "settingsWellnessRemindersDesc": "Alternates hydration, posture, and stretch reminders during work sessions",
+  "@settingsWellnessRemindersDesc": {
+    "description": "Detailed description of wellness reminders"
+  },
+  "settingsReminderInterval": "Reminder interval",
+  "@settingsReminderInterval": {
+    "description": "Label for wellness reminder interval"
+  },
+  "settingsReminderIntervalDesc": "How often to send a wellness reminder",
+  "@settingsReminderIntervalDesc": {
+    "description": "Description of wellness reminder interval"
+  },
+  "settingsCameraMicAutoPostpone": "Camera/mic auto-postpone",
+  "@settingsCameraMicAutoPostpone": {
+    "description": "Title for camera/mic auto-postpone setting"
+  },
+  "settingsCameraMicAutoPostponeSubtitle": "Postpone breaks automatically when camera is in use (video calls)",
+  "@settingsCameraMicAutoPostponeSubtitle": {
+    "description": "Subtitle for camera/mic auto-postpone setting"
+  },
+  "settingsCameraMicAutoPostponeDesc": "Automatically postpone breaks when your camera is in use (e.g. video calls). Linux only.",
+  "@settingsCameraMicAutoPostponeDesc": {
+    "description": "Detailed description of camera/mic auto-postpone"
+  },
+  "settingsWellnessEvery30Min": "Every 30 min",
+  "@settingsWellnessEvery30Min": {
+    "description": "Option for wellness reminder cadence"
+  },
+  "settingsWellnessEvery45Min": "Every 45 min",
+  "@settingsWellnessEvery45Min": {
+    "description": "Option for wellness reminder cadence"
+  },
+  "settingsWellnessEvery1Hour": "Every 1 hour",
+  "@settingsWellnessEvery1Hour": {
+    "description": "Option for wellness reminder cadence"
+  },
+  "settingsWellnessEvery15Hours": "Every 1.5 hours",
+  "@settingsWellnessEvery15Hours": {
+    "description": "Option for wellness reminder cadence"
+  },
+  "settingsWellnessEvery2Hours": "Every 2 hours",
+  "@settingsWellnessEvery2Hours": {
+    "description": "Option for wellness reminder cadence"
+  },
+  "settingsAiBlinkMessages": "AI-powered blink messages",
+  "@settingsAiBlinkMessages": {
+    "description": "Title for AI-powered blink messages setting"
+  },
+  "settingsAiBlinkMessagesSubtitle": "Generate a fresh, unique reminder each time using AI",
+  "@settingsAiBlinkMessagesSubtitle": {
+    "description": "Subtitle for AI-powered blink messages setting"
+  },
+  "settingsCustomReminder": "Custom blink reminder",
+  "@settingsCustomReminder": {
+    "description": "Title for custom blink reminder setting"
+  },
+  "settingsPermissionAllowed": "System permission allowed",
+  "@settingsPermissionAllowed": {
+    "description": "System notification permission allowed status"
+  },
+  "settingsPermissionBlocked": "System permission blocked",
+  "@settingsPermissionBlocked": {
+    "description": "System notification permission blocked status"
+  },
+  "settingsPermissionUnavailable": "Status unavailable on this platform",
+  "@settingsPermissionUnavailable": {
+    "description": "System notification permission unsupported status"
+  },
+  "settingsPermissionChecking": "Checking system permission",
+  "@settingsPermissionChecking": {
+    "description": "Checking notification permission status"
+  },
+  "settingsOverlayAllowed": "Allowed on this device",
+  "@settingsOverlayAllowed": {
+    "description": "Overlay permission allowed status"
+  },
+  "settingsOverlayRequired": "Permission required for enforced breaks",
+  "@settingsOverlayRequired": {
+    "description": "Overlay permission disabled status"
+  },
+  "settingsOverlayChecking": "Checking overlay permission",
+  "@settingsOverlayChecking": {
+    "description": "Checking overlay permission status"
+  },
+  "settingsOverlayUnavailable": "Unavailable on this platform",
+  "@settingsOverlayUnavailable": {
+    "description": "Overlay permission unsupported status"
+  },
+  "settingsBreakModeOff": "Off",
+  "@settingsBreakModeOff": {
+    "description": "Break mode off label"
+  },
+  "settingsBreakModeGentle": "Gentle",
+  "@settingsBreakModeGentle": {
+    "description": "Break mode gentle label"
+  },
+  "settingsBreakModeStrict": "Strict",
+  "@settingsBreakModeStrict": {
+    "description": "Break mode strict label"
+  },
+  "mon": "Mon",
+  "@mon": {
+    "description": "Monday short name"
+  },
+  "tue": "Tue",
+  "@tue": {
+    "description": "Tuesday short name"
+  },
+  "wed": "Wed",
+  "@wed": {
+    "description": "Wednesday short name"
+  },
+  "thu": "Thu",
+  "@thu": {
+    "description": "Thursday short name"
+  },
+  "fri": "Fri",
+  "@fri": {
+    "description": "Friday short name"
+  },
+  "sat": "Sat",
+  "@sat": {
+    "description": "Saturday short name"
+  },
+  "sun": "Sun",
+  "@sun": {
+    "description": "Sunday short name"
+  },
+  "settingsVisualizerRandom": "Random/All",
+  "@settingsVisualizerRandom": {
+    "description": "Random visualizer option name"
+  },
+  "settingsVisualizerBreathing": "Calm Breathing",
+  "@settingsVisualizerBreathing": {
+    "description": "Breathing visualizer option name"
+  },
+  "settingsVisualizerBoxBreathing": "Box Breathing (4-4-4-4)",
+  "@settingsVisualizerBoxBreathing": {
+    "description": "Box breathing visualizer option name"
+  },
+  "settingsVisualizerEyeExercise": "Eye Exercises",
+  "@settingsVisualizerEyeExercise": {
+    "description": "Eye exercises visualizer option name"
+  },
+  "settingsVisualizerBlinkTraining": "Blink Training (Blink Pacing)",
+  "@settingsVisualizerBlinkTraining": {
+    "description": "Blink training visualizer option name"
+  },
+  "settingsVisualizerAmbient": "Ambient Flow",
+  "@settingsVisualizerAmbient": {
+    "description": "Ambient visualizer option name"
+  },
+  "settingsVisualizerStarry": "Starry Sky",
+  "@settingsVisualizerStarry": {
+    "description": "Starry visualizer option name"
+  },
+  "settingsShowCountdownDesc": "Display remaining break time",
+  "@settingsShowCountdownDesc": {
+    "description": "Switch subtitle for showing countdown clock"
+  },
+  "settingsShowTipsDesc": "Rotate guidance during the break",
+  "@settingsShowTipsDesc": {
+    "description": "Switch subtitle for showing eye-care tips"
+  },
+  "settingsShowProgressDesc": "Visualize break progress on classic layouts",
+  "@settingsShowProgressDesc": {
+    "description": "Switch subtitle for showing progress ring"
+  },
+  "settingsCustomBreakMessage": "Custom break message",
+  "@settingsCustomBreakMessage": {
+    "description": "Title/Label for custom break message"
+  },
+  "settingsCustomBreakMessageSubtitle": "Optional text shown before rotating tips",
+  "@settingsCustomBreakMessageSubtitle": {
+    "description": "Subtitle for custom break message setting"
+  },
+  "settingsCustomBreakMessageHint": "Close your eyes and breathe slowly.",
+  "@settingsCustomBreakMessageHint": {
+    "description": "Hint for custom break message input"
+  },
+  "settingsChimeTibetanBowl": "Tibetan Bowl",
+  "@settingsChimeTibetanBowl": {
+    "description": "Chime style option: Tibetan Bowl"
+  },
+  "settingsChimeWindChimes": "Wind Chimes",
+  "@settingsChimeWindChimes": {
+    "description": "Chime style option: Wind Chimes"
+  },
+  "settingsChimeZenBell": "Zen Bell",
+  "@settingsChimeZenBell": {
+    "description": "Chime style option: Zen Bell"
+  },
+  "settingsChimeSystemAlert": "System Alert",
+  "@settingsChimeSystemAlert": {
+    "description": "Chime style option: System Alert"
+  },
+  "settingsConsciousBlinkingDesc": "Sends periodic OS notifications to remind you to blink during work sessions",
+  "@settingsConsciousBlinkingDesc": {
+    "description": "Description of conscious blinking reminders setting"
+  },
+  "settingsAiMotivationTitle": "AI Motivation & Prompts",
+  "@settingsAiMotivationTitle": {
+    "description": "Setting title for AI Motivation & Prompts"
+  },
+  "settingsAiMotivationSubtitle": "Generate personalised eye-care quotes during breaks",
+  "@settingsAiMotivationSubtitle": {
+    "description": "Setting subtitle for AI Motivation & Prompts"
+  },
+  "settingsAiMotivationEnabledSubtitle": "Generate personalised quotes during breaks",
+  "@settingsAiMotivationEnabledSubtitle": {
+    "description": "Subtitle for enabling AI motivation switch"
+  },
+  "settingsAiProviderGemini": "Google Gemini",
+  "@settingsAiProviderGemini": {
+    "description": "AI provider option: Google Gemini"
+  },
+  "settingsAiProviderOpenAi": "OpenAI (ChatGPT)",
+  "@settingsAiProviderOpenAi": {
+    "description": "AI provider option: OpenAI ChatGPT"
+  },
+  "settingsAiProviderGroq": "Groq (Fast)",
+  "@settingsAiProviderGroq": {
+    "description": "AI provider option: Groq Fast"
+  },
+  "settingsAiModelCustom": "Custom...",
+  "@settingsAiModelCustom": {
+    "description": "Dropdown option for custom AI model"
+  },
+  "settingsAiLoadModelsError": "Could not load models. Using defaults.",
+  "@settingsAiLoadModelsError": {
+    "description": "Error text when loading AI models fails"
+  },
+  "settingsExportedSnackbar": "Exported settings to: {fileName}",
+  "@settingsExportedSnackbar": {
+    "description": "Snackbar message when settings backup succeeds",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsExportFailedSnackbar": "Failed to backup settings: {error}",
+  "@settingsExportFailedSnackbar": {
+    "description": "Snackbar message when settings backup fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsLongBreakModeDesc": "Take a longer rest break after a set number of work cycles",
+  "@settingsLongBreakModeDesc": {
+    "description": "Subtitle/description for long break mode setting"
+  },
+  "settingsDesktopStartupBehavior": "Desktop startup behavior",
+  "@settingsDesktopStartupBehavior": {
+    "description": "Setting Item title for desktop startup behavior"
+  },
+  "settingsDesktopStartupBehaviorSubtitle": "Control login launch and tray-first startup behavior",
+  "@settingsDesktopStartupBehaviorSubtitle": {
+    "description": "Setting Item subtitle for desktop startup behavior"
+  },
+  "settingsBackup": "Backup",
+  "@settingsBackup": {
+    "description": "Button label to export/backup settings"
+  },
+  "settingsRestore": "Restore",
+  "@settingsRestore": {
+    "description": "Button label to import/restore settings"
   }
 }

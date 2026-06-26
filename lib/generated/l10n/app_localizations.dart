@@ -513,6 +513,1380 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to export to file: {error}'**
   String failedToExport(String error);
+
+  /// Title of the settings page
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// Placeholder for settings search input
+  ///
+  /// In en, this message translates to:
+  /// **'Search settings...'**
+  String get settingsSearchPlaceholder;
+
+  /// Message shown when search returns no results
+  ///
+  /// In en, this message translates to:
+  /// **'No settings matching \"{query}\"'**
+  String settingsNoResults(String query);
+
+  /// Category for schedule settings
+  ///
+  /// In en, this message translates to:
+  /// **'General Schedule'**
+  String get settingsCategoryGeneralSchedule;
+
+  /// Category for break behavior settings
+  ///
+  /// In en, this message translates to:
+  /// **'Break Screen & Behavior'**
+  String get settingsCategoryBreakBehavior;
+
+  /// Category for theme settings
+  ///
+  /// In en, this message translates to:
+  /// **'Theme & Appearance'**
+  String get settingsCategoryThemeAppearance;
+
+  /// Category for notifications settings
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications & Sounds'**
+  String get settingsCategoryNotificationsSounds;
+
+  /// Category for auto run settings
+  ///
+  /// In en, this message translates to:
+  /// **'Auto Run & Long Breaks'**
+  String get settingsCategoryAutoRunLongBreaks;
+
+  /// Category for desktop options
+  ///
+  /// In en, this message translates to:
+  /// **'Desktop Options'**
+  String get settingsCategoryDesktopOptions;
+
+  /// Category for AI motivation settings
+  ///
+  /// In en, this message translates to:
+  /// **'AI Motivation & Prompts'**
+  String get settingsCategoryAiMotivation;
+
+  /// Category for system options
+  ///
+  /// In en, this message translates to:
+  /// **'System Options'**
+  String get settingsCategorySystemOptions;
+
+  /// Title for quick presets setting
+  ///
+  /// In en, this message translates to:
+  /// **'Quick presets'**
+  String get settingsQuickPresets;
+
+  /// Subtitle for quick presets setting
+  ///
+  /// In en, this message translates to:
+  /// **'20-20-20, 25/5, 45/5, 10s/10s (Test)'**
+  String get settingsQuickPresetsSubtitle;
+
+  /// Title for work duration setting
+  ///
+  /// In en, this message translates to:
+  /// **'Work duration'**
+  String get settingsWorkDuration;
+
+  /// Subtitle when work duration can be changed
+  ///
+  /// In en, this message translates to:
+  /// **'Choose work interval'**
+  String get settingsWorkDurationChoose;
+
+  /// Subtitle when durations are locked
+  ///
+  /// In en, this message translates to:
+  /// **'Pause/cancel timer to change'**
+  String get settingsPauseCancelToChange;
+
+  /// Detailed text when duration changes are locked
+  ///
+  /// In en, this message translates to:
+  /// **'Pause or cancel the timer to change this'**
+  String get settingsPauseCancelToChangeDesc;
+
+  /// Title for break duration setting
+  ///
+  /// In en, this message translates to:
+  /// **'Break duration'**
+  String get settingsBreakDuration;
+
+  /// Subtitle when break duration can be changed
+  ///
+  /// In en, this message translates to:
+  /// **'Choose break length'**
+  String get settingsBreakDurationChoose;
+
+  /// Title for daily goal setting
+  ///
+  /// In en, this message translates to:
+  /// **'Daily goal'**
+  String get settingsDailyGoal;
+
+  /// Subtitle showing daily goal progress
+  ///
+  /// In en, this message translates to:
+  /// **'{streak} / {goal} breaks today'**
+  String settingsDailyGoalProgress(int streak, int goal);
+
+  /// Label for custom option
+  ///
+  /// In en, this message translates to:
+  /// **'Custom...'**
+  String get settingsCustom;
+
+  /// Title for history setting
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get settingsHistory;
+
+  /// Subtitle for history setting
+  ///
+  /// In en, this message translates to:
+  /// **'Review your recent eye breaks'**
+  String get settingsHistorySubtitle;
+
+  /// Label showing daily cycles count
+  ///
+  /// In en, this message translates to:
+  /// **'Today: {count} cycles'**
+  String settingsTodayProgress(int count);
+
+  /// Title for today's progress setting
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'\'s progress'**
+  String get settingsTodayProgressTitle;
+
+  /// Subtitle for today's progress setting
+  ///
+  /// In en, this message translates to:
+  /// **'Reset today\'\'s streak'**
+  String get settingsResetStreak;
+
+  /// Button label to reset
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get settingsReset;
+
+  /// Title for active work hours setting
+  ///
+  /// In en, this message translates to:
+  /// **'Active work hours & days'**
+  String get settingsActiveWorkHours;
+
+  /// Subtitle for active work hours setting
+  ///
+  /// In en, this message translates to:
+  /// **'Only run the timer cycles during specific hours and days'**
+  String get settingsActiveWorkHoursSubtitle;
+
+  /// Label for active days section
+  ///
+  /// In en, this message translates to:
+  /// **'Active Days'**
+  String get settingsActiveDays;
+
+  /// Label for start time selector
+  ///
+  /// In en, this message translates to:
+  /// **'Start Time'**
+  String get settingsStartTime;
+
+  /// Label for end time selector
+  ///
+  /// In en, this message translates to:
+  /// **'End Time'**
+  String get settingsEndTime;
+
+  /// Title for auto-start schedule setting
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-start schedule'**
+  String get settingsAutoStartSchedule;
+
+  /// Subtitle for auto-start schedule setting
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically start the timer on launch'**
+  String get settingsAutoStartScheduleSubtitle;
+
+  /// Title for OS Focus Mode setting
+  ///
+  /// In en, this message translates to:
+  /// **'OS Focus Mode (DND)'**
+  String get settingsOsFocusMode;
+
+  /// Subtitle for OS Focus Mode setting
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle system Do Not Disturb (DND) automatically during work phases (Linux GNOME)'**
+  String get settingsOsFocusModeSubtitle;
+
+  /// Switch label for OS Focus Mode setting
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle system DND during work phases'**
+  String get settingsOsFocusModeToggle;
+
+  /// Helpful note about GNOME DND behavior
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Ubuntu/GNOME does not natively support DND exceptions/whitelist. If you want specific apps to bypass DND, turn this toggle off and instead manually silence noisy apps under Ubuntu System Settings -> Notifications.'**
+  String get settingsOsFocusModeGnomeNote;
+
+  /// Title for break screen mode setting
+  ///
+  /// In en, this message translates to:
+  /// **'Break screen mode'**
+  String get settingsBreakScreenMode;
+
+  /// Subtitle for break screen mode setting
+  ///
+  /// In en, this message translates to:
+  /// **'Off, Gentle, or Strict break enforcement mode'**
+  String get settingsBreakScreenModeSubtitle;
+
+  /// Dropdown explanation for break screen mode
+  ///
+  /// In en, this message translates to:
+  /// **'Strict mode blocks easy exit'**
+  String get settingsStrictBlocksExit;
+
+  /// Title for pre-break notification setting
+  ///
+  /// In en, this message translates to:
+  /// **'Pre-break notification alert'**
+  String get settingsPreBreakAlert;
+
+  /// Subtitle for pre-break notification setting
+  ///
+  /// In en, this message translates to:
+  /// **'Get a warning notification 10 seconds before the break start'**
+  String get settingsPreBreakAlertSubtitle;
+
+  /// Title for allow skip setting
+  ///
+  /// In en, this message translates to:
+  /// **'Allow skip'**
+  String get settingsAllowSkip;
+
+  /// Subtitle for allow skip setting
+  ///
+  /// In en, this message translates to:
+  /// **'Allow skipping the break early'**
+  String get settingsAllowSkipSubtitle;
+
+  /// Title for allow postpone setting
+  ///
+  /// In en, this message translates to:
+  /// **'Allow postpone'**
+  String get settingsAllowPostpone;
+
+  /// Subtitle for allow postpone setting
+  ///
+  /// In en, this message translates to:
+  /// **'Allow postponing the break'**
+  String get settingsAllowPostponeSubtitle;
+
+  /// Title for smart pause setting
+  ///
+  /// In en, this message translates to:
+  /// **'Smart Pause & Postpone'**
+  String get settingsSmartPausePostpone;
+
+  /// Subtitle for smart pause setting
+  ///
+  /// In en, this message translates to:
+  /// **'Pause work timer automatically when you are idle'**
+  String get settingsSmartPausePostponeSubtitle;
+
+  /// Title for natural break credit setting
+  ///
+  /// In en, this message translates to:
+  /// **'Natural break credit'**
+  String get settingsNaturalBreakCredit;
+
+  /// Subtitle for natural break credit setting
+  ///
+  /// In en, this message translates to:
+  /// **'Credit away time as a break if away for more than 5 minutes'**
+  String get settingsNaturalBreakCreditSubtitle;
+
+  /// Title for break visualizer style setting
+  ///
+  /// In en, this message translates to:
+  /// **'Break visualizer style'**
+  String get settingsBreakVisualizerStyle;
+
+  /// Subtitle for break visualizer style setting
+  ///
+  /// In en, this message translates to:
+  /// **'Choose ambient effect during breaks'**
+  String get settingsBreakVisualizerStyleSubtitle;
+
+  /// Title for break screen content settings
+  ///
+  /// In en, this message translates to:
+  /// **'Break screen content'**
+  String get settingsBreakScreenContent;
+
+  /// Subtitle for break screen content settings
+  ///
+  /// In en, this message translates to:
+  /// **'Choose widgets shown on the break overlay'**
+  String get settingsBreakScreenContentSubtitle;
+
+  /// Switch label for showing countdown clock
+  ///
+  /// In en, this message translates to:
+  /// **'Show countdown clock'**
+  String get settingsShowCountdown;
+
+  /// Switch label for showing eye-care tips
+  ///
+  /// In en, this message translates to:
+  /// **'Show eye-care tips'**
+  String get settingsShowTips;
+
+  /// Switch label for showing progress ring
+  ///
+  /// In en, this message translates to:
+  /// **'Show progress ring'**
+  String get settingsShowProgress;
+
+  /// Title for custom reminder text setting
+  ///
+  /// In en, this message translates to:
+  /// **'Custom reminder text'**
+  String get settingsCustomReminderText;
+
+  /// Label when custom reminder is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Using built-in rotating messages'**
+  String get settingsBuiltInRotatingMessages;
+
+  /// Title for postpone duration setting
+  ///
+  /// In en, this message translates to:
+  /// **'Postpone duration'**
+  String get settingsPostponeDuration;
+
+  /// Subtitle for postpone duration setting
+  ///
+  /// In en, this message translates to:
+  /// **'How long to delay the break'**
+  String get settingsPostponeDurationSubtitle;
+
+  /// Title for display over other apps setting
+  ///
+  /// In en, this message translates to:
+  /// **'Display over other apps'**
+  String get settingsDisplayOverApps;
+
+  /// Button label to allow permission
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get settingsAllow;
+
+  /// Title for preview break screen setting
+  ///
+  /// In en, this message translates to:
+  /// **'Preview break screen'**
+  String get settingsPreviewBreakScreen;
+
+  /// Subtitle for preview break screen setting
+  ///
+  /// In en, this message translates to:
+  /// **'Show a 10-second black overlay'**
+  String get settingsPreviewBreakScreenSubtitle;
+
+  /// Title for test 20s break setting
+  ///
+  /// In en, this message translates to:
+  /// **'Test 20s break screen'**
+  String get settingsTest20sBreak;
+
+  /// Subtitle for test 20s break setting
+  ///
+  /// In en, this message translates to:
+  /// **'Launch a real 20-second eye break'**
+  String get settingsTest20sBreakSubtitle;
+
+  /// Title for usage access setting
+  ///
+  /// In en, this message translates to:
+  /// **'Usage access'**
+  String get settingsUsageAccess;
+
+  /// Label when usage access is allowed
+  ///
+  /// In en, this message translates to:
+  /// **'App detection enabled'**
+  String get settingsUsageAccessEnabled;
+
+  /// Label when usage access is required
+  ///
+  /// In en, this message translates to:
+  /// **'Required to detect games & videos'**
+  String get settingsUsageAccessRequired;
+
+  /// Title for dark mode setting
+  ///
+  /// In en, this message translates to:
+  /// **'Dark mode'**
+  String get settingsDarkMode;
+
+  /// Subtitle for dark mode setting
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle dark or light theme interface'**
+  String get settingsDarkModeSubtitle;
+
+  /// Title for AMOLED dark mode setting
+  ///
+  /// In en, this message translates to:
+  /// **'AMOLED dark mode'**
+  String get settingsAmoledDarkMode;
+
+  /// Subtitle for AMOLED dark mode setting
+  ///
+  /// In en, this message translates to:
+  /// **'Use pure black backgrounds for battery saving'**
+  String get settingsAmoledDarkModeSubtitle;
+
+  /// Title for system accent setting
+  ///
+  /// In en, this message translates to:
+  /// **'Use system accent color'**
+  String get settingsUseSystemAccent;
+
+  /// Subtitle for system accent setting
+  ///
+  /// In en, this message translates to:
+  /// **'Follow OS system-accent dynamic colors'**
+  String get settingsUseSystemAccentSubtitle;
+
+  /// Title for color preset setting
+  ///
+  /// In en, this message translates to:
+  /// **'Color preset'**
+  String get settingsColorPreset;
+
+  /// Subtitle for color preset setting
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your preferred accent color theme preset'**
+  String get settingsColorPresetSubtitle;
+
+  /// Header for custom accent colors
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Accent Palette'**
+  String get settingsCustomAccentPalette;
+
+  /// Label for custom hex code field
+  ///
+  /// In en, this message translates to:
+  /// **'Accent Color Hex Code'**
+  String get settingsAccentColorHex;
+
+  /// Title for notifications setting
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get settingsNotifications;
+
+  /// Subtitle for notifications setting
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me when work or break time ends'**
+  String get settingsNotificationsSubtitle;
+
+  /// Title for notification sound setting
+  ///
+  /// In en, this message translates to:
+  /// **'Notification sound'**
+  String get settingsNotificationSound;
+
+  /// Subtitle for notification sound setting
+  ///
+  /// In en, this message translates to:
+  /// **'Uses system notification sound settings'**
+  String get settingsNotificationSoundSubtitle;
+
+  /// Title for test reminder alert setting
+  ///
+  /// In en, this message translates to:
+  /// **'Test reminder alert'**
+  String get settingsTestReminderAlert;
+
+  /// Subtitle for test reminder alert setting
+  ///
+  /// In en, this message translates to:
+  /// **'Play the actual reminder sound now'**
+  String get settingsPlayReminderSound;
+
+  /// Label for test reminder
+  ///
+  /// In en, this message translates to:
+  /// **'Test reminder'**
+  String get settingsTestReminder;
+
+  /// Title for notification permission status
+  ///
+  /// In en, this message translates to:
+  /// **'Permission status'**
+  String get settingsPermissionStatus;
+
+  /// Button label to open settings
+  ///
+  /// In en, this message translates to:
+  /// **'Open system settings'**
+  String get settingsOpenSystemSettings;
+
+  /// Information text when notifications are disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Timer alerts are off. The countdown still works in the app.'**
+  String get settingsTimerAlertsOff;
+
+  /// Title for precise reminders setting
+  ///
+  /// In en, this message translates to:
+  /// **'Precise reminders'**
+  String get settingsPreciseReminders;
+
+  /// Label when precise timing is allowed
+  ///
+  /// In en, this message translates to:
+  /// **'Exact timing allowed'**
+  String get settingsPreciseAllowed;
+
+  /// Label when precise timing is disabled
+  ///
+  /// In en, this message translates to:
+  /// **'May arrive a little late'**
+  String get settingsPreciseLate;
+
+  /// Title for battery optimization setting
+  ///
+  /// In en, this message translates to:
+  /// **'Background reliability'**
+  String get settingsBackgroundReliability;
+
+  /// Label when battery is unrestricted
+  ///
+  /// In en, this message translates to:
+  /// **'Battery use is unrestricted'**
+  String get settingsBatteryUnrestricted;
+
+  /// Label when battery is optimized
+  ///
+  /// In en, this message translates to:
+  /// **'Battery optimization may delay alerts'**
+  String get settingsBatteryOptimized;
+
+  /// Button label to review battery settings
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get settingsReview;
+
+  /// Title for haptic feedback setting
+  ///
+  /// In en, this message translates to:
+  /// **'Haptics'**
+  String get settingsHaptics;
+
+  /// Subtitle for haptic feedback setting
+  ///
+  /// In en, this message translates to:
+  /// **'Vibrate when a timer phase ends'**
+  String get settingsVibratePhaseEnd;
+
+  /// Title for in-app sound setting
+  ///
+  /// In en, this message translates to:
+  /// **'In-app sound'**
+  String get settingsInAppSound;
+
+  /// Subtitle for in-app sound setting
+  ///
+  /// In en, this message translates to:
+  /// **'Play an extra system alert while BlinkKind is open'**
+  String get settingsPlayExtraAlert;
+
+  /// Label for chime style selector
+  ///
+  /// In en, this message translates to:
+  /// **'Chime style'**
+  String get settingsChimeStyle;
+
+  /// Subtitle for chime style selector
+  ///
+  /// In en, this message translates to:
+  /// **'Sound to play when a break starts or ends'**
+  String get settingsChimeStyleSubtitle;
+
+  /// Title for conscious blinking reminders setting
+  ///
+  /// In en, this message translates to:
+  /// **'Conscious blinking reminders'**
+  String get settingsConsciousBlinkingReminders;
+
+  /// Subtitle for conscious blinking reminders setting
+  ///
+  /// In en, this message translates to:
+  /// **'Shows visible OS banner reminders during work, keeping your eyes moist and reducing fatigue'**
+  String get settingsConsciousBlinkingSubtitle;
+
+  /// Label for banner interval setting
+  ///
+  /// In en, this message translates to:
+  /// **'Banner interval'**
+  String get settingsBannerInterval;
+
+  /// Subtitle for banner interval setting
+  ///
+  /// In en, this message translates to:
+  /// **'How often to show the OS blink banner'**
+  String get settingsShowBlinkBanner;
+
+  /// Title for tray blink nudges setting
+  ///
+  /// In en, this message translates to:
+  /// **'Tray blink nudges'**
+  String get settingsTrayBlinkNudges;
+
+  /// Subtitle for tray blink nudges setting
+  ///
+  /// In en, this message translates to:
+  /// **'Pulses the system tray icon independently from OS banner reminders'**
+  String get settingsTrayBlinkNudgesSubtitle;
+
+  /// Label for tray nudge interval setting
+  ///
+  /// In en, this message translates to:
+  /// **'Tray nudge interval'**
+  String get settingsTrayNudgeInterval;
+
+  /// Subtitle for tray nudge interval setting
+  ///
+  /// In en, this message translates to:
+  /// **'How often the tray icon should pulse'**
+  String get settingsTrayIconPulse;
+
+  /// Title for auto run schedule setting
+  ///
+  /// In en, this message translates to:
+  /// **'Run schedule automatically'**
+  String get settingsRunScheduleAutomatically;
+
+  /// Subtitle for auto run schedule setting
+  ///
+  /// In en, this message translates to:
+  /// **'Continue work and break cycles until stopped or limit is reached'**
+  String get settingsRunScheduleAutomaticallySubtitle;
+
+  /// Label for cycle limit setting
+  ///
+  /// In en, this message translates to:
+  /// **'Cycle limit'**
+  String get settingsCycleLimit;
+
+  /// Subtitle for cycle limit setting
+  ///
+  /// In en, this message translates to:
+  /// **'Completed work cycles in one run'**
+  String get settingsCycleLimitSubtitle;
+
+  /// Title for long break mode setting
+  ///
+  /// In en, this message translates to:
+  /// **'Long break mode'**
+  String get settingsLongBreakMode;
+
+  /// Subtitle for long break mode setting
+  ///
+  /// In en, this message translates to:
+  /// **'After {count} work cycles, rest for {duration}'**
+  String settingsLongBreakModeSubtitle(int count, String duration);
+
+  /// Label for cycle interval setting
+  ///
+  /// In en, this message translates to:
+  /// **'Cycle interval'**
+  String get settingsCycleInterval;
+
+  /// Label for long break duration setting
+  ///
+  /// In en, this message translates to:
+  /// **'Long break duration'**
+  String get settingsLongBreakDuration;
+
+  /// Switch label for startup launching
+  ///
+  /// In en, this message translates to:
+  /// **'Launch at Startup'**
+  String get settingsLaunchAtStartup;
+
+  /// Subtitle for startup launching
+  ///
+  /// In en, this message translates to:
+  /// **'Start BlinkKind automatically when you log in'**
+  String get settingsStartBlinkKindAutomatically;
+
+  /// Switch label for starting minimized in tray
+  ///
+  /// In en, this message translates to:
+  /// **'Start minimized'**
+  String get settingsStartMinimized;
+
+  /// Subtitle for starting minimized
+  ///
+  /// In en, this message translates to:
+  /// **'Open into the tray on app startup'**
+  String get settingsOpenIntoTray;
+
+  /// Switch label for AI motivation
+  ///
+  /// In en, this message translates to:
+  /// **'Enable AI motivation'**
+  String get settingsEnableAiMotivation;
+
+  /// Label for AI provider dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'AI Provider'**
+  String get settingsAiProvider;
+
+  /// Label for API key text field
+  ///
+  /// In en, this message translates to:
+  /// **'API Key'**
+  String get settingsAiApiKey;
+
+  /// Hint text for API key input
+  ///
+  /// In en, this message translates to:
+  /// **'Paste your API key here'**
+  String get settingsAiApiKeyHint;
+
+  /// Label for AI model selector
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get settingsAiModel;
+
+  /// Label for AI system prompt input
+  ///
+  /// In en, this message translates to:
+  /// **'System prompt'**
+  String get settingsAiSystemPrompt;
+
+  /// Hint text for AI system prompt input
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what kind of quote you want...'**
+  String get settingsAiSystemPromptHint;
+
+  /// Title/Button to reset settings
+  ///
+  /// In en, this message translates to:
+  /// **'Reset settings'**
+  String get settingsResetSettings;
+
+  /// Subtitle for reset settings option
+  ///
+  /// In en, this message translates to:
+  /// **'Restore all settings to factory defaults'**
+  String get settingsRestoreFactoryDefaults;
+
+  /// Title/Button for backing up settings
+  ///
+  /// In en, this message translates to:
+  /// **'Backup settings'**
+  String get settingsBackupSettings;
+
+  /// Subtitle for backing up settings
+  ///
+  /// In en, this message translates to:
+  /// **'Export settings to your Downloads folder'**
+  String get settingsExportDownloadsFolder;
+
+  /// Title/Button for restoring settings
+  ///
+  /// In en, this message translates to:
+  /// **'Restore settings'**
+  String get settingsRestoreSettings;
+
+  /// Subtitle for restoring settings
+  ///
+  /// In en, this message translates to:
+  /// **'Load settings from a backup JSON file'**
+  String get settingsLoadBackupJson;
+
+  /// Title for custom model dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Custom model'**
+  String get settingsCustomModelDialogTitle;
+
+  /// Label for custom model name field
+  ///
+  /// In en, this message translates to:
+  /// **'Model name'**
+  String get settingsModelName;
+
+  /// Hint for custom model name field
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. gpt-4o, gemini-2.0-flash'**
+  String get settingsModelNameHint;
+
+  /// Button label to confirm selection
+  ///
+  /// In en, this message translates to:
+  /// **'Set'**
+  String get settingsSet;
+
+  /// Title of restore defaults dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Restore defaults?'**
+  String get settingsRestoreDefaultsTitle;
+
+  /// Body description of restore defaults dialog
+  ///
+  /// In en, this message translates to:
+  /// **'This will reset all preferences (durations, presets, sound settings, theme presets, AI configurations, auto-start options) back to factory defaults.\n\nYour streak, history, and recorded activity will NOT be erased.'**
+  String get settingsRestoreDefaultsDesc;
+
+  /// Snackbar message after resetting settings
+  ///
+  /// In en, this message translates to:
+  /// **'Settings restored to factory defaults'**
+  String get settingsRestoredSnackbar;
+
+  /// Snackbar message after importing backup
+  ///
+  /// In en, this message translates to:
+  /// **'Settings restored successfully!'**
+  String get settingsRestoredSuccessSnackbar;
+
+  /// Snackbar message when importing backup fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to restore settings: {error}'**
+  String settingsRestoredFailedSnackbar(String error);
+
+  /// Title of custom daily goal dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Custom daily goal'**
+  String get settingsCustomDailyGoalTitle;
+
+  /// Label for number of breaks field
+  ///
+  /// In en, this message translates to:
+  /// **'Number of breaks'**
+  String get settingsNumberOfBreaks;
+
+  /// Hint for number of breaks field
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 15, 20'**
+  String get settingsNumberOfBreaksHint;
+
+  /// Title of custom blink reminder dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Custom blink reminder'**
+  String get settingsCustomBlinkReminderTitle;
+
+  /// Hint for custom blink reminder field
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Time to blink! Rest your eyes.'**
+  String get settingsCustomBlinkReminderHint;
+
+  /// Helper for custom blink reminder field
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to use built-in messages'**
+  String get settingsCustomBlinkReminderHelper;
+
+  /// Button label to save settings
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get settingsSave;
+
+  /// Snackbar message when break is automatically postponed due to camera usage
+  ///
+  /// In en, this message translates to:
+  /// **'Camera in use — break postponed automatically'**
+  String get settingsCameraAutoPostponeSnackbar;
+
+  /// Snackbar warning when overlay permission is missing
+  ///
+  /// In en, this message translates to:
+  /// **'Allow display over other apps first.'**
+  String get settingsAllowOverlaySnackbar;
+
+  /// Label formatting duration in seconds
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds}s'**
+  String settingsDurationSeconds(int seconds);
+
+  /// Label formatting duration in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String settingsDurationMinutes(int minutes);
+
+  /// Label formatting interval in seconds
+  ///
+  /// In en, this message translates to:
+  /// **'Every {seconds} sec'**
+  String settingsDurationEverySeconds(int seconds);
+
+  /// Label formatting interval in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'Every {minutes} min'**
+  String settingsDurationEveryMinutes(int minutes);
+
+  /// Label when cycle limit is disabled
+  ///
+  /// In en, this message translates to:
+  /// **'No limit'**
+  String get settingsCycleNoLimit;
+
+  /// Label showing cycle count
+  ///
+  /// In en, this message translates to:
+  /// **'{count} cycles'**
+  String settingsCycleLimitCount(int count);
+
+  /// Title for wellness reminders setting
+  ///
+  /// In en, this message translates to:
+  /// **'Wellness reminders'**
+  String get settingsWellnessReminders;
+
+  /// Subtitle for wellness reminders setting
+  ///
+  /// In en, this message translates to:
+  /// **'Periodic hydration, posture, and stretch reminders during work'**
+  String get settingsWellnessRemindersSubtitle;
+
+  /// Detailed description of wellness reminders
+  ///
+  /// In en, this message translates to:
+  /// **'Alternates hydration, posture, and stretch reminders during work sessions'**
+  String get settingsWellnessRemindersDesc;
+
+  /// Label for wellness reminder interval
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder interval'**
+  String get settingsReminderInterval;
+
+  /// Description of wellness reminder interval
+  ///
+  /// In en, this message translates to:
+  /// **'How often to send a wellness reminder'**
+  String get settingsReminderIntervalDesc;
+
+  /// Title for camera/mic auto-postpone setting
+  ///
+  /// In en, this message translates to:
+  /// **'Camera/mic auto-postpone'**
+  String get settingsCameraMicAutoPostpone;
+
+  /// Subtitle for camera/mic auto-postpone setting
+  ///
+  /// In en, this message translates to:
+  /// **'Postpone breaks automatically when camera is in use (video calls)'**
+  String get settingsCameraMicAutoPostponeSubtitle;
+
+  /// Detailed description of camera/mic auto-postpone
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically postpone breaks when your camera is in use (e.g. video calls). Linux only.'**
+  String get settingsCameraMicAutoPostponeDesc;
+
+  /// Option for wellness reminder cadence
+  ///
+  /// In en, this message translates to:
+  /// **'Every 30 min'**
+  String get settingsWellnessEvery30Min;
+
+  /// Option for wellness reminder cadence
+  ///
+  /// In en, this message translates to:
+  /// **'Every 45 min'**
+  String get settingsWellnessEvery45Min;
+
+  /// Option for wellness reminder cadence
+  ///
+  /// In en, this message translates to:
+  /// **'Every 1 hour'**
+  String get settingsWellnessEvery1Hour;
+
+  /// Option for wellness reminder cadence
+  ///
+  /// In en, this message translates to:
+  /// **'Every 1.5 hours'**
+  String get settingsWellnessEvery15Hours;
+
+  /// Option for wellness reminder cadence
+  ///
+  /// In en, this message translates to:
+  /// **'Every 2 hours'**
+  String get settingsWellnessEvery2Hours;
+
+  /// Title for AI-powered blink messages setting
+  ///
+  /// In en, this message translates to:
+  /// **'AI-powered blink messages'**
+  String get settingsAiBlinkMessages;
+
+  /// Subtitle for AI-powered blink messages setting
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a fresh, unique reminder each time using AI'**
+  String get settingsAiBlinkMessagesSubtitle;
+
+  /// Title for custom blink reminder setting
+  ///
+  /// In en, this message translates to:
+  /// **'Custom blink reminder'**
+  String get settingsCustomReminder;
+
+  /// System notification permission allowed status
+  ///
+  /// In en, this message translates to:
+  /// **'System permission allowed'**
+  String get settingsPermissionAllowed;
+
+  /// System notification permission blocked status
+  ///
+  /// In en, this message translates to:
+  /// **'System permission blocked'**
+  String get settingsPermissionBlocked;
+
+  /// System notification permission unsupported status
+  ///
+  /// In en, this message translates to:
+  /// **'Status unavailable on this platform'**
+  String get settingsPermissionUnavailable;
+
+  /// Checking notification permission status
+  ///
+  /// In en, this message translates to:
+  /// **'Checking system permission'**
+  String get settingsPermissionChecking;
+
+  /// Overlay permission allowed status
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed on this device'**
+  String get settingsOverlayAllowed;
+
+  /// Overlay permission disabled status
+  ///
+  /// In en, this message translates to:
+  /// **'Permission required for enforced breaks'**
+  String get settingsOverlayRequired;
+
+  /// Checking overlay permission status
+  ///
+  /// In en, this message translates to:
+  /// **'Checking overlay permission'**
+  String get settingsOverlayChecking;
+
+  /// Overlay permission unsupported status
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable on this platform'**
+  String get settingsOverlayUnavailable;
+
+  /// Break mode off label
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get settingsBreakModeOff;
+
+  /// Break mode gentle label
+  ///
+  /// In en, this message translates to:
+  /// **'Gentle'**
+  String get settingsBreakModeGentle;
+
+  /// Break mode strict label
+  ///
+  /// In en, this message translates to:
+  /// **'Strict'**
+  String get settingsBreakModeStrict;
+
+  /// Monday short name
+  ///
+  /// In en, this message translates to:
+  /// **'Mon'**
+  String get mon;
+
+  /// Tuesday short name
+  ///
+  /// In en, this message translates to:
+  /// **'Tue'**
+  String get tue;
+
+  /// Wednesday short name
+  ///
+  /// In en, this message translates to:
+  /// **'Wed'**
+  String get wed;
+
+  /// Thursday short name
+  ///
+  /// In en, this message translates to:
+  /// **'Thu'**
+  String get thu;
+
+  /// Friday short name
+  ///
+  /// In en, this message translates to:
+  /// **'Fri'**
+  String get fri;
+
+  /// Saturday short name
+  ///
+  /// In en, this message translates to:
+  /// **'Sat'**
+  String get sat;
+
+  /// Sunday short name
+  ///
+  /// In en, this message translates to:
+  /// **'Sun'**
+  String get sun;
+
+  /// Random visualizer option name
+  ///
+  /// In en, this message translates to:
+  /// **'Random/All'**
+  String get settingsVisualizerRandom;
+
+  /// Breathing visualizer option name
+  ///
+  /// In en, this message translates to:
+  /// **'Calm Breathing'**
+  String get settingsVisualizerBreathing;
+
+  /// Box breathing visualizer option name
+  ///
+  /// In en, this message translates to:
+  /// **'Box Breathing (4-4-4-4)'**
+  String get settingsVisualizerBoxBreathing;
+
+  /// Eye exercises visualizer option name
+  ///
+  /// In en, this message translates to:
+  /// **'Eye Exercises'**
+  String get settingsVisualizerEyeExercise;
+
+  /// Blink training visualizer option name
+  ///
+  /// In en, this message translates to:
+  /// **'Blink Training (Blink Pacing)'**
+  String get settingsVisualizerBlinkTraining;
+
+  /// Ambient visualizer option name
+  ///
+  /// In en, this message translates to:
+  /// **'Ambient Flow'**
+  String get settingsVisualizerAmbient;
+
+  /// Starry visualizer option name
+  ///
+  /// In en, this message translates to:
+  /// **'Starry Sky'**
+  String get settingsVisualizerStarry;
+
+  /// Switch subtitle for showing countdown clock
+  ///
+  /// In en, this message translates to:
+  /// **'Display remaining break time'**
+  String get settingsShowCountdownDesc;
+
+  /// Switch subtitle for showing eye-care tips
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate guidance during the break'**
+  String get settingsShowTipsDesc;
+
+  /// Switch subtitle for showing progress ring
+  ///
+  /// In en, this message translates to:
+  /// **'Visualize break progress on classic layouts'**
+  String get settingsShowProgressDesc;
+
+  /// Title/Label for custom break message
+  ///
+  /// In en, this message translates to:
+  /// **'Custom break message'**
+  String get settingsCustomBreakMessage;
+
+  /// Subtitle for custom break message setting
+  ///
+  /// In en, this message translates to:
+  /// **'Optional text shown before rotating tips'**
+  String get settingsCustomBreakMessageSubtitle;
+
+  /// Hint for custom break message input
+  ///
+  /// In en, this message translates to:
+  /// **'Close your eyes and breathe slowly.'**
+  String get settingsCustomBreakMessageHint;
+
+  /// Chime style option: Tibetan Bowl
+  ///
+  /// In en, this message translates to:
+  /// **'Tibetan Bowl'**
+  String get settingsChimeTibetanBowl;
+
+  /// Chime style option: Wind Chimes
+  ///
+  /// In en, this message translates to:
+  /// **'Wind Chimes'**
+  String get settingsChimeWindChimes;
+
+  /// Chime style option: Zen Bell
+  ///
+  /// In en, this message translates to:
+  /// **'Zen Bell'**
+  String get settingsChimeZenBell;
+
+  /// Chime style option: System Alert
+  ///
+  /// In en, this message translates to:
+  /// **'System Alert'**
+  String get settingsChimeSystemAlert;
+
+  /// Description of conscious blinking reminders setting
+  ///
+  /// In en, this message translates to:
+  /// **'Sends periodic OS notifications to remind you to blink during work sessions'**
+  String get settingsConsciousBlinkingDesc;
+
+  /// Setting title for AI Motivation & Prompts
+  ///
+  /// In en, this message translates to:
+  /// **'AI Motivation & Prompts'**
+  String get settingsAiMotivationTitle;
+
+  /// Setting subtitle for AI Motivation & Prompts
+  ///
+  /// In en, this message translates to:
+  /// **'Generate personalised eye-care quotes during breaks'**
+  String get settingsAiMotivationSubtitle;
+
+  /// Subtitle for enabling AI motivation switch
+  ///
+  /// In en, this message translates to:
+  /// **'Generate personalised quotes during breaks'**
+  String get settingsAiMotivationEnabledSubtitle;
+
+  /// AI provider option: Google Gemini
+  ///
+  /// In en, this message translates to:
+  /// **'Google Gemini'**
+  String get settingsAiProviderGemini;
+
+  /// AI provider option: OpenAI ChatGPT
+  ///
+  /// In en, this message translates to:
+  /// **'OpenAI (ChatGPT)'**
+  String get settingsAiProviderOpenAi;
+
+  /// AI provider option: Groq Fast
+  ///
+  /// In en, this message translates to:
+  /// **'Groq (Fast)'**
+  String get settingsAiProviderGroq;
+
+  /// Dropdown option for custom AI model
+  ///
+  /// In en, this message translates to:
+  /// **'Custom...'**
+  String get settingsAiModelCustom;
+
+  /// Error text when loading AI models fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load models. Using defaults.'**
+  String get settingsAiLoadModelsError;
+
+  /// Snackbar message when settings backup succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'Exported settings to: {fileName}'**
+  String settingsExportedSnackbar(String fileName);
+
+  /// Snackbar message when settings backup fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to backup settings: {error}'**
+  String settingsExportFailedSnackbar(String error);
+
+  /// Subtitle/description for long break mode setting
+  ///
+  /// In en, this message translates to:
+  /// **'Take a longer rest break after a set number of work cycles'**
+  String get settingsLongBreakModeDesc;
+
+  /// Setting Item title for desktop startup behavior
+  ///
+  /// In en, this message translates to:
+  /// **'Desktop startup behavior'**
+  String get settingsDesktopStartupBehavior;
+
+  /// Setting Item subtitle for desktop startup behavior
+  ///
+  /// In en, this message translates to:
+  /// **'Control login launch and tray-first startup behavior'**
+  String get settingsDesktopStartupBehaviorSubtitle;
+
+  /// Button label to export/backup settings
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get settingsBackup;
+
+  /// Button label to import/restore settings
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get settingsRestore;
 }
 
 class _AppLocalizationsDelegate
