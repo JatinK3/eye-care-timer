@@ -74,7 +74,6 @@ class PreferencesService {
   static const String aiCustomSystemPromptKey = 'aiCustomSystemPrompt';
   static const String autoStartScheduleKey = 'autoStartSchedule';
   static const String osFocusDndEnabledKey = 'osFocusDndEnabled';
-  static const String twoStageWarningEnabledKey = 'twoStageWarningEnabled';
   static const String blinkReminderAiEnabledKey = 'blinkReminderAiEnabled';
   static const String blinkReminderCustomMessageKey =
       'blinkReminderCustomMessage';
@@ -218,9 +217,6 @@ class PreferencesService {
       osFocusDndEnabled:
           prefs.getBool(osFocusDndEnabledKey) ??
           TimerSettings.defaultOsFocusDndEnabled,
-      twoStageWarningEnabled:
-          prefs.getBool(twoStageWarningEnabledKey) ??
-          TimerSettings.defaultTwoStageWarningEnabled,
       blinkReminderAiEnabled:
           prefs.getBool(blinkReminderAiEnabledKey) ??
           TimerSettings.defaultBlinkReminderAiEnabled,
@@ -478,10 +474,6 @@ class PreferencesService {
       TimerSettings.defaultOsFocusDndEnabled,
     );
     await prefs.setBool(
-      twoStageWarningEnabledKey,
-      TimerSettings.defaultTwoStageWarningEnabled,
-    );
-    await prefs.setBool(
       blinkReminderAiEnabledKey,
       TimerSettings.defaultBlinkReminderAiEnabled,
     );
@@ -587,10 +579,6 @@ class PreferencesService {
     );
     await prefs.setBool(autoStartScheduleKey, settings.autoStartSchedule);
     await prefs.setBool(osFocusDndEnabledKey, settings.osFocusDndEnabled);
-    await prefs.setBool(
-      twoStageWarningEnabledKey,
-      settings.twoStageWarningEnabled,
-    );
     await prefs.setBool(
       blinkReminderAiEnabledKey,
       settings.blinkReminderAiEnabled,
@@ -737,10 +725,6 @@ class PreferencesService {
     await prefs.setBool(notificationsEnabledKey, enabled);
   }
 
-  Future<void> saveTwoStageWarningEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(twoStageWarningEnabledKey, enabled);
-  }
 
   Future<void> saveBlinkReminderAiEnabled(bool v) async {
     final prefs = await SharedPreferences.getInstance();

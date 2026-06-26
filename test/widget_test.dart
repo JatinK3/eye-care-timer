@@ -2006,37 +2006,4 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
   });
-
-  testWidgets('Two-Stage Warning Curtain is displayed during the last 10 seconds of work phase', (tester) async {
-    SharedPreferences.setMockInitialValues({
-      PreferencesService.onboardingCompletedKey: true,
-      PreferencesService.workDurationSecondsKey: 15,
-      'twoStageWarningEnabled': true,
-    });
-
-    await pumpBlinkKindApp(tester);
-
-    // Verify warning curtain is not present initially
-    expect(find.textContaining('Break starting in'), findsNothing);
-
-    await tester.tap(find.text('Start'));
-    await tester.pump();
-
-    // Advance time by 4 seconds (remaining duration goes from 15 to 11). Warning curtain should still not be shown.
-    for (int i = 0; i < 4; i++) {
-      await tester.pump(const Duration(seconds: 1));
-    }
-    expect(find.textContaining('Break starting in'), findsNothing);
-
-    // Advance by 1 more second (remaining duration becomes 10). Warning curtain should now be shown.
-    await tester.pump(const Duration(seconds: 1));
-    expect(find.textContaining('Break starting in 10s'), findsOneWidget);
-
-    // Advance by 2 more seconds (remaining duration becomes 8).
-    await tester.pump(const Duration(seconds: 2));
-    expect(find.textContaining('Break starting in 8s'), findsOneWidget);
-
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
-  });
 }

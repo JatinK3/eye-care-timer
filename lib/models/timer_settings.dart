@@ -38,7 +38,6 @@ class TimerSettings {
   static const bool defaultAutoStartSchedule = false;
   static const bool defaultAiMotivationEnabled = false;
   static const bool defaultOsFocusDndEnabled = false;
-  static const bool defaultTwoStageWarningEnabled = true;
   static const bool defaultBlinkReminderAiEnabled = true;
   static const String defaultBlinkReminderCustomMessage = '';
   static const bool defaultCameraMicAutoPostponeEnabled = false;
@@ -98,7 +97,6 @@ class TimerSettings {
   final String aiApiKey;
   final String aiModel;
   final String aiCustomSystemPrompt;
-  final bool twoStageWarningEnabled;
   final bool blinkReminderAiEnabled;
   final String blinkReminderCustomMessage;
   final bool cameraMicAutoPostponeEnabled;
@@ -154,7 +152,6 @@ class TimerSettings {
     required this.aiApiKey,
     required this.aiModel,
     required this.aiCustomSystemPrompt,
-    required this.twoStageWarningEnabled,
     required this.blinkReminderAiEnabled,
     required this.blinkReminderCustomMessage,
     required this.cameraMicAutoPostponeEnabled,
@@ -211,7 +208,6 @@ class TimerSettings {
       aiApiKey = defaultAiApiKey,
       aiModel = defaultAiModel,
       aiCustomSystemPrompt = defaultAiCustomSystemPrompt,
-      twoStageWarningEnabled = defaultTwoStageWarningEnabled,
       blinkReminderAiEnabled = defaultBlinkReminderAiEnabled,
       blinkReminderCustomMessage = defaultBlinkReminderCustomMessage,
       cameraMicAutoPostponeEnabled = defaultCameraMicAutoPostponeEnabled,
@@ -267,7 +263,6 @@ class TimerSettings {
     String? aiApiKey,
     String? aiModel,
     String? aiCustomSystemPrompt,
-    bool? twoStageWarningEnabled,
     bool? blinkReminderAiEnabled,
     String? blinkReminderCustomMessage,
     bool? cameraMicAutoPostponeEnabled,
@@ -330,8 +325,6 @@ class TimerSettings {
       aiApiKey: aiApiKey ?? this.aiApiKey,
       aiModel: aiModel ?? this.aiModel,
       aiCustomSystemPrompt: aiCustomSystemPrompt ?? this.aiCustomSystemPrompt,
-      twoStageWarningEnabled:
-          twoStageWarningEnabled ?? this.twoStageWarningEnabled,
       blinkReminderAiEnabled:
           blinkReminderAiEnabled ?? this.blinkReminderAiEnabled,
       blinkReminderCustomMessage:
@@ -396,7 +389,6 @@ class TimerSettings {
       'aiApiKey': aiApiKey,
       'aiModel': aiModel,
       'aiCustomSystemPrompt': aiCustomSystemPrompt,
-      'twoStageWarningEnabled': twoStageWarningEnabled,
       'blinkReminderAiEnabled': blinkReminderAiEnabled,
       'blinkReminderCustomMessage': blinkReminderCustomMessage,
       'cameraMicAutoPostponeEnabled': cameraMicAutoPostponeEnabled,
@@ -494,9 +486,6 @@ class TimerSettings {
       aiCustomSystemPrompt:
           json['aiCustomSystemPrompt'] as String? ??
           defaultAiCustomSystemPrompt,
-      twoStageWarningEnabled:
-          json['twoStageWarningEnabled'] as bool? ??
-          defaultTwoStageWarningEnabled,
       blinkReminderAiEnabled:
           json['blinkReminderAiEnabled'] as bool? ??
           defaultBlinkReminderAiEnabled,

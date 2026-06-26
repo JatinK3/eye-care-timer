@@ -603,3 +603,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Replaced the countdown timer remaining seconds calculation in the animation listener with a robust integer rounding of the elapsed controller value fraction (`_initialDuration - (_animationController.value * _initialDuration).round()`).
   - This prevents double precision floating point inaccuracies (e.g., at the 5-second tick of a 15-second timer, 15 * (1.0 - 0.3333333333333333).ceil() evaluated to 11 instead of 10), which previously skipped certain integer seconds (like 10) entirely and broke warning curtain widget expectations.
   - Verified compilation and confirmed all unit/widget tests (including the warning curtain test) pass successfully.
+- Reverted and removed the Two-Stage Warning Curtain feature entirely:
+  - Removed `twoStageWarningEnabled` from `TimerSettings`, `PreferencesService`, and all associated toggle switches on the Settings Page.
+  - Removed stage warning curtains, method channel triggers (`enterWarning`), Vignette overlays, and related animation listener checks from `lib/features/timer/timer_home_page.dart`.
+  - Cleaned up and deleted the two-stage warning curtain widget test from `test/widget_test.dart`.
+  - Verified static analysis and all unit/widget tests pass cleanly.

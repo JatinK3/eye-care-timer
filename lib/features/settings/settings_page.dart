@@ -132,8 +132,6 @@ class SettingsPage extends StatefulWidget {
   final void Function(bool) setStartMinimized;
   final bool autoStartSchedule;
   final void Function(bool) setAutoStartSchedule;
-  final bool twoStageWarningEnabled;
-  final void Function(bool) setTwoStageWarningEnabled;
 
   // AI Motivation parameters
   final bool aiMotivationEnabled;
@@ -260,8 +258,6 @@ class SettingsPage extends StatefulWidget {
     required this.setStartMinimized,
     required this.autoStartSchedule,
     required this.setAutoStartSchedule,
-    required this.twoStageWarningEnabled,
-    required this.setTwoStageWarningEnabled,
 
     // AI Motivation constructor parameters
     required this.aiMotivationEnabled,
@@ -1075,28 +1071,7 @@ class _SettingsPageState extends State<SettingsPage>
           ),
         ),
       ),
-      if (_breakMode != BreakMode.off) ...[
-        SettingItem(
-          title: l10n.settingsPreBreakAlert,
-          subtitle: l10n.settingsPreBreakAlertSubtitle,
-          keywords: [
-            'warning',
-            'pre-break',
-            'notification',
-            'alert',
-            'two-stage',
-          ],
-          category: 'Break Screen & Behavior',
-          widget: SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.notifications_active_outlined),
-            title: Text(l10n.settingsPreBreakAlert),
-            subtitle: Text(l10n.settingsPreBreakAlertSubtitle),
-            value: widget.twoStageWarningEnabled,
-            onChanged: widget.setTwoStageWarningEnabled,
-          ),
-        ),
-      ],
+
       if (_breakMode == BreakMode.gentle) ...[
         SettingItem(
           title: l10n.settingsAllowSkip,
@@ -2526,7 +2501,6 @@ class _SettingsPageState extends State<SettingsPage>
       aiApiKey: widget.aiApiKey,
       aiModel: widget.aiModel,
       aiCustomSystemPrompt: widget.aiCustomSystemPrompt,
-      twoStageWarningEnabled: widget.twoStageWarningEnabled,
       blinkReminderAiEnabled: widget.blinkReminderAiEnabled,
       blinkReminderCustomMessage: widget.blinkReminderCustomMessage,
       cameraMicAutoPostponeEnabled: widget.cameraMicAutoPostponeEnabled,
