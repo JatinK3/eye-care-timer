@@ -588,3 +588,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Replaced `/usr/bin/blinkkind` wrapper scripts (for both DEB and RPM packages) with a shell script that checks for the presence of `gtk-launch` and executes the application via `gtk-launch blinkkind.desktop` (falling back to direct binary execution if unavailable).
   - This ensures that execution of the application from any command line wrapper is routed through the desktop launcher database, preserving correct session properties.
   - Verified compilation and test suite continues to pass.
+
+- Fixed notifications lingering on application exit:
+  - Imported `NotificationService` in `DesktopIntegrationService` and called `cancelBlinkReminder()` within the `_quitApp` exit handler on desktop platforms.
+  - This ensures that when the user chooses "Exit" from the system tray menu, any active/on-screen blink reminder notifications are dismissed automatically via D-Bus instead of remaining in the notification center.
+  - Verified compilation and test suite continues to pass.
+

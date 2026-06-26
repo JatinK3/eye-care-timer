@@ -10,6 +10,7 @@ import 'package:system_tray/system_tray.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'desktop_controls_controller.dart';
+import 'notification_service.dart';
 
 class DesktopIntegrationService extends WindowListener {
   DesktopIntegrationService._privateConstructor();
@@ -402,6 +403,11 @@ class DesktopIntegrationService extends WindowListener {
   }
 
   Future<void> _quitApp() async {
+    try {
+      await NotificationService().cancelBlinkReminder();
+    } catch (e) {
+      debugPrint('Failed to cancel notifications on exit: $e');
+    }
     final oldPath = _lastIconPath;
     if (oldPath != null) {
       try {
