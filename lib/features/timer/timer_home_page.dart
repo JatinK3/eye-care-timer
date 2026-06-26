@@ -733,7 +733,7 @@ class TimerHomePageState extends State<TimerHomePage>
           .onSystemLockChanged
           .listen((isLocked) {
             if (!mounted) return;
-            handleDesktopIdleChange(isLocked);
+            handleDesktopIdleChange(isLocked, isLockEvent: true);
           });
 
       final systemIdle = SystemIdle.forPlatform();
@@ -745,7 +745,7 @@ class TimerHomePageState extends State<TimerHomePage>
               .onIdleChanged(idleDuration: const Duration(seconds: 60))
               .listen((isIdle) {
                 if (!mounted) return;
-                handleDesktopIdleChange(isIdle);
+                handleDesktopIdleChange(isIdle, isLockEvent: false);
               });
         }
       }());
@@ -754,14 +754,19 @@ class TimerHomePageState extends State<TimerHomePage>
     }
   }
 
-  void handleDesktopIdleChange(bool isIdle) {
+  void handleDesktopIdleChange(bool isIdle, {bool isLockEvent = false}) {
     if (!widget.smartIdleEnabled) return;
     if (!_isRunning || _isBreak) return;
 
     if (isIdle) {
       if (!_isPaused && !_isSystemIdlePaused) {
         setState(() {
-          _idleStartedAt = DateTime.now();
+          // If this is a regular idle event (not screen lock), the user has already
+          // been idle for 60 seconds (the system idle detection threshold). We subtract
+          // those 60 seconds to accurately measure the total duration of the user's away time.
+          _idleStartedAt = isLockEvent
+              ? DateTime.now()
+              : DateTime.now().subtract(const Duration(seconds: 60));
           _isSystemIdlePaused = true;
           _animationController.stop();
           _pulseController.stop();
@@ -1237,6 +1242,22 @@ class TimerHomePageState extends State<TimerHomePage>
 
   void _creditNaturalBreak() {
     if (!mounted) return;
+
+    // Log the work done up to this point so user doesn't lose credit for it
+    final workDone = _initialDuration - _remainingSeconds;
+    if (workDone > 0) {
+      final now = DateTime.now();
+      widget.saveCompletedWorkSession(now, workDone);
+      widget.saveTimerEventRecord(
+        TimerEventRecord(
+          id: now.millisecondsSinceEpoch.toString(),
+          timestamp: now,
+          type: TimerEventType.workCompleted,
+          durationSeconds: workDone,
+        ),
+      );
+    }
+
     setState(() {
       _isBreak = false;
       _isSystemIdlePaused = false;
