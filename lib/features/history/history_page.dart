@@ -6,6 +6,7 @@ import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 
 import "../../models/timer_event_record.dart";
+import "../../services/ai_service.dart";
 import "../../models/work_session_record.dart";
 import "../../generated/l10n/app_localizations.dart";
 
@@ -31,6 +32,10 @@ class HistoryPage extends StatefulWidget {
   final Future<HistoryDataSnapshot> Function()? refreshHistoryData;
   final int dailyGoal;
   final VoidCallback resetHistory;
+  final String aiProvider;
+  final String aiApiKey;
+  final String aiModel;
+  final bool aiMotivationEnabled;
 
   const HistoryPage({
     super.key,
@@ -41,6 +46,10 @@ class HistoryPage extends StatefulWidget {
     this.refreshHistoryData,
     required this.dailyGoal,
     required this.resetHistory,
+    required this.aiProvider,
+    required this.aiApiKey,
+    required this.aiModel,
+    required this.aiMotivationEnabled,
   });
 
   @override
@@ -53,6 +62,11 @@ class _HistoryPageState extends State<HistoryPage> {
   late List<TimerEventRecord> _timerEvents;
   HistoryRange _range = HistoryRange.sevenDays;
   bool _isRefreshing = false;
+
+  String? _aiReport;
+  bool _isReportLoading = false;
+  String? _reportError;
+  HistoryRange? _reportGeneratedForRange;
 
   @override
   void initState() {
@@ -270,6 +284,8 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
           ),
           const SizedBox(height: 16),
+          _buildAiReportCard(),
+          const SizedBox(height: 16),
 
           _HistorySection(
             title: AppLocalizations.of(context)!.achievementsTitle,
@@ -469,6 +485,249 @@ class _HistoryPageState extends State<HistoryPage> {
           ),
           const SizedBox(height: 16),
         ],
+      ),
+    );
+  }
+
+  Future<void> _generateAiReport() async {
+    if (widget.aiApiKey.isEmpty) {
+      setState(() {
+        _reportError = 'API key is missing. Please configure it in Settings.';
+        _isReportLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isReportLoading = true;
+      _reportError = null;
+    });
+
+    try {
+      final dates = _datesForRange();
+      final rangeSessions = _sessionsForRange();
+      final rangeEvents = _eventsForRange();
+
+      final completedWorkCount = rangeEvents
+          .where((e) => e.type == TimerEventType.workCompleted)
+          .length;
+      final skippedBreakCount = rangeEvents
+          .where((e) => e.type == TimerEventType.breakSkipped)
+          .length;
+      final postponedBreakCount = rangeEvents
+          .where((e) => e.type == TimerEventType.breakPostponed)
+          .length;
+      final blinksLoggedCount = rangeEvents
+          .where((e) => e.type == TimerEventType.blinkReminderAcknowledged)
+          .length;
+
+      final goalDays = dates
+          .where((date) => (_history[_dateKey(date)] ?? 0) >= widget.dailyGoal)
+          .length;
+      final goalRate = dates.isEmpty
+          ? 0
+          : ((goalDays / dates.length) * 100).round();
+
+      final totalFocusSeconds = rangeSessions.fold<int>(
+        0,
+        (sum, record) => sum + record.durationSeconds,
+      );
+      final longestStreak = _longestGoalStreak(dates);
+      final peakHour = _peakFocusHour(rangeSessions);
+
+      final breakDecisionCount =
+          completedWorkCount + skippedBreakCount + postponedBreakCount;
+      final complianceRate = breakDecisionCount == 0
+          ? 0
+          : ((completedWorkCount / breakDecisionCount) * 100).round();
+
+      final rangeStr = _range == HistoryRange.sevenDays
+          ? 'past 7 days'
+          : _range == HistoryRange.thirtyDays
+              ? 'past 30 days'
+              : 'all time';
+
+      final prompt =
+          'You are an expert occupational therapist and developer wellness coach. '
+          'Analyze the following user productivity and eye-care statistics for the $rangeStr:\n'
+          '- Focus Time: ${(totalFocusSeconds / 3600).toStringAsFixed(1)} hours (${rangeSessions.length} sessions)\n'
+          '- Goal Completion Rate: $goalRate% ($goalDays out of ${dates.length} days)\n'
+          '- Daily Streak: $longestStreak days\n'
+          '- Peak Focus Hour: $peakHour\n'
+          '- Break Compliance Rate: $complianceRate% ($completedWorkCount taken, $skippedBreakCount skipped, $postponedBreakCount postponed)\n'
+          '- Conscious Blinks Registered: $blinksLoggedCount\n\n'
+          'Generate a concise, insightful, and encouraging wellness report (maximum 100 words). '
+          'Identify exactly one key strength and one actionable improvement area (e.g. eye-strain prevention, posture, consistency, or pacing breaks) specifically tailored to these metrics. '
+          'Keep the tone professional, friendly, and motivating. Do not use markdown headers, just clean paragraphs.';
+
+      final report = await AiService.instance.generateMotivation(
+        provider: widget.aiProvider,
+        apiKey: widget.aiApiKey,
+        model: widget.aiModel,
+        prompt: prompt,
+        temperature: 0.5,
+      );
+
+      setState(() {
+        _aiReport = report;
+        _reportGeneratedForRange = _range;
+        _isReportLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _reportError = 'Failed to generate report. Please verify connection/API key.';
+        _isReportLoading = false;
+      });
+    }
+  }
+
+  Widget _buildAiReportCard() {
+    final theme = Theme.of(context);
+    final rangeText = _range == HistoryRange.sevenDays
+        ? '7-Day'
+        : _range == HistoryRange.thirtyDays
+            ? '30-Day'
+            : 'All-Time';
+
+    Widget content;
+
+    if (!widget.aiMotivationEnabled) {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'To unlock AI Wellness Reports, please enable AI motivation and configure your API key in Settings.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      );
+    } else if (widget.aiApiKey.isEmpty) {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'API key is missing. Please configure it in Settings to unlock AI Wellness Reports.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      );
+    } else if (_isReportLoading) {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const LinearProgressIndicator(),
+          const SizedBox(height: 12),
+          Text(
+            'AI is analyzing your activity patterns and compiling your report...',
+            style: theme.textTheme.bodyMedium,
+          ),
+        ],
+      );
+    } else if (_reportError != null) {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _reportError!,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: _generateAiReport,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+          ),
+        ],
+      );
+    } else if (_aiReport != null) {
+      final isStale = _reportGeneratedForRange != _range;
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _aiReport!,
+            style: theme.textTheme.bodyMedium,
+          ),
+          if (isStale) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Showing report for the previous selection. Regenerate to analyze $rangeText.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontStyle: FontStyle.italic,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: _generateAiReport,
+              icon: const Icon(Icons.auto_awesome),
+              label: Text(isStale ? 'Regenerate for $rangeText' : 'Refresh Analysis'),
+            ),
+          ),
+        ],
+      );
+    } else {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Get a personalized occupational wellness analysis based on your $rangeText focus times, break patterns, and blink history.',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: FilledButton.icon(
+              onPressed: _generateAiReport,
+              icon: const Icon(Icons.auto_awesome),
+              label: Text('Generate $rangeText Report'),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant,
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'AI Wellness & Focus Report',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            content,
+          ],
+        ),
       ),
     );
   }

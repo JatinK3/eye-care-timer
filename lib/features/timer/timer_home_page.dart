@@ -47,6 +47,7 @@ class TimerHomePage extends StatefulWidget {
   final BreakOverlayService? breakOverlayService;
   final void Function(BuildContext context, bool canChangeDurations)
   openSettings;
+  final void Function(BuildContext context) openHistory;
   final void Function(String) setPreset;
   final VoidCallback toggleTheme;
   final void Function(int workDurationSeconds, int breakDurationSeconds)
@@ -155,6 +156,7 @@ class TimerHomePage extends StatefulWidget {
     required this.blinkReminderInteractiveEnabled,
     this.breakOverlayService,
     required this.openSettings,
+    required this.openHistory,
     required this.setPreset,
     required this.toggleTheme,
     required this.saveDurations,
@@ -2481,6 +2483,11 @@ class TimerHomePageState extends State<TimerHomePage>
                   elevation: 0,
                   systemOverlayStyle: systemOverlayStyle,
                   actions: [
+                    IconButton(
+                      icon: const Icon(Icons.bar_chart),
+                      onPressed: () => widget.openHistory(context),
+                      tooltip: 'Productivity Insights',
+                    ),
                     IconButton(
                       icon: const Icon(Icons.settings),
                       onPressed: () =>

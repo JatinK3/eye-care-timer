@@ -919,6 +919,10 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           refreshHistoryData: _refreshHistoryData,
           dailyGoal: _settings.dailyGoal,
           resetHistory: _resetHistory,
+          aiProvider: _settings.aiProvider,
+          aiApiKey: _settings.aiApiKey,
+          aiModel: _settings.aiModel,
+          aiMotivationEnabled: _settings.aiMotivationEnabled,
         ),
       ),
     );
@@ -1218,6 +1222,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                       _settings.wellnessReminderCadenceSeconds,
                   blinkReminderInteractiveEnabled:
                       _settings.blinkReminderInteractiveEnabled,
+                  openHistory: _openHistory,
                 ),
         );
       },

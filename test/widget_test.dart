@@ -1762,4 +1762,97 @@ void main() {
     await tester.pump();
     expect(find.text('AI Health Insight'), findsAtLeastNWidgets(1));
   });
+
+  testWidgets('dashboard has history button that navigates directly to history page', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+    });
+    await pumpBlinkKindApp(tester);
+    await tester.pumpAndSettle();
+
+    final historyIconBtn = find.byTooltip('Productivity Insights');
+    expect(historyIconBtn, findsOneWidget);
+
+    await tester.tap(historyIconBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('History & Insights'), findsOneWidget);
+  });
+
+  testWidgets('AI Wellness Report card displays disabled state when AI motivation is off', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      'aiMotivationEnabled': false,
+    });
+    await pumpBlinkKindApp(tester);
+    await tester.pumpAndSettle();
+    
+    await tester.tap(find.byTooltip('Productivity Insights'));
+    await tester.pumpAndSettle();
+
+    final listFinder = find.byType(ListView);
+    await tester.drag(listFinder, const Offset(0, -400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('AI Wellness & Focus Report'), findsOneWidget);
+    expect(
+      find.text('To unlock AI Wellness Reports, please enable AI motivation and configure your API key in Settings.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('AI Wellness Report card displays error when API key is missing', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      'aiMotivationEnabled': true,
+      'aiApiKey': '',
+    });
+    await pumpBlinkKindApp(tester);
+    await tester.pumpAndSettle();
+    
+    await tester.tap(find.byTooltip('Productivity Insights'));
+    await tester.pumpAndSettle();
+
+    final listFinder = find.byType(ListView);
+    await tester.drag(listFinder, const Offset(0, -400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('AI Wellness & Focus Report'), findsOneWidget);
+    expect(
+      find.text('API key is missing. Please configure it in Settings to unlock AI Wellness Reports.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('AI Wellness Report card displays generate button when AI is configured', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      'aiMotivationEnabled': true,
+      'aiApiKey': 'valid_api_key',
+    });
+    await pumpBlinkKindApp(tester);
+    await tester.pumpAndSettle();
+    
+    await tester.tap(find.byTooltip('Productivity Insights'));
+    await tester.pumpAndSettle();
+
+    final listFinder = find.byType(ListView);
+    await tester.drag(listFinder, const Offset(0, -400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('AI Wellness & Focus Report'), findsOneWidget);
+    expect(
+      find.textContaining('personalized occupational wellness analysis'),
+      findsOneWidget,
+    );
+    expect(find.widgetWithText(FilledButton, 'Generate 7-Day Report'), findsOneWidget);
+  });
 }

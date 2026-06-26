@@ -551,3 +551,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Added a History refresh button that reloads daily history, work sessions, and timer event records directly from storage.
   - Wired refresh results back into the live timer event notifier so Productivity Insights can resync immediately.
   - Verified with flutter analyze and the focused TimerEventRecord persistence test.
+
+- Implemented AI Wellness & Focus Reports and Dashboard Navigation Button:
+  - Added a required `openHistory` navigation callback to `TimerHomePage` and placed a direct history icon button (`Icons.bar_chart`) on the dashboard's `AppBar` to navigate directly to the Productivity Insights page.
+  - Added an **AI Wellness & Focus Report** card directly below the metrics grid on the `HistoryPage`.
+  - Fed range-specific statistics (focus time, goal rate, daily streak, peak focus hour, break compliance rate, skipped/postponed breaks, and conscious blinks) into the `AiService` LLM call to generate a customized, occupational health-focused wellness report.
+  - Implemented loading, error-fallback, retry, and stale-range regeneration states for the AI report.
+  - Added focused widget test coverage to verify direct dashboard navigation and all states of the AI report card.
