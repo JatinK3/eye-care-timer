@@ -544,7 +544,11 @@ class NotificationService {
         interactive: interactive,
       );
       if (id != null) {
-        _linuxBlinkNotificationReplaceId = id;
+        if (id > 0) {
+          _linuxBlinkNotificationReplaceId = id;
+        } else {
+          _linuxBlinkNotificationReplaceId = null;
+        }
         return;
       }
     } catch (e) {
@@ -588,7 +592,7 @@ class NotificationService {
 
     final stdout = result.stdout as String;
     final match = RegExp(r'uint32\s+(\d+)').firstMatch(stdout);
-    if (match == null) return null;
+    if (match == null) return 0; // Success but unable to parse ID
     return int.tryParse(match.group(1)!);
   }
 
@@ -658,35 +662,34 @@ class NotificationService {
         'normal',
         '-t',
         '7000',
-        if (interactive) '-A',
-        if (interactive) 'blink_done=I blinked',
-        if (!interactive) '-p',
-        if (!interactive && replaceId != null) ...['-r', replaceId.toString()],
+        if (interactive) ...['-A', 'blink_done=I blinked'],
+        '-p',
+        if (replaceId != null) ...['-r', replaceId.toString()],
         'Blink reminder',
         body,
       ];
 
-      if (interactive) {
-        await Process.start(
-          'notify-send',
-          args,
-          mode: ProcessStartMode.detached,
-        );
-        return;
+      // Use Process.start so we don't block on interactive notifications
+      // but still capture the notification ID from stdout.
+      final process = await Process.start('notify-send', args);
+      
+      // Read the first line of stdout to get the notification ID (printed immediately by -p)
+      final stdoutLine = await process.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .first
+          .timeout(const Duration(seconds: 1), onTimeout: () => '');
+          
+      final notificationId = int.tryParse(stdoutLine.trim());
+      if (notificationId != null) {
+        _linuxBlinkNotificationReplaceId = notificationId;
       }
-
-      final result = await Process.run('notify-send', args);
-      if (result.exitCode == 0) {
-        final notificationId = int.tryParse((result.stdout as String).trim());
-        if (notificationId != null) {
-          _linuxBlinkNotificationReplaceId = notificationId;
-        }
-        return;
-      }
-
-      debugPrint('Failed to send Linux blink notification: ${result.stderr}');
+      
+      // Drain stdout/stderr so the process doesn't get blocked
+      unawaited(process.stdout.drain<void>());
+      unawaited(process.stderr.drain<void>());
     } catch (e) {
-      debugPrint('Failed to send Linux blink notification: $e');
+      debugPrint('Failed to send Linux blink notification via notify-send: $e');
     }
   }
 

@@ -559,25 +559,28 @@ class TimerHomePageState extends State<TimerHomePage>
     final remainingMs = _phaseEndsAt!.difference(DateTime.now()).inMilliseconds;
     final clamped = (remainingMs / 1000).ceil().clamp(0, _initialDuration);
     if (clamped != _remainingSeconds) {
-      _remainingSeconds = clamped;
-      _processBlinkReminderCadences();
-      // Wellness reminders (fires independently, including during breaks)
-      if (widget.wellnessRemindersEnabled &&
-          _isRunning &&
-          !_isPaused &&
-          !_isSchedulePaused &&
-          !_isSystemIdlePaused &&
-          !_isSnoozed) {
-        final elapsed = _initialDuration - _remainingSeconds;
-        if (elapsed > 0 &&
-            elapsed % widget.wellnessReminderCadenceSeconds == 0) {
-          final type = WellnessType
-              .values[_wellnessTypeIndex % WellnessType.values.length];
-          _wellnessTypeIndex++;
-          unawaited(_triggerWellnessReminder(type));
+      final isAnimationRunning = _animationController.isAnimating;
+      if (!isAnimationRunning || (clamped - _remainingSeconds).abs() > 1) {
+        _remainingSeconds = clamped;
+        _processBlinkReminderCadences();
+        // Wellness reminders (fires independently, including during breaks)
+        if (widget.wellnessRemindersEnabled &&
+            _isRunning &&
+            !_isPaused &&
+            !_isSchedulePaused &&
+            !_isSystemIdlePaused &&
+            !_isSnoozed) {
+          final elapsed = _initialDuration - _remainingSeconds;
+          if (elapsed > 0 &&
+              elapsed % widget.wellnessReminderCadenceSeconds == 0) {
+            final type = WellnessType
+                .values[_wellnessTypeIndex % WellnessType.values.length];
+            _wellnessTypeIndex++;
+            unawaited(_triggerWellnessReminder(type));
+          }
         }
+        _updateDesktopState();
       }
-      _updateDesktopState();
     }
   }
 
