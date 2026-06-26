@@ -154,7 +154,13 @@ cp "$PROJECT_DIR/assets/app_icon.png" "$DEB_STAGE/usr/share/pixmaps/blinkkind.pn
 # Create /usr/bin launcher wrapper
 cat << 'EOF' > "$DEB_STAGE/usr/bin/blinkkind"
 #!/bin/sh
-exec /opt/blinkkind/eye_care_timer "$@"
+# Launch via gtk-launch using the desktop entry if available to run in the proper desktop session environment,
+# otherwise fall back to direct binary execution.
+if command -v gtk-launch >/dev/null 2>&1; then
+    exec gtk-launch blinkkind.desktop "$@"
+else
+    exec /opt/blinkkind/eye_care_timer "$@"
+fi
 EOF
 chmod +x "$DEB_STAGE/usr/bin/blinkkind"
 
@@ -163,7 +169,7 @@ cat << 'EOF' > "$DEB_STAGE/usr/share/applications/blinkkind.desktop"
 [Desktop Entry]
 Name=BlinkKind
 Comment=A focused eye break timer for healthier screen sessions
-Exec=blinkkind
+Exec=/opt/blinkkind/eye_care_timer %u
 Icon=blinkkind
 Terminal=false
 Type=Application
@@ -214,7 +220,7 @@ else
 [Desktop Entry]
 Name=BlinkKind
 Comment=A focused eye break timer for healthier screen sessions
-Exec=blinkkind
+Exec=/opt/blinkkind/eye_care_timer %u
 Icon=blinkkind
 Terminal=false
 Type=Application
@@ -249,7 +255,17 @@ rm -rf %{buildroot}
 mkdir -p %{buildroot}/opt/blinkkind
 cp -r %{_builddir}/%{name}-%{version}/* %{buildroot}/opt/blinkkind/
 mkdir -p %{buildroot}/usr/bin
-ln -sf /opt/blinkkind/eye_care_timer %{buildroot}/usr/bin/blinkkind
+cat << 'EOF' > %{buildroot}/usr/bin/blinkkind
+#!/bin/sh
+# Launch via gtk-launch using the desktop entry if available to run in the proper desktop session environment,
+# otherwise fall back to direct binary execution.
+if command -v gtk-launch >/dev/null 2>&1; then
+    exec gtk-launch blinkkind.desktop "$@"
+else
+    exec /opt/blinkkind/eye_care_timer "$@"
+fi
+EOF
+chmod +x %{buildroot}/usr/bin/blinkkind
 mkdir -p %{buildroot}/usr/share/applications
 cp %{SOURCE1} %{buildroot}/usr/share/applications/
 mkdir -p %{buildroot}/usr/share/pixmaps

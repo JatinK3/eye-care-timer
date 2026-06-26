@@ -582,3 +582,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Updated `_handleNotificationResponse` in `app.dart` to listen to `'postpone_break'` and `'skip_break'` responses and trigger command execution.
   - Exposed `_desktopCommandSubscription` unconditionally in `TimerHomePageState` so that notification actions can trigger timer phase changes on all platforms.
   - Verified compilation, analyzer checks, and unit tests pass successfully.
+
+- Updated desktop launcher routing in packaging:
+  - Updated `Exec` path in packaged desktop entry (.desktop) templates to point directly to `/opt/blinkkind/eye_care_timer %u`.
+  - Replaced `/usr/bin/blinkkind` wrapper scripts (for both DEB and RPM packages) with a shell script that checks for the presence of `gtk-launch` and executes the application via `gtk-launch blinkkind.desktop` (falling back to direct binary execution if unavailable).
+  - This ensures that execution of the application from any command line wrapper is routed through the desktop launcher database, preserving correct session properties.
+  - Verified compilation and test suite continues to pass.
