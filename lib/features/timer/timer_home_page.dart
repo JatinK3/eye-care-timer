@@ -2529,7 +2529,28 @@ class TimerHomePageState extends State<TimerHomePage>
                                     ),
                                   ),
                                 )
-                              else ...[
+                              else if (_isSchedulePaused) ...[ 
+                                // Schedule-paused: no Pause/Resume (already effectively
+                                // paused). Only allow cancelling the session entirely.
+                                OutlinedButton.icon(
+                                  onPressed: _cancelTimer,
+                                  icon: const Icon(Icons.stop),
+                                  label: const Text('Stop Timer'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: isDark
+                                        ? Colors.red.shade200
+                                        : Colors.red.shade700,
+                                    side: BorderSide(color: Colors.red.shade300),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: isLandscape ? 14 : 18,
+                                      vertical: isLandscape ? 8 : 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ] else ...[ 
                                 ElevatedButton.icon(
                                   onPressed: _pauseOrResume,
                                   icon: Icon(
@@ -2590,25 +2611,25 @@ class TimerHomePageState extends State<TimerHomePage>
                                       ),
                                     ),
                                 ],
-                              ],
-                              OutlinedButton.icon(
-                                onPressed: _isRunning ? _cancelTimer : null,
-                                icon: const Icon(Icons.stop),
-                                label: const Text('Cancel'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: isDark
-                                      ? Colors.red.shade200
-                                      : Colors.red.shade700,
-                                  side: BorderSide(color: Colors.red.shade300),
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: isLandscape ? 14 : 18,
-                                    vertical: isLandscape ? 8 : 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                OutlinedButton.icon(
+                                  onPressed: _cancelTimer,
+                                  icon: const Icon(Icons.stop),
+                                  label: const Text('Cancel'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: isDark
+                                        ? Colors.red.shade200
+                                        : Colors.red.shade700,
+                                    side: BorderSide(color: Colors.red.shade300),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: isLandscape ? 14 : 18,
+                                      vertical: isLandscape ? 8 : 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
                           );
 

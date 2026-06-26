@@ -42,9 +42,6 @@ static int g_saved_x = 0;
 static int g_saved_y = 0;
 static int g_saved_w = 0;
 static int g_saved_h = 0;
-static bool g_break_spanned_virtual_desktop = false;
-static GtkWidget* g_saved_titlebar = nullptr;
-static bool g_saved_titlebar_visible = false;
 
 static gboolean on_main_window_state_event(GtkWidget* widget,
                                            GdkEventWindowState* event,
@@ -74,10 +71,6 @@ static void exit_break() {
   // here via stopBreakOverlay(), even when no break is on screen. If a break is
   // not actually active there are no blockers to tear down and the main window
   // is in its normal, user-controlled state — so leave it completely untouched.
-  // Without this guard the stale restore flags from the *previous* break (e.g.
-  // "restore to tray") would hide or reposition a window the user is actively
-  // using. During a real break g_break_active is true, so the loved restore path
-  // below runs exactly as before.
   if (!g_break_active) {
     return;
   }
@@ -94,9 +87,6 @@ static void exit_break() {
     gtk_window_unfullscreen(g_main_window);
     gtk_window_set_keep_above(g_main_window, FALSE);
     gtk_window_set_decorated(g_main_window, TRUE);
-    if (g_break_spanned_virtual_desktop && g_saved_titlebar != nullptr && g_saved_titlebar_visible) {
-      gtk_widget_show(g_saved_titlebar);
-    }
     if (g_have_saved_bounds) {
       gtk_window_move(g_main_window, g_saved_x, g_saved_y);
       gtk_window_resize(g_main_window, g_saved_w, g_saved_h);
@@ -107,9 +97,6 @@ static void exit_break() {
     gtk_window_unfullscreen(g_main_window);
     gtk_window_set_keep_above(g_main_window, FALSE);
     gtk_window_set_decorated(g_main_window, TRUE);
-    if (g_break_spanned_virtual_desktop && g_saved_titlebar != nullptr && g_saved_titlebar_visible) {
-      gtk_widget_show(g_saved_titlebar);
-    }
     if (g_was_maximized) {
       gtk_window_maximize(g_main_window);
     } else if (g_have_saved_bounds) {
@@ -118,10 +105,6 @@ static void exit_break() {
     }
     gtk_window_present(g_main_window);
   }
-
-  g_break_spanned_virtual_desktop = false;
-  g_saved_titlebar = nullptr;
-  g_saved_titlebar_visible = false;
 }
 
 // Snapshot state and show warning window always-on-top
@@ -152,15 +135,15 @@ static void enter_warning(GtkApplication* app) {
   }
 }
 
-// Begin a break: snapshot the main window's current state and transform it into
-// the break host. On multi-monitor sessions, use one Flutter window stretched
-// across the virtual desktop union and return per-monitor local rectangles so
-// Dart can replicate the same break card on every screen. This avoids native
-// black blocker windows that hide secondary monitors without showing countdowns,
-// tips, or AI/custom messages.
+// Begin a break: snapshot the main window's current state, force it up onto the
+// active (cursor) monitor in fullscreen to host the Flutter break UI, then cover
+// every other monitor with a solid black always-on-top blocker window.
+// Using fullscreen_on_monitor for the active monitor and separate blocker windows
+// for others is the proven, stable approach that works reliably on GNOME/Mutter
+// with both X11 and Wayland. A single "spanned" undecorated window is NOT treated
+// as a true fullscreen surface by the compositor, which lets other windows render
+// on top. Returns an empty monitorRects map (Flutter break UI on active monitor only).
 static FlValue* enter_break(GtkApplication* app) {
-  (void)app;
-
   GdkDisplay* display = gdk_display_get_default();
   GdkScreen* screen = gdk_display_get_default_screen(display);
   GdkSeat* seat = gdk_display_get_default_seat(display);
@@ -199,39 +182,8 @@ static FlValue* enter_break(GtkApplication* app) {
     }
   }
 
-  destroy_blocker_windows();
-  g_break_spanned_virtual_desktop = false;
-  g_saved_titlebar = nullptr;
-  g_saved_titlebar_visible = false;
-
-  int union_left = 0;
-  int union_top = 0;
-  int union_right = 0;
-  int union_bottom = 0;
-  std::vector<GdkRectangle> monitor_geometries;
-  monitor_geometries.reserve(num_monitors);
-
-  for (int i = 0; i < num_monitors; i++) {
-    GdkMonitor* monitor = gdk_display_get_monitor(display, i);
-    GdkRectangle geom;
-    gdk_monitor_get_geometry(monitor, &geom);
-    monitor_geometries.push_back(geom);
-    if (i == 0) {
-      union_left = geom.x;
-      union_top = geom.y;
-      union_right = geom.x + geom.width;
-      union_bottom = geom.y + geom.height;
-    } else {
-      union_left = std::min(union_left, geom.x);
-      union_top = std::min(union_top, geom.y);
-      union_right = std::max(union_right, geom.x + geom.width);
-      union_bottom = std::max(union_bottom, geom.y + geom.height);
-    }
-  }
-
-  g_autoptr(FlValue) result = fl_value_new_map();
-  g_autoptr(FlValue) monitor_rects = fl_value_new_list();
-
+  // Force the main window up onto the active monitor and fullscreen it so the
+  // Flutter break overlay renders there as a true fullscreen surface.
   if (g_main_window != nullptr) {
     gtk_widget_show(GTK_WIDGET(g_main_window));
     gtk_window_deiconify(g_main_window);
@@ -240,43 +192,57 @@ static FlValue* enter_break(GtkApplication* app) {
       gtk_main_iteration();
     }
 
-    if (num_monitors > 1) {
-      g_break_spanned_virtual_desktop = true;
-      g_saved_titlebar = gtk_window_get_titlebar(g_main_window);
-      g_saved_titlebar_visible =
-          g_saved_titlebar != nullptr && gtk_widget_get_visible(g_saved_titlebar);
-      if (g_saved_titlebar != nullptr) {
-        gtk_widget_hide(g_saved_titlebar);
-      }
+    GdkRectangle active_geom;
+    gdk_monitor_get_geometry(active_monitor, &active_geom);
+    gtk_window_move(g_main_window, active_geom.x, active_geom.y);
+    gtk_window_set_keep_above(g_main_window, TRUE);
+    gtk_window_fullscreen_on_monitor(g_main_window, screen, active_monitor_idx);
+    gtk_window_present(g_main_window);
+  }
 
-      gtk_window_unfullscreen(g_main_window);
-      gtk_window_set_decorated(g_main_window, FALSE);
-      gtk_window_set_keep_above(g_main_window, TRUE);
-      gtk_window_move(g_main_window, union_left, union_top);
-      gtk_window_resize(
-          g_main_window,
-          std::max(1, union_right - union_left),
-          std::max(1, union_bottom - union_top));
-      gtk_window_present(g_main_window);
-
-      for (const GdkRectangle& geom : monitor_geometries) {
-        g_autoptr(FlValue) rect = fl_value_new_map();
-        fl_value_set_string_take(rect, "x", fl_value_new_float(geom.x - union_left));
-        fl_value_set_string_take(rect, "y", fl_value_new_float(geom.y - union_top));
-        fl_value_set_string_take(rect, "width", fl_value_new_float(geom.width));
-        fl_value_set_string_take(rect, "height", fl_value_new_float(geom.height));
-        fl_value_append_take(monitor_rects, fl_value_ref(rect));
+  // If blocker windows are already created (e.g. re-entry after postpone),
+  // just bring them to the front without recreating them.
+  if (!blocker_windows.empty()) {
+    for (GtkWidget* window : blocker_windows) {
+      if (GTK_IS_WINDOW(window)) {
+        gtk_window_present(GTK_WINDOW(window));
       }
-    } else {
-      GdkRectangle active_geom;
-      gdk_monitor_get_geometry(active_monitor, &active_geom);
-      gtk_window_move(g_main_window, active_geom.x, active_geom.y);
-      gtk_window_set_keep_above(g_main_window, TRUE);
-      gtk_window_fullscreen_on_monitor(g_main_window, screen, active_monitor_idx);
-      gtk_window_present(g_main_window);
+    }
+  } else {
+    // Create a solid black always-on-top blocker window for every non-active monitor
+    // so no other content is visible during the break.
+    for (int i = 0; i < num_monitors; i++) {
+      if (i == active_monitor_idx) continue;
+
+      GdkMonitor* monitor = gdk_display_get_monitor(display, i);
+
+      GtkWidget* window = gtk_application_window_new(app);
+      gtk_window_set_title(GTK_WINDOW(window), "BlinkKind - Take a Break");
+      gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
+      gtk_window_set_decorated(GTK_WINDOW(window), FALSE);
+      gtk_window_set_skip_taskbar_hint(GTK_WINDOW(window), TRUE);
+      gtk_window_set_skip_pager_hint(GTK_WINDOW(window), TRUE);
+
+      GtkCssProvider* provider = gtk_css_provider_new();
+      gtk_css_provider_load_from_data(provider, "window { background-color: #000000; }", -1, nullptr);
+      GtkStyleContext* style_ctx = gtk_widget_get_style_context(window);
+      gtk_style_context_add_provider(style_ctx, GTK_STYLE_PROVIDER(provider),
+                                     GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+      g_object_unref(provider);
+
+      GdkRectangle geom;
+      gdk_monitor_get_geometry(monitor, &geom);
+      gtk_window_move(GTK_WINDOW(window), geom.x, geom.y);
+      gtk_window_fullscreen_on_monitor(GTK_WINDOW(window), screen, i);
+
+      gtk_widget_show_all(window);
+      blocker_windows.push_back(window);
     }
   }
 
+  // Return empty monitorRects — Flutter break UI renders on the active monitor only.
+  g_autoptr(FlValue) result = fl_value_new_map();
+  g_autoptr(FlValue) monitor_rects = fl_value_new_list();
   fl_value_set_string_take(result, "monitorRects", fl_value_ref(monitor_rects));
   return fl_value_ref(result);
 }
