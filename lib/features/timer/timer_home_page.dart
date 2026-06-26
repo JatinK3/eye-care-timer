@@ -21,6 +21,7 @@ import '../../services/os_focus_service.dart';
 import '../../services/system_ui_service.dart';
 import '../../services/timer_background_service.dart';
 import '../../theme/color_presets.dart';
+import '../../generated/l10n/app_localizations.dart';
 import 'break_guides.dart';
 import 'eye_health_tips.dart';
 import 'phase_schedule.dart';
@@ -1936,46 +1937,46 @@ class TimerHomePageState extends State<TimerHomePage>
     }
   }
 
-  String get _statusLabel {
+  String _statusLabel(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_isSnoozed) {
-      return 'Snoozed';
+      return l10n.snoozed;
     }
     if (_isSchedulePaused) {
-      return 'Schedule Paused';
+      return l10n.schedulePaused;
     }
     if (!_isRunning) {
-      return 'Idle';
+      return l10n.idle;
     }
     if (_isPaused) {
-      return 'Paused';
+      return l10n.paused;
     }
     if (_isSystemIdlePaused) {
-      return 'Idle Paused';
+      return l10n.idlePaused;
     }
-    return _isBreak ? 'Break' : 'Work';
+    return _isBreak ? l10n.breakLabel : l10n.workLabel;
   }
 
-  String get _phaseTitle {
+  String _phaseTitle(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_isSnoozed) {
       final diff = _snoozeEndsAt!.difference(DateTime.now());
       final mins = (diff.inSeconds / 60).ceil();
-      return 'Breaks snoozed ($mins min left)';
+      return l10n.breaksSnoozed(mins);
     }
     if (_isSchedulePaused) {
-      return 'Timer paused by schedule';
+      return l10n.timerPausedBySchedule;
     }
     if (!_isRunning) {
-      return 'Ready for your next focus session';
+      return l10n.readyForNextFocusSession;
     }
     if (_isPaused) {
-      return _isBreak ? 'Break paused' : 'Work paused';
+      return _isBreak ? l10n.breakPaused : l10n.workPaused;
     }
     if (_isSystemIdlePaused) {
-      return _isBreak ? 'Break paused' : 'Work paused (Idle)';
+      return _isBreak ? l10n.breakPaused : l10n.workPausedIdle;
     }
-    return _isBreak
-        ? 'Break Time - look 20 ft away'
-        : 'Work Time - focus on your task';
+    return _isBreak ? l10n.breakTimeMessage : l10n.workTimeMessage;
   }
 
   String get _phaseSubtitle {
@@ -2079,7 +2080,7 @@ class TimerHomePageState extends State<TimerHomePage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Breaks taken today',
+                  AppLocalizations.of(context)!.breaksTakenToday,
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -2504,7 +2505,7 @@ class TimerHomePageState extends State<TimerHomePage>
                             progressAnimation: _progressAnimation,
                             pulseAnimation: _pulseAnimation,
                             initialDuration: _initialDuration,
-                            statusLabel: _statusLabel,
+                            statusLabel: _statusLabel(context),
                             textColor: textColor,
                             ringBackgroundColor: ringBgColor,
                             progressColor: progressColor,
@@ -2526,7 +2527,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                 ElevatedButton.icon(
                                   onPressed: _startWorkTimer,
                                   icon: const Icon(Icons.play_arrow),
-                                  label: const Text('Start'),
+                                  label: Text(AppLocalizations.of(context)!.start),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: progressColor,
                                     foregroundColor: primaryButtonForeground,
@@ -2547,7 +2548,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                 OutlinedButton.icon(
                                   onPressed: _cancelTimer,
                                   icon: const Icon(Icons.stop),
-                                  label: const Text('Stop Timer'),
+                                  label: Text(AppLocalizations.of(context)!.stopTimer),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: isDark
                                         ? Colors.red.shade200
@@ -2568,7 +2569,9 @@ class TimerHomePageState extends State<TimerHomePage>
                                   icon: Icon(
                                     _isPaused ? Icons.play_arrow : Icons.pause,
                                   ),
-                                  label: Text(_isPaused ? 'Resume' : 'Pause'),
+                                  label: Text(_isPaused
+                                      ? AppLocalizations.of(context)!.resume
+                                      : AppLocalizations.of(context)!.pause),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: isDark
                                         ? Colors.white24
@@ -2588,7 +2591,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                     ElevatedButton.icon(
                                       onPressed: _skipBreak,
                                       icon: const Icon(Icons.skip_next),
-                                      label: const Text('Skip'),
+                                      label: Text(AppLocalizations.of(context)!.skip),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.green.shade600,
                                         foregroundColor: Colors.white,
@@ -2607,7 +2610,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                     ElevatedButton.icon(
                                       onPressed: _postponeBreak,
                                       icon: const Icon(Icons.snooze),
-                                      label: const Text('Postpone'),
+                                      label: Text(AppLocalizations.of(context)!.postpone),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.orange.shade700,
                                         foregroundColor: Colors.white,
@@ -2626,7 +2629,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                 OutlinedButton.icon(
                                   onPressed: _cancelTimer,
                                   icon: const Icon(Icons.stop),
-                                  label: const Text('Cancel'),
+                                  label: Text(AppLocalizations.of(context)!.cancel),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: isDark
                                         ? Colors.red.shade200
@@ -2671,7 +2674,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                               child: Column(
                                                 children: [
                                                   Text(
-                                                    _phaseTitle,
+                                                    _phaseTitle(context),
                                                     style: Theme.of(
                                                       context,
                                                     ).textTheme.titleLarge,
@@ -2806,7 +2809,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                               ),
                                               const SizedBox(width: 6),
                                               Text(
-                                                _statusLabel,
+                                                _statusLabel(context),
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .labelLarge
@@ -2821,7 +2824,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                         ),
                                         const SizedBox(height: 10),
                                         Text(
-                                          _phaseTitle,
+                                          _phaseTitle(context),
                                           style: Theme.of(
                                             context,
                                           ).textTheme.titleLarge,

@@ -22,6 +22,8 @@ import 'services/notification_service.dart';
 import 'services/permissions_service.dart';
 import 'services/preferences_service.dart';
 import 'theme/color_presets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'generated/l10n/app_localizations.dart';
 
 const PageTransitionsTheme _smoothPageTransitionsTheme = PageTransitionsTheme(
   builders: <TargetPlatform, PageTransitionsBuilder>{
@@ -1024,7 +1026,14 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
 
         return MaterialApp(
           navigatorKey: BreakOverlayService.navigatorKey,
-          title: 'BlinkKind: Eye Break Timer',
+          onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           debugShowCheckedModeBanner: false,
           scrollBehavior: const _BlinkKindScrollBehavior(),
           theme: ThemeData(

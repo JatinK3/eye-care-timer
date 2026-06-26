@@ -1,0 +1,109 @@
+{
+  "@@locale": "en",
+  "appTitle": "BlinkKind",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "start": "Start",
+  "@start": {
+    "description": "Label for the start button"
+  },
+  "pause": "Pause",
+  "@pause": {
+    "description": "Label for the pause button"
+  },
+  "resume": "Resume",
+  "@resume": {
+    "description": "Label for the resume button"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Label for the cancel button"
+  },
+  "stopTimer": "Stop Timer",
+  "@stopTimer": {
+    "description": "Label for the stop timer button shown when schedule is paused"
+  },
+  "skip": "Skip",
+  "@skip": {
+    "description": "Label for the skip break button"
+  },
+  "postpone": "Postpone",
+  "@postpone": {
+    "description": "Label for the postpone break button"
+  },
+  "snooze": "Snooze",
+  "@snooze": {
+    "description": "Label for the snooze button"
+  },
+  "breaksTakenToday": "Breaks taken today",
+  "@breaksTakenToday": {
+    "description": "Label showing the count of breaks taken today"
+  },
+  "readyForNextFocusSession": "Ready for your next focus session",
+  "@readyForNextFocusSession": {
+    "description": "Status text shown when the timer is ready to start"
+  },
+  "snoozed": "Snoozed",
+  "@snoozed": {
+    "description": "Timer status showing that it is currently snoozed"
+  },
+  "schedulePaused": "Schedule Paused",
+  "@schedulePaused": {
+    "description": "Timer status showing that the timer is paused due to work schedule"
+  },
+  "idle": "Idle",
+  "@idle": {
+    "description": "Timer status showing that the timer is idle"
+  },
+  "paused": "Paused",
+  "@paused": {
+    "description": "Timer status showing that the timer is manually paused"
+  },
+  "idlePaused": "Idle Paused",
+  "@idlePaused": {
+    "description": "Timer status showing that the timer is paused due to system idle detection"
+  },
+  "breakLabel": "Break",
+  "@breakLabel": {
+    "description": "Short label for Break phase"
+  },
+  "workLabel": "Work",
+  "@workLabel": {
+    "description": "Short label for Work phase"
+  },
+  "breaksSnoozed": "Breaks snoozed ({minutes} min left)",
+  "@breaksSnoozed": {
+    "description": "Message shown when breaks are currently snoozed",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "timerPausedBySchedule": "Timer paused by schedule",
+  "@timerPausedBySchedule": {
+    "description": "Message shown when work hours have ended"
+  },
+  "breakPaused": "Break paused",
+  "@breakPaused": {
+    "description": "Message shown when the break timer is paused"
+  },
+  "workPaused": "Work paused",
+  "@workPaused": {
+    "description": "Message shown when the work timer is manually paused"
+  },
+  "workPausedIdle": "Work paused (Idle)",
+  "@workPausedIdle": {
+    "description": "Message shown when the work timer is paused because user is idle"
+  },
+  "breakTimeMessage": "Break Time - look 20 ft away",
+  "@breakTimeMessage": {
+    "description": "Message encouraging user to look away during a break"
+  },
+  "workTimeMessage": "Work Time - focus on your task",
+  "@workTimeMessage": {
+    "description": "Message encouraging user to focus during work session"
+  }
+}
