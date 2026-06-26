@@ -276,3 +276,9 @@ Creative follow-ups after the core overlay is stable:
 
 - Conscious blink history is driven by `TimerEventType.blinkReminderAcknowledged`. Android emits this through `flutter_local_notifications` action responses; Linux emits it by watching DBus `org.freedesktop.Notifications.ActionInvoked` for the active blink notification ID.
 - `HistoryPage` receives a live `ValueListenable<List<TimerEventRecord>>` from `App` so Productivity Insights updates while the page is already open.
+
+
+## History Refresh Behavior
+
+- History has an explicit refresh button that reloads persisted daily history, work sessions, and timer event records through `App._refreshHistoryData()`. Use this when external or delayed notification-action writes need immediate UI reconciliation.
+- Linux blink acknowledgement tracking uses a persistent DBus `ActionInvoked` monitor instead of a per-notification watcher to avoid missing fast user clicks.

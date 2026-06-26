@@ -886,6 +886,28 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveStreakCount(streakCount));
   }
 
+  Future<HistoryDataSnapshot> _refreshHistoryData() async {
+    final history = await _preferencesService.loadHistory();
+    final workSessions = await _preferencesService.loadWorkSessionHistory();
+    final timerEvents = await _preferencesService.loadTimerEventHistory();
+
+    if (mounted) {
+      setState(() {
+        _history = history;
+        _workSessionHistory = workSessions;
+        _timerEventHistory = timerEvents;
+        _timerEventHistoryListenable.value =
+            List<TimerEventRecord>.unmodifiable(timerEvents);
+      });
+    }
+
+    return HistoryDataSnapshot(
+      history: history,
+      workSessions: workSessions,
+      timerEvents: timerEvents,
+    );
+  }
+
   void _openHistory(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -894,6 +916,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           workSessions: _workSessionHistory,
           timerEvents: _timerEventHistory,
           timerEventsListenable: _timerEventHistoryListenable,
+          refreshHistoryData: _refreshHistoryData,
           dailyGoal: _settings.dailyGoal,
           resetHistory: _resetHistory,
         ),

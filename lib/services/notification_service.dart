@@ -224,7 +224,6 @@ class NotificationService {
   Timer? _linuxPhaseTimer;
   Timer? _linuxWarningTimer;
   Process? _linuxBlinkActionMonitor;
-  Timer? _linuxBlinkActionMonitorTimeout;
   String _linuxBlinkActionMonitorBuffer = '';
 
   NotificationService({FlutterLocalNotificationsPlugin? notificationsPlugin})
@@ -236,6 +235,7 @@ class NotificationService {
       return;
     }
     if (!kIsWeb && Platform.isLinux) {
+      await _ensureLinuxBlinkActionMonitor();
       _isInitialized = true;
       return;
     }
@@ -535,15 +535,15 @@ class NotificationService {
     required bool interactive,
   }) async {
     try {
+      if (interactive) {
+        await _ensureLinuxBlinkActionMonitor();
+      }
       final id = await _showLinuxNotificationViaDbus(
         body: body,
         interactive: interactive,
       );
       if (id != null) {
         _linuxBlinkNotificationReplaceId = id;
-        if (interactive) {
-          unawaited(_watchLinuxBlinkAction(id));
-        }
         return;
       }
     } catch (e) {
@@ -591,10 +591,10 @@ class NotificationService {
     return int.tryParse(match.group(1)!);
   }
 
-  Future<void> _watchLinuxBlinkAction(int notificationId) async {
-    _linuxBlinkActionMonitor?.kill();
-    _linuxBlinkActionMonitorTimeout?.cancel();
-    _linuxBlinkActionMonitorBuffer = '';
+  Future<void> _ensureLinuxBlinkActionMonitor() async {
+    if (_linuxBlinkActionMonitor != null || kIsWeb || !Platform.isLinux) {
+      return;
+    }
 
     try {
       final process = await Process.start('gdbus', [
@@ -606,15 +606,7 @@ class NotificationService {
         '/org/freedesktop/Notifications',
       ]);
       _linuxBlinkActionMonitor = process;
-
-      void stopMonitor() {
-        _linuxBlinkActionMonitorTimeout?.cancel();
-        _linuxBlinkActionMonitorTimeout = null;
-        if (_linuxBlinkActionMonitor == process) {
-          _linuxBlinkActionMonitor = null;
-        }
-        process.kill();
-      }
+      _linuxBlinkActionMonitorBuffer = '';
 
       process.stdout.transform(utf8.decoder).listen((chunk) {
         _linuxBlinkActionMonitorBuffer += chunk;
@@ -623,12 +615,10 @@ class NotificationService {
               .substring(_linuxBlinkActionMonitorBuffer.length - 4096);
         }
 
-        final expectedId = RegExp('uint32\\s+$notificationId');
         if (_linuxBlinkActionMonitorBuffer.contains('ActionInvoked') &&
-            _linuxBlinkActionMonitorBuffer.contains('blink_done') &&
-            expectedId.hasMatch(_linuxBlinkActionMonitorBuffer)) {
+            _linuxBlinkActionMonitorBuffer.contains('blink_done')) {
           _blinkReminderAcknowledgedController.add(null);
-          stopMonitor();
+          _linuxBlinkActionMonitorBuffer = '';
         }
       });
       process.stderr.drain<void>();
@@ -636,16 +626,14 @@ class NotificationService {
         process.exitCode.then((_) {
           if (_linuxBlinkActionMonitor == process) {
             _linuxBlinkActionMonitor = null;
+            _linuxBlinkActionMonitorBuffer = '';
           }
         }),
       );
-      _linuxBlinkActionMonitorTimeout = Timer(const Duration(seconds: 20), () {
-        if (_linuxBlinkActionMonitor == process) {
-          stopMonitor();
-        }
-      });
     } catch (e) {
-      debugPrint('Failed to watch Linux blink notification action: $e');
+      debugPrint('Failed to watch Linux blink notification actions: $e');
+      _linuxBlinkActionMonitor = null;
+      _linuxBlinkActionMonitorBuffer = '';
     }
   }
 

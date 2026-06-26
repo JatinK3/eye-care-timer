@@ -545,3 +545,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Routed Linux acknowledgements into the same `TimerEventType.blinkReminderAcknowledged` history path used by Android notification actions.
   - Added a live timer event notifier from `App` to `HistoryPage` so an already-open Productivity Insights view updates immediately when a blink is logged.
   - Verified with flutter analyze and a focused timer-event persistence test.
+
+- Hardened conscious blink history syncing:
+  - Replaced the per-notification Linux action watcher with a persistent DBus ActionInvoked monitor so `I blinked` clicks are not missed by timing races.
+  - Added a History refresh button that reloads daily history, work sessions, and timer event records directly from storage.
+  - Wired refresh results back into the live timer event notifier so Productivity Insights can resync immediately.
+  - Verified with flutter analyze and the focused TimerEventRecord persistence test.

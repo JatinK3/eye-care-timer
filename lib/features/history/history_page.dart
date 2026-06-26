@@ -11,11 +11,24 @@ import "../../generated/l10n/app_localizations.dart";
 
 enum HistoryRange { sevenDays, thirtyDays, all }
 
+class HistoryDataSnapshot {
+  final Map<String, int> history;
+  final List<WorkSessionRecord> workSessions;
+  final List<TimerEventRecord> timerEvents;
+
+  const HistoryDataSnapshot({
+    required this.history,
+    required this.workSessions,
+    required this.timerEvents,
+  });
+}
+
 class HistoryPage extends StatefulWidget {
   final Map<String, int> history;
   final List<WorkSessionRecord> workSessions;
   final List<TimerEventRecord> timerEvents;
   final ValueListenable<List<TimerEventRecord>>? timerEventsListenable;
+  final Future<HistoryDataSnapshot> Function()? refreshHistoryData;
   final int dailyGoal;
   final VoidCallback resetHistory;
 
@@ -25,6 +38,7 @@ class HistoryPage extends StatefulWidget {
     required this.workSessions,
     required this.timerEvents,
     this.timerEventsListenable,
+    this.refreshHistoryData,
     required this.dailyGoal,
     required this.resetHistory,
   });
@@ -38,6 +52,7 @@ class _HistoryPageState extends State<HistoryPage> {
   late List<WorkSessionRecord> _workSessions;
   late List<TimerEventRecord> _timerEvents;
   HistoryRange _range = HistoryRange.sevenDays;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -74,6 +89,25 @@ class _HistoryPageState extends State<HistoryPage> {
     setState(() {
       _timerEvents = List<TimerEventRecord>.from(listenable.value);
     });
+  }
+
+  Future<void> _refreshFromStorage() async {
+    final refresh = widget.refreshHistoryData;
+    if (refresh == null || _isRefreshing) return;
+    setState(() => _isRefreshing = true);
+    try {
+      final snapshot = await refresh();
+      if (!mounted) return;
+      setState(() {
+        _history = Map<String, int>.from(snapshot.history);
+        _workSessions = List<WorkSessionRecord>.from(snapshot.workSessions);
+        _timerEvents = List<TimerEventRecord>.from(snapshot.timerEvents);
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
   }
 
   @override
@@ -134,6 +168,19 @@ class _HistoryPageState extends State<HistoryPage> {
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.historyTitle),
         elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: _isRefreshing ? null : _refreshFromStorage,
+            icon: _isRefreshing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
