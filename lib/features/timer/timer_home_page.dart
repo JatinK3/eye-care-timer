@@ -2697,16 +2697,23 @@ class TimerHomePageState extends State<TimerHomePage>
                             isDark,
                           ),
                   ),
-                  child: SafeArea(
+                  child: Stack(
+                    children: [
+                      if (_isFocusMode)
+                        Positioned.fill(
+                          child: _FocusModeBackground(color: progressColor),
+                        ),
+                      SafeArea(
                     child: Center(
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final isLandscape =
                               MediaQuery.of(context).orientation ==
                               Orientation.landscape;
+                          final double multiplier = _isFocusMode ? 1.25 : 1.0;
                           final double size = isLandscape
-                              ? (constraints.maxHeight - 48).clamp(160.0, 260.0)
-                              : (constraints.maxWidth - 48).clamp(220.0, 320.0);
+                              ? ((constraints.maxHeight - 48) * multiplier).clamp(160.0, 340.0)
+                              : ((constraints.maxWidth - 48) * multiplier).clamp(220.0, 420.0);
 
                           final timerDial = _AnimatedTimerDial(
                             size: size,
@@ -2724,6 +2731,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                 widget.blinkRemindersEnabled ||
                                 widget.trayBlinkNudgesEnabled,
                             isBlinkNudging: _isBlinkNudging,
+                            isFocusMode: _isFocusMode,
                           );
 
                           final actionButtons = Wrap(
@@ -3181,13 +3189,15 @@ class TimerHomePageState extends State<TimerHomePage>
                       ),
                     ),
                   ),
+                  ],
                 ),
               ),
-             ],
-          ),
+            ),
+           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   void _updateOsFocusDnd() {
@@ -3263,6 +3273,7 @@ class _AnimatedTimerDial extends StatelessWidget {
   final VoidCallback onTap;
   final bool blinkRemindersEnabled;
   final bool isBlinkNudging;
+  final bool isFocusMode;
 
   const _AnimatedTimerDial({
     required this.size,
@@ -3278,6 +3289,7 @@ class _AnimatedTimerDial extends StatelessWidget {
     required this.onTap,
     required this.blinkRemindersEnabled,
     required this.isBlinkNudging,
+    required this.isFocusMode,
   });
 
   String _formattedTime(int seconds) {
@@ -3329,6 +3341,19 @@ class _AnimatedTimerDial extends StatelessWidget {
                         backgroundColor: Colors.transparent,
                       ),
                     ),
+                    if (isFocusMode)
+                      Container(
+                        width: dialSize - 12,
+                        height: dialSize - 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.015),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.04),
+                            width: 1,
+                          ),
+                        ),
+                      ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -3336,12 +3361,12 @@ class _AnimatedTimerDial extends StatelessWidget {
                           AnimatedCrossFade(
                             firstChild: Icon(
                               Icons.remove_red_eye_outlined,
-                              size: 18,
+                              size: isFocusMode ? 24 : 18,
                               color: textColor.withValues(alpha: 0.5),
                             ),
                             secondChild: Icon(
                               Icons.remove_red_eye,
-                              size: 18,
+                              size: isFocusMode ? 24 : 18,
                               color: progressColor,
                             ),
                             crossFadeState: isBlinkNudging
@@ -3355,9 +3380,17 @@ class _AnimatedTimerDial extends StatelessWidget {
                           _formattedTime(remainingSeconds),
                           style: Theme.of(context).textTheme.displaySmall
                               ?.copyWith(
-                                fontSize: isLandscape ? 28 : null,
-                                fontWeight: FontWeight.w300,
+                                fontSize: isLandscape ? 28 : (isFocusMode ? 54 : null),
+                                fontWeight: FontWeight.w200,
                                 color: textColor,
+                                shadows: isFocusMode
+                                    ? [
+                                        Shadow(
+                                          color: progressColor.withValues(alpha: 0.25),
+                                          blurRadius: 16,
+                                        ),
+                                      ]
+                                    : null,
                               ),
                         ),
                         const SizedBox(height: 4),
@@ -3365,7 +3398,12 @@ class _AnimatedTimerDial extends StatelessWidget {
                           statusLabel,
                           style: Theme.of(context).textTheme.labelMedium
                               ?.copyWith(
-                                color: textColor.withValues(alpha: 0.65),
+                                fontSize: isFocusMode ? 14 : null,
+                                fontWeight: isFocusMode ? FontWeight.w300 : null,
+                                color: textColor.withValues(
+                                  alpha: isFocusMode ? 0.45 : 0.65,
+                                ),
+                                letterSpacing: isFocusMode ? 1.5 : null,
                               ),
                         ),
                       ],
@@ -3377,6 +3415,58 @@ class _AnimatedTimerDial extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FocusModeBackground extends StatefulWidget {
+  final Color color;
+  const _FocusModeBackground({required this.color});
+
+  @override
+  State<_FocusModeBackground> createState() => _FocusModeBackgroundState();
+}
+
+class _FocusModeBackgroundState extends State<_FocusModeBackground>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final scale = 0.85 + _controller.value * 0.3; // pulsing scale 0.85 to 1.15
+        final opacity = 0.04 + _controller.value * 0.08; // soft opacity
+        return Container(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment.center,
+              radius: scale,
+              colors: [
+                widget.color.withValues(alpha: opacity),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 1.0],
+            ),
+          ),
+        );
+      },
     );
   }
 }
