@@ -2000,45 +2000,42 @@ class TimerHomePageState extends State<TimerHomePage>
         ? widget.blinkReminderCustomMessage
         : null;
 
-    if (customMsg != null) {
+    // Helper that re-checks the dedup guard before actually posting.
+    // This is critical for async paths (AI future callbacks) where
+    // the resolution may arrive one or more cadence periods late.
+    void postNotification(String? message) {
+      if (!mounted || !_canRunBlinkReminderCadences) return;
+      // Re-check: if another notification has already fired since this
+      // async call was scheduled, bail out.
+      final nowPost = DateTime.now();
+      final sinceLast = _lastBlinkReminderAt == null
+          ? null
+          : nowPost.difference(_lastBlinkReminderAt!).inSeconds;
+      if (_lastBlinkReminderBucket != bucket &&
+          sinceLast != null &&
+          sinceLast < cadence - 1) {
+        // A newer bucket already fired; skip this stale callback.
+        return;
+      }
       unawaited(
         widget.notificationService.showBlinkReminder(
-          customMessage: customMsg,
+          customMessage: (message != null && message.isNotEmpty) ? message : null,
           interactive: widget.blinkReminderInteractiveEnabled,
           chimeStyle: widget.chimeStyle,
         ),
       );
+    }
+
+    if (customMsg != null) {
+      postNotification(customMsg);
     } else if (_blinkMessageFuture != null) {
       final future = _blinkMessageFuture!;
       _blinkMessageFuture = null;
       future
-          .then((msg) {
-            if (!mounted || !_canRunBlinkReminderCadences) return;
-            unawaited(
-              widget.notificationService.showBlinkReminder(
-                customMessage: (msg != null && msg.isNotEmpty) ? msg : null,
-                interactive: widget.blinkReminderInteractiveEnabled,
-                chimeStyle: widget.chimeStyle,
-              ),
-            );
-          })
-          .catchError((_) {
-            if (mounted && _canRunBlinkReminderCadences) {
-              unawaited(
-                widget.notificationService.showBlinkReminder(
-                  interactive: widget.blinkReminderInteractiveEnabled,
-                  chimeStyle: widget.chimeStyle,
-                ),
-              );
-            }
-          });
+          .then((msg) => postNotification(msg))
+          .catchError((_) => postNotification(null));
     } else {
-      unawaited(
-        widget.notificationService.showBlinkReminder(
-          interactive: widget.blinkReminderInteractiveEnabled,
-          chimeStyle: widget.chimeStyle,
-        ),
-      );
+      postNotification(null);
     }
   }
 
