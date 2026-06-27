@@ -278,8 +278,8 @@ Description: BlinkKind: Eye Break Timer
  A focused eye break timer for healthier screen sessions.
 EOF
 
-    # Build Debian Package
-    dpkg-deb --build "$DEB_STAGE" "$DIST_DIR/blinkkind_${VERSION}_amd64.deb"
+    # Build Debian Package (--root-owner-group silences uid/gid warning on rootless builds)
+    dpkg-deb --root-owner-group --build "$DEB_STAGE" "$DIST_DIR/blinkkind_${VERSION}_amd64.deb"
     echo "✓ DEB package created at: $DIST_DIR/blinkkind_${VERSION}_amd64.deb"
 fi
 
@@ -344,7 +344,7 @@ rm -rf %{buildroot}
 mkdir -p %{buildroot}/opt/blinkkind
 cp -r %{_builddir}/%{name}-%{version}/* %{buildroot}/opt/blinkkind/
 mkdir -p %{buildroot}/usr/bin
-cat << 'EOF' > %{buildroot}/usr/bin/blinkkind
+cat << 'LAUNCHER_EOF' > %{buildroot}/usr/bin/blinkkind
 #!/bin/sh
 # Launch via gtk-launch using the desktop entry if available to run in the proper desktop session environment,
 # otherwise fall back to direct binary execution.
@@ -353,7 +353,7 @@ if command -v gtk-launch >/dev/null 2>&1; then
 else
     exec /opt/blinkkind/eye_care_timer "$@"
 fi
-EOF
+LAUNCHER_EOF
 chmod +x %{buildroot}/usr/bin/blinkkind
 mkdir -p %{buildroot}/usr/share/applications
 cp %{SOURCE1} %{buildroot}/usr/share/applications/
