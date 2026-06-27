@@ -68,11 +68,13 @@ class SettingsPage extends StatefulWidget {
   final bool blinkReminderAiEnabled;
   final String blinkReminderCustomMessage;
   final bool cameraMicAutoPostponeEnabled;
+  final bool autoPauseOnMediaEnabled;
   final bool wellnessRemindersEnabled;
   final int wellnessReminderCadenceSeconds;
   final bool blinkReminderInteractiveEnabled;
   final void Function(bool) setBlinkReminderInteractiveEnabled;
   final void Function(bool) setCameraMicAutoPostponeEnabled;
+  final void Function(bool) setAutoPauseOnMediaEnabled;
   final void Function(bool) setWellnessRemindersEnabled;
   final void Function(int) setWellnessReminderCadenceSeconds;
   final bool canChangeDurations;
@@ -210,11 +212,13 @@ class SettingsPage extends StatefulWidget {
     required this.blinkReminderAiEnabled,
     required this.blinkReminderCustomMessage,
     required this.cameraMicAutoPostponeEnabled,
+    required this.autoPauseOnMediaEnabled,
     required this.wellnessRemindersEnabled,
     required this.wellnessReminderCadenceSeconds,
     required this.blinkReminderInteractiveEnabled,
     required this.setBlinkReminderInteractiveEnabled,
     required this.setCameraMicAutoPostponeEnabled,
+    required this.setAutoPauseOnMediaEnabled,
     required this.setWellnessRemindersEnabled,
     required this.setWellnessReminderCadenceSeconds,
     required this.canChangeDurations,
@@ -1302,6 +1306,36 @@ class _SettingsPageState extends State<SettingsPage>
                   padding: const EdgeInsets.only(left: 48.0, top: 4.0, bottom: 8.0),
                   child: Text(
                     l10n.settingsCameraMicAutoPostponeDesc,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SettingItem(
+          title: l10n.settingsAutoPauseOnMedia,
+          subtitle: l10n.settingsAutoPauseOnMediaSubtitle,
+          keywords: ['media', 'music', 'video', 'audio', 'pause', 'playback', 'background'],
+          category: 'Break Screen & Behavior',
+          widget: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.music_note_outlined),
+                title: Text(l10n.settingsAutoPauseOnMedia),
+                subtitle: Text(l10n.settingsAutoPauseOnMediaSubtitle),
+                value: widget.autoPauseOnMediaEnabled,
+                onChanged: widget.setAutoPauseOnMediaEnabled,
+              ),
+              if (widget.autoPauseOnMediaEnabled)
+                Padding(
+                  padding: const EdgeInsets.only(left: 48.0, top: 4.0, bottom: 8.0),
+                  child: Text(
+                    l10n.settingsAutoPauseOnMediaDesc,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                       fontStyle: FontStyle.italic,
@@ -3015,6 +3049,7 @@ class _SettingsPageState extends State<SettingsPage>
       blinkReminderAiEnabled: widget.blinkReminderAiEnabled,
       blinkReminderCustomMessage: widget.blinkReminderCustomMessage,
       cameraMicAutoPostponeEnabled: widget.cameraMicAutoPostponeEnabled,
+      autoPauseOnMediaEnabled: widget.autoPauseOnMediaEnabled,
       wellnessRemindersEnabled: widget.wellnessRemindersEnabled,
       wellnessReminderCadenceSeconds: widget.wellnessReminderCadenceSeconds,
       blinkReminderInteractiveEnabled: widget.blinkReminderInteractiveEnabled,

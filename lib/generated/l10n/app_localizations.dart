@@ -832,6 +832,24 @@ abstract class AppLocalizations {
   /// **'Credit away time as a break if away for more than 5 minutes'**
   String get settingsNaturalBreakCreditSubtitle;
 
+  /// Title for media playback auto-pause setting
+  ///
+  /// In en, this message translates to:
+  /// **'Media playback auto-pause'**
+  String get settingsAutoPauseOnMedia;
+
+  /// Subtitle for media playback auto-pause setting
+  ///
+  /// In en, this message translates to:
+  /// **'Pause breaks automatically when video or music is playing'**
+  String get settingsAutoPauseOnMediaSubtitle;
+
+  /// Description for media playback auto-pause setting
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically pause the timer when background media (music or video) is active. Android & Linux only.'**
+  String get settingsAutoPauseOnMediaDesc;
+
   /// Title for break visualizer style setting
   ///
   /// In en, this message translates to:

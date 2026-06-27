@@ -98,6 +98,7 @@ class TimerHomePage extends StatefulWidget {
   final bool wellnessRemindersEnabled;
   final int wellnessReminderCadenceSeconds;
   final bool blinkReminderInteractiveEnabled;
+  final bool autoPauseOnMediaEnabled;
   final Future<bool> Function()? isCameraInUseOverride;
   final Future<bool> Function()? isMicInUseOverride;
 
@@ -155,6 +156,7 @@ class TimerHomePage extends StatefulWidget {
     required this.wellnessRemindersEnabled,
     required this.wellnessReminderCadenceSeconds,
     required this.blinkReminderInteractiveEnabled,
+    required this.autoPauseOnMediaEnabled,
     this.isCameraInUseOverride,
     this.isMicInUseOverride,
     this.breakOverlayService,
@@ -212,6 +214,8 @@ class TimerHomePageState extends State<TimerHomePage>
   bool _isCancelled = false;
   bool _isFocusMode = false;
   bool _isSystemIdlePaused = false;
+  bool _isMediaPaused = false;
+  Timer? _mediaPollTimer;
   final SystemUiService _systemUiService = const SystemUiService();
 
   // AI-generated break quote, pre-fetched during work phase.
@@ -529,6 +533,13 @@ class TimerHomePageState extends State<TimerHomePage>
     });
     _checkSchedule();
 
+    // Media playback auto-pause poll (every 5 seconds, Android & Linux only)
+    if (widget.autoPauseOnMediaEnabled) {
+      _mediaPollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+        _checkMediaPlayback();
+      });
+    }
+
     if (widget.aiMotivationEnabled) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _fetchAiHealthInsight();
@@ -618,6 +629,33 @@ class TimerHomePageState extends State<TimerHomePage>
     if (oldWidget.osFocusDndEnabled != widget.osFocusDndEnabled) {
       _updateOsFocusDnd();
     }
+    // Dynamically start or stop the media poll timer when the setting changes.
+    if (oldWidget.autoPauseOnMediaEnabled != widget.autoPauseOnMediaEnabled) {
+      if (widget.autoPauseOnMediaEnabled) {
+        _mediaPollTimer ??= Timer.periodic(const Duration(seconds: 5), (_) {
+          _checkMediaPlayback();
+        });
+      } else {
+        _mediaPollTimer?.cancel();
+        _mediaPollTimer = null;
+        // Clear any active media pause so the timer resumes.
+        if (_isMediaPaused) {
+          setState(() {
+            _isMediaPaused = false;
+            if (_isRunning && !_isPaused) {
+              _phaseStartedAt = DateTime.now();
+              _phaseEndsAt = _phaseStartedAt!.add(
+                Duration(seconds: _remainingSeconds),
+              );
+              _animationController.forward();
+              _schedulePhaseDeadlineTimer(_phaseEndsAt!);
+              _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
+            }
+          });
+          _updateDesktopState();
+        }
+      }
+    }
     if (_isRunning) {
       return;
     }
@@ -662,6 +700,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _desktopTrayTicker?.cancel();
     _educationTipTimer?.cancel();
     _scheduleCheckTimer?.cancel();
+    _mediaPollTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _phaseTransitionTimer?.cancel();
     _cancelPhaseDeadlineTimer();
@@ -675,6 +714,53 @@ class TimerHomePageState extends State<TimerHomePage>
       _isFocusMode = !_isFocusMode;
     });
     unawaited(_systemUiService.setFocusModeEnabled(_isFocusMode));
+  }
+
+  /// Polls whether background media (music / video) is playing.
+  /// On Android uses [AudioManager.isMusicActive] via MethodChannel.
+  /// On Linux uses `pactl list sink-inputs` to check for un-corked streams.
+  Future<void> _checkMediaPlayback() async {
+    if (!mounted || !_isRunning) return;
+    if (!widget.autoPauseOnMediaEnabled) return;
+
+    final overlayService = widget.breakOverlayService;
+    if (overlayService == null) return;
+
+    final isPlaying = await overlayService.isMediaPlaying();
+
+    if (!mounted) return;
+
+    if (isPlaying && !_isPaused && !_isMediaPaused && !_isSystemIdlePaused) {
+      // Media just started → auto-pause
+      setState(() {
+        _isMediaPaused = true;
+        _animationController.stop();
+        _pulseController.stop();
+        _cancelPhaseDeadlineTimer();
+        _phaseStartedAt = null;
+        _phaseEndsAt = null;
+        _saveActiveSession(isPaused: true);
+        _cancelReminders();
+        unawaited(_backgroundService.stopPhase());
+      });
+      _updateDesktopState();
+    } else if (!isPlaying && _isMediaPaused) {
+      // Media stopped → auto-resume
+      setState(() {
+        _isMediaPaused = false;
+        _phaseStartedAt = DateTime.now();
+        _phaseEndsAt = _phaseStartedAt!.add(
+          Duration(seconds: _remainingSeconds),
+        );
+        _animationController.forward();
+        _saveActiveSession();
+        _schedulePhaseDeadlineTimer(_phaseEndsAt!);
+        unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
+        _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
+        if (_remainingSeconds <= 5) _pulseController.forward();
+      });
+      _updateDesktopState();
+    }
   }
 
   @override
@@ -2236,6 +2322,9 @@ class TimerHomePageState extends State<TimerHomePage>
     if (!_isRunning) {
       return l10n.idle;
     }
+    if (_isMediaPaused) {
+      return 'Media';
+    }
     if (_isPaused) {
       return l10n.paused;
     }
@@ -2258,6 +2347,9 @@ class TimerHomePageState extends State<TimerHomePage>
     if (!_isRunning) {
       return l10n.readyForNextFocusSession;
     }
+    if (_isMediaPaused) {
+      return 'Paused — media is playing';
+    }
     if (_isPaused) {
       return _isBreak ? l10n.breakPaused : l10n.workPaused;
     }
@@ -2273,6 +2365,9 @@ class TimerHomePageState extends State<TimerHomePage>
     }
     if (!_isRunning) {
       return 'Start when your eyes and task are ready.';
+    }
+    if (_isMediaPaused) {
+      return 'Will resume automatically when media stops.';
     }
     if (_isPaused) {
       return 'Resume when you are ready to continue.';
@@ -2291,6 +2386,9 @@ class TimerHomePageState extends State<TimerHomePage>
     }
     if (!_isRunning) {
       return Icons.check_circle_outline;
+    }
+    if (_isMediaPaused) {
+      return Icons.music_note_rounded;
     }
     if (_isPaused) {
       return Icons.pause_circle_outline;
@@ -2756,6 +2854,49 @@ class TimerHomePageState extends State<TimerHomePage>
                   elevation: 0,
                   systemOverlayStyle: systemOverlayStyle,
                   actions: [
+                    if (_isRunning)
+                      Tooltip(
+                        message: _isPaused ? 'Resume timer' : 'Pause timer',
+                        child: InkWell(
+                          onTap: _pauseOrResume,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: (_isPaused || _isMediaPaused)
+                                    ? Colors.orangeAccent.withValues(alpha: 0.8)
+                                    : Colors.white.withValues(alpha: 0.3),
+                              ),
+                              color: (_isPaused || _isMediaPaused)
+                                  ? Colors.orange.withValues(alpha: 0.15)
+                                  : Colors.transparent,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                                  size: 18,
+                                  color: (_isPaused || _isMediaPaused)
+                                      ? Colors.orangeAccent
+                                      : null,
+                                ),
+                                if (_isMediaPaused) ...[
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.music_note_rounded,
+                                    size: 14,
+                                    color: Colors.orangeAccent.withValues(alpha: 0.9),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     IconButton(
                       icon: const Icon(Icons.bar_chart),
                       onPressed: () => widget.openHistory(context),

@@ -683,6 +683,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveCameraMicAutoPostponeEnabled(enabled));
   }
 
+  void _setAutoPauseOnMediaEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(autoPauseOnMediaEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveAllSettings(_settings.copyWith(autoPauseOnMediaEnabled: enabled)));
+  }
+
   void _setWellnessRemindersEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(wellnessRemindersEnabled: enabled);
@@ -1030,6 +1037,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           blinkReminderCustomMessage: _settings.blinkReminderCustomMessage,
           cameraMicAutoPostponeEnabled: _settings.cameraMicAutoPostponeEnabled,
           setCameraMicAutoPostponeEnabled: _setCameraMicAutoPostponeEnabled,
+          autoPauseOnMediaEnabled: _settings.autoPauseOnMediaEnabled,
+          setAutoPauseOnMediaEnabled: _setAutoPauseOnMediaEnabled,
           wellnessRemindersEnabled: _settings.wellnessRemindersEnabled,
           setWellnessRemindersEnabled: _setWellnessRemindersEnabled,
           wellnessReminderCadenceSeconds:
@@ -1263,6 +1272,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                       _settings.blinkReminderCustomMessage,
                   cameraMicAutoPostponeEnabled:
                       _settings.cameraMicAutoPostponeEnabled,
+                   autoPauseOnMediaEnabled:
+                       _settings.autoPauseOnMediaEnabled,
                   wellnessRemindersEnabled: _settings.wellnessRemindersEnabled,
                   wellnessReminderCadenceSeconds:
                       _settings.wellnessReminderCadenceSeconds,

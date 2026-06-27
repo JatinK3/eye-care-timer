@@ -410,6 +410,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Credit away time as a break if away for more than 5 minutes';
 
   @override
+  String get settingsAutoPauseOnMedia => 'Media playback auto-pause';
+
+  @override
+  String get settingsAutoPauseOnMediaSubtitle =>
+      'Pause breaks automatically when video or music is playing';
+
+  @override
+  String get settingsAutoPauseOnMediaDesc =>
+      'Automatically pause the timer when background media (music or video) is active. Android & Linux only.';
+
+  @override
   String get settingsBreakVisualizerStyle => 'Break visualizer style';
 
   @override
