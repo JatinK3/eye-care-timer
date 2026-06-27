@@ -508,6 +508,14 @@ if [ -n "$_INSTALL_PKG" ]; then
                 sudo dpkg -i "$_INSTALL_PKG" || { echo "Installing missing dependencies..."; sudo apt-get install -f -y; }
                 # Refresh the desktop database so the launcher appears immediately
                 sudo update-desktop-database /usr/share/applications 2>/dev/null || true
+                # Fix SELinux file contexts if restorecon is available (Fedora/RHEL)
+                if command -v restorecon &>/dev/null; then
+                    sudo restorecon -Rv /opt/blinkkind/ /usr/share/applications/blinkkind.desktop /usr/share/pixmaps/blinkkind.png 2>/dev/null || true
+                fi
+                # Reset GNOME app-picker layout cache so new entry is visible immediately
+                if command -v gsettings &>/dev/null; then
+                    gsettings reset org.gnome.shell app-picker-layout 2>/dev/null || true
+                fi
                 echo "✓ Installation complete! Run 'blinkkind' or find it in your Applications menu."
                 ;;
             rpm)
@@ -520,6 +528,14 @@ if [ -n "$_INSTALL_PKG" ]; then
                 sudo "$_INSTALL_PKG_MGR" install -y "$_INSTALL_PKG"
                 # Refresh the desktop database so the launcher appears immediately
                 sudo update-desktop-database /usr/share/applications 2>/dev/null || true
+                # Fix SELinux file contexts if restorecon is available (Fedora/RHEL)
+                if command -v restorecon &>/dev/null; then
+                    sudo restorecon -Rv /opt/blinkkind/ /usr/share/applications/blinkkind.desktop /usr/share/pixmaps/blinkkind.png 2>/dev/null || true
+                fi
+                # Reset GNOME app-picker layout cache so new entry is visible immediately
+                if command -v gsettings &>/dev/null; then
+                    gsettings reset org.gnome.shell app-picker-layout 2>/dev/null || true
+                fi
                 echo "✓ Installation complete! Run 'blinkkind' or find it in your Applications menu."
                 ;;
         esac
