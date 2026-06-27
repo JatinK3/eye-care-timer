@@ -203,22 +203,42 @@ echo ""
 echo "========================================="
 echo "Packaging DEB (Debian/Ubuntu)..."
 echo "========================================="
-DEB_STAGE="$PROJECT_DIR/build/deb_stage"
-rm -rf "$DEB_STAGE"
-mkdir -p "$DEB_STAGE/DEBIAN"
-mkdir -p "$DEB_STAGE/opt/blinkkind"
-mkdir -p "$DEB_STAGE/usr/bin"
-mkdir -p "$DEB_STAGE/usr/share/applications"
-mkdir -p "$DEB_STAGE/usr/share/pixmaps"
 
-# Copy binary bundle files
-cp -r "$BUILD_DIR"/* "$DEB_STAGE/opt/blinkkind/"
+# Ensure dpkg-deb is available — install it if missing (cross-distro support)
+if ! command -v dpkg-deb &>/dev/null; then
+    echo "Notice: 'dpkg-deb' not found. Attempting to install 'dpkg'..."
+    _PKG_MGR="$(command -v apt-get || command -v dnf || command -v yum || true)"
+    case "$(basename "${_PKG_MGR}" 2>/dev/null)" in
+        apt-get) sudo apt-get install -y dpkg ;;
+        dnf)     sudo dnf install -y dpkg ;;
+        yum)     sudo yum install -y dpkg ;;
+        *)       echo "Notice: Cannot auto-install 'dpkg' — no supported package manager found." ;;
+    esac
+fi
 
-# Copy application icon
-cp "$PROJECT_DIR/assets/app_icon.png" "$DEB_STAGE/usr/share/pixmaps/blinkkind.png"
+if ! command -v dpkg-deb &>/dev/null; then
+    echo "Notice: 'dpkg-deb' still not available. Skipping DEB packaging."
+    echo "  To build DEB packages manually, install 'dpkg':"
+    echo "    Fedora/RHEL : sudo dnf install -y dpkg"
+    echo "    Ubuntu/Debian: sudo apt-get install -y dpkg"
+    echo "========================================="
+else
+    DEB_STAGE="$PROJECT_DIR/build/deb_stage"
+    rm -rf "$DEB_STAGE"
+    mkdir -p "$DEB_STAGE/DEBIAN"
+    mkdir -p "$DEB_STAGE/opt/blinkkind"
+    mkdir -p "$DEB_STAGE/usr/bin"
+    mkdir -p "$DEB_STAGE/usr/share/applications"
+    mkdir -p "$DEB_STAGE/usr/share/pixmaps"
 
-# Create /usr/bin launcher wrapper
-cat << 'EOF' > "$DEB_STAGE/usr/bin/blinkkind"
+    # Copy binary bundle files
+    cp -r "$BUILD_DIR"/* "$DEB_STAGE/opt/blinkkind/"
+
+    # Copy application icon
+    cp "$PROJECT_DIR/assets/app_icon.png" "$DEB_STAGE/usr/share/pixmaps/blinkkind.png"
+
+    # Create /usr/bin launcher wrapper
+    cat << 'EOF' > "$DEB_STAGE/usr/bin/blinkkind"
 #!/bin/sh
 # Launch via gtk-launch using the desktop entry if available to run in the proper desktop session environment,
 # otherwise fall back to direct binary execution.
@@ -228,10 +248,10 @@ else
     exec /opt/blinkkind/eye_care_timer "$@"
 fi
 EOF
-chmod +x "$DEB_STAGE/usr/bin/blinkkind"
+    chmod +x "$DEB_STAGE/usr/bin/blinkkind"
 
-# Create desktop entry launcher
-cat << 'EOF' > "$DEB_STAGE/usr/share/applications/blinkkind.desktop"
+    # Create desktop entry launcher
+    cat << 'EOF' > "$DEB_STAGE/usr/share/applications/blinkkind.desktop"
 [Desktop Entry]
 Name=BlinkKind
 Comment=A focused eye break timer for healthier screen sessions
@@ -243,10 +263,10 @@ Categories=Utility;
 StartupNotify=true
 StartupWMClass=com.jatin.eyecaretimer
 EOF
-chmod +x "$DEB_STAGE/usr/share/applications/blinkkind.desktop"
+    chmod +x "$DEB_STAGE/usr/share/applications/blinkkind.desktop"
 
-# Create Debian control file (variable expansion enabled to insert $VERSION)
-cat << EOF > "$DEB_STAGE/DEBIAN/control"
+    # Create Debian control file (variable expansion enabled to insert $VERSION)
+    cat << EOF > "$DEB_STAGE/DEBIAN/control"
 Package: blinkkind
 Version: $VERSION
 Section: utils
@@ -258,9 +278,10 @@ Description: BlinkKind: Eye Break Timer
  A focused eye break timer for healthier screen sessions.
 EOF
 
-# Build Debian Package
-dpkg-deb --build "$DEB_STAGE" "$DIST_DIR/blinkkind_${VERSION}_amd64.deb"
-echo "✓ DEB package created at: $DIST_DIR/blinkkind_${VERSION}_amd64.deb"
+    # Build Debian Package
+    dpkg-deb --build "$DEB_STAGE" "$DIST_DIR/blinkkind_${VERSION}_amd64.deb"
+    echo "✓ DEB package created at: $DIST_DIR/blinkkind_${VERSION}_amd64.deb"
+fi
 
 # ---------------------------------------------------------------------------
 # RPM Packaging
@@ -269,9 +290,11 @@ echo ""
 echo "========================================="
 echo "Packaging RPM (RedHat/Fedora)..."
 echo "========================================="
-if ! command -v rpmbuild &> /dev/null; then
-    echo "Notice: 'rpmbuild' not found. Skip RPM packaging."
-    echo "To build RPM packages, please install 'rpm' (e.g. 'sudo apt-get install -y rpm') and rerun this script."
+if ! command -v rpmbuild &>/dev/null; then
+    echo "Notice: 'rpmbuild' not found. Skipping RPM packaging."
+    echo "  To build RPM packages, install 'rpm-build':"
+    echo "    Fedora/RHEL : sudo dnf install -y rpm-build"
+    echo "    Ubuntu/Debian: sudo apt-get install -y rpm"
 else
     RPM_BUILD_ROOT="$PROJECT_DIR/build/rpm_build"
     rm -rf "$RPM_BUILD_ROOT"
