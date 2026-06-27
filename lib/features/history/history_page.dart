@@ -231,6 +231,8 @@ class _HistoryPageState extends State<HistoryPage> {
                 : _ActivityBarChart(
                     dates: dates,
                     history: _history,
+                    workSessions: _workSessions,
+                    timerEvents: _timerEvents,
                     dailyGoal: widget.dailyGoal,
                   ),
           ),
@@ -1393,14 +1395,20 @@ class _HistoryRow extends StatelessWidget {
   }
 }
 
+enum ChartMetric { cycles, focusTime, compliance }
+
 class _ActivityBarChart extends StatefulWidget {
   final List<DateTime> dates;
   final Map<String, int> history;
+  final List<WorkSessionRecord> workSessions;
+  final List<TimerEventRecord> timerEvents;
   final int dailyGoal;
 
   const _ActivityBarChart({
     required this.dates,
     required this.history,
+    required this.workSessions,
+    required this.timerEvents,
     required this.dailyGoal,
   });
 
@@ -1410,6 +1418,7 @@ class _ActivityBarChart extends StatefulWidget {
 
 class _ActivityBarChartState extends State<_ActivityBarChart> {
   int? _selectedIndex;
+  ChartMetric _activeMetric = ChartMetric.cycles;
 
   @override
   void didUpdateWidget(covariant _ActivityBarChart oldWidget) {
@@ -1424,27 +1433,95 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
     if (widget.dates.isEmpty) return const SizedBox();
 
     final chronologicalDates = widget.dates.reversed.toList();
-    final counts = chronologicalDates.map((d) {
+
+    // Calculate daily values for the selected metric
+    final List<double> values = chronologicalDates.map((d) {
       final key = _dateKey(d);
-      return widget.history[key] ?? 0;
+      switch (_activeMetric) {
+        case ChartMetric.cycles:
+          return (widget.history[key] ?? 0).toDouble();
+        case ChartMetric.focusTime:
+          final daySessions = widget.workSessions.where((s) => _dateKey(s.completedAt) == key);
+          final seconds = daySessions.fold<int>(0, (sum, s) => sum + s.durationSeconds);
+          return seconds / 60.0;
+        case ChartMetric.compliance:
+          final dayEvents = widget.timerEvents.where((e) => _dateKey(e.timestamp) == key);
+          final completed = dayEvents.where((e) => e.type == TimerEventType.workCompleted).length;
+          final skipped = dayEvents.where((e) => e.type == TimerEventType.breakSkipped).length;
+          final postponed = dayEvents.where((e) => e.type == TimerEventType.breakPostponed).length;
+          final totalDecisions = completed + skipped + postponed;
+          return totalDecisions == 0 ? 0.0 : (completed / totalDecisions * 100.0);
+      }
     }).toList();
 
-    final maxCount = counts.fold<int>(
-      widget.dailyGoal,
-      (prev, element) => element > prev ? element : prev,
-    );
+    // Determine target/goal line and max y value
+    double goalValue = 0.0;
+    double maxValue = 0.0;
+
+    switch (_activeMetric) {
+      case ChartMetric.cycles:
+        goalValue = widget.dailyGoal.toDouble();
+        maxValue = values.fold<double>(goalValue, (prev, val) => val > prev ? val : prev);
+        break;
+      case ChartMetric.focusTime:
+        // Assume default 20 minutes session length for target calculation if history empty
+        final avgSessionSecs = widget.workSessions.isNotEmpty
+            ? widget.workSessions.map((s) => s.durationSeconds).reduce((a, b) => a + b) / widget.workSessions.length
+            : 1200.0;
+        goalValue = (widget.dailyGoal * avgSessionSecs) / 60.0;
+        maxValue = values.fold<double>(goalValue, (prev, val) => val > prev ? val : prev);
+        break;
+      case ChartMetric.compliance:
+        goalValue = 80.0; // 80% baseline compliance goal
+        maxValue = 100.0;
+        break;
+    }
+
+    if (maxValue == 0.0) maxValue = 1.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_selectedIndex != null &&
-            _selectedIndex! < chronologicalDates.length) ...[
+        // Metric Selector segmented buttons
+        Center(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SegmentedButton<ChartMetric>(
+              segments: const [
+                ButtonSegment(
+                  value: ChartMetric.cycles,
+                  icon: Icon(Icons.refresh, size: 16),
+                  label: Text("Cycles", style: TextStyle(fontSize: 12)),
+                ),
+                ButtonSegment(
+                  value: ChartMetric.focusTime,
+                  icon: Icon(Icons.access_time, size: 16),
+                  label: Text("Minutes", style: TextStyle(fontSize: 12)),
+                ),
+                ButtonSegment(
+                  value: ChartMetric.compliance,
+                  icon: Icon(Icons.verified_outlined, size: 16),
+                  label: Text("Compliance", style: TextStyle(fontSize: 12)),
+                ),
+              ],
+              selected: {_activeMetric},
+              onSelectionChanged: (selection) {
+                setState(() {
+                  _activeMetric = selection.first;
+                  _selectedIndex = null;
+                });
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Selected Bar Details Tooltip
+        if (_selectedIndex != null && _selectedIndex! < chronologicalDates.length) ...[
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -1452,14 +1529,22 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
               children: [
                 Text(
                   _fullDateLabel(chronologicalDates[_selectedIndex!]),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  "${counts[_selectedIndex!]} cycles / goal: ${widget.dailyGoal}",
+                  _activeMetric == ChartMetric.cycles
+                      ? "${values[_selectedIndex!].toInt()} cycles / goal: ${goalValue.toInt()}"
+                      : _activeMetric == ChartMetric.focusTime
+                          ? "${values[_selectedIndex!].toStringAsFixed(1)} mins / goal: ${goalValue.toStringAsFixed(1)} mins"
+                          : "${values[_selectedIndex!].toStringAsFixed(1)}% compliance / goal: 80%",
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
+                    color: values[_selectedIndex!] >= goalValue
+                        ? (_activeMetric == ChartMetric.cycles
+                            ? Colors.green
+                            : _activeMetric == ChartMetric.focusTime
+                                ? Colors.cyan
+                                : Colors.deepPurple)
+                        : Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1468,6 +1553,7 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
           ),
           const SizedBox(height: 12),
         ],
+
         Container(
           height: 180,
           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -1479,29 +1565,33 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    "$maxCount",
+                    _activeMetric == ChartMetric.compliance
+                        ? "100%"
+                        : "${maxValue.round()}",
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
-                  if (widget.dailyGoal > 0 && widget.dailyGoal < maxCount)
+                  if (goalValue > 0 && goalValue < maxValue)
                     Text(
-                      "${widget.dailyGoal}",
+                      "${goalValue.round()}${_activeMetric == ChartMetric.compliance ? "%" : ""}",
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  Text("0", style: Theme.of(context).textTheme.labelSmall),
+                  Text(
+                    _activeMetric == ChartMetric.compliance ? "0%" : "0",
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
                 ],
               ),
               const SizedBox(width: 8),
+
               // Chart Area
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final chartHeight = constraints.maxHeight - 24;
-                    final goalRatio = maxCount > 0
-                        ? widget.dailyGoal / maxCount
-                        : 0.0;
+                    final goalRatio = maxValue > 0 ? goalValue / maxValue : 0.0;
                     final goalY = chartHeight * (1 - goalRatio);
 
                     final barWidth = widget.dates.length > 7 ? 24.0 : 36.0;
@@ -1509,11 +1599,10 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
 
                     Widget buildBar(int index) {
                       final date = chronologicalDates[index];
-                      final count = counts[index];
-                      final ratio = maxCount > 0 ? count / maxCount : 0.0;
+                      final val = values[index];
+                      final ratio = maxValue > 0 ? val / maxValue : 0.0;
                       final barHeight = chartHeight * ratio;
-                      final isGoalReached =
-                          widget.dailyGoal > 0 && count >= widget.dailyGoal;
+                      final isGoalReached = val >= goalValue;
                       final isSelected = _selectedIndex == index;
 
                       return GestureDetector(
@@ -1534,47 +1623,77 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                               duration: const Duration(milliseconds: 400),
                               curve: Curves.easeOutCubic,
                               builder: (context, value, child) {
+                                final LinearGradient gradient;
+                                if (_activeMetric == ChartMetric.cycles) {
+                                  gradient = isGoalReached
+                                      ? const LinearGradient(
+                                          colors: [Colors.green, Color(0xFF81C784)],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        )
+                                      : LinearGradient(
+                                          colors: [
+                                            Theme.of(context).colorScheme.primary,
+                                            Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                                          ],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        );
+                                } else if (_activeMetric == ChartMetric.focusTime) {
+                                  gradient = isGoalReached
+                                      ? const LinearGradient(
+                                          colors: [Colors.cyan, Color(0xFF00E5CC)],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        )
+                                      : LinearGradient(
+                                          colors: [
+                                            Colors.blue,
+                                            Colors.blue.withValues(alpha: 0.7),
+                                          ],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        );
+                                } else {
+                                  gradient = isGoalReached
+                                      ? const LinearGradient(
+                                          colors: [Colors.deepPurple, Colors.purpleAccent],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        )
+                                      : LinearGradient(
+                                          colors: [
+                                            Colors.orange,
+                                            Colors.orange.withValues(alpha: 0.7),
+                                          ],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        );
+                                }
+
                                 return Container(
                                   width: barWidth,
                                   height: value,
                                   decoration: BoxDecoration(
-                                    gradient: isGoalReached
-                                        ? LinearGradient(
-                                            colors: [
-                                              Colors.green,
-                                              Colors.green.withValues(
-                                                alpha: 0.8,
-                                              ),
-                                            ],
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                          )
-                                        : LinearGradient(
-                                            colors: [
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.primary,
-                                              Theme.of(context)
-                                                  .colorScheme
-                                                  .primary
-                                                  .withValues(alpha: 0.7),
-                                            ],
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                          ),
+                                    gradient: gradient,
                                     borderRadius: const BorderRadius.vertical(
                                       top: Radius.circular(4),
                                     ),
                                     boxShadow: isSelected
                                         ? [
                                             BoxShadow(
-                                              color:
-                                                  (isGoalReached
+                                              color: (isGoalReached
+                                                      ? (_activeMetric == ChartMetric.cycles
                                                           ? Colors.green
-                                                          : Theme.of(context)
-                                                                .colorScheme
-                                                                .primary)
-                                                      .withValues(alpha: 0.4),
+                                                          : _activeMetric == ChartMetric.focusTime
+                                                              ? Colors.cyan
+                                                              : Colors.deepPurple)
+                                                      : (_activeMetric == ChartMetric.cycles
+                                                          ? Theme.of(context).colorScheme.primary
+                                                          : _activeMetric == ChartMetric.focusTime
+                                                              ? Colors.blue
+                                                              : Colors.orange))
+                                                  .withValues(alpha: 0.4),
                                               blurRadius: 8,
                                               spreadRadius: 2,
                                             ),
@@ -1590,19 +1709,11 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                               child: Text(
                                 _shortDateLabel(date),
                                 textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                       color: isSelected
-                                          ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
-                                          : Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant
-                                                .withValues(alpha: 0.7),
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : null,
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                      fontWeight: isSelected ? FontWeight.bold : null,
                                     ),
                               ),
                             ),
@@ -1614,7 +1725,7 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                     return Stack(
                       children: [
                         // Goal Line (Dashed)
-                        if (widget.dailyGoal > 0)
+                        if (goalValue > 0)
                           Positioned(
                             left: 0,
                             right: 0,
@@ -1626,7 +1737,12 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                   child: Container(
                                     height: 1,
                                     color: i % 2 == 0
-                                        ? (Colors.green).withValues(alpha: 0.4)
+                                        ? (_activeMetric == ChartMetric.cycles
+                                                ? Colors.green
+                                                : _activeMetric == ChartMetric.focusTime
+                                                    ? Colors.cyan
+                                                    : Colors.deepPurple)
+                                            .withValues(alpha: 0.4)
                                         : Colors.transparent,
                                   ),
                                 ),
@@ -1640,12 +1756,9 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                   scrollDirection: Axis.horizontal,
                                   physics: const BouncingScrollPhysics(),
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
                                     child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
+                                      crossAxisAlignment: CrossAxisAlignment.end,
                                       children: List.generate(
                                         chronologicalDates.length,
                                         (index) {
@@ -1661,8 +1774,7 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                   ),
                                 )
                               : Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: List.generate(
                                     chronologicalDates.length,
