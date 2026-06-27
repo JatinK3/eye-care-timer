@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-06-27
+
+### Fixed
+- **Linux desktop icon not appearing after install (GNOME Wayland):** On GNOME Wayland, the shell identifies running apps by their GTK application ID (`com.jatin.eyecaretimer`) and looks for a matching `com.jatin.eyecaretimer.desktop` file to resolve the icon. Previously only `blinkkind.desktop` was installed, causing GNOME to fall back to a generic gear icon in the dock and launcher. Both `com.jatin.eyecaretimer.desktop` and `blinkkind.desktop` are now installed for full compatibility.
+- **Icon invisible with custom icon themes (e.g. WhiteSur-light):** The app icon was only installed to `/usr/share/pixmaps/`, which custom GTK icon themes do not search. Icon is now also installed to `/usr/share/icons/hicolor/128x128/apps/` (the standard fallback hierarchy) and referenced via absolute path in the desktop entry, bypassing icon theme cache issues entirely.
+- **Desktop entry not visible in app launcher after install:** `update-desktop-database` and `gtk-update-icon-cache` are now called automatically in the RPM `%post` scriptlet and after DEB/RPM install in `package_linux.sh`, so the launcher entry appears immediately without requiring a logout or reboot.
+- **SELinux file context on Fedora/RHEL:** Installed files now get `restorecon` applied post-install to ensure correct SELinux labels so GNOME Shell can execute the binary.
+- **GNOME app-picker cache stale after install:** `gsettings reset org.gnome.shell app-picker-layout` is now called post-install to clear the cached app grid so new entries appear without a logout.
+
 ## [1.0.3] - 2026-06-27
 
 ### Added
