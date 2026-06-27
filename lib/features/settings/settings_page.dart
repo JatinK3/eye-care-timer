@@ -523,6 +523,7 @@ class _SettingsPageState extends State<SettingsPage>
     if (!mounted || shown) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        duration: const Duration(seconds: 4),
         content: const Text('Allow display over other apps first.'),
         action: SnackBarAction(
           label: 'OK',
@@ -539,6 +540,7 @@ class _SettingsPageState extends State<SettingsPage>
     if (!mounted || shown) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        duration: const Duration(seconds: 4),
         content: const Text('Allow display over other apps first.'),
         action: SnackBarAction(
           label: 'OK',
@@ -557,6 +559,7 @@ class _SettingsPageState extends State<SettingsPage>
     setState(() => _isTestingReminder = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        duration: const Duration(seconds: 4),
         content: Text(
           shown
               ? 'Test reminder sent. Check sound and vibration.'
@@ -2980,6 +2983,7 @@ class _SettingsPageState extends State<SettingsPage>
               widget.restoreDefaultSettings();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
+                  duration: const Duration(seconds: 4),
                   content: Text(l10n.settingsRestoredSnackbar),
                   action: SnackBarAction(
                     label: 'OK',
@@ -3103,18 +3107,53 @@ class _SettingsPageState extends State<SettingsPage>
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.settingsExportedSnackbar(fileName)),
-          action: SnackBarAction(
-            label: l10n.openFolder,
-            onPressed: () {
-              if (Platform.isLinux) {
-                Process.run('xdg-open', [dir.path]);
-              } else if (Platform.isMacOS) {
-                Process.run('open', [dir.path]);
-              } else if (Platform.isWindows) {
-                Process.run('explorer.exe', [dir.path]);
-              }
-            },
+          duration: const Duration(seconds: 4),
+          content: Row(
+            children: [
+              Expanded(
+                child: Text(l10n.settingsExportedSnackbar(fileName)),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(50, 30),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  if (Platform.isLinux) {
+                    Process.run('xdg-open', [dir.path]);
+                  } else if (Platform.isMacOS) {
+                    Process.run('open', [dir.path]);
+                  } else if (Platform.isWindows) {
+                    Process.run('explorer.exe', [dir.path]);
+                  }
+                },
+                child: Text(
+                  l10n.openFolder,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(30, 30),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                },
+                child: const Text(
+                  'OK',
+                  style: TextStyle(
+                    color: Colors.orangeAccent,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -3123,6 +3162,7 @@ class _SettingsPageState extends State<SettingsPage>
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          duration: const Duration(seconds: 4),
           content: Text(l10n.settingsExportFailedSnackbar(e.toString())),
           action: SnackBarAction(
             label: 'OK',
@@ -3166,6 +3206,7 @@ class _SettingsPageState extends State<SettingsPage>
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          duration: const Duration(seconds: 4),
           content: Text(l10n.settingsRestoredSuccessSnackbar),
           action: SnackBarAction(
             label: 'OK',
@@ -3180,6 +3221,7 @@ class _SettingsPageState extends State<SettingsPage>
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          duration: const Duration(seconds: 4),
           content: Text(l10n.settingsRestoredFailedSnackbar(e.toString())),
           action: SnackBarAction(
             label: 'OK',

@@ -976,8 +976,15 @@ class _HistoryPageState extends State<HistoryPage> {
     Clipboard.setData(ClipboardData(text: content));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        duration: const Duration(seconds: 4),
         content: Text(
           AppLocalizations.of(context)!.copiedToClipboard(formatName),
+        ),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
         ),
       ),
     );
@@ -1028,12 +1035,47 @@ class _HistoryPageState extends State<HistoryPage> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.exportedToFile(fileName)),
-          action: SnackBarAction(
-            label: AppLocalizations.of(context)!.openFolder,
-            onPressed: () {
-              _openFolder(dir.path);
-            },
+          duration: const Duration(seconds: 4),
+          content: Row(
+            children: [
+              Expanded(
+                child: Text(AppLocalizations.of(context)!.exportedToFile(fileName)),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(50, 30),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  _openFolder(dir.path);
+                },
+                child: Text(
+                  AppLocalizations.of(context)!.openFolder,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(30, 30),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                },
+                child: const Text(
+                  'OK',
+                  style: TextStyle(
+                    color: Colors.orangeAccent,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -1041,8 +1083,15 @@ class _HistoryPageState extends State<HistoryPage> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          duration: const Duration(seconds: 4),
           content: Text(
             AppLocalizations.of(context)!.failedToExport(e.toString()),
+          ),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
           ),
         ),
       );
