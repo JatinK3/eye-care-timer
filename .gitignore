@@ -86,3 +86,6 @@ windows/flutter/ephemeral/
 # AI coding assistants and local configurations
 .claude/
 .gemini/
+
+# Release orchestration script
+/tool/release.sh
