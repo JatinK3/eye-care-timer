@@ -186,11 +186,11 @@
   "@peakFocusHourLabel": {
     "description": "Metric label for the hour user is most focused"
   },
-  "breakComplianceLabel": "Break compliance",
+  "breakComplianceLabel": "Eye Health Score",
   "@breakComplianceLabel": {
     "description": "Metric label for compliance rate"
   },
-  "complianceRate": "Compliance Rate",
+  "complianceRate": "Eye Health Score",
   "@complianceRate": {
     "description": "Insight label for compliance rate"
   },

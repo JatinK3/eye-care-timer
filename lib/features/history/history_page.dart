@@ -1500,8 +1500,8 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                 ),
                 ButtonSegment(
                   value: ChartMetric.compliance,
-                  icon: Icon(Icons.verified_outlined, size: 16),
-                  label: Text("Compliance", style: TextStyle(fontSize: 12)),
+                  icon: Icon(Icons.favorite_border, size: 16),
+                  label: Text("Eye Health", style: TextStyle(fontSize: 12)),
                 ),
               ],
               selected: {_activeMetric},
@@ -1536,14 +1536,14 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                       ? "${values[_selectedIndex!].toInt()} cycles / goal: ${goalValue.toInt()}"
                       : _activeMetric == ChartMetric.focusTime
                           ? "${values[_selectedIndex!].toStringAsFixed(1)} mins / goal: ${goalValue.toStringAsFixed(1)} mins"
-                          : "${values[_selectedIndex!].toStringAsFixed(1)}% compliance / goal: 80%",
+                          : "${values[_selectedIndex!].toStringAsFixed(1)}% Eye Health Score / goal: 80%",
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: values[_selectedIndex!] >= goalValue
                         ? (_activeMetric == ChartMetric.cycles
                             ? Colors.green
                             : _activeMetric == ChartMetric.focusTime
                                 ? Colors.cyan
-                                : Colors.deepPurple)
+                                : Colors.teal)
                         : Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1657,7 +1657,7 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                 } else {
                                   gradient = isGoalReached
                                       ? const LinearGradient(
-                                          colors: [Colors.deepPurple, Colors.purpleAccent],
+                                          colors: [Colors.teal, Color(0xFF64FFDA)],
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                         )

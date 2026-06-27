@@ -151,10 +151,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get peakFocusHourLabel => 'Peak focus hour';
 
   @override
-  String get breakComplianceLabel => 'Break compliance';
+  String get breakComplianceLabel => 'Eye Health Score';
 
   @override
-  String get complianceRate => 'Compliance Rate';
+  String get complianceRate => 'Eye Health Score';
 
   @override
   String get milestonesEarnedLabel => 'Milestones earned';

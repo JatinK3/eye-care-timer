@@ -675,6 +675,12 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Updated the `onBlinkReminderAcknowledged` listener (the Linux D-Bus path) in `app.dart` to also dispatch `playChime`, ensuring the same chime fires on Linux after the D-Bus `ActionInvoked` event is received.
   - Fixed an orphaned `_blinkChannel` reference in `NotificationService.initialize()` that was a pre-existing compile-time error (the per-chime channel is now built lazily inside `showBlinkReminder()`).
   - Verified `flutter analyze` reports no issues and all previously-passing tests continue to pass.
+
+- Completed Small UI/UX Tasks 11, 12, and 13:
+  - **Task 11 (Smooth Theme Transitions)**: Configured MaterialApp with `themeAnimationDuration: const Duration(milliseconds: 200)` and `themeAnimationCurve: Curves.easeInOut` in `lib/app.dart` to smoothly cross-fade when toggling between light and dark themes.
+  - **Task 12 (Live Accent Color Preview)**: Enhanced Custom Accent Color preferences in `lib/features/settings/settings_page.dart` with an immediate `onChanged` listener that updates the accent color as the user types/interacts. Added a live preview widget directly below the input field that displays a miniature timer dial and action button dynamically themed to the selected color.
+  - **Task 13 (Eye Health Score Chart & Metric)**: Rebranded "Break compliance / Compliance Rate" metrics to "Eye Health Score" (breaks taken / breaks scheduled × 100) across daily logs, statistics grids, and tooltips. Renamed the chart's segmented selector segment to "Eye Health" with a custom wellness heart icon and configured it to paint a beautiful green/teal gradient bar when the 80% goal threshold is met.
+  - Verified compilation and static analysis are completely clean.
 ---
 
 ## UI/UX Future Improvements Backlog (planned 2026-06-27)
@@ -700,7 +706,7 @@ Ideas captured from design review session. Prioritized by impact. None are sched
 
 ### 🟢 Small but Nice
 
-- [ ] **Dark/Light mode transition animation** — instead of an instant theme snap, fade between themes over ~200ms using a color-tween overlay.
-- [ ] **Custom accent color live preview** — in Settings, the accent color picker should show a mini live-preview of the timer ring and break button in the chosen color as the user drags.
-- [ ] **History page weekly eye health score** — replace or augment the raw session list with a 7-day bar chart showing "eye health score" (breaks taken / breaks scheduled × 100) per day, giving users a meaningful wellness metric.
+- [x] **Dark/Light mode transition animation** — instead of an instant theme snap, fade between themes over ~200ms using a color-tween overlay.
+- [x] **Custom accent color live preview** — in Settings, the accent color picker should show a mini live-preview of the timer ring and break button in the chosen color as the user drags.
+- [x] **History page weekly eye health score** — replace or augment the raw session list with a 7-day bar chart showing "eye health score" (breaks taken / breaks scheduled × 100) per day, giving users a meaningful wellness metric.
 

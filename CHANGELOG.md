@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-06-27
+
+### Added
+- **Smooth theme transitions:** Configured `MaterialApp` with explicitly defined `themeAnimationDuration` (200ms) and `themeAnimationCurve` (easeInOut) to cross-fade UI styles when toggling between light and dark modes instead of instantly snapping.
+- **Custom accent color live preview:** Added an immediate `onChanged` listener to the hex code TextFormField so color changes take effect as the user types or interacts. Added a mini live-preview widget block inside the color settings card displaying a themed miniature timer ring and action button so the user can verify their custom color palette instantly.
+- **Eye Health Score metric:** Rebranded "Break compliance / Compliance Rate" metrics to "Eye Health Score" (breaks completed / breaks scheduled × 100) across all logs, stats grids, and tooltips. Renamed the chart's compliance tab to "Eye Health" with a custom heart icon and configured it to paint a beautiful green/teal gradient bar when the target goal threshold (80%) is met.
+
 ## [1.0.1] - 2026-06-27
 
 ### Added

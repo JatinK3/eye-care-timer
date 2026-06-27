@@ -1128,7 +1128,7 @@ void main() {
     expect(find.text('30 days'), findsOneWidget);
     expect(find.text('20m'), findsOneWidget);
 
-    final complianceTitle = find.text('Break compliance');
+    final complianceTitle = find.text('Eye Health Score');
     await tester.scrollUntilVisible(
       complianceTitle,
       300,

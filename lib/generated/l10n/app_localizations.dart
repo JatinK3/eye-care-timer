@@ -367,13 +367,13 @@ abstract class AppLocalizations {
   /// Metric label for compliance rate
   ///
   /// In en, this message translates to:
-  /// **'Break compliance'**
+  /// **'Eye Health Score'**
   String get breakComplianceLabel;
 
   /// Insight label for compliance rate
   ///
   /// In en, this message translates to:
-  /// **'Compliance Rate'**
+  /// **'Eye Health Score'**
   String get complianceRate;
 
   /// Metric label for milestones count

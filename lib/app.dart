@@ -1177,6 +1177,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
             pageTransitionsTheme: _smoothPageTransitionsTheme,
           ),
           themeMode: _settings.themeMode,
+          themeAnimationDuration: const Duration(milliseconds: 200),
+          themeAnimationCurve: Curves.easeInOut,
           home: _isLoadingSettings
               ? const Scaffold(body: Center(child: CircularProgressIndicator()))
               : !_hasCompletedOnboarding

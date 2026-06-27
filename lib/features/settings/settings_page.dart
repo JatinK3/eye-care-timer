@@ -1678,7 +1678,7 @@ class _SettingsPageState extends State<SettingsPage>
                   ],
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                                TextFormField(
                   initialValue: widget.customAccentColorHex,
                   key: ValueKey(widget.customAccentColorHex),
                   decoration: InputDecoration(
@@ -1691,6 +1691,16 @@ class _SettingsPageState extends State<SettingsPage>
                     ),
                   ),
                   style: theme.textTheme.bodyMedium,
+                  onChanged: (val) {
+                    final cleanVal = val.trim();
+                    if (cleanVal.startsWith('#') &&
+                        (cleanVal.length == 7 || cleanVal.length == 9)) {
+                      widget.setCustomAccentColorHex(cleanVal);
+                    } else if (!cleanVal.startsWith('#') &&
+                        (cleanVal.length == 6 || cleanVal.length == 8)) {
+                      widget.setCustomAccentColorHex('#$cleanVal');
+                    }
+                  },
                   onFieldSubmitted: (val) {
                     if (val.startsWith('#') &&
                         (val.length == 7 || val.length == 9)) {
@@ -1700,6 +1710,127 @@ class _SettingsPageState extends State<SettingsPage>
                       widget.setCustomAccentColorHex('#$val');
                     }
                   },
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Accent Color Live Preview",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Mini Timer Ring Preview
+                      Column(
+                        children: [
+                          SizedBox(
+                            width: 60,
+                            height: 60,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 54,
+                                  height: 54,
+                                  child: CircularProgressIndicator(
+                                    value: 1.0,
+                                    strokeWidth: 4,
+                                    color: widget.isDark
+                                        ? Colors.white12
+                                        : Colors.black12,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 54,
+                                  height: 54,
+                                  child: CircularProgressIndicator(
+                                    value: 0.70,
+                                    strokeWidth: 4,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      ColorPresets.swatchColor(
+                                        'Custom',
+                                        widget.isDark,
+                                        customHex: widget.customAccentColorHex,
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.transparent,
+                                  ),
+                                ),
+                                Text(
+                                  "14:00",
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: widget.isDark
+                                        ? Colors.white
+                                        : Colors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            "Timer Ring",
+                            style: TextStyle(fontSize: 10, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      // Mini Break Button Preview
+                      Column(
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: () {},
+                            icon: const Icon(Icons.play_arrow, size: 14),
+                            label: const Text(
+                              "Start",
+                              style: TextStyle(fontSize: 11),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ColorPresets.swatchColor(
+                                'Custom',
+                                widget.isDark,
+                                customHex: widget.customAccentColorHex,
+                              ),
+                              foregroundColor: ThemeData.estimateBrightnessForColor(
+                                ColorPresets.swatchColor(
+                                  'Custom',
+                                  widget.isDark,
+                                  customHex: widget.customAccentColorHex,
+                                ),
+                              ) == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            "Break Button",
+                            style: TextStyle(fontSize: 10, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ],
