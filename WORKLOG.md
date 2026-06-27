@@ -4,6 +4,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Release & Versioning Policy
 - **Mandatory Changelog:** For every release, it is mandatory to create and update a `CHANGELOG.md` entry. Conventional commits and semantic Git tags (e.g. `v1.0.0`) must be maintained to enable changelog generation directly from tag differences.
+- **Helper Tooling:** Always refer to the `tool/` directory when executing build, dependency validation, packaging, or release tasks, as robust scripts (`lib_resolver.sh`, `package_linux.sh`, `package_android.sh`, `release.sh`) are already maintained there.
 
 ## Tasks
 
