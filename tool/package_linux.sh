@@ -55,7 +55,7 @@ echo "Using Flutter: $FLUTTER"
 AUTO_YES=false
 AUTO_NO=false
 CLEAR_STATE_ARG=""
-INSTALL_DEB_ARG=""
+INSTALL_PKG_ARG=""
 DEV_MODE=false
 
 for arg in "$@"; do
@@ -73,10 +73,10 @@ for arg in "$@"; do
             CLEAR_STATE_ARG="false"
             ;;
         -i|--install)
-            INSTALL_DEB_ARG="true"
+            INSTALL_PKG_ARG="true"
             ;;
         -ni|--no-install)
-            INSTALL_DEB_ARG="false"
+            INSTALL_PKG_ARG="false"
             ;;
         -d|--dev|--local)
             DEV_MODE=true
@@ -422,9 +422,17 @@ fi
 # ---------------------------------------------------------------------------
 # Optional installation step — distro-aware (DEB on apt, RPM on dnf/yum)
 # ---------------------------------------------------------------------------
-_INSTALL_PKG_MGR="$(command -v apt-get 2>/dev/null && echo apt || \
-                    command -v dnf    2>/dev/null && echo dnf || \
-                    command -v yum    2>/dev/null && echo yum || echo unknown)"
+# Detect the primary package manager label (apt / dnf / yum / unknown).
+# Using a function avoids the common pitfall where "command -v" prints the
+# binary path, causing a one-liner chain to produce a multi-line string that
+# never matches in a case statement.
+_detect_pkg_mgr() {
+    if command -v apt-get &>/dev/null; then echo apt; return; fi
+    if command -v dnf    &>/dev/null; then echo dnf; return; fi
+    if command -v yum    &>/dev/null; then echo yum; return; fi
+    echo unknown
+}
+_INSTALL_PKG_MGR="$(_detect_pkg_mgr)"
 
 _DEB_PKG="$DIST_DIR/blinkkind_${VERSION}_amd64.deb"
 _RPM_PKG="$(find "$DIST_DIR" -maxdepth 1 -name "blinkkind-${VERSION}*.rpm" 2>/dev/null | head -1)"
@@ -443,9 +451,9 @@ if [ -n "$_INSTALL_PKG" ]; then
     echo ""
     echo "========================================="
     _install_now=""
-    if [ "$INSTALL_DEB_ARG" = "true" ]; then
+    if [ "$INSTALL_PKG_ARG" = "true" ]; then
         _install_now="y"
-    elif [ "$INSTALL_DEB_ARG" = "false" ]; then
+    elif [ "$INSTALL_PKG_ARG" = "false" ]; then
         _install_now="n"
     elif [ "$AUTO_YES" = true ]; then
         _install_now="y"
