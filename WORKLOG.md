@@ -667,3 +667,32 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Removed stage warning curtains, method channel triggers (`enterWarning`), Vignette overlays, and related animation listener checks from `lib/features/timer/timer_home_page.dart`.
   - Cleaned up and deleted the two-stage warning curtain widget test from `test/widget_test.dart`.
   - Verified static analysis and all unit/widget tests pass cleanly.
+---
+
+## UI/UX Future Improvements Backlog (planned 2026-06-27)
+
+Ideas captured from design review session. Prioritized by impact. None are scheduled yet — pick from here in a future session.
+
+### 🔥 High Impact (visible, feels premium)
+
+- [ ] **Animated eye icon on timer home screen** — replace the static progress ring center with a vector eye that blinks naturally every few seconds and pulses on phase transitions (work → break → work). Clearest on-brand differentiator on the home screen.
+- [ ] **Breathing animation during breaks** — an expand/contract soft-glow circle behind the break card to encourage slow breathing; pairs with the existing guided exercises. Single `AnimationController` looping on a 4-second inhale/exhale curve.
+- [ ] **Smooth work→break phase transition animation** — a brief full-screen white (or theme-accent) flash / crossfade when the work phase ends and the break begins, so the transition feels intentional rather than abrupt.
+- [ ] **Color-coded gradient timer ring** — the progress arc shifts from a calm green → amber → orange as remaining time drops below 25% and 10%, giving the user a passive urgency signal without text.
+- [ ] **Streak milestone celebrations** — confetti burst / gold glow animation when the user hits streak milestones (5, 10, 25, 50 consecutive days). Reuse existing `streakCount` data; trigger once per milestone per day.
+
+### 🟡 Medium Impact (polish & feel)
+
+- [ ] **Compact Android home-screen widget redesign** — the current widget is functional but plain; give it a sleek minimal card style with the ring, phase label, and countdown typeset in the app's Inter font.
+- [ ] **Break countdown ring on the break screen itself** — a subtle thin ring around the break card showing how much of the break has elapsed, so users can gauge progress without needing to read the number.
+- [ ] **Haptic feedback patterns by event** — distinct vibration patterns for work-phase-complete vs. break-start vs. blink-reminder vs. postpone, instead of the current uniform haptic pulse.
+- [ ] **Settings page sectioned cards** — group the flat settings list into visually distinct card sections with section header chips, so the page feels organized rather than a long scrollable list.
+- [ ] **Onboarding flow improvement** — replace the current static onboarding text with a short animated explainer of the 20-20-20 rule (animated eye, animated 20ft/6m target, animated 20s clock).
+- [ ] **Chime in blink interactive notifications** — play the selected chime sound when the user taps the "I blinked! 👁️" notification action. On Android, assign the chime as the notification channel sound (works without the app being open). On Linux, play via the existing notification callback.
+
+### 🟢 Small but Nice
+
+- [ ] **Dark/Light mode transition animation** — instead of an instant theme snap, fade between themes over ~200ms using a color-tween overlay.
+- [ ] **Custom accent color live preview** — in Settings, the accent color picker should show a mini live-preview of the timer ring and break button in the chosen color as the user drags.
+- [ ] **History page weekly eye health score** — replace or augment the raw session list with a 7-day bar chart showing "eye health score" (breaks taken / breaks scheduled × 100) per day, giving users a meaningful wellness metric.
+
