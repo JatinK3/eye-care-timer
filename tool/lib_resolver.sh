@@ -49,6 +49,7 @@ declare -a BUILD_DEPS=(
     "ninja|ninja-build|ninja-build|Ninja build tool"
     "pkg-config|pkg-config|pkgconf-pkg-config|pkg-config tool"
     "clang|clang|clang|Clang C/C++ compiler"
+    "patchelf|patchelf|patchelf|patchelf (fixes plugin .so RPATHs for RPM packaging)"
 
     # GTK / GLib (Flutter Linux embedder + file_picker + system_tray)
     "pkgcfg:gtk+-3.0|libgtk-3-dev|gtk3-devel|GTK3 development headers"

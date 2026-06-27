@@ -377,6 +377,39 @@ cp %{SOURCE2} %{buildroot}/usr/share/pixmaps/
 - Initial release
 EOF
 
+    # ---------------------------------------------------------------------------
+    # Fix plugin .so RPATHs before packaging
+    # Flutter bakes the absolute build-time path into every plugin .so RPATH.
+    # On the packager's machine this path may contain spaces (e.g. "Telegram
+    # Desktop/..."), which rpmbuild's check-rpaths flags as error 0x0002 and
+    # hard-fails the build.
+    # Fix: replace the baked-in RPATH with '$ORIGIN' so each library resolves
+    # its siblings relative to itself at runtime — correct and portable.
+    # Fallback: if patchelf is not installed, set QA_RPATHS to bypass the check.
+    # ---------------------------------------------------------------------------
+    RPATH_FIX_OK=false
+    if command -v patchelf &>/dev/null; then
+        echo "Fixing plugin .so RPATHs with patchelf..."
+        while IFS= read -r -d '' lib; do
+            patchelf --set-rpath '$ORIGIN' "$lib" 2>/dev/null && echo "  ✓ $lib" || echo "  ⚠ Could not patch: $lib"
+        done < <(find "$RPM_BUILD_ROOT/SOURCES" -name "*.so" -print0 2>/dev/null)
+        # Also fix the staged bundle path (tar is already created; re-stage is needed)
+        # Re-bundle after patching
+        STAGED_DIR="$(mktemp -d)"
+        tar -xzf "$RPM_BUILD_ROOT/SOURCES/blinkkind-${VERSION}.tar.gz" -C "$STAGED_DIR"
+        while IFS= read -r -d '' lib; do
+            patchelf --set-rpath '$ORIGIN' "$lib" 2>/dev/null
+        done < <(find "$STAGED_DIR" -name "*.so" -print0 2>/dev/null)
+        tar -czf "$RPM_BUILD_ROOT/SOURCES/blinkkind-${VERSION}.tar.gz" -C "$STAGED_DIR" .
+        rm -rf "$STAGED_DIR"
+        RPATH_FIX_OK=true
+        echo "  ✓ RPATH fix complete."
+    else
+        echo "Notice: 'patchelf' not found — setting QA_RPATHS to bypass RPATH check."
+        echo "  Install patchelf for a proper fix: sudo dnf install -y patchelf"
+        export QA_RPATHS=$(( 0x0001|0x0002 ))
+    fi
+
     # Build RPM package
     rpmbuild --define "_topdir $RPM_BUILD_ROOT" -bb "$RPM_BUILD_ROOT/SPECS/blinkkind.spec"
 
