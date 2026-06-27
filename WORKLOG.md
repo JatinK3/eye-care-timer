@@ -193,13 +193,6 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 ### 2026-06-27 (Session end ~14:15 IST)
 
 **Completed this session:**
-- **Flutter SDK installation via git clone** — cloned Flutter stable (3.44.4) to `~/development/flutter` using `git clone https://github.com/flutter/flutter.git -b stable`. Added `$HOME/development/flutter/bin` to `~/.zshrc` PATH (system uses zsh, not bash). Dart 3.12.2 and DevTools 2.57.0 bootstrapped on first run.
-- **Android SDK setup without Android Studio** — installed Android command-line tools only:
-  - Downloaded `commandlinetools-linux-11076708_latest.zip` from Google and extracted to `~/development/android/cmdline-tools/latest/`.
-  - Accepted all SDK licenses via `sdkmanager --licenses`.
-  - Installed `platform-tools`, `platforms;android-35`, `build-tools;35.0.0`, then upgraded to `platforms;android-36` and `build-tools;28.0.3` to satisfy Flutter 3.44.4's minimum SDK requirements.
-  - Configured Flutter: `flutter config --android-sdk ~/development/android`.
-  - `flutter doctor` result: Android toolchain ✓, Chrome ✓, Linux toolchain ✓, Connected devices ✓, Network resources ✓.
 - **Dynamic Flutter SDK path in `tool/package_linux.sh`** — replaced the hardcoded `/home/jatin/development/flutter/bin/flutter` path (×3 occurrences) with a `resolve_flutter()` function. Resolution order: (1) `flutter` on `$PATH`, (2) common install locations (`~/development/flutter`, `~/flutter`, `/opt/flutter`, `/usr/local/flutter`, snap), (3) explicit `$FLUTTER_HOME` env var. Exits early with a clear error message if Flutter is not found.
 - **Cross-distro native library checker `tool/lib_resolver.sh`** — created a new standalone script that detects and installs all native Linux libraries required by BlinkKind's Flutter plugins before a build begins:
   - Supports `apt` (Ubuntu/Debian), `dnf` (Fedora/RHEL), `yum` (CentOS), `pacman` (Arch).
@@ -217,8 +210,6 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 **State at end of session:**
 - `bash -n tool/lib_resolver.sh` → syntax OK
 - `bash -n tool/package_linux.sh` → syntax OK
-- Flutter 3.44.4 stable installed at `~/development/flutter`
-- Android SDK 36 + build-tools 28.0.3 at `~/development/android`
 
 ---
 
