@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-06-27
+
+### Added
+- **Color-coded gradient timer ring:** The circular progress arc dynamically shifts from a calming Emerald/Mint green → Amber/Yellow (≤ 25% remaining) → Orange/Coral (≤ 10% remaining) during work phases, giving a passive urgency signal without interrupting focus. The focus-mode background breathing glow synchronises its colour to match the active ring state.
+
+### Fixed
+- **Blink notification burst (AI path):** Resolved a bug where 3–4 blink reminder notifications would fire simultaneously after several minutes of work. Async AI-fetched message futures attached via `.then()` were only checking whether the timer was running, but not the cadence-bucket dedup guard. If the AI provider was slow and the response resolved after the next cadence had started, all pending callbacks fired at once. Fixed by introducing a `postNotification()` closure that captures the current bucket at trigger time and re-verifies the dedup guard before posting, regardless of when the async response arrives.
+- **Linux notification sound not playing on first install:** Corrected `soundEnabled` default to `true` in both `TimerSettings` and `PreferencesService` so in-app chimes are active out of the box on new/reset installations. Resolved Linux playback fallback chain to use `pw-play` → `paplay` → `aplay` so audio works across PipeWire and PulseAudio systems.
+
+### Changed
+- **SnackBar quick-dismiss:** All in-app `SnackBar` toasts now include an **OK** action button so the user can dismiss them immediately rather than waiting for the 4-second auto-hide.
+- **Linux packaging `--reinstall` flag:** `tool/package_linux.sh` now accepts `-R` / `--reinstall` which removes the previously installed `blinkkind` package before installing the freshly built one, enabling clean re-installation without manual `dnf remove` / `apt remove`.
+
+
 ## [1.0.2] - 2026-06-27
 
 ### Added
