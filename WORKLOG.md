@@ -2,6 +2,9 @@
 
 This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update status as work is completed so future sessions can resume without losing context.
 
+## Release & Versioning Policy
+- **Mandatory Changelog:** For every release, it is mandatory to create and update a `CHANGELOG.md` entry. Conventional commits and semantic Git tags (e.g. `v1.0.0`) must be maintained to enable changelog generation directly from tag differences.
+
 ## Tasks
 
 ### Prioritized Backlog
