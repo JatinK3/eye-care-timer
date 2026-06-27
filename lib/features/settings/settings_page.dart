@@ -3113,12 +3113,9 @@ class _SettingsPageState extends State<SettingsPage>
               Expanded(
                 child: Text(l10n.settingsExportedSnackbar(fileName)),
               ),
-              TextButton(
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(50, 30),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
+              const SizedBox(width: 8),
+              _SnackBarButton(
+                label: l10n.openFolder,
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                   if (Platform.isLinux) {
@@ -3129,29 +3126,12 @@ class _SettingsPageState extends State<SettingsPage>
                     Process.run('explorer.exe', [dir.path]);
                   }
                 },
-                child: Text(
-                  l10n.openFolder,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
               ),
-              const SizedBox(width: 12),
-              TextButton(
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(30, 30),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                },
-                child: const Text(
-                  'OK',
-                  style: TextStyle(
-                    color: Colors.orangeAccent,
-                  ),
-                ),
+              const SizedBox(width: 4),
+              _SnackBarButton(
+                label: 'OK',
+                onPressed: () =>
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar(),
               ),
             ],
           ),
@@ -3530,4 +3510,33 @@ class SettingItem {
     required this.widget,
     required this.category,
   });
+}
+
+/// A compact action button styled for use inside [SnackBar] content Rows.
+/// Uses the SnackBar's inverse-primary color, has a rounded pill background,
+/// and shows a proper Material hover/ripple so it clearly looks clickable.
+class _SnackBarButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onPressed;
+
+  const _SnackBarButton({required this.label, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return TextButton(
+      style: TextButton.styleFrom(
+        foregroundColor: cs.inversePrimary,
+        backgroundColor: cs.inversePrimary.withValues(alpha: 0.15),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        minimumSize: const Size(40, 32),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: const StadiumBorder(),
+      ).copyWith(
+        overlayColor: WidgetStatePropertyAll(cs.inversePrimary.withValues(alpha: 0.22)),
+      ),
+      onPressed: onPressed,
+      child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+    );
+  }
 }

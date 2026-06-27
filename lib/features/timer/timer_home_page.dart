@@ -3887,44 +3887,76 @@ class _GlassmorphicBackgroundState extends State<_GlassmorphicBackground>
       builder: (context, child) {
         final value = _controller.value * 2 * math.pi;
 
-        // Slow fluid motion in a circular path
-        final dx1 = math.sin(value) * 0.15;
-        final dy1 = math.cos(value) * 0.15;
+        // Slow fluid drift — primary orb near top-left, drifts toward center
+        final dx1 = math.sin(value) * 0.12;
+        final dy1 = math.cos(value) * 0.10;
 
-        final dx2 = math.cos(value + math.pi / 2) * 0.18;
-        final dy2 = math.sin(value + math.pi / 2) * 0.12;
+        // Secondary orb near bottom-right
+        final dx2 = math.cos(value + math.pi / 3) * 0.14;
+        final dy2 = math.sin(value + math.pi / 3) * 0.10;
+
+        // Accent orb — small, sits near center-right, opposite phase
+        final dx3 = math.sin(value + math.pi) * 0.20;
+        final dy3 = math.cos(value + math.pi) * 0.15;
 
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            // Left-top drifting glass orb
+            // Primary orb — top-left quadrant, drifts toward ring edge
             Align(
-              alignment: Alignment(-0.8 + dx1, -0.6 + dy1),
+              alignment: Alignment(-0.55 + dx1, -0.50 + dy1),
               child: Container(
-                width: 320,
-                height: 320,
+                width: 420,
+                height: 420,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: primaryOrbColor.withValues(alpha: widget.isDark ? 0.15 : 0.35),
+                  gradient: RadialGradient(
+                    colors: [
+                      primaryOrbColor.withValues(alpha: widget.isDark ? 0.80 : 0.50),
+                      primaryOrbColor.withValues(alpha: 0.0),
+                    ],
+                  ),
                 ),
               ),
             ),
-            // Right-bottom drifting glass orb
+            // Secondary orb — bottom-right quadrant
             Align(
-              alignment: Alignment(0.8 + dx2, 0.5 + dy2),
+              alignment: Alignment(0.60 + dx2, 0.55 + dy2),
               child: Container(
-                width: 360,
-                height: 360,
+                width: 400,
+                height: 400,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: secondaryOrbColor.withValues(alpha: widget.isDark ? 0.12 : 0.30),
+                  gradient: RadialGradient(
+                    colors: [
+                      secondaryOrbColor.withValues(alpha: widget.isDark ? 0.65 : 0.40),
+                      secondaryOrbColor.withValues(alpha: 0.0),
+                    ],
+                  ),
                 ),
               ),
             ),
-            // High-radius blur to blend the orbs into the background gradient smoothly
+            // Accent orb — small, near center-right, adds depth behind the ring
+            Align(
+              alignment: Alignment(0.30 + dx3, 0.10 + dy3),
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      primaryOrbColor.withValues(alpha: widget.isDark ? 0.45 : 0.25),
+                      primaryOrbColor.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Light blur to smooth edges — kept low so orbs stay vivid
             Positioned.fill(
               child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 85, sigmaY: 85),
+                filter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
                 child: const SizedBox.shrink(),
               ),
             ),

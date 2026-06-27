@@ -51,34 +51,39 @@ class ColorPresets {
   }
 
   /// Returns the orb/blob colors used for the glassmorphic background effect.
-  /// The two colors are placed at opposite corners of the screen.
+  /// Two orbs per preset — both from the same hue family for a cohesive look.
   static List<Color> glassOrbColors(String preset, bool isDark, {String? customHex}) {
     if (preset == 'Custom' && customHex != null) {
       final base = _parseHexColor(customHex);
-      final a = HSLColor.fromColor(base).withLightness(isDark ? 0.18 : 0.70).withSaturation(0.60).toColor();
-      final b = HSLColor.fromColor(base).withLightness(isDark ? 0.10 : 0.85).withSaturation(0.45).toColor();
+      final a = HSLColor.fromColor(base).withLightness(isDark ? 0.38 : 0.70).withSaturation(0.80).toColor();
+      final b = HSLColor.fromColor(base).withLightness(isDark ? 0.25 : 0.85).withSaturation(0.65).toColor();
       return [a, b];
     }
     return switch (preset) {
+      // Vivid cyan-blue family
       'Calm Blue' => isDark
-          ? [const Color(0xFF1A4A7A), const Color(0xFF0D2444)]
-          : [const Color(0xFF90C8F8), const Color(0xFFBFDFFB)],
+          ? [const Color(0xFF1565C0), const Color(0xFF0D47A1)]
+          : [const Color(0xFF42A5F5), const Color(0xFF90CAF9)],
+      // Vivid emerald-green family
       'Forest' => isDark
-          ? [const Color(0xFF0D3D20), const Color(0xFF1A5530)]
-          : [const Color(0xFF72C98A), const Color(0xFFAAE0B8)],
+          ? [const Color(0xFF1B5E20), const Color(0xFF2E7D32)]
+          : [const Color(0xFF43A047), const Color(0xFF81C784)],
+      // Vivid pink-rose family
       'Rose' => isDark
-          ? [const Color(0xFF5A1530), const Color(0xFF3A0E20)]
-          : [const Color(0xFFF4A0BA), const Color(0xFFFAC8D8)],
+          ? [const Color(0xFF880E4F), const Color(0xFFAD1457)]
+          : [const Color(0xFFEC407A), const Color(0xFFF48FB1)],
+      // Blue-grey family
       'Graphite' => isDark
-          ? [const Color(0xFF1E2A38), const Color(0xFF2E3E50)]
-          : [const Color(0xFFAAB8C8), const Color(0xFFCFD8E0)],
+          ? [const Color(0xFF37474F), const Color(0xFF455A64)]
+          : [const Color(0xFF78909C), const Color(0xFFB0BEC5)],
+      // Vivid amber-orange family
       'Sunrise' => isDark
-          ? [const Color(0xFF6B2E10), const Color(0xFF4A1E08)]
-          : [const Color(0xFFF7A060), const Color(0xFFFACDA0)],
-      // Pastel / default
+          ? [const Color(0xFFE65100), const Color(0xFFBF360C)]
+          : [const Color(0xFFFF7043), const Color(0xFFFFAB91)],
+      // Teal family
       _ => isDark
-          ? [const Color(0xFF0E3535), const Color(0xFF1A4040)]
-          : [const Color(0xFF80C8C0), const Color(0xFFAAE0D8)],
+          ? [const Color(0xFF006064), const Color(0xFF00838F)]
+          : [const Color(0xFF26C6DA), const Color(0xFF80DEEA)],
     };
   }
 
