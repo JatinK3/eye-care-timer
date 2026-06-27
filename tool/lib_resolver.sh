@@ -221,7 +221,78 @@ resolve_build_deps() {
     echo ""
 }
 
+# ── plugin source patches ─────────────────────────────────────────────────────
+# Applies known C/C++ source-level fixes to Flutter plugin files that fail to
+# compile on Clang (Fedora/Arch) due to -Werror flags that GCC (Ubuntu) ignores.
+# Patches are idempotent — safe to run on every build.
+# Both the pub-cache master copy and the in-project symlink are patched so the
+# fix survives `flutter clean` + `flutter pub get` on any distro.
+
+_patch_file() {
+    local file="$1" description="$2"
+    shift 2
+    # Remaining args are sed -e expressions
+    if [ ! -f "$file" ]; then
+        return 0
+    fi
+    if sed "${@}" "$file" | diff -q "$file" - &>/dev/null; then
+        _lr_ok "Already patched: $description"
+        return 0
+    fi
+    if [ "${LIB_RESOLVER_DRY_RUN:-0}" = "1" ]; then
+        _lr_info "DRY-RUN: would patch $file ($description)"
+        return 0
+    fi
+    sed -i "${@}" "$file" && _lr_ok "Patched: $description" || _lr_warn "Could not patch: $file"
+}
+
+patch_plugin_sources() {
+    echo ""
+    echo "========================================="
+    echo "Patching Flutter plugin C++ sources..."
+    echo "========================================="
+
+    # ── hotkey_manager_linux ──────────────────────────────────────────────
+    # Fix: -Werror,-Wsometimes-uninitialized on `identifier` and `keystring`
+    # Both variables are declared uninitialized and only assigned inside an
+    # `if` block, which Clang treats as a hard error (GCC silently ignores it).
+    local hotkey_patch_args=(
+        -e 's/const char\* identifier;/const char* identifier = nullptr;/g'
+        -e 's/const char\* keystring;/const char* keystring = nullptr;/g'
+    )
+
+    # 1. Pub-cache master copy (survives flutter clean / pub get)
+    local pub_cache_hotkey
+    pub_cache_hotkey="$(find "${PUB_CACHE:-$HOME/.pub-cache}" \
+        -path "*/hotkey_manager_linux*/hotkey_manager_linux_plugin.cc" \
+        2>/dev/null | head -1)"
+    if [ -n "$pub_cache_hotkey" ]; then
+        _patch_file "$pub_cache_hotkey" \
+            "hotkey_manager_linux (pub cache) — uninitialized identifier/keystring" \
+            "${hotkey_patch_args[@]}"
+    else
+        _lr_warn "hotkey_manager_linux not found in pub cache — skipping pub-cache patch."
+    fi
+
+    # 2. In-project symlink copy (active build tree)
+    local symlink_hotkey
+    symlink_hotkey="$(find "${PROJECT_DIR:-$PWD}" \
+        -path "*/.plugin_symlinks/hotkey_manager_linux/linux/hotkey_manager_linux_plugin.cc" \
+        2>/dev/null | head -1)"
+    if [ -n "$symlink_hotkey" ]; then
+        _patch_file "$symlink_hotkey" \
+            "hotkey_manager_linux (symlink) — uninitialized identifier/keystring" \
+            "${hotkey_patch_args[@]}"
+    else
+        _lr_info "hotkey_manager_linux symlink not yet generated — pub-cache patch is sufficient."
+    fi
+
+    echo "========================================="
+    echo ""
+}
+
 # Run directly if executed (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     resolve_build_deps
+    patch_plugin_sources
 fi

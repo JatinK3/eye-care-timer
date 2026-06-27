@@ -108,6 +108,7 @@ if [ "$DEV_MODE" = "true" ]; then
     # Check & install missing native libs before building
     if declare -f resolve_build_deps &>/dev/null; then
         resolve_build_deps
+        patch_plugin_sources
     fi
     cd "$PROJECT_DIR"
     "$FLUTTER" clean
@@ -179,6 +180,7 @@ fi
 # Check & install missing native libs before building
 if declare -f resolve_build_deps &>/dev/null; then
     resolve_build_deps
+    patch_plugin_sources
 fi
 
 "$FLUTTER" clean
