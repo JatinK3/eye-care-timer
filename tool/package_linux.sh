@@ -296,7 +296,9 @@ if ! command -v rpmbuild &>/dev/null; then
     echo "    Fedora/RHEL : sudo dnf install -y rpm-build"
     echo "    Ubuntu/Debian: sudo apt-get install -y rpm"
 else
-    RPM_BUILD_ROOT="$PROJECT_DIR/build/rpm_build"
+    # Use a space-free temp path — rpmbuild splits _topdir on spaces,
+    # so paths like "Telegram Desktop/..." cause tar/prep to fail.
+    RPM_BUILD_ROOT="/tmp/blinkkind_rpm_build"
     rm -rf "$RPM_BUILD_ROOT"
     mkdir -p "$RPM_BUILD_ROOT"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
     
@@ -377,9 +379,10 @@ EOF
 
     # Build RPM package
     rpmbuild --define "_topdir $RPM_BUILD_ROOT" -bb "$RPM_BUILD_ROOT/SPECS/blinkkind.spec"
-    
-    # Copy build result to dist/
+
+    # Copy built RPMs to dist/ and clean up temp build root
     find "$RPM_BUILD_ROOT/RPMS" -name "*.rpm" -exec cp {} "$DIST_DIR/" \;
+    rm -rf "$RPM_BUILD_ROOT"
     echo "✓ RPM package created in dist/ directory."
 fi
 
