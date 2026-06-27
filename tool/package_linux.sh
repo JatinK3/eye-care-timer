@@ -273,7 +273,7 @@ Section: utils
 Priority: optional
 Architecture: amd64
 Maintainer: Jatin Khattar <khattarjatin374@gmail.com>
-Depends: libgtk-3-0, libayatana-appindicator3-1, libx11-6
+Depends: libgtk-3-0, libayatana-appindicator3-1 | libappindicator3-1, libx11-6
 Description: BlinkKind: Eye Break Timer
  A focused eye break timer for healthier screen sessions.
 EOF
