@@ -73,6 +73,20 @@
             </intent-filter>
         </receiver>
 
+        <!-- Android Home Screen Widget -->
+        <receiver
+            android:name=".TimerWidgetProvider"
+            android:exported="true"
+            android:label="BlinkKind Timer">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.jatin.eyecaretimer.action.UPDATE_WIDGET" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/timer_widget_info" />
+        </receiver>
+
         <!-- Receivers for Flutter Local Notifications -->
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"

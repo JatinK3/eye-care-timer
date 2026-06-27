@@ -173,7 +173,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] **Settings backup/restore, then cloud sync** — start with config export/import (JSON) to complement the existing history export; later add optional account-based sync of settings + history across devices.
 - [x] **Meeting / camera-in-use auto-postpone** — detect an active camera/mic (video calls) or a calendar event and postpone the break, extending the existing smart-idle/DND logic.
 - [ ] **Per-app rules & profiles** — don't interrupt while chosen apps are focused; "Work" vs "Gaming" profiles with different cadences.
-- [ ] **Home-screen widgets & OS surfaces** — Android home widget, iOS widget + Live Activity, macOS menu-bar extra, Windows taskbar progress.
+- [x] **Home-screen widgets & OS surfaces** — Android home widget implemented natively (TimerWidgetProvider) and updated from foreground service. iOS widget, macOS menu-bar extra, and Windows progress remain on backlog.
 - [x] **Wellness micro-breaks (modular)** — optional hydration / posture / stretch reminders alongside eye breaks (opt-in modules).
 - [x] **OS DND / Focus integration** — set system Do-Not-Disturb / Focus during work phases.
 

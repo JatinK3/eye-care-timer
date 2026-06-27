@@ -137,6 +137,7 @@ class TimerForegroundService : Service() {
             val manager =
                 getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.notify(NOTIFICATION_ID, buildOngoingNotification())
+            TimerWidgetProvider.triggerUpdate(this@TimerForegroundService)
             handler.postDelayed(this, 1000)
         }
     }
@@ -689,6 +690,7 @@ class TimerForegroundService : Service() {
             .putBoolean("isScreenOffPaused", isScreenOffPaused)
             .putLong("pausedRemainingSeconds", pausedRemainingSeconds)
             .commit()
+        TimerWidgetProvider.triggerUpdate(this)
     }
 
     private fun restoreState(): Boolean {
@@ -728,6 +730,7 @@ class TimerForegroundService : Service() {
 
     private fun clearState() {
         statePreferences().edit().clear().commit()
+        TimerWidgetProvider.triggerUpdate(this)
     }
 
     companion object {
