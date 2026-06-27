@@ -261,12 +261,16 @@ else
     mkdir -p "$DEB_STAGE/usr/bin"
     mkdir -p "$DEB_STAGE/usr/share/applications"
     mkdir -p "$DEB_STAGE/usr/share/pixmaps"
+    # hicolor is the standard fallback theme used by all GTK desktops;
+    # custom themes (e.g. WhiteSur) do NOT search /usr/share/pixmaps.
+    mkdir -p "$DEB_STAGE/usr/share/icons/hicolor/128x128/apps"
 
     # Copy binary bundle files
     cp -r "$BUILD_DIR"/* "$DEB_STAGE/opt/blinkkind/"
 
-    # Copy application icon
+    # Copy application icon to both locations for maximum compatibility
     cp "$PROJECT_DIR/assets/app_icon.png" "$DEB_STAGE/usr/share/pixmaps/blinkkind.png"
+    cp "$PROJECT_DIR/assets/app_icon.png" "$DEB_STAGE/usr/share/icons/hicolor/128x128/apps/blinkkind.png"
 
     # Create /usr/bin launcher wrapper
     cat << 'EOF' > "$DEB_STAGE/usr/bin/blinkkind"
@@ -396,12 +400,29 @@ mkdir -p %{buildroot}/usr/share/applications
 cp %{SOURCE1} %{buildroot}/usr/share/applications/
 mkdir -p %{buildroot}/usr/share/pixmaps
 cp %{SOURCE2} %{buildroot}/usr/share/pixmaps/
+# hicolor is the standard fallback theme; custom themes (e.g. WhiteSur)
+# do NOT search /usr/share/pixmaps — install here for universal compatibility.
+mkdir -p %{buildroot}/usr/share/icons/hicolor/128x128/apps
+cp %{SOURCE2} %{buildroot}/usr/share/icons/hicolor/128x128/apps/blinkkind.png
+
+%post
+# Refresh icon cache so the app icon appears immediately in all GTK themes
+if command -v gtk-update-icon-cache &>/dev/null; then
+    gtk-update-icon-cache -f -t /usr/share/icons/hicolor &>/dev/null || true
+fi
+# Reset GNOME app-picker layout cache so new entry is visible without logout
+if command -v gsettings &>/dev/null; then
+    DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u $(logname 2>/dev/null || echo $SUDO_USER))/bus" \
+    DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS} \
+    gsettings reset org.gnome.shell app-picker-layout &>/dev/null || true
+fi
 
 %files
 /opt/blinkkind/
 /usr/bin/blinkkind
 /usr/share/applications/blinkkind.desktop
 /usr/share/pixmaps/blinkkind.png
+/usr/share/icons/hicolor/128x128/apps/blinkkind.png
 
 %changelog
 * Tue Jun 23 2026 Jatin Khattar <khattarjatin374@gmail.com> - 1.0.0-1
