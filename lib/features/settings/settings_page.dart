@@ -518,7 +518,15 @@ class _SettingsPageState extends State<SettingsPage>
     final shown = await widget.showOverlayPreview();
     if (!mounted || shown) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Allow display over other apps first.')),
+      SnackBar(
+        content: const Text('Allow display over other apps first.'),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
     );
   }
 
@@ -526,7 +534,15 @@ class _SettingsPageState extends State<SettingsPage>
     final shown = await widget.showRealBreakTest();
     if (!mounted || shown) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Allow display over other apps first.')),
+      SnackBar(
+        content: const Text('Allow display over other apps first.'),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
     );
   }
 
@@ -541,6 +557,12 @@ class _SettingsPageState extends State<SettingsPage>
           shown
               ? 'Test reminder sent. Check sound and vibration.'
               : 'Test failed. Allow notifications and try again.',
+        ),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
         ),
       ),
     );
@@ -2923,7 +2945,15 @@ class _SettingsPageState extends State<SettingsPage>
               Navigator.of(ctx).pop();
               widget.restoreDefaultSettings();
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.settingsRestoredSnackbar)),
+                SnackBar(
+                  content: Text(l10n.settingsRestoredSnackbar),
+                  action: SnackBarAction(
+                    label: 'OK',
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    },
+                  ),
+                ),
               );
             },
             child: Text(l10n.settingsReset),
@@ -3059,6 +3089,12 @@ class _SettingsPageState extends State<SettingsPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.settingsExportFailedSnackbar(e.toString())),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         ),
       );
     }
@@ -3094,7 +3130,15 @@ class _SettingsPageState extends State<SettingsPage>
       if (!context.mounted) return;
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.settingsRestoredSuccessSnackbar)),
+        SnackBar(
+          content: Text(l10n.settingsRestoredSuccessSnackbar),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
+        ),
       );
     } catch (e) {
       if (!context.mounted) return;
@@ -3102,6 +3146,12 @@ class _SettingsPageState extends State<SettingsPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.settingsRestoredFailedSnackbar(e.toString())),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         ),
       );
     }

@@ -1299,6 +1299,12 @@ class TimerHomePageState extends State<TimerHomePage>
       SnackBar(
         content: Text(AppLocalizations.of(context)!.timerNaturalBreakCredited),
         duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
       ),
     );
   }
@@ -1484,6 +1490,12 @@ class TimerHomePageState extends State<TimerHomePage>
             'You\'ve skipped $limit break${limit == 1 ? '' : 's'} in a row — take a moment to rest your eyes! 👁️',
           ),
           duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         ),
       );
       return;
@@ -1641,11 +1653,17 @@ class TimerHomePageState extends State<TimerHomePage>
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
+              SnackBar(
+                content: const Text(
                   'Natural break detected while away! Timer reset.',
                 ),
-                duration: Duration(seconds: 4),
+                duration: const Duration(seconds: 4),
+                action: SnackBarAction(
+                  label: 'OK',
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  },
+                ),
               ),
             );
           });
