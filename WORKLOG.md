@@ -8,8 +8,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## UI/UX Enhancement Plan
 - [x] **Interactive Eye Exercise Animations** — Build smooth, relaxing animated guides (e.g. a moving focus target or breathing guide) on the break overlay screen.
-- [ ] **Immersive Desk Clock Customizations** — Enhance the Desk Clock layout with advanced glassmorphic styling, modern typography, and ambient animations. *(In progress)*
-- [ ] **Interactive History Charts** — Integrate sleek visual charts (bar/line charts) on the History screen to track focus times and compliance rates.
+- [x] **Immersive Desk Clock Customizations** — Enhance the Desk Clock layout with advanced glassmorphic styling, modern typography, and ambient animations.
+- [ ] **Interactive History Charts** — Integrate sleek visual charts (bar/line charts) on the History screen to track focus times and compliance rates. *(In progress)*
 - [ ] **Audio Chime Selector UI** — Add a beautiful settings interface to preview and select different gentle audio chimes (Tibetan bowl, birds, etc.) for work/break alarms.
 
 ## Tasks
