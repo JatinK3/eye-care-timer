@@ -288,6 +288,41 @@ patch_plugin_sources() {
         _lr_info "hotkey_manager_linux symlink not yet generated — pub-cache patch is sufficient."
     fi
 
+    # ── system_tray ───────────────────────────────────────────────────────
+    # Fix: Segmentation fault in Fedora/GNOME when calling InitSystemTray
+    # system_tray calls dlopen("libappindicator3.so.1") which crashes on Fedora.
+    # We patch it to try libayatana-appindicator3.so.1 first, which is a drop-in
+    # compatible replacement that handles modern DBus environments safely.
+    local system_tray_patch_args=(
+        -e 's/void\* handle = dlopen("libappindicator3.so.1", RTLD_LAZY);/void* handle = dlopen("libayatana-appindicator3.so.1", RTLD_LAZY); if (!handle) { handle = dlopen("libappindicator3.so.1", RTLD_LAZY); }/g'
+    )
+
+    # 1. Pub-cache master copy (survives flutter clean / pub get)
+    local pub_cache_system_tray
+    pub_cache_system_tray="$(find "${PUB_CACHE:-$HOME/.pub-cache}" \
+        -path "*/system_tray*/linux/tray.cc" \
+        2>/dev/null | head -1)"
+    if [ -n "$pub_cache_system_tray" ]; then
+        _patch_file "$pub_cache_system_tray" \
+            "system_tray (pub cache) — load libayatana-appindicator3 first" \
+            "${system_tray_patch_args[@]}"
+    else
+        _lr_warn "system_tray not found in pub cache — skipping pub-cache patch."
+    fi
+
+    # 2. In-project symlink copy (active build tree)
+    local symlink_system_tray
+    symlink_system_tray="$(find "${PROJECT_DIR:-$PWD}" \
+        -path "*/.plugin_symlinks/system_tray/linux/tray.cc" \
+        2>/dev/null | head -1)"
+    if [ -n "$symlink_system_tray" ]; then
+        _patch_file "$symlink_system_tray" \
+            "system_tray (symlink) — load libayatana-appindicator3 first" \
+            "${system_tray_patch_args[@]}"
+    else
+        _lr_info "system_tray symlink not yet generated — pub-cache patch is sufficient."
+    fi
+
     echo "========================================="
     echo ""
 }
