@@ -285,8 +285,12 @@ fi
 EOF
     chmod +x "$DEB_STAGE/usr/bin/blinkkind"
 
-    # Create desktop entry launcher
-    cat << 'EOF' > "$DEB_STAGE/usr/share/applications/blinkkind.desktop"
+    # Create desktop entry launcher.
+    # IMPORTANT: On GNOME Wayland the desktop filename MUST match the GTK
+    # application ID (com.jatin.eyecaretimer) so GNOME can associate the
+    # running window with its icon. A blinkkind.desktop copy is also kept
+    # for CLI / legacy launchers.
+    cat << 'EOF' > "$DEB_STAGE/usr/share/applications/com.jatin.eyecaretimer.desktop"
 [Desktop Entry]
 Name=BlinkKind
 Comment=A focused eye break timer for healthier screen sessions
@@ -298,7 +302,10 @@ Categories=Utility;
 StartupNotify=true
 StartupWMClass=com.jatin.eyecaretimer
 EOF
-    chmod +x "$DEB_STAGE/usr/share/applications/blinkkind.desktop"
+    chmod +x "$DEB_STAGE/usr/share/applications/com.jatin.eyecaretimer.desktop"
+    # Keep blinkkind.desktop as a copy for CLI / legacy launcher compatibility
+    cp "$DEB_STAGE/usr/share/applications/com.jatin.eyecaretimer.desktop" \
+       "$DEB_STAGE/usr/share/applications/blinkkind.desktop"
 
     # Create Debian control file (variable expansion enabled to insert $VERSION)
     cat << EOF > "$DEB_STAGE/DEBIAN/control"
@@ -341,8 +348,12 @@ else
     tar -czf "$RPM_BUILD_ROOT/SOURCES/blinkkind-${VERSION}.tar.gz" -C "$BUILD_DIR" .
     cp "$PROJECT_DIR/assets/app_icon.png" "$RPM_BUILD_ROOT/SOURCES/blinkkind.png"
     
-    # Create desktop launcher file in SOURCES
-    cat << 'EOF' > "$RPM_BUILD_ROOT/SOURCES/blinkkind.desktop"
+    # Create desktop launcher file in SOURCES.
+    # IMPORTANT: On GNOME Wayland the desktop filename MUST match the GTK
+    # application ID (com.jatin.eyecaretimer) so GNOME can associate the
+    # running window with its icon. A blinkkind.desktop copy is also kept
+    # for CLI / legacy launchers.
+    cat << 'EOF' > "$RPM_BUILD_ROOT/SOURCES/com.jatin.eyecaretimer.desktop"
 [Desktop Entry]
 Name=BlinkKind
 Comment=A focused eye break timer for healthier screen sessions
@@ -354,6 +365,9 @@ Categories=Utility;
 StartupNotify=true
 StartupWMClass=com.jatin.eyecaretimer
 EOF
+    # Keep blinkkind.desktop as a copy for CLI / legacy launcher compatibility
+    cp "$RPM_BUILD_ROOT/SOURCES/com.jatin.eyecaretimer.desktop" \
+       "$RPM_BUILD_ROOT/SOURCES/blinkkind.desktop"
 
     # Write launcher script to SOURCES upfront
     cat << 'EOF' > "$RPM_BUILD_ROOT/SOURCES/blinkkind-launcher"
@@ -380,6 +394,7 @@ Source0:        blinkkind-%{version}.tar.gz
 Source1:        blinkkind.desktop
 Source2:        blinkkind.png
 Source3:        blinkkind-launcher
+Source4:        com.jatin.eyecaretimer.desktop
 Requires:       gtk3, libX11
 
 %description
@@ -398,6 +413,9 @@ mkdir -p %{buildroot}/usr/bin
 install -m 755 %{SOURCE3} %{buildroot}/usr/bin/blinkkind
 mkdir -p %{buildroot}/usr/share/applications
 cp %{SOURCE1} %{buildroot}/usr/share/applications/
+# IMPORTANT: On GNOME Wayland the desktop filename MUST match the GTK
+# application ID so GNOME can associate the running window with its icon.
+cp %{SOURCE4} %{buildroot}/usr/share/applications/
 mkdir -p %{buildroot}/usr/share/pixmaps
 cp %{SOURCE2} %{buildroot}/usr/share/pixmaps/
 # hicolor is the standard fallback theme; custom themes (e.g. WhiteSur)
@@ -421,6 +439,7 @@ fi
 /opt/blinkkind/
 /usr/bin/blinkkind
 /usr/share/applications/blinkkind.desktop
+/usr/share/applications/com.jatin.eyecaretimer.desktop
 /usr/share/pixmaps/blinkkind.png
 /usr/share/icons/hicolor/128x128/apps/blinkkind.png
 
