@@ -565,12 +565,20 @@ class TimerForegroundService : Service() {
 
     private fun buildOngoingNotification(): Notification {
         val phase = if (isBreak) "Break time" else "Focus time"
-        return baseBuilder()
+        val builder = baseBuilder()
             .setContentTitle(phase)
-            .setContentText("${formatRemaining(secondsRemaining())} remaining")
             .setOngoing(true)
-            .setUsesChronometer(false)
-            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            builder.setUsesChronometer(true)
+            builder.setChronometerCountDown(true)
+            builder.setWhen(deadlineMillis)
+            builder.setContentText("Countdown in progress")
+        } else {
+            builder.setUsesChronometer(false)
+            builder.setContentText("${formatRemaining(secondsRemaining())} remaining")
+        }
+        return builder.build()
     }
 
     private fun buildCompletedNotification(completedWasBreak: Boolean): Notification {
@@ -584,8 +592,9 @@ class TimerForegroundService : Service() {
     }
 
     private fun baseBuilder(): NotificationCompat.Builder {
+        val smallIconId = resources.getIdentifier("ic_stat_eye", "drawable", packageName)
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(applicationInfo.icon)
+            .setSmallIcon(if (smallIconId != 0) smallIconId else applicationInfo.icon)
             .setContentIntent(contentIntent())
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setSilent(true)

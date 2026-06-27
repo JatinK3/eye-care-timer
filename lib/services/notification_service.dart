@@ -99,7 +99,7 @@ class NotificationService {
           playSound: false,
           enableVibration: false,
           silent: true,
-          icon: '@mipmap/ic_launcher',
+          icon: 'ic_stat_eye',
         ),
         iOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
         macOS: DarwinNotificationDetails(
@@ -119,7 +119,7 @@ class NotificationService {
           playSound: false,
           enableVibration: false,
           silent: true,
-          icon: '@mipmap/ic_launcher',
+          icon: 'ic_stat_eye',
           actions: <AndroidNotificationAction>[
             AndroidNotificationAction(
               'blink_done',
@@ -276,7 +276,7 @@ class NotificationService {
     tz_data.initializeTimeZones();
 
     const initializationSettings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      android: AndroidInitializationSettings('ic_stat_eye'),
       iOS: DarwinInitializationSettings(
         requestAlertPermission: false,
         requestBadgePermission: false,
