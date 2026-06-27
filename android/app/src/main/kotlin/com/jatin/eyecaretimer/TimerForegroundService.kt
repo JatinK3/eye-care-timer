@@ -46,6 +46,8 @@ class TimerForegroundService : Service() {
     var allowSkip = true
     var allowPostpone = true
     var postponeDurationSeconds = 120
+    var maxConsecutiveSkips = 0
+    var consecutiveSkips = 0
     var smartIdleEnabled = true
     var naturalBreakCreditEnabled = true
     var postponedBreakDuration = -1
@@ -204,6 +206,7 @@ class TimerForegroundService : Service() {
         naturalBreakCreditEnabled = intent.getBooleanExtra(EXTRA_NATURAL_BREAK_CREDIT, true)
         postponedBreakDuration = intent.getIntExtra("postponedBreakDuration", -1)
         currentPhaseInitialDuration = intent.getIntExtra("currentPhaseInitialDuration", if (isBreak) breakDurationForCompletedCycle(streakCount) else workDurationSeconds)
+        maxConsecutiveSkips = intent.getIntExtra("maxConsecutiveSkips", 0)
 
         ensureChannel()
         startInForeground(buildOngoingNotification())
@@ -218,6 +221,11 @@ class TimerForegroundService : Service() {
 
     private fun handleSkipBreak() {
         if (isBreak) {
+            // Enforce consecutive skip limit
+            if (maxConsecutiveSkips > 0 && consecutiveSkips >= maxConsecutiveSkips) {
+                return // silently block — UI will already hide the button
+            }
+            consecutiveSkips++
             pendingEvents.add(mapOf(
                 "type" to "breakSkipped",
                 "timestamp" to System.currentTimeMillis(),
@@ -394,6 +402,8 @@ class TimerForegroundService : Service() {
     private fun advanceBoundary(): Boolean {
         if (isBreak) {
             BreakOverlayController.hide()
+            // Break completed naturally — reset consecutive skip counter
+            consecutiveSkips = 0
             if (!shouldContinueAutoRun() || workDurationSeconds <= 0) {
                 return false
             }
@@ -698,6 +708,8 @@ class TimerForegroundService : Service() {
             .putLong("screenOffTimeMillis", screenOffTimeMillis)
             .putBoolean("isScreenOffPaused", isScreenOffPaused)
             .putLong("pausedRemainingSeconds", pausedRemainingSeconds)
+            .putInt("maxConsecutiveSkips", maxConsecutiveSkips)
+            .putInt("consecutiveSkips", consecutiveSkips)
             .commit()
         TimerWidgetProvider.triggerUpdate(this)
     }
@@ -727,6 +739,8 @@ class TimerForegroundService : Service() {
         postponedBreakDuration = preferences.getInt("postponedBreakDuration", -1)
         currentPhaseInitialDuration = preferences.getInt("currentPhaseInitialDuration", 0)
         screenOffTimeMillis = preferences.getLong("screenOffTimeMillis", 0L)
+        maxConsecutiveSkips = preferences.getInt("maxConsecutiveSkips", 0)
+        consecutiveSkips = preferences.getInt("consecutiveSkips", 0)
 
         val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
         val isScreenOn = powerManager?.isInteractive ?: true
@@ -798,6 +812,7 @@ class TimerForegroundService : Service() {
             naturalBreakCreditEnabled: Boolean,
             postponedBreakDuration: Int? = null,
             currentPhaseDurationSeconds: Int? = null,
+            maxConsecutiveSkips: Int = 0,
         ) {
             val intent = Intent(context, TimerForegroundService::class.java).apply {
                 action = ACTION_START
@@ -819,6 +834,7 @@ class TimerForegroundService : Service() {
                 putExtra(EXTRA_SMART_IDLE, smartIdleEnabled)
                 putExtra(EXTRA_NATURAL_BREAK_CREDIT, naturalBreakCreditEnabled)
                 putExtra("postponedBreakDuration", postponedBreakDuration ?: -1)
+                putExtra("maxConsecutiveSkips", maxConsecutiveSkips)
                 if (currentPhaseDurationSeconds != null) {
                     putExtra("currentPhaseInitialDuration", currentPhaseDurationSeconds)
                 }

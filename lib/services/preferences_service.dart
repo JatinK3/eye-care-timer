@@ -84,6 +84,7 @@ class PreferencesService {
       'wellnessReminderCadenceSeconds';
   static const String blinkReminderInteractiveEnabledKey =
       'blinkReminderInteractiveEnabled';
+  static const String maxConsecutiveSkipsKey = 'maxConsecutiveSkips';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -235,6 +236,9 @@ class PreferencesService {
       blinkReminderInteractiveEnabled:
           prefs.getBool(blinkReminderInteractiveEnabledKey) ??
           TimerSettings.defaultBlinkReminderInteractiveEnabled,
+      maxConsecutiveSkips:
+          prefs.getInt(maxConsecutiveSkipsKey) ??
+          TimerSettings.defaultMaxConsecutiveSkips,
     );
   }
 
@@ -603,6 +607,10 @@ class PreferencesService {
       blinkReminderInteractiveEnabledKey,
       settings.blinkReminderInteractiveEnabled,
     );
+    await prefs.setInt(
+      maxConsecutiveSkipsKey,
+      settings.maxConsecutiveSkips,
+    );
   }
 
   Future<bool> loadOnboardingCompleted() async {
@@ -794,6 +802,11 @@ class PreferencesService {
   Future<void> saveAllowSkip(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(allowSkipKey, enabled);
+  }
+
+  Future<void> saveMaxConsecutiveSkips(int count) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(maxConsecutiveSkipsKey, count);
   }
 
   Future<void> saveAllowPostpone(bool enabled) async {

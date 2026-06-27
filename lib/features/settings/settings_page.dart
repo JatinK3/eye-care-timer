@@ -24,6 +24,7 @@ class SettingsPage extends StatefulWidget {
   final int streakCount;
   final int dailyGoal;
   final bool allowSkip;
+  final int maxConsecutiveSkips;
   final bool allowPostpone;
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
@@ -33,6 +34,7 @@ class SettingsPage extends StatefulWidget {
   final bool breakShowProgress;
   final String breakCustomMessage;
   final void Function(bool) setAllowSkip;
+  final void Function(int) setMaxConsecutiveSkips;
   final void Function(bool) setAllowPostpone;
   final void Function(int) setPostponeDurationSeconds;
   final void Function(bool) setSmartIdleEnabled;
@@ -170,6 +172,8 @@ class SettingsPage extends StatefulWidget {
     required this.breakMode,
     required this.setBreakMode,
     required this.allowSkip,
+    required this.maxConsecutiveSkips,
+    required this.setMaxConsecutiveSkips,
     required this.allowPostpone,
     required this.postponeDurationSeconds,
     required this.smartIdleEnabled,
@@ -1105,13 +1109,67 @@ class _SettingsPageState extends State<SettingsPage>
           subtitle: l10n.settingsAllowSkipSubtitle,
           keywords: ['skip', 'break', 'allow', 'gentle'],
           category: 'Break Screen & Behavior',
-          widget: SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.skip_next_outlined),
-            title: Text(l10n.settingsAllowSkip),
-            subtitle: Text(l10n.settingsAllowSkipSubtitle),
-            value: widget.allowSkip,
-            onChanged: widget.setAllowSkip,
+          widget: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.skip_next_outlined),
+                title: Text(l10n.settingsAllowSkip),
+                subtitle: Text(l10n.settingsAllowSkipSubtitle),
+                value: widget.allowSkip,
+                onChanged: widget.setAllowSkip,
+              ),
+              if (widget.allowSkip) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 40.0, top: 4.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "Max consecutive skips",
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ),
+                      DropdownButton<int>(
+                        value: widget.maxConsecutiveSkips,
+                        underline: const SizedBox(),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 0,
+                            child: Text("No Limit"),
+                          ),
+                          DropdownMenuItem(
+                            value: 1,
+                            child: Text("1 skip"),
+                          ),
+                          DropdownMenuItem(
+                            value: 2,
+                            child: Text("2 skips"),
+                          ),
+                          DropdownMenuItem(
+                            value: 3,
+                            child: Text("3 skips"),
+                          ),
+                          DropdownMenuItem(
+                            value: 5,
+                            child: Text("5 skips"),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            widget.setMaxConsecutiveSkips(val);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
         SettingItem(
@@ -2759,6 +2817,7 @@ class _SettingsPageState extends State<SettingsPage>
       wellnessRemindersEnabled: widget.wellnessRemindersEnabled,
       wellnessReminderCadenceSeconds: widget.wellnessReminderCadenceSeconds,
       blinkReminderInteractiveEnabled: widget.blinkReminderInteractiveEnabled,
+      maxConsecutiveSkips: widget.maxConsecutiveSkips,
     );
   }
 

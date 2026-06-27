@@ -763,6 +763,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       _settings = _settings.copyWith(allowSkip: enabled);
     });
     unawaited(_preferencesService.saveAllowSkip(enabled));
+   }
+
+  void _setMaxConsecutiveSkips(int count) {
+    setState(() {
+      _settings = _settings.copyWith(maxConsecutiveSkips: count);
+    });
+    unawaited(_preferencesService.saveMaxConsecutiveSkips(count));
   }
 
   void _setAllowPostpone(bool enabled) {
@@ -970,6 +977,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           breakMode: _settings.breakMode,
           setBreakMode: _setBreakMode,
           allowSkip: _settings.allowSkip,
+          maxConsecutiveSkips: _settings.maxConsecutiveSkips,
+          setMaxConsecutiveSkips: _setMaxConsecutiveSkips,
           allowPostpone: _settings.allowPostpone,
           postponeDurationSeconds: _settings.postponeDurationSeconds,
           smartIdleEnabled: _settings.smartIdleEnabled,
@@ -1209,6 +1218,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   autoStartSchedule: _settings.autoStartSchedule,
                   breakMode: _settings.breakMode,
                   allowSkip: _settings.allowSkip,
+                  maxConsecutiveSkips: _settings.maxConsecutiveSkips,
                   allowPostpone: _settings.allowPostpone,
                   postponeDurationSeconds: _settings.postponeDurationSeconds,
                   smartIdleEnabled: _settings.smartIdleEnabled,

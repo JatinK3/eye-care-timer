@@ -49,6 +49,7 @@ class TimerSettings {
   static const String defaultAiModel = 'gemini-1.5-flash';
   static const String defaultAiCustomSystemPrompt =
       'You are a friendly health and wellness assistant for a developer. Generate a very short, warm, and highly engaging health tip or motivational quote (strict limit of 25 words) encouraging them to blink, rest their eyes, stretch their body/legs/shoulders, stand up, drink water regularly, or take a deep breath. Keep it fresh, productive, encouraging, and extremely punchy.';
+  static const int defaultMaxConsecutiveSkips = 0; // 0 means no limit
 
   final int workDurationSeconds;
   final int breakDurationSeconds;
@@ -103,6 +104,7 @@ class TimerSettings {
   final bool wellnessRemindersEnabled;
   final int wellnessReminderCadenceSeconds;
   final bool blinkReminderInteractiveEnabled;
+  final int maxConsecutiveSkips;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -136,6 +138,7 @@ class TimerSettings {
     required this.trayBlinkNudgeCadenceSeconds,
     required this.workHoursEnabled,
     required this.workHoursStartHour,
+    required this.maxConsecutiveSkips,
     required this.workHoursStartMinute,
     required this.workHoursEndHour,
     required this.workHoursEndMinute,
@@ -213,7 +216,8 @@ class TimerSettings {
       cameraMicAutoPostponeEnabled = defaultCameraMicAutoPostponeEnabled,
       wellnessRemindersEnabled = defaultWellnessRemindersEnabled,
       wellnessReminderCadenceSeconds = defaultWellnessReminderCadenceSeconds,
-      blinkReminderInteractiveEnabled = defaultBlinkReminderInteractiveEnabled;
+      blinkReminderInteractiveEnabled = defaultBlinkReminderInteractiveEnabled,
+      maxConsecutiveSkips = defaultMaxConsecutiveSkips;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -269,6 +273,7 @@ class TimerSettings {
     bool? wellnessRemindersEnabled,
     int? wellnessReminderCadenceSeconds,
     bool? blinkReminderInteractiveEnabled,
+    int? maxConsecutiveSkips,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -338,6 +343,7 @@ class TimerSettings {
       blinkReminderInteractiveEnabled:
           blinkReminderInteractiveEnabled ??
           this.blinkReminderInteractiveEnabled,
+      maxConsecutiveSkips: maxConsecutiveSkips ?? this.maxConsecutiveSkips,
     );
   }
 
@@ -395,6 +401,7 @@ class TimerSettings {
       'wellnessRemindersEnabled': wellnessRemindersEnabled,
       'wellnessReminderCadenceSeconds': wellnessReminderCadenceSeconds,
       'blinkReminderInteractiveEnabled': blinkReminderInteractiveEnabled,
+      'maxConsecutiveSkips': maxConsecutiveSkips,
     };
   }
 
@@ -446,6 +453,11 @@ class TimerSettings {
       blinkRemindersCadenceSeconds:
           json['blinkRemindersCadenceSeconds'] as int? ??
           defaultBlinkRemindersCadenceSeconds,
+      blinkReminderInteractiveEnabled:
+          json['blinkReminderInteractiveEnabled'] as bool? ??
+          defaultBlinkReminderInteractiveEnabled,
+      maxConsecutiveSkips:
+          json['maxConsecutiveSkips'] as int? ?? defaultMaxConsecutiveSkips,
       trayBlinkNudgesEnabled:
           json['trayBlinkNudgesEnabled'] as bool? ??
           defaultTrayBlinkNudgesEnabled,
@@ -501,9 +513,6 @@ class TimerSettings {
       wellnessReminderCadenceSeconds:
           json['wellnessReminderCadenceSeconds'] as int? ??
           defaultWellnessReminderCadenceSeconds,
-      blinkReminderInteractiveEnabled:
-          json['blinkReminderInteractiveEnabled'] as bool? ??
-          defaultBlinkReminderInteractiveEnabled,
     );
   }
 

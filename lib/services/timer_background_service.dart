@@ -36,6 +36,7 @@ class TimerBackgroundService {
     required bool naturalBreakCreditEnabled,
     int? postponedBreakDuration,
     int? currentPhaseDurationSeconds,
+    int maxConsecutiveSkips = 0,
   }) async {
     if (!_isSupported) return;
     try {
@@ -59,6 +60,7 @@ class TimerBackgroundService {
         'naturalBreakCreditEnabled': naturalBreakCreditEnabled,
         'postponedBreakDuration': postponedBreakDuration,
         'currentPhaseDurationSeconds': currentPhaseDurationSeconds,
+        'maxConsecutiveSkips': maxConsecutiveSkips,
       });
     } on PlatformException catch (error) {
       debugPrint('Unable to start background phase: $error');

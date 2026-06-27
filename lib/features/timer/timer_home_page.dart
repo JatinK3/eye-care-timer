@@ -62,6 +62,7 @@ class TimerHomePage extends StatefulWidget {
   final NotificationService notificationService;
   final TimerBackgroundService? backgroundService;
   final bool allowSkip;
+  final int maxConsecutiveSkips;
   final bool allowPostpone;
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
@@ -170,6 +171,7 @@ class TimerHomePage extends StatefulWidget {
     required this.clearSession,
     required this.notificationService,
     this.backgroundService,
+    required this.maxConsecutiveSkips,
   });
 
   @override
@@ -333,6 +335,7 @@ class TimerHomePageState extends State<TimerHomePage>
   Timer? _desktopTrayTicker;
   Timer? _educationTipTimer;
   int _educationTipIndex = 0;
+  int _consecutiveSkips = 0;
   // Tip frozen at break start — stays the same for the whole break so the
   // message never changes mid-break and no extra LLM calls are triggered.
   EyeHealthTip? _frozenBreakTip;
@@ -1066,6 +1069,7 @@ class TimerHomePageState extends State<TimerHomePage>
         naturalBreakCreditEnabled: widget.naturalBreakCreditEnabled,
         postponedBreakDuration: _postponedBreakDuration,
         currentPhaseDurationSeconds: _initialDuration,
+        maxConsecutiveSkips: widget.maxConsecutiveSkips,
       ),
     );
   }
@@ -1464,6 +1468,20 @@ class TimerHomePageState extends State<TimerHomePage>
 
   void _skipBreak() {
     if (!_isBreak || !_isRunning) return;
+    // Enforce skip limit
+    final limit = widget.maxConsecutiveSkips;
+    if (limit > 0 && _consecutiveSkips >= limit) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'You\'ve skipped $limit break${limit == 1 ? '' : 's'} in a row — take a moment to rest your eyes! 👁️',
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+    _consecutiveSkips++;
     _animationController.stop();
     widget.saveTimerEventRecord(
       TimerEventRecord(
@@ -1716,6 +1734,8 @@ class TimerHomePageState extends State<TimerHomePage>
       }
 
       if (completedBreakPhase) {
+        // Reset skip counter — the user actually took the break
+        _consecutiveSkips = 0;
         if (_shouldContinueAutoRun()) {
           _startTimer(_workDurationSeconds);
           return;
@@ -2811,7 +2831,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                   ),
                                 ),
                                 if (_isBreak && !_isPaused) ...[
-                                  if (widget.allowSkip)
+                                  if (widget.allowSkip && (widget.maxConsecutiveSkips == 0 || _consecutiveSkips < widget.maxConsecutiveSkips))
                                     ElevatedButton.icon(
                                       onPressed: _skipBreak,
                                       icon: const Icon(Icons.skip_next),
