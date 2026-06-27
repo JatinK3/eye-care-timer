@@ -75,7 +75,7 @@ class NotificationService {
         ),
       );
 
-  static const String _blinkChannelId = 'blinkkind_blink_reminders_v3';
+  static const String _blinkChannelId = 'blinkkind_blink_reminders_v4';
   static const String _blinkChannelName = 'Blink reminders';
   static const String _blinkChannelDescription =
       'Visible periodic banner reminders to blink consciously during work sessions.';
@@ -98,7 +98,7 @@ class NotificationService {
           priority: Priority.high,
           playSound: false,
           enableVibration: false,
-          silent: true,
+          silent: false,
           icon: 'ic_stat_eye',
         ),
         iOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
@@ -118,7 +118,7 @@ class NotificationService {
           priority: Priority.high,
           playSound: false,
           enableVibration: false,
-          silent: true,
+          silent: false,
           icon: 'ic_stat_eye',
           actions: <AndroidNotificationAction>[
             AndroidNotificationAction(
