@@ -142,6 +142,12 @@ elif [ "$COMPAT_JAVA" = "system" ]; then
 else
     echo "Setting JAVA_HOME to compatible JDK: $COMPAT_JAVA"
     export JAVA_HOME="$COMPAT_JAVA"
+
+    # Force Gradle to stop any existing daemons running on an incompatible Java version
+    if [ -f "$PROJECT_DIR/android/gradlew" ]; then
+        echo "Stopping running Gradle daemons to ensure Java compatibility..."
+        (cd "$PROJECT_DIR/android" && ./gradlew --stop) >/dev/null 2>&1 || true
+    fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -193,9 +199,8 @@ if [ "$BUILD_AAB" = "true" ]; then
     echo "========================================="
     echo "Building Android App Bundle (Release)..."
     echo "========================================="
-    if [ "$BUILD_APK" = "false" ]; then
-        "$FLUTTER" clean
-    fi
+    # Clean the build directory to avoid Gradle/R8 intermediate conflicts between APK and AAB builds
+    "$FLUTTER" clean
     "$FLUTTER" build appbundle --release
 
     SRC_AAB="$PROJECT_DIR/build/app/outputs/bundle/release/app-release.aab"
