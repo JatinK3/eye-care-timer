@@ -84,6 +84,17 @@ for arg in "$@"; do
     esac
 done
 
+# ---------------------------------------------------------------------------
+# Source and run the dependency resolver before any build step
+# ---------------------------------------------------------------------------
+LIB_RESOLVER="$SCRIPT_DIR/lib_resolver.sh"
+if [ -f "$LIB_RESOLVER" ]; then
+    # shellcheck source=lib_resolver.sh
+    source "$LIB_RESOLVER"
+else
+    echo "Warning: lib_resolver.sh not found at $LIB_RESOLVER — skipping dependency check."
+fi
+
 # Extract version from pubspec.yaml (e.g., version: 1.0.0+1 -> 1.0.0)
 VERSION=$(grep 'version: ' "$PROJECT_DIR/pubspec.yaml" | sed 's/version: //' | cut -d'+' -f1 | tr -d '[:space:]')
 if [ -z "$VERSION" ]; then
@@ -94,6 +105,10 @@ if [ "$DEV_MODE" = "true" ]; then
     echo "========================================="
     echo "Setting up local developer desktop launcher..."
     echo "========================================="
+    # Check & install missing native libs before building
+    if declare -f resolve_build_deps &>/dev/null; then
+        resolve_build_deps
+    fi
     cd "$PROJECT_DIR"
     "$FLUTTER" clean
     "$FLUTTER" build linux
@@ -159,6 +174,11 @@ if [[ "$clear_state" =~ ^[Yy]$ ]]; then
     rm -rf "$HOME/.local/share/com.jatin.eyecaretimer"
     rm -rf "$HOME/.local/share/com.example.eyeapptimer"
     echo "✓ Local application state files deleted."
+fi
+
+# Check & install missing native libs before building
+if declare -f resolve_build_deps &>/dev/null; then
+    resolve_build_deps
 fi
 
 "$FLUTTER" clean
