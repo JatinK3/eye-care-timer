@@ -72,8 +72,8 @@ class MainActivity : FlutterActivity() {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return false
         val isCallActive = audioManager.mode == AudioManager.MODE_IN_COMMUNICATION ||
                 audioManager.mode == AudioManager.MODE_IN_CALL
-        val isMicActive = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            audioManager.isMicrophoneActive
+        val isMicActive = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            audioManager.activeRecordingConfigurations.isNotEmpty()
         } else {
             false
         }
