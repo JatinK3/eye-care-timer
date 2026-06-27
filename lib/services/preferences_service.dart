@@ -116,7 +116,7 @@ class PreferencesService {
       dailyGoal: prefs.getInt(dailyGoalKey) ?? 6,
       notificationsEnabled: prefs.getBool(notificationsEnabledKey) ?? true,
       hapticsEnabled: prefs.getBool(hapticsEnabledKey) ?? true,
-      soundEnabled: prefs.getBool(soundEnabledKey) ?? false,
+      soundEnabled: prefs.getBool(soundEnabledKey) ?? true,
       longBreakEnabled: prefs.getBool(longBreakEnabledKey) ?? false,
       longBreakDurationSeconds:
           prefs.getInt(longBreakDurationSecondsKey) ??

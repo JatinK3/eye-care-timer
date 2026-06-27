@@ -172,7 +172,7 @@ class TimerSettings {
       dailyGoal = 6,
       notificationsEnabled = true,
       hapticsEnabled = true,
-      soundEnabled = false,
+      soundEnabled = true,
       longBreakEnabled = false,
       longBreakDurationSeconds = defaultLongBreakDurationSeconds,
       longBreakEveryCycles = defaultLongBreakEveryCycles,

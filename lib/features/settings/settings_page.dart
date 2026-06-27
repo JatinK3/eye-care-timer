@@ -347,6 +347,7 @@ class _SettingsPageState extends State<SettingsPage>
   String _searchQuery = '';
   final _searchController = TextEditingController();
   AudioPlayer? _audioPlayer;
+  Process? _activeChimeProcess;
   String? _playingChimeStyle;
 
   @override
@@ -417,6 +418,7 @@ class _SettingsPageState extends State<SettingsPage>
   @override
   void dispose() {
     _searchController.dispose();
+    _activeChimeProcess?.kill();
     _audioPlayer?.dispose();
     _aiApiKeyController.dispose();
     _aiModelCustomController.dispose();
@@ -440,6 +442,44 @@ class _SettingsPageState extends State<SettingsPage>
         }
       });
     } else {
+      if (!kIsWeb && Platform.isLinux) {
+        try {
+          _activeChimeProcess?.kill();
+          _activeChimeProcess = null;
+
+          final byteData = await rootBundle.load('assets/sounds/$style.wav');
+          final tempDir = Directory.systemTemp;
+          final file = File('${tempDir.path}/blinkkind_sounds/$style.wav');
+          if (!await file.exists()) {
+            await file.create(recursive: true);
+            await file.writeAsBytes(byteData.buffer.asUint8List(), flush: true);
+          }
+
+          bool played = false;
+          final audioUtils = ['pw-play', 'paplay', 'aplay'];
+          for (final util in audioUtils) {
+            try {
+              final process = await Process.start(util, [file.path]);
+              _activeChimeProcess = process;
+              played = true;
+              unawaited(process.exitCode.then((code) {
+                if (_activeChimeProcess == process) {
+                  _activeChimeProcess = null;
+                }
+                if (mounted && _playingChimeStyle == style) {
+                  setState(() {
+                    _playingChimeStyle = null;
+                  });
+                }
+              }));
+              break;
+            } catch (_) {}
+          }
+          if (played) return;
+        } catch (e) {
+          debugPrint('Error playing Linux chime preview: $e');
+        }
+      }
       try {
         await _audioPlayer?.stop();
         await _audioPlayer?.play(AssetSource('sounds/$style.wav'));

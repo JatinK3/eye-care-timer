@@ -348,6 +348,7 @@ class TimerHomePageState extends State<TimerHomePage>
   StreamSubscription<bool>? _desktopLockSubscription;
 
   AudioPlayer? _audioPlayer;
+  Process? _activeChimeProcess;
 
   @override
   void initState() {
@@ -649,6 +650,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
   @override
   void dispose() {
+    _activeChimeProcess?.kill();
     _audioPlayer?.dispose();
     if (_isFocusMode) {
       unawaited(_systemUiService.setFocusModeEnabled(false));
@@ -1857,6 +1859,39 @@ class TimerHomePageState extends State<TimerHomePage>
       if (widget.chimeStyle == 'system_alert') {
         unawaited(SystemSound.play(SystemSoundType.alert));
       } else {
+        if (!kIsWeb && Platform.isLinux) {
+          try {
+            _activeChimeProcess?.kill();
+            _activeChimeProcess = null;
+
+            final byteData = await rootBundle.load('assets/sounds/${widget.chimeStyle}.wav');
+            final tempDir = Directory.systemTemp;
+            final file = File('${tempDir.path}/blinkkind_sounds/${widget.chimeStyle}.wav');
+            if (!await file.exists()) {
+              await file.create(recursive: true);
+              await file.writeAsBytes(byteData.buffer.asUint8List(), flush: true);
+            }
+
+            bool played = false;
+            final audioUtils = ['pw-play', 'paplay', 'aplay'];
+            for (final util in audioUtils) {
+              try {
+                final process = await Process.start(util, [file.path]);
+                _activeChimeProcess = process;
+                played = true;
+                unawaited(process.exitCode.then((code) {
+                  if (_activeChimeProcess == process) {
+                    _activeChimeProcess = null;
+                  }
+                }));
+                break;
+              } catch (_) {}
+            }
+            if (played) return;
+          } catch (e) {
+            debugPrint('Error playing Linux chime: $e');
+          }
+        }
         try {
           await _audioPlayer?.stop();
           unawaited(

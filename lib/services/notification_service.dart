@@ -480,6 +480,7 @@ class NotificationService {
           'BlinkKind test reminder',
           'If you heard this, phase reminder sound is ready.',
         ]);
+        unawaited(_playLinuxChimeFallback());
         return true;
       } catch (e) {
         debugPrint('Failed to send Linux notification: $e');
@@ -987,6 +988,29 @@ class NotificationService {
     } on ArgumentError catch (error) {
       debugPrint('Unable to schedule phase reminder: $error');
       return false;
+    }
+  }
+
+  Future<void> _playLinuxChimeFallback() async {
+    try {
+      final byteData = await rootBundle.load('assets/sounds/tibetan_bowl.wav');
+      final tempDir = Directory.systemTemp;
+      final file = File('${tempDir.path}/blinkkind_sounds/tibetan_bowl.wav');
+      if (!await file.exists()) {
+        await file.create(recursive: true);
+        await file.writeAsBytes(byteData.buffer.asUint8List(), flush: true);
+      }
+      final audioUtils = ['pw-play', 'paplay', 'aplay'];
+      for (final util in audioUtils) {
+        try {
+          final result = await Process.run(util, [file.path]);
+          if (result.exitCode == 0) {
+            break;
+          }
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('Error playing Linux test chime fallback: $e');
     }
   }
 }
