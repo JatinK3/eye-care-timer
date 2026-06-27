@@ -184,6 +184,12 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [ ] **Opt-in, privacy-respecting analytics & crash reporting** — understand real usage/compliance without compromising the local-first stance.
 - [ ] **Accessibility & performance audit** — screen-reader pass, reduced-motion option, colorblind-safe palettes; revisit the once-per-second tray PNG render cadence on desktop.
 
+### P4 — Future AI-Driven Wellness Features
+- [ ] **AI Fatigue & Blink Detection** — local, privacy-first computer vision model using front camera (e.g. MediaPipe) to detect blink rate and eye fatigue to trigger breaks dynamically.
+- [ ] **Interactive AI Wellness & Ergonomics Coach** — chat/companion interface to consult on ergonomic posture, stretching, and wellness tips based on productivity metrics.
+- [ ] **AI-Driven Smart-Break Schedule** — adaptive timer schedule based on user focus patterns, daily compliance, and fatigue feedback.
+- [ ] **AI Voice-Guided Eye Exercises** — audio guidance and instructions for dynamic eye exercises during break phases.
+
 ### Quick wins (low effort, near-term)
 - [x] Promote "Take a break now" and a "Snooze for…" action to the main home screen (currently tray-only).
 - [x] Add a one-tap "Restore defaults" in Settings and reconsider defaults (e.g. in-app sound defaults to off).
