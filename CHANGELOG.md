@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-06-27
+
+### Added
+- **Chime confirmation on "I blinked!" notification action:** The selected chime sound now plays when the user taps the "I blinked! 👁️" action button on the blink reminder notification. On Android this provides immediate in-app audio feedback when the notification is dismissed from the shade; on Linux the chime fires via the existing D-Bus `ActionInvoked` callback. Both paths respect the user's sound-enabled toggle and chosen chime style.
+
+### Fixed
+- Removed an orphaned `_blinkChannel` field reference in `NotificationService.initialize()` that was left over from an older single-channel approach and would have caused a compile-time error.
+
 ## [1.0.0] - 2026-06-27
 
 ### Added

@@ -75,66 +75,73 @@ class NotificationService {
         ),
       );
 
-  static const String _blinkChannelId = 'blinkkind_blink_reminders_v4';
+  // Blink channel: dynamically built per chimeStyle so Android uses the
+  // correct sound. Channel ID encodes the style name — Android creates a
+  // fresh channel (and therefore fresh sound) when the user changes the chime.
+  static String _blinkChannelId(String chimeStyle) =>
+      'blinkkind_blink_reminders_v5_$chimeStyle';
   static const String _blinkChannelName = 'Blink reminders';
   static const String _blinkChannelDescription =
       'Visible periodic banner reminders to blink consciously during work sessions.';
-  static const AndroidNotificationChannel _blinkChannel =
-      AndroidNotificationChannel(
-        _blinkChannelId,
-        _blinkChannelName,
-        description: _blinkChannelDescription,
-        importance: Importance.high,
-        playSound: false,
-        enableVibration: false,
-      );
-  static const NotificationDetails _blinkNotificationDetails =
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _blinkChannelId,
-          _blinkChannelName,
-          channelDescription: _blinkChannelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
-          playSound: false,
-          enableVibration: false,
-          silent: false,
-          icon: 'ic_stat_eye',
-        ),
-        iOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
-        macOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentSound: false,
-        ),
-      );
 
-  static const NotificationDetails _blinkNotificationDetailsInteractive =
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _blinkChannelId,
-          _blinkChannelName,
-          channelDescription: _blinkChannelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
-          playSound: false,
-          enableVibration: false,
-          silent: false,
-          icon: 'ic_stat_eye',
-          actions: <AndroidNotificationAction>[
-            AndroidNotificationAction(
-              'blink_done',
-              'I blinked! 👁️',
-              cancelNotification: true,
-              showsUserInterface: true,
-            ),
-          ],
-        ),
-        iOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
-        macOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentSound: false,
-        ),
-      );
+  static AndroidNotificationChannel _buildBlinkChannel(String chimeStyle) {
+    final RawResourceAndroidNotificationSound? sound =
+        (chimeStyle != 'system_alert')
+            ? RawResourceAndroidNotificationSound(chimeStyle)
+            : null;
+    return AndroidNotificationChannel(
+      _blinkChannelId(chimeStyle),
+      _blinkChannelName,
+      description: _blinkChannelDescription,
+      importance: Importance.high,
+      playSound: sound != null,
+      sound: sound,
+      enableVibration: false,
+    );
+  }
+
+  static NotificationDetails _buildBlinkDetails(
+    String chimeStyle, {
+    bool interactive = false,
+  }) {
+    final channelId = _blinkChannelId(chimeStyle);
+    final RawResourceAndroidNotificationSound? sound =
+        (chimeStyle != 'system_alert')
+            ? RawResourceAndroidNotificationSound(chimeStyle)
+            : null;
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        channelId,
+        _blinkChannelName,
+        channelDescription: _blinkChannelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: sound != null,
+        sound: sound,
+        enableVibration: false,
+        silent: false,
+        icon: 'ic_stat_eye',
+        actions: interactive
+            ? <AndroidNotificationAction>[
+                AndroidNotificationAction(
+                  'blink_done',
+                  'I blinked! \u{1F441}\uFE0F',
+                  cancelNotification: true,
+                  showsUserInterface: true,
+                ),
+              ]
+            : null,
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentSound: false,
+      ),
+      macOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentSound: false,
+      ),
+    );
+  }
 
   Future<bool> schedulePreBreakWarningReminder(
     Duration delay, {
@@ -300,7 +307,6 @@ class NotificationService {
           AndroidFlutterLocalNotificationsPlugin
         >();
     await android?.createNotificationChannel(_phaseChannel);
-    await android?.createNotificationChannel(_blinkChannel);
     await android?.createNotificationChannel(_wellnessChannel);
     _isInitialized = true;
   }
@@ -522,20 +528,24 @@ class NotificationService {
     );
   }
 
-  /// Shows an immediate silent blink-conscious reminder notification.
+  /// Shows an immediate blink-conscious reminder notification.
+  /// On Android the notification channel carries the chime as its sound, so
+  /// it plays even when the app is closed.  On Linux/desktop the caller is
+  /// expected to play the chime in-app (see timer_home_page._triggerBlinkReminder).
   Future<void> showBlinkReminder({
     String? customMessage,
     bool interactive = true,
+    String chimeStyle = 'tibetan_bowl',
   }) async {
     if (kIsWeb) return;
 
     const messages = [
-      'Remember to blink! 👁️ Give your eyes some moisture.',
-      '👁️ Blink consciously — your eyes will thank you!',
+      'Remember to blink! \u{1F441}\uFE0F Give your eyes some moisture.',
+      '\u{1F441}\uFE0F Blink consciously — your eyes will thank you!',
       'Time to blink! Dry eyes cause fatigue. Blink fully now.',
-      '👀 Blink reminder — close and open your eyes fully.',
-      '💧 Moisture check! Blink a few times to refresh your eyes.',
-      '👁️ Soft blink — close your eyes slowly, then open. Repeat 3×.',
+      '\u{1F440} Blink reminder — close and open your eyes fully.',
+      '\u{1F4A7} Moisture check! Blink a few times to refresh your eyes.',
+      '\u{1F441}\uFE0F Soft blink — close your eyes slowly, then open. Repeat 3\u00D7.',
     ];
     final idx = DateTime.now().second % messages.length;
     final body = (customMessage != null && customMessage.isNotEmpty)
@@ -548,14 +558,25 @@ class NotificationService {
     }
 
     await initialize();
+    // Ensure the per-chime channel exists on Android.
+    if (!kIsWeb && Platform.isAndroid) {
+      try {
+        await _notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.createNotificationChannel(_buildBlinkChannel(chimeStyle));
+      } catch (_) {}
+    }
     try {
       await _notificationsPlugin.show(
         id: _blinkReminderId,
-        title: 'Blink reminder 👁️',
+        title: 'Blink reminder \u{1F441}\uFE0F',
         body: body,
-        notificationDetails: interactive
-            ? _blinkNotificationDetailsInteractive
-            : _blinkNotificationDetails,
+        notificationDetails: _buildBlinkDetails(
+          chimeStyle,
+          interactive: interactive,
+        ),
         payload: 'blink_reminder',
       );
     } on PlatformException catch (e) {

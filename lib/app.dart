@@ -221,7 +221,14 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
         .listen(_handleNotificationResponse);
     _blinkReminderAcknowledgedSubscription = _notificationService
         .onBlinkReminderAcknowledged
-        .listen((_) => _recordBlinkReminderAcknowledged());
+        .listen((_) {
+          _recordBlinkReminderAcknowledged();
+          // Also play the confirmation chime via the shared command bus so
+          // TimerHomePage can play the right sound (Linux DBus path).
+          DesktopControlsController.instance.triggerCommand(
+            DesktopCommand.playChime,
+          );
+        });
   }
 
   @override
@@ -235,6 +242,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   void _handleNotificationResponse(NotificationResponse response) {
     if (response.actionId == 'blink_done') {
       _recordBlinkReminderAcknowledged();
+      // Play a confirmation chime so the user gets audio feedback when they
+      // tap "I blinked!" from the notification shade (app may be backgrounded).
+      DesktopControlsController.instance.triggerCommand(DesktopCommand.playChime);
     } else if (response.actionId == 'postpone_break') {
       DesktopControlsController.instance.triggerCommand(DesktopCommand.postponeBreak);
     } else if (response.actionId == 'skip_break') {

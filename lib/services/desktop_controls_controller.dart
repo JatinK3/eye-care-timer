@@ -15,6 +15,10 @@ enum DesktopCommand {
   cancelSnooze,
   openSettings,
   showDashboard,
+  // Emitted when the user taps the "I blinked!" notification action so that
+  // TimerHomePage can play the confirmation chime even when the notification
+  // fires while the app is backgrounded.
+  playChime,
 }
 
 class DesktopTimerState {

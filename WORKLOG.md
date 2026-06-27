@@ -667,6 +667,14 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Removed stage warning curtains, method channel triggers (`enterWarning`), Vignette overlays, and related animation listener checks from `lib/features/timer/timer_home_page.dart`.
   - Cleaned up and deleted the two-stage warning curtain widget test from `test/widget_test.dart`.
   - Verified static analysis and all unit/widget tests pass cleanly.
+
+- Implemented chime-on-blink-notification-tap:
+  - Added a new `DesktopCommand.playChime` variant to `DesktopControlsController` so any part of the app can signal `TimerHomePage` to play the current chime sound.
+  - Handled `DesktopCommand.playChime` in `TimerHomePage`'s command switch by calling the existing `_playChime()` method, which respects both `soundEnabled` and `chimeStyle` settings.
+  - Updated `_handleNotificationResponse` in `app.dart` to dispatch `playChime` immediately after recording a `blink_done` action, providing audio confirmation when the user taps "I blinked! 👁️" from the Android notification shade.
+  - Updated the `onBlinkReminderAcknowledged` listener (the Linux D-Bus path) in `app.dart` to also dispatch `playChime`, ensuring the same chime fires on Linux after the D-Bus `ActionInvoked` event is received.
+  - Fixed an orphaned `_blinkChannel` reference in `NotificationService.initialize()` that was a pre-existing compile-time error (the per-chime channel is now built lazily inside `showBlinkReminder()`).
+  - Verified `flutter analyze` reports no issues and all previously-passing tests continue to pass.
 ---
 
 ## UI/UX Future Improvements Backlog (planned 2026-06-27)
@@ -688,7 +696,7 @@ Ideas captured from design review session. Prioritized by impact. None are sched
 - [ ] **Haptic feedback patterns by event** — distinct vibration patterns for work-phase-complete vs. break-start vs. blink-reminder vs. postpone, instead of the current uniform haptic pulse.
 - [ ] **Settings page sectioned cards** — group the flat settings list into visually distinct card sections with section header chips, so the page feels organized rather than a long scrollable list.
 - [ ] **Onboarding flow improvement** — replace the current static onboarding text with a short animated explainer of the 20-20-20 rule (animated eye, animated 20ft/6m target, animated 20s clock).
-- [ ] **Chime in blink interactive notifications** — play the selected chime sound when the user taps the "I blinked! 👁️" notification action. On Android, assign the chime as the notification channel sound (works without the app being open). On Linux, play via the existing notification callback.
+- [x] **Chime in blink interactive notifications** — play the selected chime sound when the user taps the "I blinked! 👁️" notification action. On Android, assign the chime as the notification channel sound (works without the app being open). On Linux, play via the existing notification callback.
 
 ### 🟢 Small but Nice
 

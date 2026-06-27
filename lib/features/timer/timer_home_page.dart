@@ -516,6 +516,11 @@ class TimerHomePageState extends State<TimerHomePage>
             case DesktopCommand.showDashboard:
               Navigator.of(context).popUntil((route) => route.isFirst);
               break;
+            case DesktopCommand.playChime:
+              // Play the confirmation chime when the user taps the
+              // "I blinked!" notification action button.
+              unawaited(_playChime());
+              break;
           }
         });
     _scheduleCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
@@ -1932,6 +1937,12 @@ class TimerHomePageState extends State<TimerHomePage>
       unawaited(HapticFeedback.selectionClick());
     }
 
+    // On Linux/desktop the notification carries no sound channel, so play
+    // the chime in-app immediately.  On Android the channel handles it.
+    if (!kIsWeb && (Platform.isLinux || Platform.isMacOS || Platform.isWindows)) {
+      unawaited(_playChime());
+    }
+
     final customMsg = widget.blinkReminderCustomMessage.isNotEmpty
         ? widget.blinkReminderCustomMessage
         : null;
@@ -1941,6 +1952,7 @@ class TimerHomePageState extends State<TimerHomePage>
         widget.notificationService.showBlinkReminder(
           customMessage: customMsg,
           interactive: widget.blinkReminderInteractiveEnabled,
+          chimeStyle: widget.chimeStyle,
         ),
       );
     } else if (_blinkMessageFuture != null) {
@@ -1953,6 +1965,7 @@ class TimerHomePageState extends State<TimerHomePage>
               widget.notificationService.showBlinkReminder(
                 customMessage: (msg != null && msg.isNotEmpty) ? msg : null,
                 interactive: widget.blinkReminderInteractiveEnabled,
+                chimeStyle: widget.chimeStyle,
               ),
             );
           })
@@ -1961,6 +1974,7 @@ class TimerHomePageState extends State<TimerHomePage>
               unawaited(
                 widget.notificationService.showBlinkReminder(
                   interactive: widget.blinkReminderInteractiveEnabled,
+                  chimeStyle: widget.chimeStyle,
                 ),
               );
             }
@@ -1969,6 +1983,7 @@ class TimerHomePageState extends State<TimerHomePage>
       unawaited(
         widget.notificationService.showBlinkReminder(
           interactive: widget.blinkReminderInteractiveEnabled,
+          chimeStyle: widget.chimeStyle,
         ),
       );
     }
