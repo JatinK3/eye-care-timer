@@ -343,12 +343,20 @@ class _SettingsPageState extends State<SettingsPage>
   String _searchQuery = '';
   final _searchController = TextEditingController();
   AudioPlayer? _audioPlayer;
+  String? _playingChimeStyle;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _audioPlayer = AudioPlayer();
+    _audioPlayer?.onPlayerComplete.listen((_) {
+      if (mounted) {
+        setState(() {
+          _playingChimeStyle = null;
+        });
+      }
+    });
     _permissionStatus = widget.notificationPermissionStatus;
     _exactAlarmStatus = widget.exactAlarmStatus;
     _batteryOptimizationStatus = widget.batteryOptimizationStatus;
@@ -415,14 +423,27 @@ class _SettingsPageState extends State<SettingsPage>
   }
 
   Future<void> _playChimePreview(String style) async {
+    setState(() {
+      _playingChimeStyle = style;
+    });
     if (style == 'system_alert') {
       await SystemSound.play(SystemSoundType.alert);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && _playingChimeStyle == 'system_alert') {
+          setState(() {
+            _playingChimeStyle = null;
+          });
+        }
+      });
     } else {
       try {
         await _audioPlayer?.stop();
         await _audioPlayer?.play(AssetSource('sounds/$style.wav'));
       } catch (e) {
         await SystemSound.play(SystemSoundType.alert);
+        setState(() {
+          _playingChimeStyle = null;
+        });
       }
     }
   }
@@ -1832,34 +1853,42 @@ class _SettingsPageState extends State<SettingsPage>
                 leading: const Icon(Icons.music_note_outlined),
                 title: Text(l10n.settingsChimeStyle),
                 subtitle: Text(l10n.settingsChimeStyleSubtitle),
-                trailing: DropdownButton<String>(
-                  value: widget.chimeStyle,
-                  items: [
-                    DropdownMenuItem(
-                      value: 'tibetan_bowl',
-                      child: Text(l10n.settingsChimeTibetanBowl),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 84,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    _buildChimeCard(
+                      style: 'tibetan_bowl',
+                      name: l10n.settingsChimeTibetanBowl,
+                      icon: Icons.brightness_low_outlined,
+                      l10n: l10n,
                     ),
-                    DropdownMenuItem(
-                      value: 'wind_chimes',
-                      child: Text(l10n.settingsChimeWindChimes),
+                    _buildChimeCard(
+                      style: 'wind_chimes',
+                      name: l10n.settingsChimeWindChimes,
+                      icon: Icons.air_outlined,
+                      l10n: l10n,
                     ),
-                    DropdownMenuItem(
-                      value: 'zen_bell',
-                      child: Text(l10n.settingsChimeZenBell),
+                    _buildChimeCard(
+                      style: 'zen_bell',
+                      name: l10n.settingsChimeZenBell,
+                      icon: Icons.notifications_active_outlined,
+                      l10n: l10n,
                     ),
-                    DropdownMenuItem(
-                      value: 'system_alert',
-                      child: Text(l10n.settingsChimeSystemAlert),
+                    _buildChimeCard(
+                      style: 'system_alert',
+                      name: l10n.settingsChimeSystemAlert,
+                      icon: Icons.volume_up_outlined,
+                      l10n: l10n,
                     ),
                   ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      widget.setChimeStyle(value);
-                      unawaited(_playChimePreview(value));
-                    }
-                  },
                 ),
               ),
+              const SizedBox(height: 16),
             ],
           ],
         ),
@@ -2291,6 +2320,121 @@ class _SettingsPageState extends State<SettingsPage>
         ),
       ),
     ];
+  }
+
+  Widget _buildChimeCard({
+    required String style,
+    required String name,
+    required IconData icon,
+    required AppLocalizations l10n,
+  }) {
+    final isSelected = widget.chimeStyle == style;
+    final isPlaying = _playingChimeStyle == style;
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: GestureDetector(
+        onTap: () {
+          widget.setChimeStyle(style);
+          unawaited(_playChimePreview(style));
+        },
+        child: Container(
+          width: 154,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? primaryColor.withValues(alpha: 0.08)
+                : theme.cardColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? primaryColor
+                  : theme.dividerColor.withValues(alpha: 0.15),
+              width: isSelected ? 1.8 : 1.0,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: primaryColor.withValues(alpha: 0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isSelected
+                            ? primaryColor.withValues(alpha: 0.15)
+                            : theme.dividerColor.withValues(alpha: 0.05),
+                      ),
+                      child: Icon(
+                        icon,
+                        size: 18,
+                        color: isSelected
+                            ? primaryColor
+                            : theme.iconTheme.color?.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    if (isPlaying)
+                      SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: primaryColor,
+                          valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? primaryColor : theme.textTheme.bodyMedium?.color,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isPlaying
+                            ? "Playing..."
+                            : (isSelected ? "Selected" : "Tap to preview"),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: isPlaying
+                              ? primaryColor
+                              : theme.textTheme.labelSmall?.color?.withValues(alpha: 0.5),
+                          fontSize: 9,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildAiMotivationSettings(ThemeData theme) {
