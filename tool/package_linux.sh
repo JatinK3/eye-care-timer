@@ -7,6 +7,50 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$PROJECT_DIR/build/linux/x64/release/bundle"
 DIST_DIR="$PROJECT_DIR/dist"
 
+# ---------------------------------------------------------------------------
+# Dynamically resolve Flutter binary
+# Priority: PATH > common install locations > FLUTTER_HOME env var
+# ---------------------------------------------------------------------------
+resolve_flutter() {
+    # 1. Already on PATH?
+    if command -v flutter &>/dev/null; then
+        echo "$(command -v flutter)"
+        return
+    fi
+
+    # 2. Common install locations
+    local candidates=(
+        "$HOME/development/flutter/bin/flutter"
+        "$HOME/flutter/bin/flutter"
+        "/opt/flutter/bin/flutter"
+        "/usr/local/flutter/bin/flutter"
+        "/snap/flutter/current/usr/bin/flutter"
+    )
+    for candidate in "${candidates[@]}"; do
+        if [ -x "$candidate" ]; then
+            echo "$candidate"
+            return
+        fi
+    done
+
+    # 3. Honour explicit FLUTTER_HOME env var
+    if [ -n "$FLUTTER_HOME" ] && [ -x "$FLUTTER_HOME/bin/flutter" ]; then
+        echo "$FLUTTER_HOME/bin/flutter"
+        return
+    fi
+
+    echo ""
+}
+
+FLUTTER="$(resolve_flutter)"
+if [ -z "$FLUTTER" ]; then
+    echo "Error: Flutter SDK not found."
+    echo "Please ensure 'flutter' is on your PATH or set FLUTTER_HOME to your Flutter SDK directory."
+    echo "  e.g. export FLUTTER_HOME=\"\$HOME/development/flutter\""
+    exit 1
+fi
+echo "Using Flutter: $FLUTTER"
+
 # Parse command line arguments
 AUTO_YES=false
 AUTO_NO=false
@@ -51,8 +95,8 @@ if [ "$DEV_MODE" = "true" ]; then
     echo "Setting up local developer desktop launcher..."
     echo "========================================="
     cd "$PROJECT_DIR"
-    /home/jatin/development/flutter/bin/flutter clean
-    /home/jatin/development/flutter/bin/flutter build linux
+    "$FLUTTER" clean
+    "$FLUTTER" build linux
     
     mkdir -p "$HOME/.local/share/applications"
     
@@ -117,8 +161,8 @@ if [[ "$clear_state" =~ ^[Yy]$ ]]; then
     echo "✓ Local application state files deleted."
 fi
 
-/home/jatin/development/flutter/bin/flutter clean
-/home/jatin/development/flutter/bin/flutter build linux
+"$FLUTTER" clean
+"$FLUTTER" build linux
 
 # Verify build output
 if [ ! -d "$BUILD_DIR" ]; then
