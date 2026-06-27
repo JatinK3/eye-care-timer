@@ -816,7 +816,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsCameraMicAutoPostponeDesc =>
-      'Automatically postpone breaks when your camera is in use (e.g. video calls). Linux only.';
+      'Automatically postpone breaks when your camera or microphone is in use (e.g. video calls). Linux & Android only.';
 
   @override
   String get settingsWellnessEvery30Min => 'Every 30 min';

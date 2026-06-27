@@ -1549,7 +1549,7 @@ abstract class AppLocalizations {
   /// Detailed description of camera/mic auto-postpone
   ///
   /// In en, this message translates to:
-  /// **'Automatically postpone breaks when your camera is in use (e.g. video calls). Linux only.'**
+  /// **'Automatically postpone breaks when your camera or microphone is in use (e.g. video calls). Linux & Android only.'**
   String get settingsCameraMicAutoPostponeDesc;
 
   /// Option for wellness reminder cadence
