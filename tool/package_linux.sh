@@ -479,8 +479,10 @@ if [ -n "$_INSTALL_PKG" ]; then
                 ;;
             rpm)
                 if rpm -q blinkkind &>/dev/null; then
-                    echo "An older version of blinkkind is already installed. Upgrading..."
-                    sudo "$_INSTALL_PKG_MGR" upgrade -y "$_INSTALL_PKG" || sudo "$_INSTALL_PKG_MGR" install -y "$_INSTALL_PKG"
+                    echo "An older version of blinkkind is already installed. Upgrading/Reinstalling..."
+                    sudo "$_INSTALL_PKG_MGR" reinstall -y "$_INSTALL_PKG" || \
+                    sudo "$_INSTALL_PKG_MGR" upgrade -y "$_INSTALL_PKG" || \
+                    sudo "$_INSTALL_PKG_MGR" install -y "$_INSTALL_PKG"
                 else
                     echo "Installing $(basename "$_INSTALL_PKG")..."
                     sudo "$_INSTALL_PKG_MGR" install -y "$_INSTALL_PKG"
