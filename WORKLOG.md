@@ -206,6 +206,38 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Session Log
 
+### 2026-06-27 (Session end ~20:00 IST)
+
+**Completed this session:**
+
+- **Diagnosed & fixed Linux notification sound not playing** — investigated the full audio path for in-app chime notifications:
+  - Root cause: `soundEnabled` defaults to `false` in `TimerSettings` (line 175) **and** the `SharedPreferences` fallback also defaults to `false` (line 119 of `preferences_service.dart`), so on a fresh install or after clearing prefs, sound is silently off.
+  - Confirmed that on Linux, system notification daemons (e.g. GNOME/KDE) do **not** play sound for `flutter_local_notifications` toasts; the only audio path is the in-app `audioplayers` chime triggered by `_playChime()` in `timer_home_page.dart`.
+  - Updated `soundEnabled` default to `true` in both `TimerSettings` and the `PreferencesService` fallback so all new/reset installations have in-app chimes active out of the box.
+  - Verified `_playChime()` is called on work/break phase completion and that the `Test reminder` action in Settings also fires it.
+
+- **Added reinstall (`-R`/`--reinstall`) support to `tool/package_linux.sh`** — the script previously only built the package; repeated installs required manual `dnf remove` / `apt remove` before `install`. Added:
+  - `-R` / `--reinstall` flag that removes the previously installed `blinkkind` package (via `dnf remove` on Fedora/RHEL or `apt remove` on Ubuntu/Debian) before installing the freshly built one.
+  - Integrated into the end-of-build install flow: when `-i` (install) and `-R` (reinstall) are both active, the old package is purged first, then the new one is installed cleanly.
+  - Works alongside existing `-y` (auto-accept) and `-ni` (no-install) flags.
+
+- **Added OK action button to all in-app SnackBar toasts** — all `SnackBar` widgets across the app now include a `SnackBarAction(label: 'OK', ...)` so users can immediately dismiss toasts rather than waiting for the 4-second auto-hide:
+  - Break skip limit warning in `timer_home_page.dart` (consecutive skips guard).
+  - Natural break detected / timer reset notification in `timer_home_page.dart` (lifecycle resume path).
+  - All other SnackBars that were previously dismiss-only now include the action.
+
+**Commits this session:**
+- `fix: default soundEnabled to true so chimes work on first install`
+- `feat: add --reinstall flag to package_linux.sh for clean re-installation`
+- `feat: add OK action button to SnackBars for immediate dismissal`
+
+**State at end of session:**
+- `flutter analyze` → 0 issues
+- RPM package built successfully → `dist/blinkkind-1.0.2-1.fc43.x86_64.rpm`
+- All SnackBar toasts across the app include an OK dismiss button
+
+---
+
 ### 2026-06-27 (Session end ~14:22 IST)
 
 **Completed this session:**
