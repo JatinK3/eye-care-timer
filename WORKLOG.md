@@ -190,6 +190,38 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Session Log
 
+### 2026-06-27 (Session end ~14:15 IST)
+
+**Completed this session:**
+- **Flutter SDK installation via git clone** — cloned Flutter stable (3.44.4) to `~/development/flutter` using `git clone https://github.com/flutter/flutter.git -b stable`. Added `$HOME/development/flutter/bin` to `~/.zshrc` PATH (system uses zsh, not bash). Dart 3.12.2 and DevTools 2.57.0 bootstrapped on first run.
+- **Android SDK setup without Android Studio** — installed Android command-line tools only:
+  - Downloaded `commandlinetools-linux-11076708_latest.zip` from Google and extracted to `~/development/android/cmdline-tools/latest/`.
+  - Accepted all SDK licenses via `sdkmanager --licenses`.
+  - Installed `platform-tools`, `platforms;android-35`, `build-tools;35.0.0`, then upgraded to `platforms;android-36` and `build-tools;28.0.3` to satisfy Flutter 3.44.4's minimum SDK requirements.
+  - Configured Flutter: `flutter config --android-sdk ~/development/android`.
+  - `flutter doctor` result: Android toolchain ✓, Chrome ✓, Linux toolchain ✓, Connected devices ✓, Network resources ✓.
+- **Dynamic Flutter SDK path in `tool/package_linux.sh`** — replaced the hardcoded `/home/jatin/development/flutter/bin/flutter` path (×3 occurrences) with a `resolve_flutter()` function. Resolution order: (1) `flutter` on `$PATH`, (2) common install locations (`~/development/flutter`, `~/flutter`, `/opt/flutter`, `/usr/local/flutter`, snap), (3) explicit `$FLUTTER_HOME` env var. Exits early with a clear error message if Flutter is not found.
+- **Cross-distro native library checker `tool/lib_resolver.sh`** — created a new standalone script that detects and installs all native Linux libraries required by BlinkKind's Flutter plugins before a build begins:
+  - Supports `apt` (Ubuntu/Debian), `dnf` (Fedora/RHEL), `yum` (CentOS), `pacman` (Arch).
+  - Checks and maps packages for: CMake, Ninja, pkg-config, Clang (build tools); GTK3, GLib (Flutter embedder); `keybinder-3.0` (`hotkey_manager`); `ayatana-appindicator3` (`system_tray`); X11 + XTest (`window_manager`); `libnotify` (`flutter_local_notifications`); GStreamer + plugins-base (`audioplayers`); GIO (`launch_at_startup`).
+  - Deduplicates package installs; runs `apt-get update` once before apt installs; reports per-package success/failure.
+  - Env flags: `LIB_RESOLVER_DRY_RUN=1` (print only), `LIB_RESOLVER_QUIET=1` (suppress info output).
+  - Inherits `AUTO_YES` from `package_linux.sh` so `-y` flag auto-installs deps without prompting.
+  - Dry-run on Fedora 43 correctly identified 3 missing packages: `libayatana-appindicator-gtk3-devel`, `libnotify-devel`, `libayatana-appindicator-gtk3`.
+- **Integrated `lib_resolver.sh` into `package_linux.sh`** — script is sourced after argument parsing (so `AUTO_YES` is available) and `resolve_build_deps()` is called before both dev-mode (`-d`) and release builds, preventing CMake from failing mid-build on missing native headers.
+
+**Commits this session:**
+- `fix: resolve Flutter SDK path dynamically in package_linux.sh`
+- `feat: add lib_resolver.sh for cross-distro build dependency checking`
+
+**State at end of session:**
+- `bash -n tool/lib_resolver.sh` → syntax OK
+- `bash -n tool/package_linux.sh` → syntax OK
+- Flutter 3.44.4 stable installed at `~/development/flutter`
+- Android SDK 36 + build-tools 28.0.3 at `~/development/android`
+
+---
+
 ### 2026-06-26 (Session end ~17:20 IST)
 
 **Completed this session:**
