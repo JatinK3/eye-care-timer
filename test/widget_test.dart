@@ -1078,6 +1078,13 @@ void main() {
   testWidgets('settings opens recent break history', (
     WidgetTester tester,
   ) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
     SharedPreferences.setMockInitialValues({
       PreferencesService.onboardingCompletedKey: true,
@@ -1128,7 +1135,7 @@ void main() {
     expect(find.text('30 days'), findsOneWidget);
     expect(find.text('20m'), findsOneWidget);
 
-    final complianceTitle = find.text('Eye Health Score');
+    final complianceTitle = find.text('Eye Health Score').first;
     await tester.scrollUntilVisible(
       complianceTitle,
       300,
@@ -1272,14 +1279,16 @@ void main() {
       expect(find.text('Breaks taken today'), findsOneWidget);
 
       await tester.tap(find.text('20:00'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byIcon(Icons.settings), findsNothing);
       expect(find.text('Breaks taken today'), findsNothing);
       expect(find.text('Tap dial to exit focus mode'), findsOneWidget);
 
       await tester.tap(find.text('20:00'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byIcon(Icons.settings), findsOneWidget);
       expect(find.text('Breaks taken today'), findsOneWidget);

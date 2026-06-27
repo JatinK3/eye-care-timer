@@ -206,6 +206,30 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Session Log
 
+### 2026-06-27 (Session end ~20:15 IST)
+
+**Completed this session:**
+
+- **Implemented Color-Coded Gradient Timer Ring (UI/UX Future Improvements Backlog)** — built a premium gradient progress ring that transitions dynamically based on the remaining time percentage during work phases:
+  - Remaining time > 25%: Calming Emerald/Mint Green gradient.
+  - Remaining time 10%–25%: Amber/Yellow warning gradient.
+  - Remaining time <= 10%: Orange/Coral urgency gradient.
+  - The focus mode background breathing glow dynamically synchronizes its base color to match the active timer ring color.
+  - Replaced the standard `CircularProgressIndicator` with a custom `CustomPainter`-based `_GradientTimerPainter` utilizing a `SweepGradient` to paint smooth color arcs.
+- **Fixed widget tests and prevented focus mode and settings history test failures:**
+  - Resolved `pumpAndSettle` timing out in the focus mode widget test by replacing it with an explicit `pump` call since the infinite pulsing background animation controller runs indefinitely.
+  - Resolved `scrollUntilVisible` failure in the settings opens recent break history test by targeting the first match of the duplicated "Eye Health Score" text finder, and increased the test viewport physicalSize to ensure elements fit on screen.
+
+**Commits this session:**
+- `feat: implement color-coded gradient timer ring and sync focus background`
+- `test: fix focus mode and settings history widget test failures`
+
+**State at end of session:**
+- `flutter analyze` → 0 issues
+- `flutter test` → 84/84 pass
+
+---
+
 ### 2026-06-27 (Session end ~20:00 IST)
 
 **Completed this session:**
@@ -724,7 +748,7 @@ Ideas captured from design review session. Prioritized by impact. None are sched
 - [ ] **Animated eye icon on timer home screen** — replace the static progress ring center with a vector eye that blinks naturally every few seconds and pulses on phase transitions (work → break → work). Clearest on-brand differentiator on the home screen.
 - [ ] **Breathing animation during breaks** — an expand/contract soft-glow circle behind the break card to encourage slow breathing; pairs with the existing guided exercises. Single `AnimationController` looping on a 4-second inhale/exhale curve.
 - [ ] **Smooth work→break phase transition animation** — a brief full-screen white (or theme-accent) flash / crossfade when the work phase ends and the break begins, so the transition feels intentional rather than abrupt.
-- [ ] **Color-coded gradient timer ring** — the progress arc shifts from a calm green → amber → orange as remaining time drops below 25% and 10%, giving the user a passive urgency signal without text.
+- [x] **Color-coded gradient timer ring** — the progress arc shifts from a calm green → amber → orange as remaining time drops below 25% and 10%, giving the user a passive urgency signal without text.
 - [ ] **Streak milestone celebrations** — confetti burst / gold glow animation when the user hits streak milestones (5, 10, 25, 50 consecutive days). Reuse existing `streakCount` data; trigger once per milestone per day.
 
 ### 🟡 Medium Impact (polish & feel)

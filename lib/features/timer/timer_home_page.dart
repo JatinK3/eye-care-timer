@@ -2789,7 +2789,11 @@ class TimerHomePageState extends State<TimerHomePage>
                     children: [
                       if (_isFocusMode)
                         Positioned.fill(
-                          child: _FocusModeBackground(color: progressColor),
+                          child: _FocusModeBackground(
+                            color: progressColor,
+                            progressAnimation: _progressAnimation,
+                            isBreak: _isBreak,
+                          ),
                         ),
                       SafeArea(
                     child: Center(
@@ -2820,6 +2824,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                 widget.trayBlinkNudgesEnabled,
                             isBlinkNudging: _isBlinkNudging,
                             isFocusMode: _isFocusMode,
+                            isBreak: _isBreak,
                           );
 
                           final actionButtons = Wrap(
@@ -3362,6 +3367,7 @@ class _AnimatedTimerDial extends StatelessWidget {
   final bool blinkRemindersEnabled;
   final bool isBlinkNudging;
   final bool isFocusMode;
+  final bool isBreak;
 
   const _AnimatedTimerDial({
     required this.size,
@@ -3378,6 +3384,7 @@ class _AnimatedTimerDial extends StatelessWidget {
     required this.blinkRemindersEnabled,
     required this.isBlinkNudging,
     required this.isFocusMode,
+    required this.isBreak,
   });
 
   String _formattedTime(int seconds) {
@@ -3385,6 +3392,45 @@ class _AnimatedTimerDial extends StatelessWidget {
     final minutes = seconds ~/ 60;
     final remainder = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${remainder.toString().padLeft(2, '0')}';
+  }
+
+  Color _getCurrentProgressColor(double progress) {
+    if (isBreak) {
+      return progressColor;
+    }
+    if (progress > 0.25) {
+      return const Color(0xFF10B981); // Emerald green
+    } else if (progress > 0.10) {
+      return const Color(0xFFF59E0B); // Amber
+    } else {
+      return const Color(0xFFF97316); // Orange
+    }
+  }
+
+  List<Color> _getRingColors(double progress, Color baseColor) {
+    if (isBreak) {
+      final hsl = HSLColor.fromColor(baseColor);
+      final lighterColor = hsl
+          .withLightness((hsl.lightness + 0.15).clamp(0.0, 1.0))
+          .toColor();
+      return [baseColor, lighterColor];
+    }
+    if (progress > 0.25) {
+      return const [
+        Color(0xFF059669), // Calm Green (Emerald)
+        Color(0xFF34D399), // Mint Green
+      ];
+    } else if (progress > 0.10) {
+      return const [
+        Color(0xFFD97706), // Amber
+        Color(0xFFFBBF24), // Light Amber
+      ];
+    } else {
+      return const [
+        Color(0xFFEA580C), // Orange
+        Color(0xFFF87171), // Coral / Light Red
+      ];
+    }
   }
 
   @override
@@ -3413,6 +3459,9 @@ class _AnimatedTimerDial extends StatelessWidget {
               builder: (context, backgroundRing) {
                 final remainingSeconds =
                     (initialDuration * progressAnimation.value).ceil();
+                final currentProgressColor = _getCurrentProgressColor(progressAnimation.value);
+                final ringColors = _getRingColors(progressAnimation.value, progressColor);
+
                 return Stack(
                   alignment: Alignment.center,
                   children: [
@@ -3420,13 +3469,12 @@ class _AnimatedTimerDial extends StatelessWidget {
                     SizedBox(
                       width: dialSize,
                       height: dialSize,
-                      child: CircularProgressIndicator(
-                        value: progressAnimation.value,
-                        strokeWidth: strokeWidth,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          progressColor,
+                      child: CustomPaint(
+                        painter: _GradientTimerPainter(
+                          progress: progressAnimation.value,
+                          strokeWidth: strokeWidth,
+                          colors: ringColors,
                         ),
-                        backgroundColor: Colors.transparent,
                       ),
                     ),
                     if (isFocusMode)
@@ -3455,7 +3503,7 @@ class _AnimatedTimerDial extends StatelessWidget {
                             secondChild: Icon(
                               Icons.remove_red_eye,
                               size: isFocusMode ? 24 : 18,
-                              color: progressColor,
+                              color: currentProgressColor,
                             ),
                             crossFadeState: isBlinkNudging
                                 ? CrossFadeState.showSecond
@@ -3474,7 +3522,7 @@ class _AnimatedTimerDial extends StatelessWidget {
                                 shadows: isFocusMode
                                     ? [
                                         Shadow(
-                                          color: progressColor.withValues(alpha: 0.25),
+                                          color: currentProgressColor.withValues(alpha: 0.25),
                                           blurRadius: 16,
                                         ),
                                       ]
@@ -3509,7 +3557,14 @@ class _AnimatedTimerDial extends StatelessWidget {
 
 class _FocusModeBackground extends StatefulWidget {
   final Color color;
-  const _FocusModeBackground({required this.color});
+  final Animation<double>? progressAnimation;
+  final bool isBreak;
+
+  const _FocusModeBackground({
+    required this.color,
+    this.progressAnimation,
+    this.isBreak = false,
+  });
 
   @override
   State<_FocusModeBackground> createState() => _FocusModeBackgroundState();
@@ -3536,26 +3591,100 @@ class _FocusModeBackgroundState extends State<_FocusModeBackground>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final scale = 0.85 + _controller.value * 0.3; // pulsing scale 0.85 to 1.15
-        final opacity = 0.04 + _controller.value * 0.08; // soft opacity
-        return Container(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment.center,
-              radius: scale,
-              colors: [
-                widget.color.withValues(alpha: opacity),
-                Colors.transparent,
-              ],
-              stops: const [0.0, 1.0],
+    final effectiveProgressAnimation = widget.progressAnimation;
+
+    Widget buildBackground(double progressFraction) {
+      Color baseColor = widget.color;
+      if (!widget.isBreak) {
+        if (progressFraction > 0.25) {
+          baseColor = const Color(0xFF10B981);
+        } else if (progressFraction > 0.10) {
+          baseColor = const Color(0xFFF59E0B);
+        } else {
+          baseColor = const Color(0xFFF97316);
+        }
+      }
+
+      return AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final scale = 0.85 + _controller.value * 0.3; // pulsing scale 0.85 to 1.15
+          final opacity = 0.04 + _controller.value * 0.08; // soft opacity
+          return Container(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: scale,
+                colors: [
+                  baseColor.withValues(alpha: opacity),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 1.0],
+              ),
             ),
-          ),
-        );
-      },
-    );
+          );
+        },
+      );
+    }
+
+    if (effectiveProgressAnimation != null) {
+      return AnimatedBuilder(
+        animation: effectiveProgressAnimation,
+        builder: (context, child) {
+          return buildBackground(effectiveProgressAnimation.value);
+        },
+      );
+    }
+
+    return buildBackground(1.0);
+  }
+}
+
+class _GradientTimerPainter extends CustomPainter {
+  final double progress;
+  final double strokeWidth;
+  final List<Color> colors;
+
+  _GradientTimerPainter({
+    required this.progress,
+    required this.strokeWidth,
+    required this.colors,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0) return;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - strokeWidth) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    final paint = Paint()
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    if (colors.length == 1) {
+      paint.color = colors.first;
+    } else {
+      paint.shader = SweepGradient(
+        colors: colors,
+        stops: List.generate(colors.length, (i) => i / (colors.length - 1)),
+        transform: const GradientRotation(-math.pi / 2),
+      ).createShader(rect);
+    }
+
+    final startAngle = -math.pi / 2;
+    final sweepAngle = 2 * math.pi * progress;
+
+    canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _GradientTimerPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        !listEquals(oldDelegate.colors, colors);
   }
 }
 
