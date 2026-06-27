@@ -105,6 +105,36 @@ if [ "$DEV_MODE" = "true" ]; then
     echo "========================================="
     echo "Setting up local developer desktop launcher..."
     echo "========================================="
+
+    # ---------------------------------------------------------------------------
+    # Stale system-package guard
+    # If a previously installed RPM or DEB exists at /opt/blinkkind/ it will
+    # shadow the dev build after a reboot (system .desktop > user .desktop in
+    # some launchers, and /opt binary runs directly if launched from a terminal).
+    # Detect it and print a one-liner the developer can run to remove it.
+    # ---------------------------------------------------------------------------
+    _stale_pkg=""
+    if rpm -q blinkkind &>/dev/null; then
+        _stale_pkg="rpm"
+    elif dpkg-query -W -f='${Status}' blinkkind 2>/dev/null | grep -q "ok installed"; then
+        _stale_pkg="deb"
+    fi
+
+    if [ -n "$_stale_pkg" ]; then
+        echo ""
+        echo "⚠️  WARNING: A system-installed BlinkKind package ($_stale_pkg) was found at /opt/blinkkind/."
+        echo "   This stale install can override your dev build after a reboot or direct launch."
+        echo "   To permanently remove it, run:"
+        if [ "$_stale_pkg" = "rpm" ]; then
+            echo "     sudo dnf remove blinkkind"
+        else
+            echo "     sudo dpkg -r blinkkind"
+        fi
+        echo "   The dev launcher (~/.local/share/applications/blinkkind.desktop) overrides"
+        echo "   the system one for this session, but removal is recommended for a clean setup."
+        echo ""
+    fi
+
     # Check & install missing native libs before building
     if declare -f resolve_build_deps &>/dev/null; then
         resolve_build_deps
@@ -145,6 +175,7 @@ EOF
     
     echo "========================================="
     echo "✓ Local developer desktop launcher ready!"
+    echo "  Binary: $PROJECT_DIR/build/linux/x64/release/bundle/eye_care_timer"
     echo "You can now run BlinkKind from your system Application Menu"
     echo "========================================="
     exit 0
@@ -519,6 +550,20 @@ if [ -n "$_INSTALL_PKG" ]; then
         [ "$restarted" = false ] && echo "No active services or running processes detected. Skipping restart."
     else
         echo "Skipping installation."
+        # Warn if an older system-installed version is still active — the fresh
+        # build in dist/ will NOT take effect until it is installed.
+        _running_bin="$(readlink -f /proc/$(pgrep -x eye_care_timer | head -1)/exe 2>/dev/null || true)"
+        if echo "$_running_bin" | grep -q '/opt/blinkkind'; then
+            echo ""
+            echo "⚠️  WARNING: BlinkKind is still running from the old system install (/opt/blinkkind/)."
+            echo "   Your freshly built package in dist/ is NOT active yet."
+            echo "   Install it now to apply your changes:"
+            case "$_INSTALL_TYPE" in
+                deb) echo "     sudo dpkg -i $_INSTALL_PKG" ;;
+                rpm) echo "     sudo dnf install -y $_INSTALL_PKG" ;;
+            esac
+            echo ""
+        fi
     fi
 elif [ "$_INSTALL_PKG_MGR" != "unknown" ]; then
     echo ""
