@@ -1052,6 +1052,18 @@
   "@settingsCameraMicAutoPostponeDesc": {
     "description": "Detailed description of camera/mic auto-postpone"
   },
+  "settingsAutoPauseOnMedia": "Media playback auto-pause",
+  "@settingsAutoPauseOnMedia": {
+    "description": "Title for media playback auto-pause setting"
+  },
+  "settingsAutoPauseOnMediaSubtitle": "Pause breaks automatically when video or music is playing",
+  "@settingsAutoPauseOnMediaSubtitle": {
+    "description": "Subtitle for media playback auto-pause setting"
+  },
+  "settingsAutoPauseOnMediaDesc": "Automatically pause the timer when background media (music or video) is active. Android & Linux only.",
+  "@settingsAutoPauseOnMediaDesc": {
+    "description": "Detailed description of media playback auto-pause"
+  },
   "settingsWellnessEvery30Min": "Every 30 min",
   "@settingsWellnessEvery30Min": {
     "description": "Option for wellness reminder cadence"

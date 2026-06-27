@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -2925,6 +2926,14 @@ class TimerHomePageState extends State<TimerHomePage>
                   ),
                   child: Stack(
                     children: [
+                      if (!_isFocusMode)
+                        Positioned.fill(
+                          child: _GlassmorphicBackground(
+                            colorPreset: widget.colorPreset,
+                            isDark: isDark,
+                            customAccentColorHex: widget.customAccentColorHex,
+                          ),
+                        ),
                       if (_isFocusMode)
                         Positioned.fill(
                           child: _FocusModeBackground(
@@ -3823,6 +3832,106 @@ class _GradientTimerPainter extends CustomPainter {
     return oldDelegate.progress != progress ||
         oldDelegate.strokeWidth != strokeWidth ||
         !listEquals(oldDelegate.colors, colors);
+  }
+}
+
+class _GlassmorphicBackground extends StatefulWidget {
+  final String colorPreset;
+  final bool isDark;
+  final String? customAccentColorHex;
+
+  const _GlassmorphicBackground({
+    required this.colorPreset,
+    required this.isDark,
+    this.customAccentColorHex,
+  });
+
+  @override
+  State<_GlassmorphicBackground> createState() => _GlassmorphicBackgroundState();
+}
+
+class _GlassmorphicBackgroundState extends State<_GlassmorphicBackground>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 25),
+    );
+    if (kIsWeb || !Platform.environment.containsKey('FLUTTER_TEST')) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ColorPresets.glassOrbColors(
+      widget.colorPreset,
+      widget.isDark,
+      customHex: widget.customAccentColorHex,
+    );
+    final primaryOrbColor = colors[0];
+    final secondaryOrbColor = colors[1];
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final value = _controller.value * 2 * math.pi;
+
+        // Slow fluid motion in a circular path
+        final dx1 = math.sin(value) * 0.15;
+        final dy1 = math.cos(value) * 0.15;
+
+        final dx2 = math.cos(value + math.pi / 2) * 0.18;
+        final dy2 = math.sin(value + math.pi / 2) * 0.12;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Left-top drifting glass orb
+            Align(
+              alignment: Alignment(-0.8 + dx1, -0.6 + dy1),
+              child: Container(
+                width: 320,
+                height: 320,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: primaryOrbColor.withValues(alpha: widget.isDark ? 0.15 : 0.35),
+                ),
+              ),
+            ),
+            // Right-bottom drifting glass orb
+            Align(
+              alignment: Alignment(0.8 + dx2, 0.5 + dy2),
+              child: Container(
+                width: 360,
+                height: 360,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: secondaryOrbColor.withValues(alpha: widget.isDark ? 0.12 : 0.30),
+                ),
+              ),
+            ),
+            // High-radius blur to blend the orbs into the background gradient smoothly
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 85, sigmaY: 85),
+                child: const SizedBox.shrink(),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

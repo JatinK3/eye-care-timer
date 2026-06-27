@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -214,6 +215,29 @@ class BreakOverlayService {
       _activeRoute = null;
     }
   }
+  Future<bool> isMediaPlaying() async {
+    if (kIsWeb) return false;
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        final playing = await _channel.invokeMethod<bool>("isMusicActive");
+        return playing ?? false;
+      } catch (e) {
+        return false;
+      }
+    } else if (defaultTargetPlatform == TargetPlatform.linux) {
+      try {
+        final result = await Process.run('pactl', ['list', 'sink-inputs']);
+        if (result.exitCode == 0) {
+          final output = result.stdout as String;
+          return output.contains('Corked: no');
+        }
+      } catch (e) {
+        // pactl not found
+      }
+    }
+    return false;
+  }
+
 
   Future<bool> _invokeBoolean(String method) async {
     if (!_isSupported) return false;

@@ -118,6 +118,10 @@ class MainActivity : FlutterActivity() {
                     result.success(isCameraActive)
                 "isMicInUse" ->
                     result.success(isMicInUse())
+                "isMusicActive" -> {
+                    val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+                    result.success(audioManager?.isMusicActive ?: false)
+                }
                 else -> result.notImplemented()
             }
         }

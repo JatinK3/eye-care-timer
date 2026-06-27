@@ -85,6 +85,7 @@ class PreferencesService {
   static const String blinkReminderInteractiveEnabledKey =
       'blinkReminderInteractiveEnabled';
   static const String maxConsecutiveSkipsKey = 'maxConsecutiveSkips';
+  static const String autoPauseOnMediaEnabledKey = 'autoPauseOnMediaEnabled';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -236,6 +237,9 @@ class PreferencesService {
       blinkReminderInteractiveEnabled:
           prefs.getBool(blinkReminderInteractiveEnabledKey) ??
           TimerSettings.defaultBlinkReminderInteractiveEnabled,
+      autoPauseOnMediaEnabled:
+          prefs.getBool(autoPauseOnMediaEnabledKey) ??
+          TimerSettings.defaultAutoPauseOnMediaEnabled,
       maxConsecutiveSkips:
           prefs.getInt(maxConsecutiveSkipsKey) ??
           TimerSettings.defaultMaxConsecutiveSkips,
@@ -610,6 +614,10 @@ class PreferencesService {
     await prefs.setInt(
       maxConsecutiveSkipsKey,
       settings.maxConsecutiveSkips,
+    );
+    await prefs.setBool(
+      autoPauseOnMediaEnabledKey,
+      settings.autoPauseOnMediaEnabled,
     );
   }
 

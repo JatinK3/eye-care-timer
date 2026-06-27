@@ -42,6 +42,7 @@ class TimerSettings {
   static const String defaultBlinkReminderCustomMessage = '';
   static const bool defaultCameraMicAutoPostponeEnabled = false;
   static const bool defaultWellnessRemindersEnabled = false;
+  static const bool defaultAutoPauseOnMediaEnabled = false;
   static const int defaultWellnessReminderCadenceSeconds = 3600;
   static const bool defaultBlinkReminderInteractiveEnabled = true;
   static const String defaultAiProvider = 'Gemini';
@@ -105,6 +106,7 @@ class TimerSettings {
   final int wellnessReminderCadenceSeconds;
   final bool blinkReminderInteractiveEnabled;
   final int maxConsecutiveSkips;
+  final bool autoPauseOnMediaEnabled;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -161,6 +163,7 @@ class TimerSettings {
     required this.wellnessRemindersEnabled,
     required this.wellnessReminderCadenceSeconds,
     required this.blinkReminderInteractiveEnabled,
+    required this.autoPauseOnMediaEnabled,
   });
 
   const TimerSettings.defaults()
@@ -217,7 +220,8 @@ class TimerSettings {
       wellnessRemindersEnabled = defaultWellnessRemindersEnabled,
       wellnessReminderCadenceSeconds = defaultWellnessReminderCadenceSeconds,
       blinkReminderInteractiveEnabled = defaultBlinkReminderInteractiveEnabled,
-      maxConsecutiveSkips = defaultMaxConsecutiveSkips;
+      maxConsecutiveSkips = defaultMaxConsecutiveSkips,
+      autoPauseOnMediaEnabled = defaultAutoPauseOnMediaEnabled;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -274,6 +278,7 @@ class TimerSettings {
     int? wellnessReminderCadenceSeconds,
     bool? blinkReminderInteractiveEnabled,
     int? maxConsecutiveSkips,
+    bool? autoPauseOnMediaEnabled,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -344,6 +349,8 @@ class TimerSettings {
           blinkReminderInteractiveEnabled ??
           this.blinkReminderInteractiveEnabled,
       maxConsecutiveSkips: maxConsecutiveSkips ?? this.maxConsecutiveSkips,
+      autoPauseOnMediaEnabled:
+          autoPauseOnMediaEnabled ?? this.autoPauseOnMediaEnabled,
     );
   }
 
@@ -402,6 +409,7 @@ class TimerSettings {
       'wellnessReminderCadenceSeconds': wellnessReminderCadenceSeconds,
       'blinkReminderInteractiveEnabled': blinkReminderInteractiveEnabled,
       'maxConsecutiveSkips': maxConsecutiveSkips,
+      'autoPauseOnMediaEnabled': autoPauseOnMediaEnabled,
     };
   }
 
@@ -513,6 +521,9 @@ class TimerSettings {
       wellnessReminderCadenceSeconds:
           json['wellnessReminderCadenceSeconds'] as int? ??
           defaultWellnessReminderCadenceSeconds,
+      autoPauseOnMediaEnabled:
+          json['autoPauseOnMediaEnabled'] as bool? ??
+          defaultAutoPauseOnMediaEnabled,
     );
   }
 
