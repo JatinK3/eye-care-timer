@@ -318,6 +318,19 @@ StartupNotify=true
 StartupWMClass=com.jatin.eyecaretimer
 EOF
 
+    # Write launcher script to SOURCES upfront
+    cat << 'EOF' > "$RPM_BUILD_ROOT/SOURCES/blinkkind-launcher"
+#!/bin/sh
+# Launch via gtk-launch using the desktop entry if available to run in the proper desktop session environment,
+# otherwise fall back to direct binary execution.
+if command -v gtk-launch >/dev/null 2>&1; then
+    exec gtk-launch blinkkind.desktop "$@"
+else
+    exec /opt/blinkkind/eye_care_timer "$@"
+fi
+EOF
+    chmod +x "$RPM_BUILD_ROOT/SOURCES/blinkkind-launcher"
+
     # Create RPM Specification file (variable expansion enabled to insert $VERSION)
     cat << EOF > "$RPM_BUILD_ROOT/SPECS/blinkkind.spec"
 Name:           blinkkind
@@ -329,6 +342,7 @@ URL:            https://github.com/JatinK3/eye-care-timer
 Source0:        blinkkind-%{version}.tar.gz
 Source1:        blinkkind.desktop
 Source2:        blinkkind.png
+Source3:        blinkkind-launcher
 Requires:       gtk3, libX11
 
 %description
@@ -344,17 +358,7 @@ rm -rf %{buildroot}
 mkdir -p %{buildroot}/opt/blinkkind
 cp -r %{_builddir}/%{name}-%{version}/* %{buildroot}/opt/blinkkind/
 mkdir -p %{buildroot}/usr/bin
-cat << 'LAUNCHER_EOF' > %{buildroot}/usr/bin/blinkkind
-#!/bin/sh
-# Launch via gtk-launch using the desktop entry if available to run in the proper desktop session environment,
-# otherwise fall back to direct binary execution.
-if command -v gtk-launch >/dev/null 2>&1; then
-    exec gtk-launch blinkkind.desktop "$@"
-else
-    exec /opt/blinkkind/eye_care_timer "$@"
-fi
-LAUNCHER_EOF
-chmod +x %{buildroot}/usr/bin/blinkkind
+install -m 755 %{SOURCE3} %{buildroot}/usr/bin/blinkkind
 mkdir -p %{buildroot}/usr/share/applications
 cp %{SOURCE1} %{buildroot}/usr/share/applications/
 mkdir -p %{buildroot}/usr/share/pixmaps
