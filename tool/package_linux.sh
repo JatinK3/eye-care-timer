@@ -419,83 +419,102 @@ EOF
     echo "✓ RPM package created in dist/ directory."
 fi
 
-# Optional installation step for DEB
-if [ -f "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" ]; then
+# ---------------------------------------------------------------------------
+# Optional installation step — distro-aware (DEB on apt, RPM on dnf/yum)
+# ---------------------------------------------------------------------------
+_INSTALL_PKG_MGR="$(command -v apt-get 2>/dev/null && echo apt || \
+                    command -v dnf    2>/dev/null && echo dnf || \
+                    command -v yum    2>/dev/null && echo yum || echo unknown)"
+
+_DEB_PKG="$DIST_DIR/blinkkind_${VERSION}_amd64.deb"
+_RPM_PKG="$(find "$DIST_DIR" -maxdepth 1 -name "blinkkind-${VERSION}*.rpm" 2>/dev/null | head -1)"
+
+# Pick the right package for this system
+_INSTALL_PKG=""
+_INSTALL_TYPE=""
+case "$_INSTALL_PKG_MGR" in
+    apt)
+        [ -f "$_DEB_PKG" ] && _INSTALL_PKG="$_DEB_PKG" && _INSTALL_TYPE="deb" ;;
+    dnf|yum)
+        [ -n "$_RPM_PKG" ] && _INSTALL_PKG="$_RPM_PKG" && _INSTALL_TYPE="rpm" ;;
+esac
+
+if [ -n "$_INSTALL_PKG" ]; then
     echo ""
     echo "========================================="
-    install_deb=""
+    _install_now=""
     if [ "$INSTALL_DEB_ARG" = "true" ]; then
-        install_deb="y"
+        _install_now="y"
     elif [ "$INSTALL_DEB_ARG" = "false" ]; then
-        install_deb="n"
+        _install_now="n"
     elif [ "$AUTO_YES" = true ]; then
-        install_deb="y"
+        _install_now="y"
     elif [ "$AUTO_NO" = true ]; then
-        install_deb="n"
+        _install_now="n"
     elif [ -t 0 ]; then
-        read -p "Would you like to install the generated DEB package now? (y/N): " install_deb
+        read -p "Would you like to install the generated $(echo "$_INSTALL_TYPE" | tr '[:lower:]' '[:upper:]') package now? (y/N): " _install_now
     else
-        install_deb="n"
+        _install_now="n"
     fi
 
-    if [[ "$install_deb" =~ ^[Yy]$ ]]; then
-        if dpkg-query -W -f='${Status}' blinkkind 2>/dev/null | grep -q "ok installed"; then
-            echo "An older version of blinkkind is already installed. Removing it first for a clean install..."
-            sudo dpkg -r blinkkind || true
-            echo "✓ Older version of blinkkind has been removed."
-            echo "Installing new version blinkkind_${VERSION}_amd64.deb..."
-            sudo dpkg -i "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" || {
-                echo "Installing missing dependencies..."
-                sudo apt-get install -f -y
-            }
-            echo "✓ Upgrade complete! Old version has been removed and the new version has been added."
-        else
-            echo "Installing blinkkind_${VERSION}_amd64.deb..."
-            sudo dpkg -i "$DIST_DIR/blinkkind_${VERSION}_amd64.deb" || {
-                echo "Installing missing dependencies..."
-                sudo apt-get install -f -y
-            }
-            echo "✓ Installation complete! You can run 'blinkkind' or find it in your Applications menu."
-        fi
+    if [[ "$_install_now" =~ ^[Yy]$ ]]; then
+        case "$_INSTALL_TYPE" in
+            deb)
+                if dpkg-query -W -f='${Status}' blinkkind 2>/dev/null | grep -q "ok installed"; then
+                    echo "An older version of blinkkind is already installed. Removing it first..."
+                    sudo dpkg -r blinkkind || true
+                    echo "✓ Older version removed."
+                fi
+                echo "Installing $(basename "$_INSTALL_PKG")..."
+                sudo dpkg -i "$_INSTALL_PKG" || { echo "Installing missing dependencies..."; sudo apt-get install -f -y; }
+                echo "✓ Installation complete! Run 'blinkkind' or find it in your Applications menu."
+                ;;
+            rpm)
+                if rpm -q blinkkind &>/dev/null; then
+                    echo "An older version of blinkkind is already installed. Upgrading..."
+                    sudo "$_INSTALL_PKG_MGR" upgrade -y "$_INSTALL_PKG" || sudo "$_INSTALL_PKG_MGR" install -y "$_INSTALL_PKG"
+                else
+                    echo "Installing $(basename "$_INSTALL_PKG")..."
+                    sudo "$_INSTALL_PKG_MGR" install -y "$_INSTALL_PKG"
+                fi
+                echo "✓ Installation complete! Run 'blinkkind' or find it in your Applications menu."
+                ;;
+        esac
 
-        # Mandatory systemctl restart check if service is active
+        # Restart running desktop application processes if detected
         restarted=false
         for svc in blinkkind blinkind; do
             if systemctl is-active --quiet "$svc" 2>/dev/null; then
-                echo "Detected active system service: $svc (previously running)"
                 echo "Restarting system service: $svc..."
                 sudo systemctl restart "$svc"
-                echo "✓ System service '$svc' restarted successfully."
+                echo "✓ System service '$svc' restarted."
                 restarted=true
             fi
             if systemctl --user is-active --quiet "$svc" 2>/dev/null; then
-                echo "Detected active user service: $svc (previously running)"
                 echo "Restarting user service: $svc..."
                 systemctl --user restart "$svc"
-                echo "✓ User service '$svc' restarted successfully."
+                echo "✓ User service '$svc' restarted."
                 restarted=true
             fi
         done
 
-        # Restart running desktop application processes if detected
         if pgrep -x eye_care_timer >/dev/null 2>&1; then
-            echo "Detected running BlinkKind application process (previously running)."
-            echo "Stopping running application..."
+            echo "Stopping running BlinkKind process..."
             pkill -x eye_care_timer || true
             sleep 1
-            echo "Restarting BlinkKind application..."
-            # Launch via gtk-launch to run it in user's graphical session independently of script terminal
+            echo "Restarting BlinkKind..."
             gtk-launch blinkkind.desktop >/dev/null 2>&1 || gtk-launch blinkkind >/dev/null 2>&1 || (blinkkind >/dev/null 2>&1 &)
-            echo "✓ BlinkKind application restarted successfully."
+            echo "✓ BlinkKind restarted."
             restarted=true
         fi
 
-        if [ "$restarted" = false ]; then
-            echo "No active blinkkind/blinkind services or running app processes detected. Skipping restart."
-        fi
+        [ "$restarted" = false ] && echo "No active services or running processes detected. Skipping restart."
     else
         echo "Skipping installation."
     fi
+elif [ "$_INSTALL_PKG_MGR" != "unknown" ]; then
+    echo ""
+    echo "Notice: No matching package found in dist/ for your package manager ($_INSTALL_PKG_MGR). Skipping install prompt."
 fi
 
 echo ""
