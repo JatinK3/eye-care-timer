@@ -6,6 +6,12 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - **Mandatory Changelog:** For every release, it is mandatory to create and update a `CHANGELOG.md` entry. Conventional commits and semantic Git tags (e.g. `v1.0.0`) must be maintained to enable changelog generation directly from tag differences.
 - **Helper Tooling:** Always refer to the `tool/` directory when executing build, dependency validation, packaging, or release tasks, as robust scripts (`lib_resolver.sh`, `package_linux.sh`, `package_android.sh`, `release.sh`) are already maintained there.
 
+## UI/UX Enhancement Plan
+- [x] **Interactive Eye Exercise Animations** — Build smooth, relaxing animated guides (e.g. a moving focus target or breathing guide) on the break overlay screen.
+- [ ] **Immersive Desk Clock Customizations** — Enhance the Desk Clock layout with advanced glassmorphic styling, modern typography, and ambient animations. *(In progress)*
+- [ ] **Interactive History Charts** — Integrate sleek visual charts (bar/line charts) on the History screen to track focus times and compliance rates.
+- [ ] **Audio Chime Selector UI** — Add a beautiful settings interface to preview and select different gentle audio chimes (Tibetan bowl, birds, etc.) for work/break alarms.
+
 ## Tasks
 
 ### Prioritized Backlog

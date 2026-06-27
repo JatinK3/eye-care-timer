@@ -113,6 +113,8 @@ class _EyeExerciseDotGuideState extends State<EyeExerciseDotGuide>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    const themeColor = Color(0xFF00E5CC);
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
@@ -133,6 +135,34 @@ class _EyeExerciseDotGuideState extends State<EyeExerciseDotGuide>
             final hh = constraints.maxHeight / 2;
             final dotOffset = _dotPositionFor(exercise, localT, hw, hh);
 
+            // Compute particle trail offsets
+            final trailCount = 6;
+            final trailWidgets = <Widget>[];
+            if (!isZoomPulse) {
+              for (int i = 1; i <= trailCount; i++) {
+                // Look back in time (localT - delay)
+                final double delay = i * 0.015;
+                final double tailT = (localT - delay + 1.0) % 1.0;
+                final Offset trailOffset = _dotPositionFor(exercise, tailT, hw, hh);
+                final double trailRadius = dotRadius * (1.0 - (i / (trailCount + 2)));
+                final double trailOpacity = 0.25 * (1.0 - (i / trailCount));
+
+                trailWidgets.add(
+                  Transform.translate(
+                    offset: trailOffset,
+                    child: Container(
+                      width: trailRadius * 2,
+                      height: trailRadius * 2,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: themeColor.withValues(alpha: trailOpacity),
+                      ),
+                    ),
+                  ),
+                );
+              }
+            }
+
             return Stack(
               alignment: Alignment.center,
               children: [
@@ -148,6 +178,15 @@ class _EyeExerciseDotGuideState extends State<EyeExerciseDotGuide>
                     ),
                   ),
                 ),
+                // Background path trace
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _ExercisePathPainter(
+                      exercise: exercise,
+                      color: themeColor,
+                    ),
+                  ),
+                ),
                 // Countdown arc
                 SizedBox(
                   width: constraints.maxWidth,
@@ -157,7 +196,7 @@ class _EyeExerciseDotGuideState extends State<EyeExerciseDotGuide>
                         ? widget.remainingSeconds / widget.totalDurationSeconds
                         : 0,
                     strokeWidth: 3,
-                    color: const Color(0xFF00E5CC).withValues(alpha: 0.5),
+                    color: themeColor.withValues(alpha: 0.5),
                     backgroundColor: Colors.white.withValues(alpha: 0.05),
                   ),
                 ),
@@ -183,32 +222,52 @@ class _EyeExerciseDotGuideState extends State<EyeExerciseDotGuide>
                     ),
                   ],
                 ),
-                // Moving dot (crisp vector double-circle without shadows)
+                // Render particle trail widgets
+                ...trailWidgets,
+                // Moving dot with high-end glowing halo
                 Transform.translate(
                   offset: dotOffset,
                   child: SizedBox(
-                    width: dotRadius * 2.5,
-                    height: dotRadius * 2.5,
+                    width: dotRadius * 3.5,
+                    height: dotRadius * 3.5,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
+                        // Outer pulsing glow
+                        Container(
+                          width: dotRadius * 3.5,
+                          height: dotRadius * 3.5,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: themeColor.withValues(alpha: 0.12),
+                          ),
+                        ),
+                        // Inner ring glow
                         Container(
                           width: dotRadius * 2.5,
                           height: dotRadius * 2.5,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: const Color(0xFF00E5CC).withValues(alpha: 0.3),
+                              color: themeColor.withValues(alpha: 0.45),
                               width: 1.8,
                             ),
                           ),
                         ),
+                        // Core glowing dot
                         Container(
                           width: dotRadius * 1.4,
                           height: dotRadius * 1.4,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Color(0xFF00E5CC),
+                            color: themeColor,
+                            boxShadow: [
+                              BoxShadow(
+                                color: themeColor,
+                                blurRadius: 8.0,
+                                spreadRadius: 1.0,
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -222,6 +281,69 @@ class _EyeExerciseDotGuideState extends State<EyeExerciseDotGuide>
       },
     );
   }
+}
+
+class _ExercisePathPainter extends CustomPainter {
+  final _EyeExercise exercise;
+  final Color color;
+
+  const _ExercisePathPainter({
+    required this.exercise,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = color.withValues(alpha: 0.12);
+
+    final hw = size.width / 2;
+    final hh = size.height / 2;
+    const r = 0.80;
+
+    canvas.save();
+    canvas.translate(hw, hh);
+
+    switch (exercise) {
+      case _EyeExercise.sideSweep:
+        canvas.drawLine(Offset(-hw * r, 0), Offset(hw * r, 0), paint);
+        break;
+      case _EyeExercise.verticalSweep:
+        canvas.drawLine(Offset(0, -hh * r), Offset(0, hh * r), paint);
+        break;
+      case _EyeExercise.figureSixteen:
+        final path = Path();
+        for (int i = 0; i <= 120; i++) {
+          final angle = (i / 120.0) * 4 * math.pi;
+          final scale = 1.0 / (1 + math.sin(angle) * math.sin(angle));
+          final x = math.cos(angle) * scale * hw * r;
+          final y = math.sin(angle) * math.cos(angle) * scale * hh * r;
+          if (i == 0) {
+            path.moveTo(x, y);
+          } else {
+            path.lineTo(x, y);
+          }
+        }
+        canvas.drawPath(path, paint);
+        break;
+      case _EyeExercise.zoomPulse:
+        canvas.drawCircle(Offset.zero, hw * r * 0.3, paint);
+        canvas.drawCircle(Offset.zero, hw * r * 0.6, paint);
+        canvas.drawCircle(Offset.zero, hw * r * 0.9, paint);
+        break;
+      case _EyeExercise.cornerDiagonals:
+        canvas.drawRect(Rect.fromLTRB(-hw * r, -hh * r, hw * r, hh * r), paint);
+        break;
+    }
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _ExercisePathPainter old) =>
+      old.exercise != exercise || old.color != color;
 }
 
 // ---------------------------------------------------------------------------
