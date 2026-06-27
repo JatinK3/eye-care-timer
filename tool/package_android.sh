@@ -109,6 +109,7 @@ resolve_java() {
 
     # Otherwise, search for a compatible Java (JDK 11, 17, or 21)
     local candidates=(
+        "$HOME/development/jdk-21"
         "$HOME/.antigravity/extensions/redhat.java-1.53.0-linux-x64/jre/21.0.10-linux-x86_64"
         "$HOME/.cursor/extensions/redhat.java-1.53.0-linux-x64/jre/21.0.10-linux-x86_64"
         "/usr/lib/jvm/java-21-openjdk"
