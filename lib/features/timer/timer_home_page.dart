@@ -2984,13 +2984,10 @@ class TimerHomePageState extends State<TimerHomePage>
               RepaintBoundary(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: _isFocusMode ? Colors.black : null,
-                    gradient: _isFocusMode
-                        ? null
-                        : _backgroundGradientFromPreset(
-                            widget.colorPreset,
-                            isDark,
-                          ),
+                    gradient: _backgroundGradientFromPreset(
+                      widget.colorPreset,
+                      _isFocusMode ? true : isDark,
+                    ),
                   ),
                   child: Stack(
                     children: [
@@ -3648,10 +3645,11 @@ class _AnimatedTimerDial extends StatelessWidget {
       return [baseColor, lighterColor];
     }
     if (progress > 0.25) {
-      return const [
-        Color(0xFF059669), // Calm Green (Emerald)
-        Color(0xFF34D399), // Mint Green
-      ];
+      final hsl = HSLColor.fromColor(baseColor);
+      final lighterColor = hsl
+          .withLightness((hsl.lightness + 0.15).clamp(0.0, 1.0))
+          .toColor();
+      return [baseColor, lighterColor];
     } else if (progress > 0.10) {
       return const [
         Color(0xFFD97706), // Amber
@@ -3811,7 +3809,7 @@ class _FocusModeBackgroundState extends State<_FocusModeBackground>
       Color baseColor = widget.color;
       if (!widget.isBreak) {
         if (progressFraction > 0.25) {
-          baseColor = const Color(0xFF10B981);
+          baseColor = widget.color;
         } else if (progressFraction > 0.10) {
           baseColor = const Color(0xFFF59E0B);
         } else {
