@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2026-06-28
+
+### Added
+- **Redesigned Minimal Neon Timer Ring:** Switched progress arc to a multi-layered neon glow with SweepGradient and bloom filters. Removed round stroke caps to resolve orange overlap artifacts at the 12 o'clock position (near 100% completion), replacing with a clean origin point. Added a frosted glass inner dial.
+- **Animated Eye Mascot:** Integrated a vector-based blinking eye mascot into the center of the timer dial. The mascot blinks naturally every few seconds, blinks rapidly on active blink nudges, and triple-blinks on phase transitions.
+- **Breathing Break Glow & Phase Transition Flash:** Added a pulsing radial glow behind the break screen. Implemented a full-screen flash transition (matching the theme color) when switching between work and break phases.
+- **Confetti Milestone Celebrations:** Added a physics-based particle confetti burst when completing daily goals or meeting session milestones (5, 10, 25, 50).
+
+### Fixed
+- **Hiding OS Title Bar on Linux:** Configured hidden window decoration title bars for consistent dark theming. Moved window dragging region (`DragToMoveArea`) exclusively to the AppBar title text to avoid blocking hit-test events on action buttons.
+- **SnackBar Action Button Visibility:** Styled action buttons globally in SnackBarThemeData to ensure the "OK" button is visible and tappable.
+- **Widget Test Stability:** Bypassed repeating animations and active timers under `FLUTTER_TEST` environments to resolve pending timer leaks in tests.
+
 ## [1.0.4] - 2026-06-27
 
 ### Fixed
