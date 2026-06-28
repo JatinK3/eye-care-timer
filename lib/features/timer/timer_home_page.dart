@@ -3594,16 +3594,8 @@ class _AnimatedTimerDial extends StatelessWidget {
             height: size,
             child: AnimatedBuilder(
               animation: progressAnimation,
-              child: SizedBox(
-                width: dialSize,
-                height: dialSize,
-                child: CircularProgressIndicator(
-                  value: 1.0,
-                  strokeWidth: strokeWidth,
-                  color: ringBackgroundColor,
-                ),
-              ),
-              builder: (context, backgroundRing) {
+              child: null,
+              builder: (context, _) {
                 final remainingSeconds =
                     (initialDuration * progressAnimation.value).ceil();
                 final currentProgressColor = _getCurrentProgressColor(progressAnimation.value);
@@ -3612,7 +3604,20 @@ class _AnimatedTimerDial extends StatelessWidget {
                 return Stack(
                   alignment: Alignment.center,
                   children: [
-                    backgroundRing!,
+                    // Frosted glass inner circle
+                    Container(
+                      width: dialSize - strokeWidth * 2,
+                      height: dialSize - strokeWidth * 2,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.04),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.07),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    // Neon ring painter (ghost track + glowing arc + tip dot)
                     SizedBox(
                       width: dialSize,
                       height: dialSize,
@@ -3621,22 +3626,10 @@ class _AnimatedTimerDial extends StatelessWidget {
                           progress: progressAnimation.value,
                           strokeWidth: strokeWidth,
                           colors: ringColors,
+                          trackColor: ringBackgroundColor,
                         ),
                       ),
                     ),
-                    if (isFocusMode)
-                      Container(
-                        width: dialSize - 12,
-                        height: dialSize - 12,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.015),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.04),
-                            width: 1,
-                          ),
-                        ),
-                      ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -3791,46 +3784,98 @@ class _GradientTimerPainter extends CustomPainter {
   final double progress;
   final double strokeWidth;
   final List<Color> colors;
+  final Color trackColor;
 
   _GradientTimerPainter({
     required this.progress,
     required this.strokeWidth,
     required this.colors,
+    required this.trackColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (progress <= 0) return;
-
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - strokeWidth) / 2;
     final rect = Rect.fromCircle(center: center, radius: radius);
+    final startAngle = -math.pi / 2;
 
-    final paint = Paint()
+    // ── 1. Ghost track (full circle, very faint) ────────────────────────
+    final trackPaint = Paint()
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..color = trackColor.withValues(alpha: 0.18);
+    canvas.drawCircle(center, radius, trackPaint);
+
+    if (progress <= 0) return;
+
+    final sweepAngle = 2 * math.pi * progress;
+    final tipAngle = startAngle + sweepAngle;
+    final tipX = center.dx + radius * math.cos(tipAngle);
+    final tipY = center.dy + radius * math.sin(tipAngle);
+    final tipOffset = Offset(tipX, tipY);
+
+    // Resolve primary arc colour for the glow layers
+    final arcColor = colors.isNotEmpty ? colors.last : const Color(0xFF34D399);
+
+    // ── 2. Outer bloom glow (wide, very soft) ──────────────────────────
+    final bloomPaint = Paint()
+      ..strokeWidth = strokeWidth * 3.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14)
+      ..color = arcColor.withValues(alpha: 0.18);
+    canvas.drawArc(rect, startAngle, sweepAngle, false, bloomPaint);
+
+    // ── 3. Inner glow (tighter, moderate opacity) ───────────────────────
+    final innerGlowPaint = Paint()
+      ..strokeWidth = strokeWidth * 1.8
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6)
+      ..color = arcColor.withValues(alpha: 0.45);
+    canvas.drawArc(rect, startAngle, sweepAngle, false, innerGlowPaint);
+
+    // ── 4. Main neon arc ────────────────────────────────────────────────
+    final arcPaint = Paint()
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
     if (colors.length == 1) {
-      paint.color = colors.first;
+      arcPaint.color = colors.first;
     } else {
-      paint.shader = SweepGradient(
+      arcPaint.shader = SweepGradient(
         colors: colors,
         stops: List.generate(colors.length, (i) => i / (colors.length - 1)),
         transform: const GradientRotation(-math.pi / 2),
       ).createShader(rect);
     }
+    canvas.drawArc(rect, startAngle, sweepAngle, false, arcPaint);
 
-    final startAngle = -math.pi / 2;
-    final sweepAngle = 2 * math.pi * progress;
-
-    canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
+    // ── 5. Glowing dot at arc tip ───────────────────────────────────────
+    // Outer halo
+    canvas.drawCircle(
+      tipOffset,
+      strokeWidth * 1.6,
+      Paint()
+        ..color = arcColor.withValues(alpha: 0.25)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+    // Bright core dot
+    canvas.drawCircle(
+      tipOffset,
+      strokeWidth * 0.65,
+      Paint()..color = Colors.white.withValues(alpha: 0.95),
+    );
   }
 
   @override
   bool shouldRepaint(covariant _GradientTimerPainter oldDelegate) {
     return oldDelegate.progress != progress ||
         oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.trackColor != trackColor ||
         !listEquals(oldDelegate.colors, colors);
   }
 }
