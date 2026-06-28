@@ -2849,12 +2849,15 @@ class TimerHomePageState extends State<TimerHomePage>
           extendBodyBehindAppBar: true,
           appBar: _isFocusMode
               ? null
-              : AppBar(
-                  title: const Text('BlinkKind'),
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  systemOverlayStyle: systemOverlayStyle,
-                  actions: [
+              : PreferredSize(
+                  preferredSize: const Size.fromHeight(kToolbarHeight),
+                  child: DragToMoveArea(
+                    child: AppBar(
+                      title: const Text('BlinkKind'),
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      systemOverlayStyle: systemOverlayStyle,
+                      actions: [
                     if (_isRunning)
                       Tooltip(
                         message: _isPaused ? 'Resume timer' : 'Pause timer',
@@ -2909,8 +2912,10 @@ class TimerHomePageState extends State<TimerHomePage>
                           widget.openSettings(context, _canChangeSettings),
                       tooltip: 'Settings',
                     ),
-                  ],
+                    ],
+                  ),
                 ),
+              ),
           body: Stack(
             children: [
               RepaintBoundary(

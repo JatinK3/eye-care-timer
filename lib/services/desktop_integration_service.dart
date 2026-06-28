@@ -61,6 +61,13 @@ class DesktopIntegrationService extends WindowListener {
     windowManager.addListener(this);
     await windowManager.setPreventClose(true);
     await windowManager.setTitle('BlinkKind');
+    // Hide the OS/GTK title bar so the Flutter AppBar becomes the only
+    // chrome — this makes the window consistent with the app's dark theme
+    // instead of showing the system's white/light title bar.
+    await windowManager.setTitleBarStyle(
+      TitleBarStyle.hidden,
+      windowButtonVisibility: false,
+    );
 
     // 2. Initialize System Tray
     await _initTray();
