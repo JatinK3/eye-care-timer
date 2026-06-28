@@ -1174,6 +1174,19 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
             colorScheme: lightColorScheme,
             textTheme: _buildTextTheme(ThemeData.light().textTheme),
             pageTransitionsTheme: _smoothPageTransitionsTheme,
+            snackBarTheme: SnackBarThemeData(
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF1E2A1E),
+              contentTextStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+              actionTextColor: const Color(0xFF4ADE80),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 6,
+            ),
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
@@ -1184,6 +1197,19 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                 : null,
             textTheme: _buildTextTheme(ThemeData.dark().textTheme),
             pageTransitionsTheme: _smoothPageTransitionsTheme,
+            snackBarTheme: SnackBarThemeData(
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF1E2A1E),
+              contentTextStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+              actionTextColor: const Color(0xFF4ADE80),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 6,
+            ),
           ),
           themeMode: _settings.themeMode,
           themeAnimationDuration: const Duration(milliseconds: 200),
