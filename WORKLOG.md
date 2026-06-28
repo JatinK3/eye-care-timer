@@ -792,11 +792,11 @@ Ideas captured from design review session. Prioritized by impact. None are sched
 
 ### 🔥 High Impact (visible, feels premium)
 
-- [ ] **Animated eye icon on timer home screen** — replace the static progress ring center with a vector eye that blinks naturally every few seconds and pulses on phase transitions (work → break → work). Clearest on-brand differentiator on the home screen.
-- [ ] **Breathing animation during breaks** — an expand/contract soft-glow circle behind the break card to encourage slow breathing; pairs with the existing guided exercises. Single `AnimationController` looping on a 4-second inhale/exhale curve.
-- [ ] **Smooth work→break phase transition animation** — a brief full-screen white (or theme-accent) flash / crossfade when the work phase ends and the break begins, so the transition feels intentional rather than abrupt.
+- [x] **Animated eye icon on timer home screen** — replace the static progress ring center with a vector eye that blinks naturally every few seconds and pulses on phase transitions (work → break → work). Clearest on-brand differentiator on the home screen.
+- [x] **Breathing animation during breaks** — an expand/contract soft-glow circle behind the break card to encourage slow breathing; pairs with the existing guided exercises. Single `AnimationController` looping on a 4-second inhale/exhale curve.
+- [x] **Smooth work→break phase transition animation** — a brief full-screen white (or theme-accent) flash / crossfade when the work phase ends and the break begins, so the transition feels intentional rather than abrupt.
 - [x] **Color-coded gradient timer ring** — the progress arc shifts from a calm green → amber → orange as remaining time drops below 25% and 10%, giving the user a passive urgency signal without text.
-- [ ] **Streak milestone celebrations** — confetti burst / gold glow animation when the user hits streak milestones (5, 10, 25, 50 consecutive days). Reuse existing `streakCount` data; trigger once per milestone per day.
+- [x] **Streak milestone celebrations** — confetti burst / gold glow animation when the user hits streak milestones (5, 10, 25, 50 consecutive days). Reuse existing `streakCount` data; trigger once per milestone per day.
 
 ### 🟡 Medium Impact (polish & feel)
 

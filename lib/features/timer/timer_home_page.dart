@@ -321,6 +321,14 @@ class TimerHomePageState extends State<TimerHomePage>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
+  // Transition flash animation
+  late AnimationController _flashController;
+  late Animation<double> _flashAnimation;
+  Color _flashColor = Colors.white;
+
+  // Streak milestone celebration
+  bool _showConfetti = false;
+
   // Phase text fade.
   double _phaseOpacity = 1.0;
   bool _isBlinkNudging = false;
@@ -448,6 +456,24 @@ class TimerHomePageState extends State<TimerHomePage>
             }
           }
         });
+
+    // Transition flash animation setup
+    _flashController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _flashAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: 0.55)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.55, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 65,
+      ),
+    ]).animate(_flashController);
 
     _restoreInitialSession();
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
@@ -707,6 +733,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _cancelPhaseDeadlineTimer();
     _animationController.dispose();
     _pulseController.dispose();
+    _flashController.dispose();
     super.dispose();
   }
 
@@ -1407,6 +1434,17 @@ class TimerHomePageState extends State<TimerHomePage>
     _cancelPhaseDeadlineTimer();
     _stopTimerCleanup(resetPulse: true);
     _cancelReminders();
+    
+    // Trigger transition flash
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = ColorPresets.swatchColor(
+      widget.colorPreset,
+      isDarkTheme,
+      customHex: widget.customAccentColorHex,
+    );
+    _flashColor = isBreak ? accentColor : Colors.white;
+    _flashController.forward(from: 0.0);
+
     setState(() {
       _isBreak = isBreak;
       if (isBreak) {
@@ -1887,6 +1925,7 @@ class TimerHomePageState extends State<TimerHomePage>
       });
 
       if (!isPostponed) {
+        _onStreakIncremented(_streakCount);
         widget.saveStreakCount(_streakCount);
         widget.saveCompletedWorkSession(completedPhaseAt, _initialDuration);
         widget.saveTimerEventRecord(
@@ -1900,6 +1939,32 @@ class TimerHomePageState extends State<TimerHomePage>
       }
 
       _startTimer(upcomingBreakDuration, isBreak: true);
+    });
+  }
+
+  void _onStreakIncremented(int newStreak) {
+    final isMilestone = newStreak == widget.dailyGoal || 
+                        newStreak == 5 || 
+                        newStreak == 10 || 
+                        newStreak == 25 || 
+                        newStreak == 50;
+    if (isMilestone && newStreak > 0) {
+      _triggerMilestoneCelebration();
+    }
+  }
+
+  void _triggerMilestoneCelebration() {
+    if (!mounted) return;
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
+    setState(() {
+      _showConfetti = true;
+    });
+    // Run the particle confetti for 4 seconds, then stop it to conserve CPU
+    Timer(const Duration(seconds: 4), () {
+      if (!mounted) return;
+      setState(() {
+        _showConfetti = false;
+      });
     });
   }
 
@@ -2234,6 +2299,7 @@ class TimerHomePageState extends State<TimerHomePage>
         _streakCount = _streakCount + 1;
         _autoRunCompletedCycles++;
       });
+      _onStreakIncremented(_streakCount);
       widget.saveStreakCount(_streakCount);
       widget.saveCompletedWorkSession(completedPhaseAt, _initialDuration);
       widget.saveTimerEventRecord(
@@ -2849,15 +2915,14 @@ class TimerHomePageState extends State<TimerHomePage>
           extendBodyBehindAppBar: true,
           appBar: _isFocusMode
               ? null
-              : PreferredSize(
-                  preferredSize: const Size.fromHeight(kToolbarHeight),
-                  child: DragToMoveArea(
-                    child: AppBar(
-                      title: const Text('BlinkKind'),
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      systemOverlayStyle: systemOverlayStyle,
-                      actions: [
+              : AppBar(
+                  title: const DragToMoveArea(
+                    child: Text('BlinkKind'),
+                  ),
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  systemOverlayStyle: systemOverlayStyle,
+                  actions: [
                     if (_isRunning)
                       Tooltip(
                         message: _isPaused ? 'Resume timer' : 'Pause timer',
@@ -2912,10 +2977,8 @@ class TimerHomePageState extends State<TimerHomePage>
                           widget.openSettings(context, _canChangeSettings),
                       tooltip: 'Settings',
                     ),
-                    ],
-                  ),
+                  ],
                 ),
-              ),
           body: Stack(
             children: [
               RepaintBoundary(
@@ -3438,7 +3501,24 @@ class TimerHomePageState extends State<TimerHomePage>
                 ),
               ),
             ),
-           ],
+            if (_showConfetti)
+              const Positioned.fill(
+                child: IgnorePointer(
+                  child: _ConfettiWidget(),
+                ),
+              ),
+            IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _flashAnimation,
+                builder: (context, child) {
+                  if (_flashAnimation.value <= 0.0) return const SizedBox.shrink();
+                  return Container(
+                    color: _flashColor.withValues(alpha: _flashAnimation.value),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     ),
@@ -3638,25 +3718,14 @@ class _AnimatedTimerDial extends StatelessWidget {
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (blinkRemindersEnabled) ...[
-                          AnimatedCrossFade(
-                            firstChild: Icon(
-                              Icons.remove_red_eye_outlined,
-                              size: isFocusMode ? 24 : 18,
-                              color: textColor.withValues(alpha: 0.5),
-                            ),
-                            secondChild: Icon(
-                              Icons.remove_red_eye,
-                              size: isFocusMode ? 24 : 18,
-                              color: currentProgressColor,
-                            ),
-                            crossFadeState: isBlinkNudging
-                                ? CrossFadeState.showSecond
-                                : CrossFadeState.showFirst,
-                            duration: const Duration(milliseconds: 100),
-                          ),
-                          const SizedBox(height: 6),
-                        ],
+                        _BlinkKindAnimatedEye(
+                          size: isFocusMode ? 22 : 16,
+                          color: textColor.withValues(alpha: 0.8),
+                          irisColor: currentProgressColor,
+                          isBlinkNudging: isBlinkNudging,
+                          isBreak: isBreak,
+                        ),
+                        const SizedBox(height: 8),
                         Text(
                           _formattedTime(remainingSeconds),
                           style: Theme.of(context).textTheme.displaySmall
@@ -4031,6 +4100,343 @@ class _GlassmorphicBackgroundState extends State<_GlassmorphicBackground>
       },
     );
   }
+}
+
+class _BlinkKindAnimatedEye extends StatefulWidget {
+  final double size;
+  final Color color;
+  final Color irisColor;
+  final bool isBlinkNudging;
+  final bool isBreak;
+
+  const _BlinkKindAnimatedEye({
+    required this.size,
+    required this.color,
+    required this.irisColor,
+    required this.isBlinkNudging,
+    required this.isBreak,
+  });
+
+  @override
+  State<_BlinkKindAnimatedEye> createState() => _BlinkKindAnimatedEyeState();
+}
+
+class _BlinkKindAnimatedEyeState extends State<_BlinkKindAnimatedEye>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _openAnimation;
+  Timer? _naturalBlinkTimer;
+  final math.Random _random = math.Random();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _openAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _scheduleNextNaturalBlink();
+  }
+
+  @override
+  void didUpdateWidget(covariant _BlinkKindAnimatedEye oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isBlinkNudging && !oldWidget.isBlinkNudging) {
+      _triggerNudgeBlink();
+    }
+    if (widget.isBreak != oldWidget.isBreak) {
+      _triggerTransitionFlutter();
+    }
+  }
+
+  void _scheduleNextNaturalBlink() {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
+    _naturalBlinkTimer?.cancel();
+    final nextDelay = Duration(milliseconds: 3000 + _random.nextInt(3500));
+    _naturalBlinkTimer = Timer(nextDelay, () {
+      if (!mounted) return;
+      _triggerNaturalBlink();
+    });
+  }
+
+  Future<void> _triggerNaturalBlink() async {
+    if (!mounted || _controller.isAnimating || widget.isBlinkNudging) {
+      _scheduleNextNaturalBlink();
+      return;
+    }
+    await _controller.forward();
+    if (!mounted) return;
+    await _controller.reverse();
+    _scheduleNextNaturalBlink();
+  }
+
+  Future<void> _triggerNudgeBlink() async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
+    _naturalBlinkTimer?.cancel();
+    if (!mounted) return;
+    _controller.stop();
+    await _controller.forward();
+    if (!mounted) return;
+    await _controller.reverse();
+    if (!mounted) return;
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    if (!mounted) return;
+    await _controller.forward();
+    if (!mounted) return;
+    await _controller.reverse();
+    _scheduleNextNaturalBlink();
+  }
+
+  Future<void> _triggerTransitionFlutter() async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
+    _naturalBlinkTimer?.cancel();
+    if (!mounted) return;
+    _controller.stop();
+    for (int i = 0; i < 3; i++) {
+      await _controller.forward();
+      if (!mounted) return;
+      await _controller.reverse();
+      if (!mounted) return;
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+    }
+    _scheduleNextNaturalBlink();
+  }
+
+  @override
+  void dispose() {
+    _naturalBlinkTimer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _openAnimation,
+      builder: (context, child) {
+        return CustomPaint(
+          size: Size(widget.size * 1.5, widget.size),
+          painter: _EyeVectorPainter(
+            openAmount: _openAnimation.value,
+            eyelidColor: widget.color,
+            irisColor: widget.irisColor,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _EyeVectorPainter extends CustomPainter {
+  final double openAmount;
+  final Color eyelidColor;
+  final Color irisColor;
+
+  const _EyeVectorPainter({
+    required this.openAmount,
+    required this.eyelidColor,
+    required this.irisColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final center = Offset(w / 2, h / 2);
+
+    final outerPath = Path();
+    final double verticalScale = 0.02 + (0.33 * openAmount);
+    final double topOffset = (h / 2) - (h * verticalScale);
+    final double bottomOffset = (h / 2) + (h * verticalScale);
+
+    outerPath.moveTo(w * 0.1, h / 2);
+    outerPath.quadraticBezierTo(w / 2, topOffset, w * 0.9, h / 2);
+    outerPath.quadraticBezierTo(w / 2, bottomOffset, w * 0.1, h / 2);
+    outerPath.close();
+
+    canvas.save();
+
+    if (openAmount > 0.05) {
+      final eyeballPaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.85)
+        ..style = PaintingStyle.fill;
+      canvas.drawPath(outerPath, eyeballPaint);
+
+      canvas.clipPath(outerPath);
+
+      final irisRadius = math.min(w, h) * 0.38;
+      final irisPaint = Paint()
+        ..color = irisColor
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(center, irisRadius, irisPaint);
+
+      final pupilPaint = Paint()
+        ..color = Colors.black.withValues(alpha: 0.9)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(center, irisRadius * 0.45, pupilPaint);
+
+      final reflectionPaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(
+        center + Offset(-irisRadius * 0.25, -irisRadius * 0.25),
+        irisRadius * 0.18,
+        reflectionPaint,
+      );
+    }
+
+    canvas.restore();
+
+    final lidPaint = Paint()
+      ..color = eyelidColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
+    
+    final upperPath = Path()
+      ..moveTo(w * 0.1, h / 2)
+      ..quadraticBezierTo(w / 2, topOffset, w * 0.9, h / 2);
+    
+    final lowerPath = Path()
+      ..moveTo(w * 0.1, h / 2)
+      ..quadraticBezierTo(w / 2, bottomOffset, w * 0.9, h / 2);
+
+    canvas.drawPath(upperPath, lidPaint);
+    canvas.drawPath(lowerPath, lidPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _EyeVectorPainter old) =>
+      old.openAmount != openAmount ||
+      old.eyelidColor != eyelidColor ||
+      old.irisColor != irisColor;
+}
+
+class _ConfettiWidget extends StatefulWidget {
+  const _ConfettiWidget();
+
+  @override
+  State<_ConfettiWidget> createState() => _ConfettiWidgetState();
+}
+
+class _ConfettiWidgetState extends State<_ConfettiWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<_ConfettiParticle> _particles = [];
+  final math.Random _random = math.Random();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final size = MediaQuery.of(context).size;
+      final center = Offset(size.width / 2, size.height / 3);
+      for (int i = 0; i < 75; i++) {
+        final angle = _random.nextDouble() * 2 * math.pi;
+        final speed = 4.0 + _random.nextDouble() * 8.0;
+        final velocity = Offset(math.cos(angle) * speed, math.sin(angle) * speed - 3.0);
+        final color = HSVColor.fromAHSV(
+          1.0,
+          _random.nextDouble() * 360.0,
+          0.85,
+          0.95,
+        ).toColor();
+        
+        _particles.add(
+          _ConfettiParticle(
+            position: center,
+            velocity: velocity,
+            color: color,
+            radius: 3.0 + _random.nextDouble() * 4.0,
+            rotation: _random.nextDouble() * 2 * math.pi,
+            rotationSpeed: -0.1 + _random.nextDouble() * 0.2,
+          ),
+        );
+      }
+      _controller.repeat();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        for (final p in _particles) {
+          p.position += p.velocity;
+          p.velocity = Offset(p.velocity.dx * 0.98, (p.velocity.dy + 0.22) * 0.98);
+          p.rotation += p.rotationSpeed;
+        }
+        return CustomPaint(
+          size: Size.infinite,
+          painter: _ConfettiPainter(particles: _particles),
+        );
+      },
+    );
+  }
+}
+
+class _ConfettiParticle {
+  Offset position;
+  Offset velocity;
+  final Color color;
+  final double radius;
+  double rotation;
+  final double rotationSpeed;
+
+  _ConfettiParticle({
+    required this.position,
+    required this.velocity,
+    required this.color,
+    required this.radius,
+    required this.rotation,
+    required this.rotationSpeed,
+  });
+}
+
+class _ConfettiPainter extends CustomPainter {
+  final List<_ConfettiParticle> particles;
+
+  const _ConfettiPainter({required this.particles});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+
+    for (final p in particles) {
+      if (p.position.dx < 0 || p.position.dx > size.width || p.position.dy > size.height) {
+        continue;
+      }
+      canvas.save();
+      canvas.translate(p.position.dx, p.position.dy);
+      canvas.rotate(p.rotation);
+      paint.color = p.color;
+      canvas.drawRect(
+        Rect.fromCenter(center: Offset.zero, width: p.radius * 2, height: p.radius * 1.2),
+        paint,
+      );
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ConfettiPainter oldDelegate) => true;
 }
 
 

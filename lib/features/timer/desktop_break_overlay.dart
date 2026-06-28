@@ -325,18 +325,23 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
         ? widget.customMessage.trim()
         : widget.aiQuote ?? tip.action;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (showBreathingGuide)
-            _BreathingGuideCircle(remainingSeconds: _remainingSeconds)
-          else ...[
-            const Icon(Icons.visibility_outlined, color: Colors.cyan, size: 64),
-            const SizedBox(height: 32),
-          ],
-          const SizedBox(height: 16),
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        if (!showBreathingGuide)
+          const _BreathingGlowCircle(),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (showBreathingGuide)
+                _BreathingGuideCircle(remainingSeconds: _remainingSeconds)
+              else ...[
+                const Icon(Icons.visibility_outlined, color: Colors.cyan, size: 64),
+                const SizedBox(height: 32),
+              ],
+              const SizedBox(height: 16),
           Text(
             'Time to rest your eyes',
             style: textStyle.headlineMedium?.copyWith(
@@ -410,7 +415,9 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           _buildBreakActions(context),
         ],
       ),
-    );
+    ),
+  ],
+);
   }
 
   /// Shared action buttons used by both the classic card and guided-mode layouts.
@@ -842,6 +849,67 @@ class _BreathingGuideCircleState extends State<_BreathingGuideCircle>
                 ],
               ),
             ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _BreathingGlowCircle extends StatefulWidget {
+  const _BreathingGlowCircle();
+
+  @override
+  State<_BreathingGlowCircle> createState() => _BreathingGlowCircleState();
+}
+
+class _BreathingGlowCircleState extends State<_BreathingGlowCircle>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    // 4 seconds inhale (forward) + 4 seconds exhale (reverse) = 8 seconds total cycle
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    );
+    _animation = Tween<double>(begin: 0.8, end: 1.3).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
+    _controller.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        final scale = _animation.value;
+        return Container(
+          width: 300 * scale,
+          height: 300 * scale,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                Colors.cyan.withValues(alpha: 0.08 * (2.2 - scale)),
+                Colors.cyan.withValues(alpha: 0.02 * (2.2 - scale)),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
           ),
         );
       },
