@@ -174,6 +174,12 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] **Break-screen customization** — optional motivational quotes / custom messages, choice of background, and toggles for which info (clock, next phase, tips) is shown during a break.
 - [ ] **Localization (i18n) scaffolding** — app is English-only (no `flutter_localizations`/ARB); extract strings and add localization. Large reach multiplier.
 - [x] **Auto-start schedule on launch** — automatically start the work timer/schedule when the application starts, persisting this setting to simplify user productivity setup (similar to SafeEyes).
+- [ ] **Immersive Focus Mode — dynamic accent-color theming** — currently the immersive/focus mode (full-screen countdown) uses a static dark/black background. Planned: the immersive background, glow, and accent should inherit the user's selected color preset (e.g. if the preset is Green, focus mode pulses in deep green; if Blue, in deep blue). Implementation sketch:
+  - Pass `colorPreset` and `customAccentColorHex` down to `_FocusModeBackground` (already done for the breathing glow — extend it to the full background gradient).
+  - Use `ColorPresets.swatchColor(colorPreset, isDark: true)` as the base hue for the radial gradient background instead of the hardcoded `Colors.black`.
+  - Sync the neon ring tip-dot glow and inner bloom color to the same accent so the whole focus surface feels cohesive.
+  - Gate behind the existing `isFocusMode` flag; no change to non-immersive layout.
+  - **Do NOT implement yet — log only for planning.**
 
 ### P2 — Cross-device, ecosystem & context intelligence
 - [x] **Settings backup/restore, then cloud sync** — start with config export/import (JSON) to complement the existing history export; later add optional account-based sync of settings + history across devices.
@@ -205,6 +211,47 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 ---
 
 ## Session Log
+
+### 2026-06-28 (Session ongoing — IST)
+
+**Completed this session:**
+
+- **Redesigned timer ring to modern minimal neon style** — replaced the plain grey `CircularProgressIndicator` track and flat arc with a premium multi-layer neon ring:
+  - Ghost track: full-circle at 18% opacity, replaces the thick grey ring — eliminates the harsh 12 o'clock join artifact.
+  - Outer bloom glow: wide blurred layer (`MaskFilter.blur`, radius 14) giving ambient neon light from the arc.
+  - Inner glow: tighter blur (radius 6) for luminosity and depth.
+  - Main neon arc: thin gradient arc with `StrokeCap.butt` on all layers to prevent round-cap bleed at the origin.
+  - Glowing tip dot: bright white core + halo bloom at the arc endpoint, marks progress like a watch hand.
+  - Origin dot: small colored dot at 12 o'clock (arc start) to replace the round cap cleanly.
+  - Frosted glass inner circle: 4% white fill + 7% white hairline border, always visible (not just in focus mode).
+
+- **Fixed arc round-cap bleed at 12 o'clock** — when the timer was near full/complete (e.g. in orange/coral urgency phase), `StrokeCap.round` on all three arc layers (bloom, inner glow, main arc) drew a visible rounded cap at both the start AND end of the arc. At nearly 100% progress these caps overlapped at 12 o'clock, creating a harsh orange blob. Fixed by:
+  - Switching all arc draws to `StrokeCap.butt` (no caps on the arc).
+  - Adding a small colored circle at the arc's start origin (12 o'clock) to maintain a clean, finished look.
+  - The existing tip dot already handles the end cap visually.
+
+- **Fixed SnackBar OK button appearing static/unclickable** — added `SnackBarThemeData` to both light and dark `ThemeData` in `app.dart`:
+  - `backgroundColor: Color(0xFF1E2A1E)` — dark green, always distinct from any page background.
+  - `actionTextColor: Color(0xFF4ADE80)` — neon green, clearly visible and tappable.
+  - `behavior: SnackBarBehavior.floating` with rounded corners.
+  - Fixes all 12 `SnackBarAction` usages across `timer_home_page.dart`, `settings_page.dart`, and `history_page.dart`.
+
+- **Fixed OS title bar inconsistency on Linux dark mode** — the GTK window decoration was white (following WhiteSur-light system theme) while the app runs in dark mode:
+  - Added `windowManager.setTitleBarStyle(TitleBarStyle.hidden, windowButtonVisibility: false)` in `DesktopIntegrationService.initialize()` to hide the GTK chrome.
+  - Wrapped the Flutter `AppBar` with `DragToMoveArea` (from `window_manager`) so the window remains draggable after the system title bar is removed.
+
+**Commits this session:**
+- `feat: redesign timer ring to modern minimal neon style`
+- `fix: name desktop file after GTK app-id for GNOME Wayland icon matching`
+- `fix: make SnackBar action button visible and clickable`
+- `fix: hide OS title bar for consistent dark theme on Linux`
+- `fix: arc round-cap bleed at 12 o'clock — switch to StrokeCap.butt with origin dot`
+
+**State at end of session:**
+- `flutter analyze` → 0 issues
+- Released as `v1.0.4`
+
+---
 
 ### 2026-06-27 (Session end ~20:15 IST)
 

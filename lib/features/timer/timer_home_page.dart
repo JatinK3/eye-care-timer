@@ -3809,7 +3809,7 @@ class _GradientTimerPainter extends CustomPainter {
     final trackPaint = Paint()
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
+      ..strokeCap = StrokeCap.butt
       ..color = trackColor.withValues(alpha: 0.18);
     canvas.drawCircle(center, radius, trackPaint);
 
@@ -3821,32 +3821,40 @@ class _GradientTimerPainter extends CustomPainter {
     final tipY = center.dy + radius * math.sin(tipAngle);
     final tipOffset = Offset(tipX, tipY);
 
+    // Origin point at 12 o'clock (arc start) — needed after switching to
+    // StrokeCap.butt so the start looks clean, not a hard cut.
+    final originOffset = Offset(
+      center.dx + radius * math.cos(startAngle),
+      center.dy + radius * math.sin(startAngle),
+    );
+
     // Resolve primary arc colour for the glow layers
     final arcColor = colors.isNotEmpty ? colors.last : const Color(0xFF34D399);
+    final startColor = colors.isNotEmpty ? colors.first : arcColor;
 
-    // ── 2. Outer bloom glow (wide, very soft) ──────────────────────────
+    // ── 2. Outer bloom glow (wide, very soft) — butt caps, no start bleed
     final bloomPaint = Paint()
       ..strokeWidth = strokeWidth * 3.5
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
+      ..strokeCap = StrokeCap.butt
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14)
       ..color = arcColor.withValues(alpha: 0.18);
     canvas.drawArc(rect, startAngle, sweepAngle, false, bloomPaint);
 
-    // ── 3. Inner glow (tighter, moderate opacity) ───────────────────────
+    // ── 3. Inner glow (tighter, moderate opacity) ── butt caps
     final innerGlowPaint = Paint()
       ..strokeWidth = strokeWidth * 1.8
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
+      ..strokeCap = StrokeCap.butt
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6)
       ..color = arcColor.withValues(alpha: 0.45);
     canvas.drawArc(rect, startAngle, sweepAngle, false, innerGlowPaint);
 
-    // ── 4. Main neon arc ────────────────────────────────────────────────
+    // ── 4. Main neon arc — butt caps (no round cap bleed at origin) ─────
     final arcPaint = Paint()
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+      ..strokeCap = StrokeCap.butt;
 
     if (colors.length == 1) {
       arcPaint.color = colors.first;
@@ -3859,7 +3867,15 @@ class _GradientTimerPainter extends CustomPainter {
     }
     canvas.drawArc(rect, startAngle, sweepAngle, false, arcPaint);
 
-    // ── 5. Glowing dot at arc tip ───────────────────────────────────────
+    // ── 5. Origin dot at arc start (12 o'clock) ─────────────────────────
+    // Gives the arc start a smooth finish to replace the round cap we removed.
+    canvas.drawCircle(
+      originOffset,
+      strokeWidth * 0.5,
+      Paint()..color = startColor.withValues(alpha: 0.7),
+    );
+
+    // ── 6. Glowing dot at arc tip ───────────────────────────────────────
     // Outer halo
     canvas.drawCircle(
       tipOffset,
