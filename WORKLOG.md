@@ -217,9 +217,11 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 **Completed this session:**
 - **Fixed duplicate launcher icons on GNOME/Linux:** Removed the duplicate `blinkkind.desktop` installation from both DEB and RPM packaging pipelines, keeping only the standard `com.jatin.eyecaretimer.desktop` launcher matching the GTK application ID.
 - **Cleaned up stale launcher files:** Cleaned up local and system application entry paths to remove duplicate entries in the GNOME app grid.
+- **Fixed zombie background process sending notifications on exit:** Added `exit(0)` to the application's quit routine in `DesktopIntegrationService` and implemented a `dispose` method in `NotificationService` to terminate background loops, active Dart timers, and the `dbus-monitor` child process. This ensures that exiting the app via the system tray fully kills the app process and terminates all blink reminder notifications.
 
 **Commits this session:**
 - `fix(packaging): remove duplicate desktop launcher to prevent double icons in app grid`
+- `fix(desktop): terminate process fully on exit to stop background notifications`
 
 ---
 
