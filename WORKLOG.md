@@ -172,7 +172,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] **Settings redesign with search & grouping** — `settings_page.dart` is ~1.2k lines and growing; add search and collapsible categories so the surface stays usable.
 - [x] **Theme expansion** — custom accent-color picker, true-black AMOLED variant, and Material You / system-accent dynamic color.
 - [x] **Break-screen customization** — optional motivational quotes / custom messages, choice of background, and toggles for which info (clock, next phase, tips) is shown during a break.
-- [ ] **Localization (i18n) scaffolding** — app is English-only (no `flutter_localizations`/ARB); extract strings and add localization. Large reach multiplier.
+- [x] **Localization (i18n) scaffolding** — app is English-only (no `flutter_localizations`/ARB); extract strings and add localization. Large reach multiplier.
 - [x] **Auto-start schedule on launch** — automatically start the work timer/schedule when the application starts, persisting this setting to simplify user productivity setup (similar to SafeEyes).
 - [x] **Immersive Focus Mode — dynamic accent-color theming** — currently the immersive/focus mode (full-screen countdown) uses a static dark/black background. Planned: the immersive background, glow, and accent should inherit the user's selected color preset (e.g. if the preset is Green, focus mode pulses in deep green; if Blue, in deep blue). Implementation sketch:
   - Pass `colorPreset` and `customAccentColorHex` down to `_FocusModeBackground` (already done for the breathing glow — extend it to the full background gradient).
