@@ -566,8 +566,12 @@ class DesktopIntegrationService extends WindowListener {
     if (!isSupported) return;
 
     try {
-      final width = 32.0;
-      final height = 32.0;
+      final width = 64.0;
+      final height = 64.0;
+      final scale = width / 32.0;
+      final strokeWidth = 3.0 * scale;
+      final ringRadius = (width / 2) - (strokeWidth / 2);
+
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, width, height));
 
@@ -625,26 +629,26 @@ class DesktopIntegrationService extends WindowListener {
       // 3. Draw progress ring (thicker stroke, maximized to edge)
       final ringPaint = Paint()
         ..style = ui.PaintingStyle.stroke
-        ..strokeWidth = 3.5
+        ..strokeWidth = strokeWidth
         ..strokeCap = ui.StrokeCap.round
         ..color = ringColor.withValues(alpha: 0.25);
       canvas.drawCircle(
         Offset(width / 2, height / 2),
-        (width / 2) - 1.75,
+        ringRadius,
         ringPaint,
       );
 
       if (progress > 0) {
         final activeRingPaint = Paint()
           ..style = ui.PaintingStyle.stroke
-          ..strokeWidth = 3.5
+          ..strokeWidth = strokeWidth
           ..strokeCap = ui.StrokeCap.round
           ..color = ringColor;
 
         canvas.drawArc(
           Rect.fromCircle(
             center: Offset(width / 2, height / 2),
-            radius: (width / 2) - 1.75,
+            radius: ringRadius,
           ),
           -math.pi / 2,
           2 * math.pi * progress,
@@ -658,7 +662,7 @@ class DesktopIntegrationService extends WindowListener {
         final eyePaint = Paint()
           ..color = ringColor
           ..style = ui.PaintingStyle.stroke
-          ..strokeWidth = 2.2
+          ..strokeWidth = 2.2 * scale
           ..strokeCap = ui.StrokeCap.round;
 
         canvas.drawArc(
@@ -676,17 +680,17 @@ class DesktopIntegrationService extends WindowListener {
         canvas.drawLine(
           Offset(width * 0.35, height * 0.51),
           Offset(width * 0.3, height * 0.61),
-          eyePaint..strokeWidth = 1.5,
+          eyePaint..strokeWidth = 1.5 * scale,
         );
         canvas.drawLine(
           Offset(width * 0.5, height * 0.52),
           Offset(width * 0.5, height * 0.65),
-          eyePaint..strokeWidth = 1.5,
+          eyePaint..strokeWidth = 1.5 * scale,
         );
         canvas.drawLine(
           Offset(width * 0.65, height * 0.51),
           Offset(width * 0.7, height * 0.61),
-          eyePaint..strokeWidth = 1.5,
+          eyePaint..strokeWidth = 1.5 * scale,
         );
       } else if (text.isNotEmpty) {
         final textPainter = TextPainter(
@@ -694,7 +698,7 @@ class DesktopIntegrationService extends WindowListener {
             text: text,
             style: TextStyle(
               color: Colors.white,
-              fontSize: text.length > 2 ? 11.5 : 14.5,
+              fontSize: text.length > 2 ? (13.0 * scale) : (18.5 * scale),
               fontWeight: ui.FontWeight.bold,
               height: 1.0,
             ),
@@ -712,7 +716,7 @@ class DesktopIntegrationService extends WindowListener {
       } else {
         canvas.drawCircle(
           Offset(width / 2, height / 2),
-          4.0,
+          4.0 * scale,
           Paint()
             ..color = ringColor
             ..style = ui.PaintingStyle.fill,
