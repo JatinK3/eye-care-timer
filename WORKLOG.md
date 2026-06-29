@@ -212,7 +212,19 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Session Log
 
+### 2026-06-29 (Session ongoing — IST)
+
+**Completed this session:**
+- **Fixed duplicate launcher icons on GNOME/Linux:** Removed the duplicate `blinkkind.desktop` installation from both DEB and RPM packaging pipelines, keeping only the standard `com.jatin.eyecaretimer.desktop` launcher matching the GTK application ID.
+- **Cleaned up stale launcher files:** Cleaned up local and system application entry paths to remove duplicate entries in the GNOME app grid.
+
+**Commits this session:**
+- `fix(packaging): remove duplicate desktop launcher to prevent double icons in app grid`
+
+---
+
 ### 2026-06-28 (Session ongoing — IST)
+
 
 **Completed this session:**
 
