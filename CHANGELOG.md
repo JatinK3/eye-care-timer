@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2026-06-29
+
+### Added
+- **Startup notifications for minimized runs:** Added a silent, non-intrusive system toast notification on boot when the app starts minimized in the tray, confirming active schedule status.
+
+### Fixed
+- **GNOME/Linux duplicate launcher icons:** Removed the duplicate `.desktop` installation files to prevent duplicate launcher icons appearing in the GNOME app grid.
+- **Shutdown zombie process leaks:** Added explicit process termination (`exit(0)`) and background loop disposal (`dbus-monitor` child process teardown) when exiting via system tray to prevent zombie background processes from sending notifications after exit.
+- **Native GTK window decorations on Linux:** Restored standard title bars and window control buttons (close/minimize/maximize) on Linux, requesting native GTK dark theme preference so window borders match the application theme automatically.
+- **Settings tray click focus:** Restored and focused the main application window automatically before triggering the settings transition from the tray menu.
+- **Blink notification double-posting:** Implemented a static 5-second rate-limiting guard to eliminate overlapping or simultaneous duplicate notifications.
+- **Timer progress ring blur box artifacts:** Replaced the `MaskFilter.blur` halo on the glowing tip dot with a native `RadialGradient` shader, resolving a Skia/Impeller GPU caching bug that drew thin square outline borders.
+- **Eye mascot size & geometry on Dashboard Clock:** Scaled up the central eye mascot size and adjusted its bezier parameters to make it naturally round, open, and clear, rather than sleepy or flat.
+- **Linux packaging process lock protection:** Packaging and installation script now automatically kills any running `eye_care_timer` or `blinkkind` processes before executing the package upgrade to prevent file-lock conflicts.
+- **Default state preservation:** Removed the interactive user-data wipe prompt from the installation script, defaulting to preserving settings and history unless explicitly requested with the `-c` or `--clear-state` flag.
+
 ## [1.0.5] - 2026-06-28
 
 ### Added
