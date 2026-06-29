@@ -4125,9 +4125,11 @@ class _BlinkKindAnimatedEye extends StatefulWidget {
 }
 
 class _BlinkKindAnimatedEyeState extends State<_BlinkKindAnimatedEye>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _openAnimation;
+  late AnimationController _nudgeScaleController;
+  late Animation<double> _scaleAnimation;
   Timer? _naturalBlinkTimer;
   final math.Random _random = math.Random();
 
@@ -4142,6 +4144,25 @@ class _BlinkKindAnimatedEyeState extends State<_BlinkKindAnimatedEye>
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
+    _nudgeScaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.25).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 40,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.25, end: 0.95).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 30,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.95, end: 1.0).chain(CurveTween(curve: Curves.easeInCubic)),
+        weight: 30,
+      ),
+    ]).animate(_nudgeScaleController);
+
     _scheduleNextNaturalBlink();
   }
 
@@ -4150,6 +4171,7 @@ class _BlinkKindAnimatedEyeState extends State<_BlinkKindAnimatedEye>
     super.didUpdateWidget(oldWidget);
     if (widget.isBlinkNudging && !oldWidget.isBlinkNudging) {
       _triggerNudgeBlink();
+      _nudgeScaleController.forward(from: 0.0);
     }
     if (widget.isBreak != oldWidget.isBreak) {
       _triggerTransitionFlutter();
@@ -4213,21 +4235,49 @@ class _BlinkKindAnimatedEyeState extends State<_BlinkKindAnimatedEye>
   void dispose() {
     _naturalBlinkTimer?.cancel();
     _controller.dispose();
+    _nudgeScaleController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _openAnimation,
+      animation: Listenable.merge([_openAnimation, _scaleAnimation]),
       builder: (context, child) {
-        return CustomPaint(
-          size: Size(widget.size * 1.5, widget.size),
-          painter: _EyeVectorPainter(
-            openAmount: _openAnimation.value,
-            eyelidColor: widget.color,
-            irisColor: widget.irisColor,
-          ),
+        final scale = _scaleAnimation.value;
+        final glowOpacity = ((scale - 1.0) / 0.25).clamp(0.0, 1.0);
+        return Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            if (scale > 1.0)
+              Positioned(
+                child: Container(
+                  width: widget.size * 2.2,
+                  height: widget.size * 2.2,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        widget.irisColor.withValues(alpha: glowOpacity * 0.4),
+                        widget.irisColor.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            Transform.scale(
+              scale: scale,
+              child: CustomPaint(
+                size: Size(widget.size * 1.5, widget.size),
+                painter: _EyeVectorPainter(
+                  openAmount: _openAnimation.value,
+                  eyelidColor: widget.color,
+                  irisColor: widget.irisColor,
+                ),
+              ),
+            ),
+          ],
         );
       },
     );

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1635,12 +1636,14 @@ class _SettingsPageState extends State<SettingsPage>
         subtitle: l10n.settingsDarkModeSubtitle,
         keywords: ['dark', 'light', 'mode', 'theme', 'appearance'],
         category: 'Theme & Appearance',
-        widget: SwitchListTile(
+        widget: ListTile(
           contentPadding: EdgeInsets.zero,
-          secondary: Icon(widget.isDark ? Icons.dark_mode : Icons.light_mode),
+          leading: Icon(widget.isDark ? Icons.dark_mode : Icons.light_mode),
           title: Text(l10n.settingsDarkMode),
-          value: widget.isDark,
-          onChanged: (_) => widget.toggleTheme(),
+          trailing: _AnimatedThemeSwitch(
+            value: widget.isDark,
+            onChanged: (_) => widget.toggleTheme(),
+          ),
         ),
       ),
       if (widget.isDark)
@@ -3600,6 +3603,166 @@ class _SnackBarButton extends StatelessWidget {
       ),
       onPressed: onPressed,
       child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
+class _AnimatedThemeSwitch extends StatefulWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _AnimatedThemeSwitch({
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  State<_AnimatedThemeSwitch> createState() => _AnimatedThemeSwitchState();
+}
+
+class _AnimatedThemeSwitchState extends State<_AnimatedThemeSwitch>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _slideAnimation;
+  late Animation<double> _rotationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _slideAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOutBack));
+    
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.5,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+
+    if (widget.value) {
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedThemeSwitch oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.value != oldWidget.value) {
+      if (widget.value) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = widget.value;
+
+    return GestureDetector(
+      onTap: () => widget.onChanged(!isDark),
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Container(
+            width: 72,
+            height: 38,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Color.lerp(
+                theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                Colors.black.withValues(alpha: 0.4),
+                _slideAnimation.value,
+              ),
+              border: Border.all(
+                color: Color.lerp(
+                  theme.colorScheme.primary.withValues(alpha: 0.3),
+                  Colors.white.withValues(alpha: 0.1),
+                  _slideAnimation.value,
+                )!,
+                width: 1.5,
+              ),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 2 + (_slideAnimation.value * 32),
+                  top: 2,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color.lerp(
+                        theme.colorScheme.primary,
+                        Colors.blueGrey.shade800,
+                        _slideAnimation.value,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color.lerp(
+                            theme.colorScheme.primary.withValues(alpha: 0.4),
+                            Colors.black.withValues(alpha: 0.4),
+                            _slideAnimation.value,
+                          )!,
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Transform.rotate(
+                      angle: _rotationAnimation.value * 2 * math.pi,
+                      child: Center(
+                        child: Icon(
+                          isDark ? Icons.dark_mode : Icons.light_mode,
+                          size: 18,
+                          color: isDark ? Colors.cyanAccent : Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 9,
+                  top: 9,
+                  child: Opacity(
+                    opacity: (1.0 - _slideAnimation.value).clamp(0.0, 1.0),
+                    child: Icon(
+                      Icons.light_mode,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 9,
+                  top: 9,
+                  child: Opacity(
+                    opacity: _slideAnimation.value.clamp(0.0, 1.0),
+                    child: Icon(
+                      Icons.dark_mode,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

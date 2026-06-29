@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8] - 2026-06-29
+
+### Added
+- **Pulsing eye mascot scaling on blink nudge:** Added a scaling pulse transition and a radial glowing iris bloom background behind the dashboard's eye mascot when a background blink notification triggers.
+- **Animated sun/moon theme switcher:** Replaced the standard dark mode switch in Settings with a highly responsive, custom sliding sun/moon switch featuring rotation animations and bouncy transitions.
+
 ## [1.0.7] - 2026-06-29
 
 ### Added

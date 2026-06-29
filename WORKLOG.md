@@ -853,4 +853,9 @@ Ideas captured from design review session. Prioritized by impact. None are sched
   - **Glassmorphic Card Settings (Settings page sectioned cards)**: Redesigned the flat settings groups in [settings_page.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/features/settings/settings_page.dart) into beautiful, glassmorphic cards using `Card` and colored chips containing icons/text for each section. Retained full widget test compatibility.
   - **Break Overlay Countdown Ring (Break countdown ring on the break screen itself)**: Implemented a screen-centered, subtle, thin 2.0px circular progress ring around the break overlay card in [desktop_break_overlay.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/features/timer/desktop_break_overlay.dart) that dynamically scales to fit constraints.
 
+- Completed UI/UX improvements (version 1.0.8):
+  - **Pulsing Eye Mascot on Blink Nudges**: Added a scaling pulse transition and a glowing iris bloom background behind the dashboard's eye mascot in [timer_home_page.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/features/timer/timer_home_page.dart) when blink notifications trigger.
+  - **Animated Sun/Moon Theme Switcher**: Replaced the standard dark mode switch in Settings with a highly responsive, custom sliding sun/moon switch in [settings_page.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/features/settings/settings_page.dart) featuring rotation animations and bouncy transitions.
+
+
 
