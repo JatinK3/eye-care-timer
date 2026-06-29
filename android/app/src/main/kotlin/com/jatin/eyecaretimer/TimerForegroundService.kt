@@ -52,6 +52,7 @@ class TimerForegroundService : Service() {
     var naturalBreakCreditEnabled = true
     var postponedBreakDuration = -1
     var currentPhaseInitialDuration = 0
+    var autoPostponeApps = ""
     var screenOffTimeMillis = 0L
     var isScreenOffPaused = false
     var pausedRemainingSeconds = 0L
@@ -207,6 +208,7 @@ class TimerForegroundService : Service() {
         postponedBreakDuration = intent.getIntExtra("postponedBreakDuration", -1)
         currentPhaseInitialDuration = intent.getIntExtra("currentPhaseInitialDuration", if (isBreak) breakDurationForCompletedCycle(streakCount) else workDurationSeconds)
         maxConsecutiveSkips = intent.getIntExtra("maxConsecutiveSkips", 0)
+        autoPostponeApps = intent.getStringExtra("autoPostponeApps") ?: ""
 
         ensureChannel()
         startInForeground(buildOngoingNotification())
@@ -323,11 +325,20 @@ class TimerForegroundService : Service() {
             }
         }
 
-        // 2. Check if a game or video app is in the foreground
+        // 2. Check if a game or video app is in the foreground, or in autoPostponeApps
         val foregroundApp = getForegroundPackageName(context)
         if (foregroundApp != null && foregroundApp != context.packageName) {
             if (isGameOrVideoApp(context, foregroundApp)) {
                 return true
+            }
+            if (autoPostponeApps.isNotEmpty()) {
+                val apps = autoPostponeApps.split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
+                val lowerForegroundApp = foregroundApp.lowercase()
+                for (app in apps) {
+                    if (lowerForegroundApp.contains(app)) {
+                        return true
+                    }
+                }
             }
         }
 
@@ -710,6 +721,7 @@ class TimerForegroundService : Service() {
             .putLong("pausedRemainingSeconds", pausedRemainingSeconds)
             .putInt("maxConsecutiveSkips", maxConsecutiveSkips)
             .putInt("consecutiveSkips", consecutiveSkips)
+            .putString("autoPostponeApps", autoPostponeApps)
             .commit()
         TimerWidgetProvider.triggerUpdate(this)
     }
@@ -741,6 +753,7 @@ class TimerForegroundService : Service() {
         screenOffTimeMillis = preferences.getLong("screenOffTimeMillis", 0L)
         maxConsecutiveSkips = preferences.getInt("maxConsecutiveSkips", 0)
         consecutiveSkips = preferences.getInt("consecutiveSkips", 0)
+        autoPostponeApps = preferences.getString("autoPostponeApps", "") ?: ""
 
         val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
         val isScreenOn = powerManager?.isInteractive ?: true
@@ -813,9 +826,11 @@ class TimerForegroundService : Service() {
             postponedBreakDuration: Int? = null,
             currentPhaseDurationSeconds: Int? = null,
             maxConsecutiveSkips: Int = 0,
+            autoPostponeApps: String = "",
         ) {
             val intent = Intent(context, TimerForegroundService::class.java).apply {
                 action = ACTION_START
+                putExtra("autoPostponeApps", autoPostponeApps)
                 putExtra(EXTRA_DEADLINE, deadlineMillis)
                 putExtra(EXTRA_IS_BREAK, isBreak)
                 putExtra(EXTRA_BREAK_MODE, breakMode)

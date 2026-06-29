@@ -51,6 +51,8 @@ class TimerSettings {
   static const String defaultAiCustomSystemPrompt =
       'You are a friendly health and wellness assistant for a developer. Generate a very short, warm, and highly engaging health tip or motivational quote (strict limit of 25 words) encouraging them to blink, rest their eyes, stretch their body/legs/shoulders, stand up, drink water regularly, or take a deep breath. Keep it fresh, productive, encouraging, and extremely punchy.';
   static const int defaultMaxConsecutiveSkips = 0; // 0 means no limit
+  static const String defaultActiveProfile = 'standard';
+  static const String defaultAutoPostponeApps = '';
 
   final int workDurationSeconds;
   final int breakDurationSeconds;
@@ -107,6 +109,8 @@ class TimerSettings {
   final bool blinkReminderInteractiveEnabled;
   final int maxConsecutiveSkips;
   final bool autoPauseOnMediaEnabled;
+  final String activeProfile;
+  final String autoPostponeApps;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -164,6 +168,8 @@ class TimerSettings {
     required this.wellnessReminderCadenceSeconds,
     required this.blinkReminderInteractiveEnabled,
     required this.autoPauseOnMediaEnabled,
+    required this.activeProfile,
+    required this.autoPostponeApps,
   });
 
   const TimerSettings.defaults()
@@ -221,7 +227,9 @@ class TimerSettings {
       wellnessReminderCadenceSeconds = defaultWellnessReminderCadenceSeconds,
       blinkReminderInteractiveEnabled = defaultBlinkReminderInteractiveEnabled,
       maxConsecutiveSkips = defaultMaxConsecutiveSkips,
-      autoPauseOnMediaEnabled = defaultAutoPauseOnMediaEnabled;
+      autoPauseOnMediaEnabled = defaultAutoPauseOnMediaEnabled,
+      activeProfile = defaultActiveProfile,
+      autoPostponeApps = defaultAutoPostponeApps;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -279,6 +287,8 @@ class TimerSettings {
     bool? blinkReminderInteractiveEnabled,
     int? maxConsecutiveSkips,
     bool? autoPauseOnMediaEnabled,
+    String? activeProfile,
+    String? autoPostponeApps,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -351,6 +361,8 @@ class TimerSettings {
       maxConsecutiveSkips: maxConsecutiveSkips ?? this.maxConsecutiveSkips,
       autoPauseOnMediaEnabled:
           autoPauseOnMediaEnabled ?? this.autoPauseOnMediaEnabled,
+      activeProfile: activeProfile ?? this.activeProfile,
+      autoPostponeApps: autoPostponeApps ?? this.autoPostponeApps,
     );
   }
 
@@ -410,6 +422,8 @@ class TimerSettings {
       'blinkReminderInteractiveEnabled': blinkReminderInteractiveEnabled,
       'maxConsecutiveSkips': maxConsecutiveSkips,
       'autoPauseOnMediaEnabled': autoPauseOnMediaEnabled,
+      'activeProfile': activeProfile,
+      'autoPostponeApps': autoPostponeApps,
     };
   }
 
@@ -524,6 +538,8 @@ class TimerSettings {
       autoPauseOnMediaEnabled:
           json['autoPauseOnMediaEnabled'] as bool? ??
           defaultAutoPauseOnMediaEnabled,
+      activeProfile: json['activeProfile'] as String? ?? defaultActiveProfile,
+      autoPostponeApps: json['autoPostponeApps'] as String? ?? defaultAutoPostponeApps,
     );
   }
 

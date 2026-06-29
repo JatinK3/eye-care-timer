@@ -86,6 +86,8 @@ class PreferencesService {
       'blinkReminderInteractiveEnabled';
   static const String maxConsecutiveSkipsKey = 'maxConsecutiveSkips';
   static const String autoPauseOnMediaEnabledKey = 'autoPauseOnMediaEnabled';
+  static const String activeProfileKey = 'activeProfile';
+  static const String autoPostponeAppsKey = 'autoPostponeApps';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -243,6 +245,12 @@ class PreferencesService {
       maxConsecutiveSkips:
           prefs.getInt(maxConsecutiveSkipsKey) ??
           TimerSettings.defaultMaxConsecutiveSkips,
+      activeProfile:
+          prefs.getString(activeProfileKey) ??
+          TimerSettings.defaultActiveProfile,
+      autoPostponeApps:
+          prefs.getString(autoPostponeAppsKey) ??
+          TimerSettings.defaultAutoPostponeApps,
     );
   }
 
@@ -619,6 +627,8 @@ class PreferencesService {
       autoPauseOnMediaEnabledKey,
       settings.autoPauseOnMediaEnabled,
     );
+    await prefs.setString(activeProfileKey, settings.activeProfile);
+    await prefs.setString(autoPostponeAppsKey, settings.autoPostponeApps);
   }
 
   Future<bool> loadOnboardingCompleted() async {
@@ -780,6 +790,16 @@ class PreferencesService {
   Future<void> saveSoundEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(soundEnabledKey, enabled);
+  }
+
+  Future<void> saveActiveProfile(String profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(activeProfileKey, profile);
+  }
+
+  Future<void> saveAutoPostponeApps(String apps) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(autoPostponeAppsKey, apps);
   }
 
   Future<void> saveLongBreakSettings({

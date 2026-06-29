@@ -723,6 +723,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       _settings = _settings.copyWith(
         workDurationSeconds: workDurationSeconds,
         breakDurationSeconds: breakDurationSeconds,
+        activeProfile: 'custom',
       );
     });
     unawaited(
@@ -731,6 +732,21 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
         breakDurationSeconds: breakDurationSeconds,
       ),
     );
+    unawaited(_preferencesService.saveActiveProfile('custom'));
+  }
+
+  void _setActiveProfile(String profile) {
+    setState(() {
+      _settings = _settings.copyWith(activeProfile: profile);
+    });
+    unawaited(_preferencesService.saveActiveProfile(profile));
+  }
+
+  void _setAutoPostponeApps(String apps) {
+    setState(() {
+      _settings = _settings.copyWith(autoPostponeApps: apps);
+    });
+    unawaited(_preferencesService.saveAutoPostponeApps(apps));
   }
 
   void _saveLongBreakSettings({
@@ -1080,6 +1096,10 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           setUseSystemAccent: _setUseSystemAccent,
           startMinimized: _settings.startMinimized,
           setStartMinimized: _setStartMinimized,
+          activeProfile: _settings.activeProfile,
+          autoPostponeApps: _settings.autoPostponeApps,
+          setActiveProfile: _setActiveProfile,
+          setAutoPostponeApps: _setAutoPostponeApps,
           setNotificationsEnabled: _setNotificationsEnabled,
           setHapticsEnabled: _setHapticsEnabled,
           setSoundEnabled: _setSoundEnabled,
@@ -1301,6 +1321,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                       _settings.cameraMicAutoPostponeEnabled,
                    autoPauseOnMediaEnabled:
                        _settings.autoPauseOnMediaEnabled,
+                  autoPostponeApps: _settings.autoPostponeApps,
                   wellnessRemindersEnabled: _settings.wellnessRemindersEnabled,
                   wellnessReminderCadenceSeconds:
                       _settings.wellnessReminderCadenceSeconds,

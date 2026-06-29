@@ -157,6 +157,10 @@ class SettingsPage extends StatefulWidget {
   final void Function(bool) setOsFocusDndEnabled;
   final VoidCallback restoreDefaultSettings;
   final Future<void> Function(TimerSettings) importSettings;
+  final String activeProfile;
+  final String autoPostponeApps;
+  final void Function(String) setActiveProfile;
+  final void Function(String) setAutoPostponeApps;
 
   const SettingsPage({
     super.key,
@@ -289,6 +293,10 @@ class SettingsPage extends StatefulWidget {
     required this.setOsFocusDndEnabled,
     required this.restoreDefaultSettings,
     required this.importSettings,
+    required this.activeProfile,
+    required this.autoPostponeApps,
+    required this.setActiveProfile,
+    required this.setAutoPostponeApps,
   });
 
   @override
@@ -347,6 +355,8 @@ class _SettingsPageState extends State<SettingsPage>
       TextEditingController();
   final TextEditingController _dailyGoalCustomController =
       TextEditingController();
+  final TextEditingController _autoPostponeAppsController =
+      TextEditingController();
   Timer? _aiApiKeyDebounce;
 
   String _searchQuery = '';
@@ -376,6 +386,7 @@ class _SettingsPageState extends State<SettingsPage>
     _autoRunCycleLimit = widget.autoRunCycleLimit;
     _breakMode = widget.breakMode;
     _aiApiKeyController.text = widget.aiApiKey;
+    _autoPostponeAppsController.text = widget.autoPostponeApps;
     _aiAvailableModels = AiService.instance.getDefaultModels(widget.aiProvider);
     _loadDesktopSettings();
     if (widget.aiApiKey.isNotEmpty) {
@@ -418,6 +429,10 @@ class _SettingsPageState extends State<SettingsPage>
     if (oldWidget.breakMode != widget.breakMode) {
       _breakMode = widget.breakMode;
     }
+    if (oldWidget.autoPostponeApps != widget.autoPostponeApps &&
+        _autoPostponeAppsController.text != widget.autoPostponeApps) {
+      _autoPostponeAppsController.text = widget.autoPostponeApps;
+    }
   }
 
   @override
@@ -428,6 +443,7 @@ class _SettingsPageState extends State<SettingsPage>
     _aiApiKeyController.dispose();
     _aiModelCustomController.dispose();
     _dailyGoalCustomController.dispose();
+    _autoPostponeAppsController.dispose();
     _aiApiKeyDebounce?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -588,10 +604,7 @@ class _SettingsPageState extends State<SettingsPage>
     await widget.openBatteryOptimizationSettings();
   }
 
-  void _applyPreset(int workSeconds, int breakSeconds) {
-    if (!widget.canChangeDurations) return;
-    widget.saveDurations(workSeconds, breakSeconds);
-  }
+
 
   void _saveLongBreak({bool? enabled, int? durationSeconds, int? everyCycles}) {
     widget.saveLongBreakSettings(
@@ -705,56 +718,120 @@ class _SettingsPageState extends State<SettingsPage>
     return [
       // 1. General Schedule
       SettingItem(
-        title: l10n.settingsQuickPresets,
-        subtitle: l10n.settingsQuickPresetsSubtitle,
-        keywords: [
-          'preset',
-          '20-20-20',
-          'quick',
-          'duration',
-          'time',
-          '25',
-          '45',
-          '10',
-        ],
+        title: 'Focus Profile',
+        subtitle: 'Select a customized workspace cadence and behavior profile.',
+        keywords: ['preset', 'profile', 'gaming', 'deep', 'work', 'standard'],
+        category: 'General Schedule',
+        widget: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _PresetChip(
+                  label: '20-20-20',
+                  selected: widget.activeProfile == 'standard' &&
+                      widget.workDurationSeconds == 20 * 60 &&
+                      widget.breakDurationSeconds == 20,
+                  enabled: widget.canChangeDurations,
+                  onSelected: () {
+                    widget.setActiveProfile('standard');
+                    widget.saveDurations(20 * 60, 20);
+                  },
+                ),
+                _PresetChip(
+                  label: '10s / 10s (Test)',
+                  selected: widget.activeProfile == 'test' &&
+                      widget.workDurationSeconds == 10 &&
+                      widget.breakDurationSeconds == 10,
+                  enabled: widget.canChangeDurations,
+                  onSelected: () {
+                    widget.setActiveProfile('test');
+                    widget.saveDurations(10, 10);
+                  },
+                ),
+                _PresetChip(
+                  label: '25 / 5',
+                  selected: widget.activeProfile == 'pomodoro' &&
+                      widget.workDurationSeconds == 25 * 60 &&
+                      widget.breakDurationSeconds == 5 * 60,
+                  enabled: widget.canChangeDurations,
+                  onSelected: () {
+                    widget.setActiveProfile('pomodoro');
+                    widget.saveDurations(25 * 60, 5 * 60);
+                  },
+                ),
+                _PresetChip(
+                  label: '45 / 5',
+                  selected: widget.activeProfile == 'longWork' &&
+                      widget.workDurationSeconds == 45 * 60 &&
+                      widget.breakDurationSeconds == 5 * 60,
+                  enabled: widget.canChangeDurations,
+                  onSelected: () {
+                    widget.setActiveProfile('longWork');
+                    widget.saveDurations(45 * 60, 5 * 60);
+                  },
+                ),
+                _PresetChip(
+                  label: 'Gaming Mode',
+                  selected: widget.activeProfile == 'gaming',
+                  enabled: widget.canChangeDurations,
+                  onSelected: () {
+                    widget.setActiveProfile('gaming');
+                    widget.saveDurations(45 * 60, 5 * 60);
+                    widget.setAutoPostponeApps('steam, dota2, league, csgo, minecraft, retroarch, playstation, discord, mpv, vlc');
+                  },
+                ),
+                _PresetChip(
+                  label: 'Custom',
+                  selected: widget.activeProfile == 'custom',
+                  enabled: widget.canChangeDurations,
+                  onSelected: () {
+                    widget.setActiveProfile('custom');
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Active Cadence:',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${widget.workDurationSeconds ~/ 60}m Work / ${widget.breakDurationSeconds >= 60 ? "${widget.breakDurationSeconds ~/ 60}m" : "${widget.breakDurationSeconds}s"} Break',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+      SettingItem(
+        title: 'Auto-Postpone Apps',
+        subtitle: 'Postpone breaks automatically while any of these apps are active.',
+        keywords: ['app', 'postpone', 'rules', 'gaming', 'whitelist', 'ignore'],
         category: 'General Schedule',
         widget: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _PresetChip(
-                label: '20-20-20',
-                selected:
-                    widget.workDurationSeconds == 20 * 60 &&
-                    widget.breakDurationSeconds == 20,
-                enabled: widget.canChangeDurations,
-                onSelected: () => _applyPreset(20 * 60, 20),
-              ),
-              _PresetChip(
-                label: '10s / 10s (Test)',
-                selected:
-                    widget.workDurationSeconds == 10 &&
-                    widget.breakDurationSeconds == 10,
-                enabled: widget.canChangeDurations,
-                onSelected: () => _applyPreset(10, 10),
-              ),
-              _PresetChip(
-                label: '25 / 5',
-                selected:
-                    widget.workDurationSeconds == 25 * 60 &&
-                    widget.breakDurationSeconds == 5 * 60,
-                enabled: widget.canChangeDurations,
-                onSelected: () => _applyPreset(25 * 60, 5 * 60),
-              ),
-              _PresetChip(
-                label: '45 / 5',
-                selected:
-                    widget.workDurationSeconds == 45 * 60 &&
-                    widget.breakDurationSeconds == 5 * 60,
-                enabled: widget.canChangeDurations,
-                onSelected: () => _applyPreset(45 * 60, 5 * 60),
+              TextField(
+                controller: _autoPostponeAppsController,
+                onChanged: widget.setAutoPostponeApps,
+                decoration: InputDecoration(
+                  labelText: 'App Package / Class Names',
+                  hintText: 'e.g. steam, discord, zoom, teams',
+                  helperText: 'Comma-separated keywords. Active on Linux (Window Class) and Android.',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.app_settings_alt),
+                ),
               ),
             ],
           ),
@@ -3132,6 +3209,8 @@ class _SettingsPageState extends State<SettingsPage>
       wellnessReminderCadenceSeconds: widget.wellnessReminderCadenceSeconds,
       blinkReminderInteractiveEnabled: widget.blinkReminderInteractiveEnabled,
       maxConsecutiveSkips: widget.maxConsecutiveSkips,
+      activeProfile: widget.activeProfile,
+      autoPostponeApps: widget.autoPostponeApps,
     );
   }
 

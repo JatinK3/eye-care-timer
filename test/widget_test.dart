@@ -772,9 +772,47 @@ void main() {
 
     await tester.pageBack();
     await tester.pumpAndSettle();
-
     expect(find.text('25:00'), findsOneWidget);
     expect(find.textContaining('for 5 min'), findsOneWidget);
+  });
+
+  testWidgets('settings configures focus profile and auto-postpone apps', (
+    WidgetTester tester,
+  ) async {
+    await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    final categoryHeader = find.text('General Schedule');
+    await tester.scrollUntilVisible(
+      categoryHeader,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(categoryHeader);
+    await tester.pumpAndSettle();
+
+    // Tap the Gaming Mode profile chip
+    await tester.tap(find.text('Gaming Mode'));
+    await tester.pumpAndSettle();
+
+    // Verify auto-postpone apps text field has default gaming keywords
+    final textFinder = find.byType(TextField).last;
+    expect(textFinder, findsOneWidget);
+    final TextField textField = tester.widget(textFinder);
+    expect(textField.controller?.text, contains('steam'));
+    expect(textField.controller?.text, contains('discord'));
+
+    // Enter a custom app class name
+    await tester.enterText(textFinder, 'obs, vlc');
+    await tester.pumpAndSettle();
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // Verify work timer is updated to 45:00
+    expect(find.text('45:00'), findsOneWidget);
   });
 
   testWidgets('dark mode start button keeps readable contrast', (

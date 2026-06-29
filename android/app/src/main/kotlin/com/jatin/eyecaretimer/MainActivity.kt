@@ -163,6 +163,7 @@ class MainActivity : FlutterActivity() {
                             naturalBreakCreditEnabled = call.argument<Boolean>("naturalBreakCreditEnabled") ?: true,
                             postponedBreakDuration = call.argument<Int>("postponedBreakDuration"),
                             currentPhaseDurationSeconds = call.argument<Int>("currentPhaseDurationSeconds"),
+                            autoPostponeApps = call.argument<String>("autoPostponeApps") ?: "",
                         )
                     } else {
                         TimerForegroundService.stop(this)
