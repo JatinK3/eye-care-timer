@@ -3086,9 +3086,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                       horizontal: isLandscape ? 16 : 22,
                                       vertical: isLandscape ? 8 : 12,
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
+                                    shape: const StadiumBorder(),
                                   ),
                                 )
                               else if (_isSchedulePaused) ...[
@@ -3111,9 +3109,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                       horizontal: isLandscape ? 14 : 18,
                                       vertical: isLandscape ? 8 : 12,
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
+                                    shape: const StadiumBorder(),
                                   ),
                                 ),
                               ] else ...[
@@ -3136,9 +3132,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                       horizontal: isLandscape ? 16 : 20,
                                       vertical: isLandscape ? 8 : 12,
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
+                                    shape: const StadiumBorder(),
                                   ),
                                 ),
                                 if (_isBreak && !_isPaused) ...[
@@ -3156,11 +3150,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                           horizontal: isLandscape ? 16 : 20,
                                           vertical: isLandscape ? 8 : 12,
                                         ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
+                                        shape: const StadiumBorder(),
                                       ),
                                     ),
                                   if (widget.allowPostpone)
@@ -3177,11 +3167,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                           horizontal: isLandscape ? 16 : 20,
                                           vertical: isLandscape ? 8 : 12,
                                         ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
+                                        shape: const StadiumBorder(),
                                       ),
                                     ),
                                 ],
@@ -3202,9 +3188,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                       horizontal: isLandscape ? 14 : 18,
                                       vertical: isLandscape ? 8 : 12,
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
+                                    shape: const StadiumBorder(),
                                   ),
                                 ),
                               ],
@@ -3724,6 +3708,13 @@ class _AnimatedTimerDial extends StatelessWidget {
                           color: Colors.white.withValues(alpha: 0.07),
                           width: 1,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: currentProgressColor.withValues(alpha: 0.08),
+                            blurRadius: 24,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
                     ),
                     // Neon ring painter (ghost track + glowing arc + tip dot)
