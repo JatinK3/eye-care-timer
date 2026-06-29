@@ -528,6 +528,10 @@ if [ -n "$_INSTALL_PKG" ]; then
     fi
 
     if [[ "$_install_now" =~ ^[Yy]$ ]]; then
+        echo "Terminating any running instances of BlinkKind..."
+        pkill -f eye_care_timer || true
+        pkill -f blinkkind || true
+
         case "$_INSTALL_TYPE" in
             deb)
                 if dpkg-query -W -f='${Status}' blinkkind 2>/dev/null | grep -q "ok installed"; then
