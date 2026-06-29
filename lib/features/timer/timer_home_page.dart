@@ -3717,7 +3717,7 @@ class _AnimatedTimerDial extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _BlinkKindAnimatedEye(
-                          size: isFocusMode ? 22 : 16,
+                          size: isFocusMode ? 36 : 26,
                           color: textColor.withValues(alpha: 0.8),
                           irisColor: currentProgressColor,
                           isBlinkNudging: isBlinkNudging,
@@ -4251,14 +4251,16 @@ class _EyeVectorPainter extends CustomPainter {
     final h = size.height;
     final center = Offset(w / 2, h / 2);
 
-    final outerPath = Path();
-    final double verticalScale = 0.02 + (0.33 * openAmount);
+    final startX = w * 0.16;
+    final endX = w * 0.84;
+    final double verticalScale = 0.05 + (0.42 * openAmount);
     final double topOffset = (h / 2) - (h * verticalScale);
     final double bottomOffset = (h / 2) + (h * verticalScale);
 
-    outerPath.moveTo(w * 0.1, h / 2);
-    outerPath.quadraticBezierTo(w / 2, topOffset, w * 0.9, h / 2);
-    outerPath.quadraticBezierTo(w / 2, bottomOffset, w * 0.1, h / 2);
+    final outerPath = Path();
+    outerPath.moveTo(startX, h / 2);
+    outerPath.quadraticBezierTo(w / 2, topOffset, endX, h / 2);
+    outerPath.quadraticBezierTo(w / 2, bottomOffset, startX, h / 2);
     outerPath.close();
 
     canvas.save();
@@ -4271,7 +4273,7 @@ class _EyeVectorPainter extends CustomPainter {
 
       canvas.clipPath(outerPath);
 
-      final irisRadius = math.min(w, h) * 0.38;
+      final irisRadius = math.min(w, h) * 0.42;
       final irisPaint = Paint()
         ..color = irisColor
         ..style = PaintingStyle.fill;
@@ -4301,12 +4303,12 @@ class _EyeVectorPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     
     final upperPath = Path()
-      ..moveTo(w * 0.1, h / 2)
-      ..quadraticBezierTo(w / 2, topOffset, w * 0.9, h / 2);
+      ..moveTo(startX, h / 2)
+      ..quadraticBezierTo(w / 2, topOffset, endX, h / 2);
     
     final lowerPath = Path()
-      ..moveTo(w * 0.1, h / 2)
-      ..quadraticBezierTo(w / 2, bottomOffset, w * 0.9, h / 2);
+      ..moveTo(startX, h / 2)
+      ..quadraticBezierTo(w / 2, bottomOffset, endX, h / 2);
 
     canvas.drawPath(upperPath, lidPaint);
     canvas.drawPath(lowerPath, lidPaint);
