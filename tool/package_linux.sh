@@ -190,23 +190,13 @@ echo "Building BlinkKind version $VERSION..."
 echo "========================================="
 cd "$PROJECT_DIR"
 
-# Option to reset application states
-clear_state=""
+# Option to reset application states (Disabled by default, only clear if explicitly requested via flag)
+clear_state="n"
 if [ "$CLEAR_STATE_ARG" = "true" ]; then
     clear_state="y"
-elif [ "$CLEAR_STATE_ARG" = "false" ]; then
-    clear_state="n"
-elif [ "$AUTO_YES" = true ]; then
-    clear_state="y"
-elif [ "$AUTO_NO" = true ]; then
-    clear_state="n"
-elif [ -t 0 ]; then
-    read -p "Would you like to clear local user preferences/timer state (resets settings and history)? (y/N): " clear_state
-else
-    clear_state="n"
 fi
 
-if [[ "$clear_state" =~ ^[Yy]$ ]]; then
+if [ "$clear_state" = "y" ]; then
     rm -rf "$HOME/.local/share/com.jatin.eyecaretimer"
     rm -rf "$HOME/.local/share/com.example.eyeapptimer"
     echo "✓ Local application state files deleted."
