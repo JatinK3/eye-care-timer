@@ -569,7 +569,7 @@ class DesktopIntegrationService extends WindowListener {
       final width = 64.0;
       final height = 64.0;
       final scale = width / 32.0;
-      final strokeWidth = 3.0 * scale;
+      final strokeWidth = 2.0 * scale;
       final ringRadius = (width / 2) - (strokeWidth / 2);
 
       final recorder = ui.PictureRecorder();
@@ -698,7 +698,7 @@ class DesktopIntegrationService extends WindowListener {
             text: text,
             style: TextStyle(
               color: Colors.white,
-              fontSize: text.length > 2 ? (13.0 * scale) : (18.5 * scale),
+              fontSize: text.length > 2 ? (14.0 * scale) : (20.0 * scale),
               fontWeight: ui.FontWeight.bold,
               height: 1.0,
             ),
