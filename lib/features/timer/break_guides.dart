@@ -178,15 +178,7 @@ class _EyeExerciseDotGuideState extends State<EyeExerciseDotGuide>
                     ),
                   ),
                 ),
-                // Background path trace
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: _ExercisePathPainter(
-                      exercise: exercise,
-                      color: themeColor,
-                    ),
-                  ),
-                ),
+
                 // Countdown arc
                 SizedBox(
                   width: constraints.maxWidth,
@@ -283,68 +275,7 @@ class _EyeExerciseDotGuideState extends State<EyeExerciseDotGuide>
   }
 }
 
-class _ExercisePathPainter extends CustomPainter {
-  final _EyeExercise exercise;
-  final Color color;
 
-  const _ExercisePathPainter({
-    required this.exercise,
-    required this.color,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = color.withValues(alpha: 0.12);
-
-    final hw = size.width / 2;
-    final hh = size.height / 2;
-    const r = 0.80;
-
-    canvas.save();
-    canvas.translate(hw, hh);
-
-    switch (exercise) {
-      case _EyeExercise.sideSweep:
-        canvas.drawLine(Offset(-hw * r, 0), Offset(hw * r, 0), paint);
-        break;
-      case _EyeExercise.verticalSweep:
-        canvas.drawLine(Offset(0, -hh * r), Offset(0, hh * r), paint);
-        break;
-      case _EyeExercise.figureSixteen:
-        final path = Path();
-        for (int i = 0; i <= 120; i++) {
-          final angle = (i / 120.0) * 4 * math.pi;
-          final scale = 1.0 / (1 + math.sin(angle) * math.sin(angle));
-          final x = math.cos(angle) * scale * hw * r;
-          final y = math.sin(angle) * math.cos(angle) * scale * hh * r;
-          if (i == 0) {
-            path.moveTo(x, y);
-          } else {
-            path.lineTo(x, y);
-          }
-        }
-        canvas.drawPath(path, paint);
-        break;
-      case _EyeExercise.zoomPulse:
-        canvas.drawCircle(Offset.zero, hw * r * 0.3, paint);
-        canvas.drawCircle(Offset.zero, hw * r * 0.6, paint);
-        canvas.drawCircle(Offset.zero, hw * r * 0.9, paint);
-        break;
-      case _EyeExercise.cornerDiagonals:
-        canvas.drawRect(Rect.fromLTRB(-hw * r, -hh * r, hw * r, hh * r), paint);
-        break;
-    }
-
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _ExercisePathPainter old) =>
-      old.exercise != exercise || old.color != color;
-}
 
 // ---------------------------------------------------------------------------
 // Box Breathing Guide (4-4-4-4 paced breathing)

@@ -1981,6 +1981,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open Settings'**
   String get openSettings;
+
+  /// Category title for About BlinkKind section
+  ///
+  /// In en, this message translates to:
+  /// **'About BlinkKind'**
+  String get settingsCategoryAbout;
+
+  /// Title for app version setting
+  ///
+  /// In en, this message translates to:
+  /// **'App Version'**
+  String get settingsAboutVersion;
+
+  /// Title for privacy policy setting
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get settingsAboutPrivacyTitle;
+
+  /// Subtitle describing local-first privacy stance
+  ///
+  /// In en, this message translates to:
+  /// **'100% offline and local-first'**
+  String get settingsAboutPrivacySubtitle;
+
+  /// Detailed text of the privacy policy
+  ///
+  /// In en, this message translates to:
+  /// **'BlinkKind is a local-first, 100% offline application. Your focus sessions, settings, and history are saved strictly on your local device. We do not collect, store, or transmit any personal data, usage metrics, or camera/microphone feeds.'**
+  String get settingsAboutPrivacyBody;
+
+  /// Title for licenses setting
+  ///
+  /// In en, this message translates to:
+  /// **'Open Source Licenses'**
+  String get settingsAboutLicensesTitle;
+
+  /// Subtitle for licenses setting
+  ///
+  /// In en, this message translates to:
+  /// **'Third-party software libraries used'**
+  String get settingsAboutLicensesSubtitle;
+
+  /// Label for a generic Close action button
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
 }
 
 class _AppLocalizationsDelegate

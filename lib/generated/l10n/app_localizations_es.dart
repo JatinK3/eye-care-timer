@@ -1085,4 +1085,30 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get openSettings => 'Abrir Ajustes';
+
+  @override
+  String get settingsCategoryAbout => 'Acerca de BlinkKind';
+
+  @override
+  String get settingsAboutVersion => 'Versión de la aplicación';
+
+  @override
+  String get settingsAboutPrivacyTitle => 'Política de privacidad';
+
+  @override
+  String get settingsAboutPrivacySubtitle => '100% sin conexión y local-first';
+
+  @override
+  String get settingsAboutPrivacyBody =>
+      'BlinkKind es una aplicación local-first y 100% sin conexión. Tus sesiones de enfoque, configuración e historial se guardan exclusivamente en tu dispositivo local. No recopilamos, almacenamos ni transmitimos ningún dato personal, métricas de uso ni transmisiones de cámara o micrófono.';
+
+  @override
+  String get settingsAboutLicensesTitle => 'Licencias de código abierto';
+
+  @override
+  String get settingsAboutLicensesSubtitle =>
+      'Bibliotecas de software de terceros utilizadas';
+
+  @override
+  String get close => 'Cerrar';
 }

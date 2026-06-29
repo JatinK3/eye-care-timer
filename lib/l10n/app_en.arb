@@ -1345,5 +1345,37 @@
   "openSettings": "Open Settings",
   "@openSettings": {
     "description": "Label for open settings button"
+  },
+  "settingsCategoryAbout": "About BlinkKind",
+  "@settingsCategoryAbout": {
+    "description": "Category title for About BlinkKind section"
+  },
+  "settingsAboutVersion": "App Version",
+  "@settingsAboutVersion": {
+    "description": "Title for app version setting"
+  },
+  "settingsAboutPrivacyTitle": "Privacy Policy",
+  "@settingsAboutPrivacyTitle": {
+    "description": "Title for privacy policy setting"
+  },
+  "settingsAboutPrivacySubtitle": "100% offline and local-first",
+  "@settingsAboutPrivacySubtitle": {
+    "description": "Subtitle describing local-first privacy stance"
+  },
+  "settingsAboutPrivacyBody": "BlinkKind is a local-first, 100% offline application. Your focus sessions, settings, and history are saved strictly on your local device. We do not collect, store, or transmit any personal data, usage metrics, or camera/microphone feeds.",
+  "@settingsAboutPrivacyBody": {
+    "description": "Detailed text of the privacy policy"
+  },
+  "settingsAboutLicensesTitle": "Open Source Licenses",
+  "@settingsAboutLicensesTitle": {
+    "description": "Title for licenses setting"
+  },
+  "settingsAboutLicensesSubtitle": "Third-party software libraries used",
+  "@settingsAboutLicensesSubtitle": {
+    "description": "Subtitle for licenses setting"
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Label for a generic Close action button"
   }
 }

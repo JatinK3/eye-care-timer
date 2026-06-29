@@ -313,5 +313,13 @@
   "notificationPermissionTitle": "¿Activar notificaciones?",
   "notificationPermissionMessage": "BlinkKind utiliza notificaciones para recordarte cuándo está por comenzar tu descanso ocular. Sin este permiso, el recordatorio solo aparecerá mientras la aplicación esté abierta.\n\nPuedes cambiar esto en cualquier momento en Ajustes.",
   "notNow": "Ahora no",
-  "openSettings": "Abrir Ajustes"
+  "openSettings": "Abrir Ajustes",
+  "settingsCategoryAbout": "Acerca de BlinkKind",
+  "settingsAboutVersion": "Versión de la aplicación",
+  "settingsAboutPrivacyTitle": "Política de privacidad",
+  "settingsAboutPrivacySubtitle": "100% sin conexión y local-first",
+  "settingsAboutPrivacyBody": "BlinkKind es una aplicación local-first y 100% sin conexión. Tus sesiones de enfoque, configuración e historial se guardan exclusivamente en tu dispositivo local. No recopilamos, almacenamos ni transmitimos ningún dato personal, métricas de uso ni transmisiones de cámara o micrófono.",
+  "settingsAboutLicensesTitle": "Licencias de código abierto",
+  "settingsAboutLicensesSubtitle": "Bibliotecas de software de terceros utilizadas",
+  "close": "Cerrar"
 }

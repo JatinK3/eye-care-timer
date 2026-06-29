@@ -2610,6 +2610,59 @@ class _SettingsPageState extends State<SettingsPage>
           ),
         ),
       ),
+      SettingItem(
+        title: l10n.settingsAboutVersion,
+        subtitle: '1.0.0',
+        keywords: ['version', 'about', 'app', 'info'],
+        category: 'About BlinkKind',
+        widget: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.info_outline),
+          title: Text(l10n.settingsAboutVersion),
+          trailing: const Text('1.0.0', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        ),
+      ),
+      SettingItem(
+        title: l10n.settingsAboutPrivacyTitle,
+        subtitle: l10n.settingsAboutPrivacySubtitle,
+        keywords: ['privacy', 'policy', 'data', 'offline', 'security'],
+        category: 'About BlinkKind',
+        widget: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.security),
+          title: Text(l10n.settingsAboutPrivacyTitle),
+          subtitle: Text(l10n.settingsAboutPrivacySubtitle),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => _showPrivacyPolicyDialog(context, l10n),
+        ),
+      ),
+      SettingItem(
+        title: l10n.settingsAboutLicensesTitle,
+        subtitle: l10n.settingsAboutLicensesSubtitle,
+        keywords: ['license', 'licenses', 'open source', 'libraries', 'packages'],
+        category: 'About BlinkKind',
+        widget: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.menu_book),
+          title: Text(l10n.settingsAboutLicensesTitle),
+          subtitle: Text(l10n.settingsAboutLicensesSubtitle),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => showLicensePage(
+            context: context,
+            applicationName: 'BlinkKind',
+            applicationVersion: '1.0.0',
+            applicationIcon: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Image.asset(
+                'assets/app_icon.png',
+                width: 64,
+                height: 64,
+                errorBuilder: (context, error, stackTrace) => const Icon(Icons.visibility, size: 64, color: Colors.cyan),
+              ),
+            ),
+          ),
+        ),
+      ),
     ];
   }
 
@@ -2958,6 +3011,24 @@ class _SettingsPageState extends State<SettingsPage>
               Navigator.of(ctx).pop();
             },
             child: Text(l10n.settingsSet),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyPolicyDialog(BuildContext context, AppLocalizations l10n) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.settingsAboutPrivacyTitle),
+        content: SingleChildScrollView(
+          child: Text(l10n.settingsAboutPrivacyBody),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.close),
           ),
         ],
       ),
@@ -3354,6 +3425,7 @@ class _SettingsPageState extends State<SettingsPage>
       if (groups.containsKey('Desktop Options')) 'Desktop Options',
       'AI Motivation & Prompts',
       if (groups.containsKey('System Options')) 'System Options',
+      if (groups.containsKey('About BlinkKind')) 'About BlinkKind',
     ];
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -3458,6 +3530,8 @@ class _SettingsPageState extends State<SettingsPage>
         return l10n.settingsCategoryAiMotivation;
       case 'System Options':
         return l10n.settingsCategorySystemOptions;
+      case 'About BlinkKind':
+        return l10n.settingsCategoryAbout;
       default:
         return category;
     }
@@ -3481,6 +3555,8 @@ class _SettingsPageState extends State<SettingsPage>
         return Icons.auto_awesome;
       case 'System Options':
         return Icons.settings;
+      case 'About BlinkKind':
+        return Icons.info_outline;
       default:
         return Icons.settings;
     }
