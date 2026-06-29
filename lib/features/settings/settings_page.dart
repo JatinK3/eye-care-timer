@@ -3275,6 +3275,9 @@ class _SettingsPageState extends State<SettingsPage>
       );
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = Theme.of(context).colorScheme.primary;
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: filtered.length,
@@ -3282,6 +3285,19 @@ class _SettingsPageState extends State<SettingsPage>
         final item = filtered[index];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
+          color: isDark 
+              ? Colors.white.withValues(alpha: 0.04) 
+              : Colors.black.withValues(alpha: 0.02),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: isDark 
+                  ? Colors.white.withValues(alpha: 0.08) 
+                  : Colors.black.withValues(alpha: 0.05),
+              width: 1.0,
+            ),
+          ),
+          elevation: 0,
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -3289,19 +3305,23 @@ class _SettingsPageState extends State<SettingsPage>
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
+                    horizontal: 10,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(4),
+                    color: accentColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: accentColor.withValues(alpha: 0.25),
+                      width: 1.0,
+                    ),
                   ),
                   child: Text(
                     _getCategoryLabel(context, item.category),
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      color: accentColor,
                     ),
                   ),
                 ),
@@ -3333,6 +3353,9 @@ class _SettingsPageState extends State<SettingsPage>
       if (groups.containsKey('System Options')) 'System Options',
     ];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = Theme.of(context).colorScheme.primary;
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: categories.length,
@@ -3350,17 +3373,57 @@ class _SettingsPageState extends State<SettingsPage>
 
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
+          color: isDark 
+              ? Colors.white.withValues(alpha: 0.04) 
+              : Colors.black.withValues(alpha: 0.015),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: isDark 
+                  ? Colors.white.withValues(alpha: 0.08) 
+                  : Colors.black.withValues(alpha: 0.04),
+              width: 1.0,
+            ),
           ),
+          elevation: 0,
           child: Theme(
-            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            data: Theme.of(context).copyWith(
+              dividerColor: Colors.transparent,
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+            ),
             child: ExpansionTile(
-              title: Text(
-                _getCategoryLabel(context, category),
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              title: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: accentColor.withValues(alpha: 0.25),
+                    width: 1.0,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _categoryIcon(category),
+                      size: 16,
+                      color: accentColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _getCategoryLabel(context, category),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: accentColor,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              leading: Icon(_categoryIcon(category)),
               childrenPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 8,

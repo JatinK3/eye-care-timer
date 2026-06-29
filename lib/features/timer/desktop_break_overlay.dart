@@ -269,7 +269,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
 
     // Full-screen guided modes — no card, just the guide + controls
     if (style == 'EyeExercise' || style == 'BoxBreathing' || style == 'BlinkTraining') {
-      return Padding(
+      final cardContent = Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -315,6 +315,29 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           ],
         ),
       );
+
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final ringSize = math.min(480.0, math.min(constraints.maxWidth, constraints.maxHeight) - 32.0);
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              if (widget.showProgress && widget.initialDurationSeconds > 0)
+                SizedBox(
+                  width: ringSize,
+                  height: ringSize,
+                  child: CircularProgressIndicator(
+                    value: _remainingSeconds / widget.initialDurationSeconds,
+                    strokeWidth: 2.0,
+                    color: Colors.cyan.withValues(alpha: 0.25),
+                    backgroundColor: Colors.white.withValues(alpha: 0.03),
+                  ),
+                ),
+              cardContent,
+            ],
+          );
+        },
+      );
     }
 
     final theme = Theme.of(context);
@@ -325,23 +348,18 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
         ? widget.customMessage.trim()
         : widget.aiQuote ?? tip.action;
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        if (!showBreathingGuide)
-          const _BreathingGlowCircle(),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (showBreathingGuide)
-                _BreathingGuideCircle(remainingSeconds: _remainingSeconds)
-              else ...[
-                const Icon(Icons.visibility_outlined, color: Colors.cyan, size: 64),
-                const SizedBox(height: 32),
-              ],
-              const SizedBox(height: 16),
+    final cardContent = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (showBreathingGuide)
+            _BreathingGuideCircle(remainingSeconds: _remainingSeconds)
+          else ...[
+            const Icon(Icons.visibility_outlined, color: Colors.cyan, size: 64),
+            const SizedBox(height: 32),
+          ],
+          const SizedBox(height: 16),
           Text(
             'Time to rest your eyes',
             style: textStyle.headlineMedium?.copyWith(
@@ -381,32 +399,13 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
             ),
           ],
           const SizedBox(height: 40),
-          if (!showBreathingGuide &&
-              (widget.showClock || widget.showProgress)) ...[
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 150,
-                  height: 150,
-                  child: CircularProgressIndicator(
-                    value: widget.showProgress && widget.initialDurationSeconds > 0
-                        ? _remainingSeconds / widget.initialDurationSeconds
-                        : 0.0,
-                    strokeWidth: 8,
-                    color: Colors.cyan,
-                    backgroundColor: Colors.white12,
-                  ),
-                ),
-                if (widget.showClock)
-                Text(
-                  _formatDuration(_remainingSeconds),
-                  style: textStyle.displaySmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w300,
-                  ),
-                ),
-              ],
+          if (!showBreathingGuide && widget.showClock) ...[
+            Text(
+              _formatDuration(_remainingSeconds),
+              style: textStyle.displaySmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w300,
+              ),
             ),
             const SizedBox(height: 64),
           ] else ...[
@@ -415,9 +414,32 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           _buildBreakActions(context),
         ],
       ),
-    ),
-  ],
-);
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final ringSize = math.min(480.0, math.min(constraints.maxWidth, constraints.maxHeight) - 32.0);
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            if (!showBreathingGuide)
+              const _BreathingGlowCircle(),
+            if (widget.showProgress && widget.initialDurationSeconds > 0)
+              SizedBox(
+                width: ringSize,
+                height: ringSize,
+                child: CircularProgressIndicator(
+                  value: _remainingSeconds / widget.initialDurationSeconds,
+                  strokeWidth: 2.0,
+                  color: Colors.cyan.withValues(alpha: 0.25),
+                  backgroundColor: Colors.white.withValues(alpha: 0.03),
+                ),
+              ),
+            cardContent,
+          ],
+        );
+      },
+    );
   }
 
   /// Shared action buttons used by both the classic card and guided-mode layouts.

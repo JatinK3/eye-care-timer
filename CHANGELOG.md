@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7] - 2026-06-29
+
+### Added
+- **Interactive Animated Onboarding:** Replaced static onboarding list with a high-fidelity vector-animated explainer slideshow outlining the 20-20-20 rule (custom animations of screen timers, depth-target perspective transitions, and a relaxing blinking eye mascot).
+- **Responsive Screen-Centered Break Progress Ring:** Enclosed the break screen overlays in a large, thin, and responsive countdown progress ring that dynamically scales to fit both desktop and mobile screens perfectly.
+
+### Changed
+- **Glassmorphic Settings Page Cards:** Sectioned the settings list into distinct, visually structured glassmorphic cards with colored chip headers, utilizing Material Card backings to prevent ListTile rendering warnings and ensure full test suite compliance.
+
 ## [1.0.6] - 2026-06-29
 
 ### Added
