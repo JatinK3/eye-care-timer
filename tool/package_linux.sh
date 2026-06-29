@@ -130,8 +130,9 @@ if [ "$DEV_MODE" = "true" ]; then
         else
             echo "     sudo dpkg -r blinkkind"
         fi
-        echo "   The dev launcher (~/.local/share/applications/blinkkind.desktop) overrides"
+        echo "   The dev launcher (~/.local/share/applications/com.jatin.eyecaretimer.desktop) overrides"
         echo "   the system one for this session, but removal is recommended for a clean setup."
+
         echo ""
     fi
 
@@ -146,7 +147,10 @@ if [ "$DEV_MODE" = "true" ]; then
     
     mkdir -p "$HOME/.local/share/applications"
     
-    cat << EOF > "$HOME/.local/share/applications/blinkkind.desktop"
+    # Clean up the old launcher name to prevent duplicate icons
+    rm -f "$HOME/.local/share/applications/blinkkind.desktop"
+
+    cat << EOF > "$HOME/.local/share/applications/com.jatin.eyecaretimer.desktop"
 [Desktop Entry]
 Name=BlinkKind
 Comment=A focused eye break timer for healthier screen sessions
@@ -158,7 +162,7 @@ Categories=Utility;
 StartupNotify=true
 StartupWMClass=com.jatin.eyecaretimer
 EOF
-    chmod +x "$HOME/.local/share/applications/blinkkind.desktop"
+    chmod +x "$HOME/.local/share/applications/com.jatin.eyecaretimer.desktop"
     
     if command -v update-desktop-database &> /dev/null; then
         update-desktop-database "$HOME/.local/share/applications"
@@ -171,7 +175,7 @@ EOF
     fi
     
     echo "Restarting BlinkKind application..."
-    gtk-launch blinkkind.desktop >/dev/null 2>&1 || gtk-launch blinkkind >/dev/null 2>&1 || ("$PROJECT_DIR/build/linux/x64/release/bundle/eye_care_timer" >/dev/null 2>&1 &)
+    gtk-launch com.jatin.eyecaretimer.desktop >/dev/null 2>&1 || gtk-launch com.jatin.eyecaretimer >/dev/null 2>&1 || ("$PROJECT_DIR/build/linux/x64/release/bundle/eye_care_timer" >/dev/null 2>&1 &)
     
     echo "========================================="
     echo "✓ Local developer desktop launcher ready!"
@@ -278,7 +282,7 @@ else
 # Launch via gtk-launch using the desktop entry if available to run in the proper desktop session environment,
 # otherwise fall back to direct binary execution.
 if command -v gtk-launch >/dev/null 2>&1; then
-    exec gtk-launch blinkkind.desktop "$@"
+    exec gtk-launch com.jatin.eyecaretimer.desktop "$@"
 else
     exec /opt/blinkkind/eye_care_timer "$@"
 fi
@@ -288,8 +292,7 @@ EOF
     # Create desktop entry launcher.
     # IMPORTANT: On GNOME Wayland the desktop filename MUST match the GTK
     # application ID (com.jatin.eyecaretimer) so GNOME can associate the
-    # running window with its icon. A blinkkind.desktop copy is also kept
-    # for CLI / legacy launchers.
+    # running window with its icon.
     cat << 'EOF' > "$DEB_STAGE/usr/share/applications/com.jatin.eyecaretimer.desktop"
 [Desktop Entry]
 Name=BlinkKind
@@ -303,9 +306,6 @@ StartupNotify=true
 StartupWMClass=com.jatin.eyecaretimer
 EOF
     chmod +x "$DEB_STAGE/usr/share/applications/com.jatin.eyecaretimer.desktop"
-    # Keep blinkkind.desktop as a copy for CLI / legacy launcher compatibility
-    cp "$DEB_STAGE/usr/share/applications/com.jatin.eyecaretimer.desktop" \
-       "$DEB_STAGE/usr/share/applications/blinkkind.desktop"
 
     # Create Debian control file (variable expansion enabled to insert $VERSION)
     cat << EOF > "$DEB_STAGE/DEBIAN/control"
@@ -351,8 +351,7 @@ else
     # Create desktop launcher file in SOURCES.
     # IMPORTANT: On GNOME Wayland the desktop filename MUST match the GTK
     # application ID (com.jatin.eyecaretimer) so GNOME can associate the
-    # running window with its icon. A blinkkind.desktop copy is also kept
-    # for CLI / legacy launchers.
+    # running window with its icon.
     cat << 'EOF' > "$RPM_BUILD_ROOT/SOURCES/com.jatin.eyecaretimer.desktop"
 [Desktop Entry]
 Name=BlinkKind
@@ -365,9 +364,6 @@ Categories=Utility;
 StartupNotify=true
 StartupWMClass=com.jatin.eyecaretimer
 EOF
-    # Keep blinkkind.desktop as a copy for CLI / legacy launcher compatibility
-    cp "$RPM_BUILD_ROOT/SOURCES/com.jatin.eyecaretimer.desktop" \
-       "$RPM_BUILD_ROOT/SOURCES/blinkkind.desktop"
 
     # Write launcher script to SOURCES upfront
     cat << 'EOF' > "$RPM_BUILD_ROOT/SOURCES/blinkkind-launcher"
@@ -375,7 +371,7 @@ EOF
 # Launch via gtk-launch using the desktop entry if available to run in the proper desktop session environment,
 # otherwise fall back to direct binary execution.
 if command -v gtk-launch >/dev/null 2>&1; then
-    exec gtk-launch blinkkind.desktop "$@"
+    exec gtk-launch com.jatin.eyecaretimer.desktop "$@"
 else
     exec /opt/blinkkind/eye_care_timer "$@"
 fi
@@ -391,10 +387,9 @@ Summary:        BlinkKind: Eye Break Timer
 License:        MIT
 URL:            https://github.com/JatinK3/eye-care-timer
 Source0:        blinkkind-%{version}.tar.gz
-Source1:        blinkkind.desktop
+Source1:        com.jatin.eyecaretimer.desktop
 Source2:        blinkkind.png
 Source3:        blinkkind-launcher
-Source4:        com.jatin.eyecaretimer.desktop
 Requires:       gtk3, libX11
 
 %description
@@ -413,9 +408,6 @@ mkdir -p %{buildroot}/usr/bin
 install -m 755 %{SOURCE3} %{buildroot}/usr/bin/blinkkind
 mkdir -p %{buildroot}/usr/share/applications
 cp %{SOURCE1} %{buildroot}/usr/share/applications/
-# IMPORTANT: On GNOME Wayland the desktop filename MUST match the GTK
-# application ID so GNOME can associate the running window with its icon.
-cp %{SOURCE4} %{buildroot}/usr/share/applications/
 mkdir -p %{buildroot}/usr/share/pixmaps
 cp %{SOURCE2} %{buildroot}/usr/share/pixmaps/
 # hicolor is the standard fallback theme; custom themes (e.g. WhiteSur)
@@ -438,7 +430,6 @@ fi
 %files
 /opt/blinkkind/
 /usr/bin/blinkkind
-/usr/share/applications/blinkkind.desktop
 /usr/share/applications/com.jatin.eyecaretimer.desktop
 /usr/share/pixmaps/blinkkind.png
 /usr/share/icons/hicolor/128x128/apps/blinkkind.png
@@ -550,7 +541,7 @@ if [ -n "$_INSTALL_PKG" ]; then
                 sudo update-desktop-database /usr/share/applications 2>/dev/null || true
                 # Fix SELinux file contexts if restorecon is available (Fedora/RHEL)
                 if command -v restorecon &>/dev/null; then
-                    sudo restorecon -Rv /opt/blinkkind/ /usr/share/applications/blinkkind.desktop /usr/share/pixmaps/blinkkind.png 2>/dev/null || true
+                    sudo restorecon -Rv /opt/blinkkind/ /usr/share/applications/com.jatin.eyecaretimer.desktop /usr/share/pixmaps/blinkkind.png 2>/dev/null || true
                 fi
                 # Reset GNOME app-picker layout cache so new entry is visible immediately
                 if command -v gsettings &>/dev/null; then
@@ -570,7 +561,7 @@ if [ -n "$_INSTALL_PKG" ]; then
                 sudo update-desktop-database /usr/share/applications 2>/dev/null || true
                 # Fix SELinux file contexts if restorecon is available (Fedora/RHEL)
                 if command -v restorecon &>/dev/null; then
-                    sudo restorecon -Rv /opt/blinkkind/ /usr/share/applications/blinkkind.desktop /usr/share/pixmaps/blinkkind.png 2>/dev/null || true
+                    sudo restorecon -Rv /opt/blinkkind/ /usr/share/applications/com.jatin.eyecaretimer.desktop /usr/share/pixmaps/blinkkind.png 2>/dev/null || true
                 fi
                 # Reset GNOME app-picker layout cache so new entry is visible immediately
                 if command -v gsettings &>/dev/null; then
@@ -602,7 +593,7 @@ if [ -n "$_INSTALL_PKG" ]; then
             pkill -x eye_care_timer || true
             sleep 1
             echo "Restarting BlinkKind..."
-            gtk-launch blinkkind.desktop >/dev/null 2>&1 || gtk-launch blinkkind >/dev/null 2>&1 || (blinkkind >/dev/null 2>&1 &)
+            gtk-launch com.jatin.eyecaretimer.desktop >/dev/null 2>&1 || gtk-launch com.jatin.eyecaretimer >/dev/null 2>&1 || (blinkkind >/dev/null 2>&1 &)
             echo "✓ BlinkKind restarted."
             restarted=true
         fi
