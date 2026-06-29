@@ -269,71 +269,66 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
 
     // Full-screen guided modes — no card, just the guide + controls
     if (style == 'EyeExercise' || style == 'BoxBreathing' || style == 'BlinkTraining') {
-      final cardContent = Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 340,
-                    maxHeight: 340,
-                  ),
-                  child: style == 'EyeExercise'
-                      ? EyeExerciseDotGuide(
-                          remainingSeconds: _remainingSeconds,
-                          totalDurationSeconds: widget.initialDurationSeconds,
-                        )
-                      : style == 'BoxBreathing'
-                          ? BoxBreathingGuide(
-                              remainingSeconds: _remainingSeconds,
-                              totalDurationSeconds: widget.initialDurationSeconds,
-                            )
-                          : BlinkTrainingGuide(
-                              remainingSeconds: _remainingSeconds,
-                              totalDurationSeconds: widget.initialDurationSeconds,
-                            ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              style == 'EyeExercise'
-                  ? 'Eye Exercise Break'
-                  : style == 'BoxBreathing'
-                      ? 'Box Breathing Break'
-                      : 'Blink Pacing Break',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Colors.white38,
-                  ),
-            ),
-            const SizedBox(height: 24),
-            _buildBreakActions(context),
-            const SizedBox(height: 32),
-          ],
-        ),
-      );
-
       return LayoutBuilder(
         builder: (context, constraints) {
           final ringSize = math.min(480.0, math.min(constraints.maxWidth, constraints.maxHeight) - 32.0);
-          return Stack(
-            alignment: Alignment.center,
+          return Column(
             children: [
-              if (widget.showProgress && widget.initialDurationSeconds > 0)
-                SizedBox(
-                  width: ringSize,
-                  height: ringSize,
-                  child: CircularProgressIndicator(
-                    value: _remainingSeconds / widget.initialDurationSeconds,
-                    strokeWidth: 2.0,
-                    color: Colors.cyan.withValues(alpha: 0.25),
-                    backgroundColor: Colors.white.withValues(alpha: 0.03),
+              Expanded(
+                child: Center(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (widget.showProgress && widget.initialDurationSeconds > 0)
+                        SizedBox(
+                          width: ringSize,
+                          height: ringSize,
+                          child: CircularProgressIndicator(
+                            value: _remainingSeconds / widget.initialDurationSeconds,
+                            strokeWidth: 2.0,
+                            color: Colors.cyan.withValues(alpha: 0.25),
+                            backgroundColor: Colors.white.withValues(alpha: 0.03),
+                          ),
+                        ),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: 340,
+                          maxHeight: 340,
+                        ),
+                        child: style == 'EyeExercise'
+                            ? EyeExerciseDotGuide(
+                                remainingSeconds: _remainingSeconds,
+                                totalDurationSeconds: widget.initialDurationSeconds,
+                              )
+                            : style == 'BoxBreathing'
+                                ? BoxBreathingGuide(
+                                    remainingSeconds: _remainingSeconds,
+                                    totalDurationSeconds: widget.initialDurationSeconds,
+                                  )
+                                : BlinkTrainingGuide(
+                                    remainingSeconds: _remainingSeconds,
+                                    totalDurationSeconds: widget.initialDurationSeconds,
+                                  ),
+                      ),
+                    ],
                   ),
                 ),
-              cardContent,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                style == 'EyeExercise'
+                    ? 'Eye Exercise Break'
+                    : style == 'BoxBreathing'
+                        ? 'Box Breathing Break'
+                        : 'Blink Pacing Break',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: Colors.white38,
+                    ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 40.0, top: 16.0),
+                child: _buildBreakActions(context),
+              ),
             ],
           );
         },
@@ -351,6 +346,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     final cardContent = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (showBreathingGuide)
@@ -407,11 +403,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
                 fontWeight: FontWeight.w300,
               ),
             ),
-            const SizedBox(height: 64),
-          ] else ...[
-            const SizedBox(height: 32),
           ],
-          _buildBreakActions(context),
         ],
       ),
     );
@@ -419,23 +411,35 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final ringSize = math.min(480.0, math.min(constraints.maxWidth, constraints.maxHeight) - 32.0);
-        return Stack(
-          alignment: Alignment.center,
+        return Column(
           children: [
-            if (!showBreathingGuide)
-              const _BreathingGlowCircle(),
-            if (widget.showProgress && widget.initialDurationSeconds > 0)
-              SizedBox(
-                width: ringSize,
-                height: ringSize,
-                child: CircularProgressIndicator(
-                  value: _remainingSeconds / widget.initialDurationSeconds,
-                  strokeWidth: 2.0,
-                  color: Colors.cyan.withValues(alpha: 0.25),
-                  backgroundColor: Colors.white.withValues(alpha: 0.03),
+            Expanded(
+              child: Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (!showBreathingGuide)
+                      const _BreathingGlowCircle(),
+                    if (widget.showProgress && widget.initialDurationSeconds > 0)
+                      SizedBox(
+                        width: ringSize,
+                        height: ringSize,
+                        child: CircularProgressIndicator(
+                          value: _remainingSeconds / widget.initialDurationSeconds,
+                          strokeWidth: 2.0,
+                          color: Colors.cyan.withValues(alpha: 0.25),
+                          backgroundColor: Colors.white.withValues(alpha: 0.03),
+                        ),
+                      ),
+                    cardContent,
+                  ],
                 ),
               ),
-            cardContent,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 40.0, top: 16.0),
+              child: _buildBreakActions(context),
+            ),
           ],
         );
       },
