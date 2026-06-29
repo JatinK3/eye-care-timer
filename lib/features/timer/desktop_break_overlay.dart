@@ -387,41 +387,25 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
       ),
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final ringSize = math.min(480.0, math.min(constraints.maxWidth, constraints.maxHeight) - 32.0);
-        return Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    if (!showBreathingGuide)
-                      const _BreathingGlowCircle(),
-                    if (widget.showProgress && widget.initialDurationSeconds > 0)
-                      SizedBox(
-                        width: ringSize,
-                        height: ringSize,
-                        child: CircularProgressIndicator(
-                          value: _remainingSeconds / widget.initialDurationSeconds,
-                          strokeWidth: 2.0,
-                          color: Colors.cyan.withValues(alpha: 0.25),
-                          backgroundColor: Colors.white.withValues(alpha: 0.03),
-                        ),
-                      ),
-                    cardContent,
-                  ],
-                ),
-              ),
+    return Column(
+      children: [
+        Expanded(
+          child: Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (!showBreathingGuide)
+                  const _BreathingGlowCircle(),
+                cardContent,
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 40.0, top: 16.0),
-              child: _buildBreakActions(context),
-            ),
-          ],
-        );
-      },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 40.0, top: 16.0),
+          child: _buildBreakActions(context),
+        ),
+      ],
     );
   }
 
