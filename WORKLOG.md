@@ -222,6 +222,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - **Added startup notifications for minimized background launches:** Configured `DesktopIntegrationService` to display a silent, non-intrusive system toast notification on startup when the app starts minimized. The notification dynamically states whether the eye-care schedule has started or is awaiting tray activation, making background launch behaviors clear and transparent.
 - **Fixed Settings tray menu click behavior:** Added `_showWindow()` restoration to the tray menu onClicked callback for the "Settings" item. This ensures that clicking Settings from the system tray successfully restores and focuses the app window before pushing the settings view.
 - **Prevented notification double-posting and rate-limited blink reminders:** Added a static 5-second rate-limiting guard at the entry point of `showBlinkReminder` inside `NotificationService`. This guarantees that even with concurrent loops, duplicate timers, or asynchronous race conditions, only a single notification is shown to the user within any 5-second interval.
+- **Improved packaging pipeline installation steps:** Modified `tool/package_linux.sh` to automatically run process termination (`pkill -f eye_care_timer` and `pkill -f blinkkind`) before removing the old package and installing the new one. This prevents Linux file-lock conflicts during system updates.
 
 **Commits this session:**
 - `fix(packaging): remove duplicate desktop launcher to prevent double icons in app grid`
@@ -230,6 +231,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - `feat(desktop): show startup notification when starting minimized in tray`
 - `fix(desktop): restore window first when Settings is clicked in tray`
 - `fix(desktop): add static rate limiting guard to showBlinkReminder to block duplicate notifications`
+- `fix(packaging): terminate running instances before installing on Linux`
 
 ---
 
