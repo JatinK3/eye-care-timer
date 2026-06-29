@@ -184,7 +184,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 ### P2 — Cross-device, ecosystem & context intelligence
 - [x] **Settings backup/restore, then cloud sync** — start with config export/import (JSON) to complement the existing history export; later add optional account-based sync of settings + history across devices.
 - [x] **Meeting / camera-in-use auto-postpone** — detect an active camera/mic (video calls) or a calendar event and postpone the break, extending the existing smart-idle/DND logic.
-- [ ] **Per-app rules & profiles** — don't interrupt while chosen apps are focused; "Work" vs "Gaming" profiles with different cadences.
+- [x] **Per-app rules & profiles** — don't interrupt while chosen apps are focused; "Work" vs "Gaming" profiles with different cadences.
 - [x] **Home-screen widgets & OS surfaces** — Android home widget implemented natively (TimerWidgetProvider) and updated from foreground service. iOS widget, macOS menu-bar extra, and Windows progress remain on backlog.
 - [x] **Wellness micro-breaks (modular)** — optional hydration / posture / stretch reminders alongside eye breaks (opt-in modules).
 - [x] **OS DND / Focus integration** — set system Do-Not-Disturb / Focus during work phases.
@@ -226,6 +226,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - **Fixed timer progress ring blur box artifacts:** Replaced the `MaskFilter.blur` based outer halo of the glowing tip dot with a native `RadialGradient` shader in the CustomPainter. This resolves a known rendering issue on Skia/Impeller backends where a square boundary box with thin outlines/lines is drawn around blurred graphics (especially visible in light mode).
 - **Disabled default state reset and removed interactive prompt:** Modified `tool/package_linux.sh` to always preserve your settings and timer history on updates. The interactive prompt was removed, and user data is now only cleared if the script is run with the explicit `-c` or `--clear-state` flag.
 - **Redesigned eye icon size and geometry on Dashboard Clock:** Scaled up the eye icon size from `16` to `26` (normal mode) and `22` to `36` (focus mode) to fit the clock dial properly. Adjusted the bezier anchor coordinates (from `0.1` and `0.9` width bounds to `0.16` and `0.84`) and scaled the vertical openness limit (from `0.33` to `0.42`) so that the eye appears naturally round and open, rather than sleepily skewed and flat.
+- **Implemented Focus Profiles & Per-App Auto-Postpone Rules:** Integrated choice preset profiles: `Standard (20-20-20)`, `Pomodoro (25 / 5)`, `Long Focus (45 / 5)`, `Gaming Mode` (relaxed work/break cadence with pre-populated gaming app whitelists), and `Custom` mode. Added an Auto-Postpone Apps input field for package/class name keywords. Enabled dynamic `xprop` window class checks on Linux and synced whitelists to the native foreground service (`TimerForegroundService.kt`) on Android to automatically postpone breaks while specified apps are in focus.
 
 **Commits this session:**
 - `fix(packaging): remove duplicate desktop launcher to prevent double icons in app grid`
@@ -238,6 +239,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - `fix(timer): replace tip dot MaskFilter.blur with RadialGradient to eliminate blur box artifacts`
 - `fix(packaging): default to preserving local state and remove interactive prompt`
 - `fix(timer): increase eye size and update geometry to be less skewed and more open`
+- `feat: add focus profiles and auto-postpone apps rules`
 
 ---
 
