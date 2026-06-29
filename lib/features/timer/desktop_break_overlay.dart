@@ -269,69 +269,48 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
 
     // Full-screen guided modes — no card, just the guide + controls
     if (style == 'EyeExercise' || style == 'BoxBreathing' || style == 'BlinkTraining') {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final ringSize = math.min(480.0, math.min(constraints.maxWidth, constraints.maxHeight) - 32.0);
-          return Column(
-            children: [
-              Expanded(
-                child: Center(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      if (widget.showProgress && widget.initialDurationSeconds > 0)
-                        SizedBox(
-                          width: ringSize,
-                          height: ringSize,
-                          child: CircularProgressIndicator(
-                            value: _remainingSeconds / widget.initialDurationSeconds,
-                            strokeWidth: 2.0,
-                            color: Colors.cyan.withValues(alpha: 0.25),
-                            backgroundColor: Colors.white.withValues(alpha: 0.03),
-                          ),
-                        ),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: 340,
-                          maxHeight: 340,
-                        ),
-                        child: style == 'EyeExercise'
-                            ? EyeExerciseDotGuide(
-                                remainingSeconds: _remainingSeconds,
-                                totalDurationSeconds: widget.initialDurationSeconds,
-                              )
-                            : style == 'BoxBreathing'
-                                ? BoxBreathingGuide(
-                                    remainingSeconds: _remainingSeconds,
-                                    totalDurationSeconds: widget.initialDurationSeconds,
-                                  )
-                                : BlinkTrainingGuide(
-                                    remainingSeconds: _remainingSeconds,
-                                    totalDurationSeconds: widget.initialDurationSeconds,
-                                  ),
-                      ),
-                    ],
-                  ),
+      return Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 340,
+                  maxHeight: 340,
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                style == 'EyeExercise'
-                    ? 'Eye Exercise Break'
+                child: style == 'EyeExercise'
+                    ? EyeExerciseDotGuide(
+                        remainingSeconds: _remainingSeconds,
+                        totalDurationSeconds: widget.initialDurationSeconds,
+                      )
                     : style == 'BoxBreathing'
-                        ? 'Box Breathing Break'
-                        : 'Blink Pacing Break',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Colors.white38,
-                    ),
+                        ? BoxBreathingGuide(
+                            remainingSeconds: _remainingSeconds,
+                            totalDurationSeconds: widget.initialDurationSeconds,
+                          )
+                        : BlinkTrainingGuide(
+                            remainingSeconds: _remainingSeconds,
+                            totalDurationSeconds: widget.initialDurationSeconds,
+                          ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 40.0, top: 16.0),
-                child: _buildBreakActions(context),
-              ),
-            ],
-          );
-        },
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            style == 'EyeExercise'
+                ? 'Eye Exercise Break'
+                : style == 'BoxBreathing'
+                    ? 'Box Breathing Break'
+                    : 'Blink Pacing Break',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: Colors.white38,
+                ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 40.0, top: 16.0),
+            child: _buildBreakActions(context),
+          ),
+        ],
       );
     }
 
