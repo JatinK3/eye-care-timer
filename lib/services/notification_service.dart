@@ -529,6 +529,40 @@ class NotificationService {
     );
   }
 
+  Future<void> showStartupNotification({
+    required String title,
+    required String body,
+  }) async {
+    if (kIsWeb) return;
+    if (Platform.isLinux) {
+      try {
+        await Process.run('notify-send', [
+          '-a',
+          'BlinkKind',
+          '-i',
+          'blinkkind',
+          title,
+          body,
+        ]);
+      } catch (e) {
+        debugPrint('Failed to send Linux startup notification: $e');
+      }
+      return;
+    }
+    await initialize();
+    try {
+      await _notificationsPlugin.show(
+        id: 1007,
+        title: title,
+        body: body,
+        notificationDetails: _wellnessNotificationDetails,
+        payload: 'startup',
+      );
+    } on PlatformException catch (error) {
+      debugPrint('Unable to show startup notification: $error');
+    }
+  }
+
   /// Shows an immediate blink-conscious reminder notification.
   /// On Android the notification channel carries the chime as its sound, so
   /// it plays even when the app is closed.  On Linux/desktop the caller is

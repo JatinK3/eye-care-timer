@@ -19,8 +19,12 @@ void main() async {
     final startMinimized =
         prefs.getBool(PreferencesService.startMinimizedKey) ??
         TimerSettings.defaultStartMinimized;
+    final autoStartSchedule =
+        prefs.getBool(PreferencesService.autoStartScheduleKey) ??
+        TimerSettings.defaultAutoStartSchedule;
     await DesktopIntegrationService.instance.initialize(
       startMinimized: startMinimized,
+      autoStartSchedule: autoStartSchedule,
     );
   }
   runApp(const BlinkKindApp());

@@ -53,7 +53,10 @@ class DesktopIntegrationService extends WindowListener {
       (Platform.isLinux || Platform.isMacOS || Platform.isWindows) &&
       !Platform.environment.containsKey('FLUTTER_TEST');
 
-  Future<void> initialize({bool startMinimized = false}) async {
+  Future<void> initialize({
+    bool startMinimized = false,
+    bool autoStartSchedule = false,
+  }) async {
     if (!isSupported || _isInitialized) return;
 
     // 1. Initialize Window Manager
@@ -98,6 +101,18 @@ class DesktopIntegrationService extends WindowListener {
 
     if (startMinimized) {
       await windowManager.hide();
+      final notificationService = NotificationService();
+      if (autoStartSchedule) {
+        unawaited(notificationService.showStartupNotification(
+          title: 'BlinkKind is running',
+          body: 'BlinkKind has started minimized in the system tray. The eye-care schedule has started.',
+        ));
+      } else {
+        unawaited(notificationService.showStartupNotification(
+          title: 'BlinkKind is running',
+          body: 'BlinkKind has started minimized in the system tray. Tap the tray icon to start.',
+        ));
+      }
     }
 
     _isInitialized = true;
