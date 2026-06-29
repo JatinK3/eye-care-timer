@@ -451,6 +451,7 @@ class DesktopIntegrationService extends WindowListener {
     }
     windowManager.removeListener(this);
     await windowManager.destroy();
+    exit(0);
   }
 
   // --- WindowListener overrides ---

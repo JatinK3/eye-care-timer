@@ -236,6 +236,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     _notificationSubscription?.cancel();
     _blinkReminderAcknowledgedSubscription?.cancel();
     _timerEventHistoryListenable.dispose();
+    _notificationService.dispose();
     super.dispose();
   }
 

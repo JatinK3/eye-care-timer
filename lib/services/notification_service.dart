@@ -1013,4 +1013,11 @@ class NotificationService {
       debugPrint('Error playing Linux test chime fallback: $e');
     }
   }
+
+  void dispose() {
+    _linuxPhaseTimer?.cancel();
+    _linuxWarningTimer?.cancel();
+    _linuxBlinkActionMonitor?.kill();
+    _linuxBlinkActionMonitor = null;
+  }
 }
