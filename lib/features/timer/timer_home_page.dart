@@ -3943,13 +3943,18 @@ class _GradientTimerPainter extends CustomPainter {
     );
 
     // ── 6. Glowing dot at arc tip ───────────────────────────────────────
-    // Outer halo
+    // Outer halo using a RadialGradient shader to avoid Skia/Impeller blur box artifacts
+    final glowRadius = strokeWidth * 2.5;
     canvas.drawCircle(
       tipOffset,
-      strokeWidth * 1.6,
+      glowRadius,
       Paint()
-        ..color = arcColor.withValues(alpha: 0.25)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+        ..shader = RadialGradient(
+          colors: [
+            arcColor.withValues(alpha: 0.4),
+            arcColor.withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromCircle(center: tipOffset, radius: glowRadius)),
     );
     // Bright core dot
     canvas.drawCircle(
