@@ -43,6 +43,7 @@ class NotificationService {
   static const int _wellnessReminderId = 1005;
   static const int _autoPostponeReminderId = 1006;
   static int? _linuxBlinkNotificationReplaceId;
+  static DateTime? _lastBlinkReminderSentAt;
   static const String _wellnessChannelId = 'blinkkind_wellness_v1';
   static const String _wellnessChannelName = 'Wellness reminders';
   static const String _wellnessChannelDescription =
@@ -573,6 +574,14 @@ class NotificationService {
     String chimeStyle = 'tibetan_bowl',
   }) async {
     if (kIsWeb) return;
+
+    final now = DateTime.now();
+    if (_lastBlinkReminderSentAt != null &&
+        now.difference(_lastBlinkReminderSentAt!).inSeconds < 5) {
+      debugPrint('Skipping duplicate blink reminder notification due to rate limit.');
+      return;
+    }
+    _lastBlinkReminderSentAt = now;
 
     const messages = [
       'Remember to blink! \u{1F441}\uFE0F Give your eyes some moisture.',
