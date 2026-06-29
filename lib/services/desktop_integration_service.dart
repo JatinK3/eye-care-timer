@@ -158,6 +158,7 @@ class DesktopIntegrationService extends WindowListener {
         MenuItemLabel(
           label: 'Settings',
           onClicked: (_) {
+            unawaited(_showWindow());
             DesktopControlsController.instance.triggerCommand(
               DesktopCommand.openSettings,
             );
@@ -285,6 +286,7 @@ class DesktopIntegrationService extends WindowListener {
         MenuItemLabel(
           label: 'Settings',
           onClicked: (_) {
+            unawaited(_showWindow());
             DesktopControlsController.instance.triggerCommand(
               DesktopCommand.openSettings,
             );
