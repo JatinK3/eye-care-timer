@@ -4263,38 +4263,42 @@ class _BlinkKindAnimatedEyeState extends State<_BlinkKindAnimatedEye>
       builder: (context, child) {
         final scale = _scaleAnimation.value;
         final glowOpacity = ((scale - 1.0) / 0.25).clamp(0.0, 1.0);
-        return Stack(
-          alignment: Alignment.center,
-          clipBehavior: Clip.none,
-          children: [
-            if (scale > 1.0)
-              Positioned(
-                child: Container(
-                  width: widget.size * 2.2,
-                  height: widget.size * 2.2,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        widget.irisColor.withValues(alpha: glowOpacity * 0.4),
-                        widget.irisColor.withValues(alpha: 0.0),
-                      ],
+        return SizedBox(
+          width: widget.size * 1.5,
+          height: widget.size,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              if (scale > 1.0)
+                Positioned(
+                  child: Container(
+                    width: widget.size * 2.2,
+                    height: widget.size * 2.2,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          widget.irisColor.withValues(alpha: glowOpacity * 0.4),
+                          widget.irisColor.withValues(alpha: 0.0),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            Transform.scale(
-              scale: scale,
-              child: CustomPaint(
-                size: Size(widget.size * 1.5, widget.size),
-                painter: _EyeVectorPainter(
-                  openAmount: _openAnimation.value,
-                  eyelidColor: widget.color,
-                  irisColor: widget.irisColor,
+              Transform.scale(
+                scale: scale,
+                child: CustomPaint(
+                  size: Size(widget.size * 1.5, widget.size),
+                  painter: _EyeVectorPainter(
+                    openAmount: _openAnimation.value,
+                    eyelidColor: widget.color,
+                    irisColor: widget.irisColor,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
