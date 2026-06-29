@@ -219,11 +219,13 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - **Cleaned up stale launcher files:** Cleaned up local and system application entry paths to remove duplicate entries in the GNOME app grid.
 - **Fixed zombie background process sending notifications on exit:** Added `exit(0)` to the application's quit routine in `DesktopIntegrationService` and implemented a `dispose` method in `NotificationService` to terminate background loops, active Dart timers, and the `dbus-monitor` child process. This ensures that exiting the app via the system tray fully kills the app process and terminates all blink reminder notifications.
 - **Restored native title bar and window controls on Linux:** Modified `DesktopIntegrationService` to bypass hiding the title bar on Linux platforms, allowing GNOME (Ubuntu/Fedora) to render standard close, minimize, and maximize buttons. Added native GTK setting preference `gtk-application-prefer-dark-theme = TRUE` inside `my_application.cc` to ensure that the header/title bar matches the application's dark theme interface automatically.
+- **Added startup notifications for minimized background launches:** Configured `DesktopIntegrationService` to display a silent, non-intrusive system toast notification on startup when the app starts minimized. The notification dynamically states whether the eye-care schedule has started or is awaiting tray activation, making background launch behaviors clear and transparent.
 
 **Commits this session:**
 - `fix(packaging): remove duplicate desktop launcher to prevent double icons in app grid`
 - `fix(desktop): terminate process fully on exit to stop background notifications`
 - `fix(linux): restore native title bar and window controls on Linux with dark theme preference`
+- `feat(desktop): show startup notification when starting minimized in tray`
 
 ---
 
