@@ -6,6 +6,10 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
 import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
@@ -40,6 +44,41 @@ class TimerWidgetProvider : AppWidgetProvider() {
             context.sendBroadcast(intent)
         }
 
+        private fun drawProgressRing(context: Context, progress: Float, color: Int): Bitmap {
+            val density = context.resources.displayMetrics.density
+            val size = (100 * density).toInt() // 100dp size in pixels
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            
+            val strokeWidth = 3 * density // 3dp stroke
+            val radius = (size / 2f) - strokeWidth
+            val rect = RectF(strokeWidth, strokeWidth, size.toFloat() - strokeWidth, size.toFloat() - strokeWidth)
+            
+            // Draw background track circle
+            val bgPaint = Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.STROKE
+                this.strokeWidth = strokeWidth
+                this.color = 0x14FFFFFF // Faint white (8% opacity)
+            }
+            canvas.drawCircle(size / 2f, size / 2f, radius, bgPaint)
+            
+            // Draw progress arc
+            if (progress > 0f) {
+                val progressPaint = Paint().apply {
+                    isAntiAlias = true
+                    style = Paint.Style.STROKE
+                    this.strokeWidth = strokeWidth
+                    this.color = color
+                    strokeCap = Paint.Cap.ROUND
+                }
+                val sweepAngle = progress * 360f
+                canvas.drawArc(rect, -90f, sweepAngle, false, progressPaint)
+            }
+            
+            return bitmap
+        }
+
         private fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
             val views = RemoteViews(context.packageName, R.layout.timer_widget)
 
@@ -51,6 +90,7 @@ class TimerWidgetProvider : AppWidgetProvider() {
             val pausedRemainingSeconds = prefs.getLong("pausedRemainingSeconds", 0L)
             val allowSkip = prefs.getBoolean("allowSkip", true)
             val allowPostpone = prefs.getBoolean("allowPostpone", true)
+            val currentPhaseInitialDuration = prefs.getInt("currentPhaseInitialDuration", 0)
 
             // Calculate remaining time
             val remainingSeconds = if (isScreenOffPaused) {
@@ -72,28 +112,45 @@ class TimerWidgetProvider : AppWidgetProvider() {
             }
             views.setTextViewText(R.id.widget_time, timeText)
 
+            // Calculate progress value
+            val totalDuration = if (currentPhaseInitialDuration > 0) currentPhaseInitialDuration.toLong() else 1L
+            val progress = if (deadlineMillis > 0L || isScreenOffPaused) {
+                (remainingSeconds.toFloat() / totalDuration.toFloat()).coerceIn(0f, 1f)
+            } else {
+                0f
+            }
+
             // Set status label and colors
+            val progressColor: Int
             if (deadlineMillis <= 0L && !isScreenOffPaused) {
                 views.setTextViewText(R.id.widget_status, "Ready")
                 views.setTextColor(R.id.widget_status, 0xFF888888.toInt()) // Gray
                 views.setViewVisibility(R.id.widget_button_container, View.GONE)
+                progressColor = 0xFF888888.toInt()
             } else if (isScreenOffPaused) {
                 views.setTextViewText(R.id.widget_status, "Paused")
                 views.setTextColor(R.id.widget_status, 0xFFFFD54F.toInt()) // Yellow
                 views.setViewVisibility(R.id.widget_button_container, View.GONE)
+                progressColor = 0xFFFFD54F.toInt()
             } else if (isBreak) {
-                views.setTextViewText(R.id.widget_status, "Break Phase")
+                views.setTextViewText(R.id.widget_status, "Break")
                 views.setTextColor(R.id.widget_status, 0xFFFF9800.toInt()) // Orange
                 
                 // Show actions during break
                 views.setViewVisibility(R.id.widget_button_container, View.VISIBLE)
                 views.setViewVisibility(R.id.widget_btn_skip, if (allowSkip) View.VISIBLE else View.GONE)
                 views.setViewVisibility(R.id.widget_btn_postpone, if (allowPostpone) View.VISIBLE else View.GONE)
+                progressColor = 0xFFFF9800.toInt()
             } else {
-                views.setTextViewText(R.id.widget_status, "Work Phase")
+                views.setTextViewText(R.id.widget_status, "Work")
                 views.setTextColor(R.id.widget_status, 0xFF4CAF50.toInt()) // Green
                 views.setViewVisibility(R.id.widget_button_container, View.GONE)
+                progressColor = 0xFF4CAF50.toInt()
             }
+
+            // Draw and set the progress ring Bitmap
+            val progressBitmap = drawProgressRing(context, progress, progressColor)
+            views.setImageViewBitmap(R.id.widget_progress_ring, progressBitmap)
 
             // Click pending intent for widget body (Open App)
             val openIntent = Intent(context, MainActivity::class.java)

@@ -551,7 +551,7 @@ class TimerHomePageState extends State<TimerHomePage>
             case DesktopCommand.playChime:
               // Play the confirmation chime when the user taps the
               // "I blinked!" notification action button.
-              unawaited(_playChime());
+              unawaited(_playChime(hapticEvent: 'blink_reminder'));
               break;
           }
         });
@@ -1065,7 +1065,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _autoRunCompletedCycles = projection.autoRunCompletedCycles;
 
     if (playChime && projection.boundariesCrossed > 0) {
-      _playChime();
+      _playChime(hapticEvent: projection.isBreak ? 'work_complete' : 'break_complete');
     }
 
     if (projection.isIdle) {
@@ -1642,7 +1642,7 @@ class TimerHomePageState extends State<TimerHomePage>
   void _postponeBreak() {
     if (!_isRunning) return;
     _animationController.stop();
-    _playChime();
+    _playChime(hapticEvent: 'postpone');
     _pulseController.stop();
     // Cancel the pending "Break complete" reminder that was scheduled when the
     // break started. Without this it would still fire at the original break-end
@@ -1847,7 +1847,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _phaseStartedAt = null;
     _phaseEndsAt = null;
     _cancelReminders();
-    _playChime();
+    _playChime(hapticEvent: completedBreakPhase ? 'break_complete' : 'work_complete');
     _pulseController.stop();
 
     setState(() => _phaseOpacity = 0.0);
@@ -2021,9 +2021,35 @@ class TimerHomePageState extends State<TimerHomePage>
     }
   }
 
-  Future<void> _playChime() async {
+  Future<void> _triggerHapticPattern(String event) async {
+    if (!widget.hapticsEnabled) return;
+    switch (event) {
+      case 'work_complete':
+        await HapticFeedback.heavyImpact();
+        await Future.delayed(const Duration(milliseconds: 150));
+        await HapticFeedback.heavyImpact();
+        break;
+      case 'break_complete':
+        await HapticFeedback.mediumImpact();
+        await Future.delayed(const Duration(milliseconds: 150));
+        await HapticFeedback.lightImpact();
+        break;
+      case 'blink_reminder':
+        await HapticFeedback.selectionClick();
+        break;
+      case 'postpone':
+        await HapticFeedback.mediumImpact();
+        break;
+      case 'button_tap':
+      default:
+        await HapticFeedback.lightImpact();
+        break;
+    }
+  }
+
+  Future<void> _playChime({String? hapticEvent}) async {
     if (widget.hapticsEnabled) {
-      unawaited(HapticFeedback.lightImpact());
+      unawaited(_triggerHapticPattern(hapticEvent ?? 'button_tap'));
     }
     if (widget.soundEnabled) {
       if (widget.chimeStyle == 'system_alert') {
@@ -2139,13 +2165,13 @@ class TimerHomePageState extends State<TimerHomePage>
     _lastBlinkReminderAt = now;
 
     if (widget.hapticsEnabled) {
-      unawaited(HapticFeedback.selectionClick());
+      unawaited(_triggerHapticPattern('blink_reminder'));
     }
 
     // On Linux/desktop the notification carries no sound channel, so play
     // the chime in-app immediately.  On Android the channel handles it.
     if (!kIsWeb && (Platform.isLinux || Platform.isMacOS || Platform.isWindows)) {
-      unawaited(_playChime());
+      unawaited(_playChime(hapticEvent: 'blink_reminder'));
     }
 
     final customMsg = widget.blinkReminderCustomMessage.isNotEmpty
