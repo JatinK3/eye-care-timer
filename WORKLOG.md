@@ -215,7 +215,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 ### 2026-06-29 (Session ongoing — IST)
 
 **Completed this session:**
-- **Fixed duplicate launcher icons on GNOME/Linux:** Removed the duplicate `blinkkind.desktop` installation from both DEB and RPM packaging pipelines, keeping only the standard `com.jatin.eyecaretimer.desktop` launcher matching the GTK application ID.
+- **Fixed duplicate launcher icons on GNOME/Linux:** Removed the duplicate `blinkkind.desktop` installation from both DEB and RPM pipelines, keeping only the standard `com.jatin.eyecaretimer.desktop` launcher matching the GTK application ID.
 - **Cleaned up stale launcher files:** Cleaned up local and system application entry paths to remove duplicate entries in the GNOME app grid.
 - **Fixed zombie background process sending notifications on exit:** Added `exit(0)` to the application's quit routine in `DesktopIntegrationService` and implemented a `dispose` method in `NotificationService` to terminate background loops, active Dart timers, and the `dbus-monitor` child process. This ensures that exiting the app via the system tray fully kills the app process and terminates all blink reminder notifications.
 - **Restored native title bar and window controls on Linux:** Modified `DesktopIntegrationService` to bypass hiding the title bar on Linux platforms, allowing GNOME (Ubuntu/Fedora) to render standard close, minimize, and maximize buttons. Added native GTK setting preference `gtk-application-prefer-dark-theme = TRUE` inside `my_application.cc` to ensure that the header/title bar matches the application's dark theme interface automatically.
@@ -225,6 +225,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - **Improved packaging pipeline installation steps:** Modified `tool/package_linux.sh` to automatically run process termination (`pkill -f eye_care_timer` and `pkill -f blinkkind`) before removing the old package and installing the new one. This prevents Linux file-lock conflicts during system updates.
 - **Fixed timer progress ring blur box artifacts:** Replaced the `MaskFilter.blur` based outer halo of the glowing tip dot with a native `RadialGradient` shader in the CustomPainter. This resolves a known rendering issue on Skia/Impeller backends where a square boundary box with thin outlines/lines is drawn around blurred graphics (especially visible in light mode).
 - **Disabled default state reset and removed interactive prompt:** Modified `tool/package_linux.sh` to always preserve your settings and timer history on updates. The interactive prompt was removed, and user data is now only cleared if the script is run with the explicit `-c` or `--clear-state` flag.
+- **Redesigned eye icon size and geometry on Dashboard Clock:** Scaled up the eye icon size from `16` to `26` (normal mode) and `22` to `36` (focus mode) to fit the clock dial properly. Adjusted the bezier anchor coordinates (from `0.1` and `0.9` width bounds to `0.16` and `0.84`) and scaled the vertical openness limit (from `0.33` to `0.42`) so that the eye appears naturally round and open, rather than sleepily skewed and flat.
 
 **Commits this session:**
 - `fix(packaging): remove duplicate desktop launcher to prevent double icons in app grid`
@@ -236,6 +237,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - `fix(packaging): terminate running instances before installing on Linux`
 - `fix(timer): replace tip dot MaskFilter.blur with RadialGradient to eliminate blur box artifacts`
 - `fix(packaging): default to preserving local state and remove interactive prompt`
+- `fix(timer): increase eye size and update geometry to be less skewed and more open`
 
 ---
 
