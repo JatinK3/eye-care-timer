@@ -232,12 +232,16 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - **Fixed UI rendering bugs (dial square background & custom switch overlaps)**:
   - Timer Dial: Removed `RepaintBoundary` from `_AnimatedTimerDial` in [timer_home_page.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/features/timer/timer_home_page.dart). On Linux/Impeller/Skia, repainting layers of transparent custom-painted widgets containing soft blur/glow shadows (`MaskFilter.blur`) inside scale transitions would produce a solid rectangular backing texture. Removing the boundary allows drawing directly onto the main application window surface, resolving the solid square background box completely.
   - Custom Theme Switch: Rearranged the `Stack` rendering order of `_AnimatedThemeSwitch` in [settings_page.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/features/settings/settings_page.dart). The static background light/dark icons are now placed first (at the bottom of the stack) and the sliding knob container last (on top of the stack). This stops the static icons from rendering on top of the sliding knob, eliminating the overlapping icon visual artifact.
+- **Fixed System Accent Color Dashboard Integration**:
+  - Updated [timer_home_page.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/features/timer/timer_home_page.dart) to fully respect the "Use system accent color" setting.
+  - Calculated background gradients, floating glassmorphic blobs, focus mode primary theme overrides, transition flash colors, and work progress colors dynamically from the active system theme (`Theme.of(context).colorScheme.primary`) rather than fallback static color presets when system accent color is enabled.
 
 **Commits this session:**
 - `fix(timer): discard stale session and reset counters when day changes`
 - `fix(desktop): resolve boot startup tray menu synchronization and window exit hang`
 - `fix(timer): reset streak count on day change in native service and enlarge tray icon text`
 - `fix(ui): resolve timer dial solid square background and theme switch overlaps`
+- `fix(ui): apply system accent color to dashboard gradient and glassmorphic blobs`
 
 ---
 
