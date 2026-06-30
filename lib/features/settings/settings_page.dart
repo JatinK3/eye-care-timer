@@ -137,7 +137,9 @@ class SettingsPage extends StatefulWidget {
   final void Function(String) setCustomAccentColorHex;
   final void Function(bool) setUseSystemAccent;
   final bool startMinimized;
+  final bool reducedMotionEnabled;
   final void Function(bool) setStartMinimized;
+  final void Function(bool) setReducedMotionEnabled;
   final bool autoStartSchedule;
   final void Function(bool) setAutoStartSchedule;
 
@@ -274,7 +276,9 @@ class SettingsPage extends StatefulWidget {
     required this.setCustomAccentColorHex,
     required this.setUseSystemAccent,
     required this.startMinimized,
+    required this.reducedMotionEnabled,
     required this.setStartMinimized,
+    required this.setReducedMotionEnabled,
     required this.autoStartSchedule,
     required this.setAutoStartSchedule,
 
@@ -1757,6 +1761,20 @@ class _SettingsPageState extends State<SettingsPage>
           subtitle: Text(l10n.settingsUseSystemAccentSubtitle),
           value: widget.useSystemAccent,
           onChanged: widget.setUseSystemAccent,
+        ),
+      ),
+      SettingItem(
+        title: l10n.settingsReducedMotion,
+        subtitle: l10n.settingsReducedMotionSubtitle,
+        keywords: ['motion', 'animation', 'reduce', 'accessibility', 'effects'],
+        category: 'Theme & Appearance',
+        widget: SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.animation_outlined),
+          title: Text(l10n.settingsReducedMotion),
+          subtitle: Text(l10n.settingsReducedMotionSubtitle),
+          value: widget.reducedMotionEnabled,
+          onChanged: widget.setReducedMotionEnabled,
         ),
       ),
       if (!widget.useSystemAccent) ...[

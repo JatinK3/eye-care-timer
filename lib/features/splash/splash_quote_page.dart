@@ -6,8 +6,13 @@ import '../../generated/l10n/app_localizations.dart';
 
 class SplashQuotePage extends StatefulWidget {
   final VoidCallback onComplete;
+  final bool reducedMotionEnabled;
 
-  const SplashQuotePage({super.key, required this.onComplete});
+  const SplashQuotePage({
+    super.key, 
+    required this.onComplete,
+    this.reducedMotionEnabled = false,
+  });
 
   @override
   State<SplashQuotePage> createState() => _SplashQuotePageState();
@@ -40,7 +45,9 @@ class _SplashQuotePageState extends State<SplashQuotePage>
 
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: widget.reducedMotionEnabled 
+          ? Duration.zero 
+          : const Duration(milliseconds: 1000),
     );
 
     _slideAnimation = Tween<Offset>(
@@ -66,7 +73,8 @@ class _SplashQuotePageState extends State<SplashQuotePage>
     _animationController.forward();
 
     // Auto advance after 2.5 seconds (1000ms animation + 1500ms display)
-    _autoAdvanceTimer = Timer(const Duration(milliseconds: 2500), () {
+    final delayMs = widget.reducedMotionEnabled ? 1500 : 2500;
+    _autoAdvanceTimer = Timer(Duration(milliseconds: delayMs), () {
       if (mounted) {
         widget.onComplete();
       }

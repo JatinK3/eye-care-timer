@@ -506,6 +506,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveAmoledDarkEnabled(enabled));
   }
 
+  void _setReducedMotionEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(reducedMotionEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveReducedMotionEnabled(enabled));
+  }
+
   void _setCustomAccentColorHex(String hex) {
     setState(() {
       _settings = _settings.copyWith(customAccentColorHex: hex);
@@ -1091,11 +1098,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           amoledDarkEnabled: _settings.amoledDarkEnabled,
           customAccentColorHex: _settings.customAccentColorHex,
           useSystemAccent: _settings.useSystemAccent,
+          startMinimized: _settings.startMinimized,
+          reducedMotionEnabled: _settings.reducedMotionEnabled,
           setAmoledDarkEnabled: _setAmoledDarkEnabled,
           setCustomAccentColorHex: _setCustomAccentColorHex,
           setUseSystemAccent: _setUseSystemAccent,
-          startMinimized: _settings.startMinimized,
           setStartMinimized: _setStartMinimized,
+          setReducedMotionEnabled: _setReducedMotionEnabled,
           activeProfile: _settings.activeProfile,
           autoPostponeApps: _settings.autoPostponeApps,
           setActiveProfile: _setActiveProfile,
@@ -1247,6 +1256,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                 )
               : _showSplash
               ? SplashQuotePage(
+                  reducedMotionEnabled: _settings.reducedMotionEnabled,
                   onComplete: () {
                     setState(() => _showSplash = false);
                   },
@@ -1289,6 +1299,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   maxConsecutiveSkips: _settings.maxConsecutiveSkips,
                   allowPostpone: _settings.allowPostpone,
                   postponeDurationSeconds: _settings.postponeDurationSeconds,
+                  reducedMotionEnabled: _settings.reducedMotionEnabled,
                   smartIdleEnabled: _settings.smartIdleEnabled,
                   breakVisualizerStyle: _settings.breakVisualizerStyle,
                   breakShowClock: _settings.breakShowClock,

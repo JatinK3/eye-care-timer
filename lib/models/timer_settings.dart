@@ -53,6 +53,7 @@ class TimerSettings {
   static const int defaultMaxConsecutiveSkips = 0; // 0 means no limit
   static const String defaultActiveProfile = 'standard';
   static const String defaultAutoPostponeApps = '';
+  static const bool defaultReducedMotionEnabled = false;
 
   final int workDurationSeconds;
   final int breakDurationSeconds;
@@ -111,6 +112,7 @@ class TimerSettings {
   final bool autoPauseOnMediaEnabled;
   final String activeProfile;
   final String autoPostponeApps;
+  final bool reducedMotionEnabled;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -170,6 +172,7 @@ class TimerSettings {
     required this.autoPauseOnMediaEnabled,
     required this.activeProfile,
     required this.autoPostponeApps,
+    required this.reducedMotionEnabled,
   });
 
   const TimerSettings.defaults()
@@ -229,7 +232,8 @@ class TimerSettings {
       maxConsecutiveSkips = defaultMaxConsecutiveSkips,
       autoPauseOnMediaEnabled = defaultAutoPauseOnMediaEnabled,
       activeProfile = defaultActiveProfile,
-      autoPostponeApps = defaultAutoPostponeApps;
+      autoPostponeApps = defaultAutoPostponeApps,
+      reducedMotionEnabled = defaultReducedMotionEnabled;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -289,6 +293,7 @@ class TimerSettings {
     bool? autoPauseOnMediaEnabled,
     String? activeProfile,
     String? autoPostponeApps,
+    bool? reducedMotionEnabled,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -363,6 +368,7 @@ class TimerSettings {
           autoPauseOnMediaEnabled ?? this.autoPauseOnMediaEnabled,
       activeProfile: activeProfile ?? this.activeProfile,
       autoPostponeApps: autoPostponeApps ?? this.autoPostponeApps,
+      reducedMotionEnabled: reducedMotionEnabled ?? this.reducedMotionEnabled,
     );
   }
 
@@ -424,6 +430,7 @@ class TimerSettings {
       'autoPauseOnMediaEnabled': autoPauseOnMediaEnabled,
       'activeProfile': activeProfile,
       'autoPostponeApps': autoPostponeApps,
+      'reducedMotionEnabled': reducedMotionEnabled,
     };
   }
 

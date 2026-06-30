@@ -39,6 +39,11 @@ class DesktopIntegrationService extends WindowListener {
   String? _lastIconPath;
   DesktopTimerState? _latestState;
 
+  String? _lastTrayText;
+  double? _lastTrayProgress;
+  ui.Color? _lastTrayColor;
+  bool? _lastTrayBlinkNudging;
+
   DesktopTimerState? get latestState => _latestState;
 
   List<Rect> _breakMonitorRects = const [];
@@ -629,6 +634,23 @@ class DesktopIntegrationService extends WindowListener {
         ringColor = Colors.grey;
         text = '';
       }
+
+      // Throttle PNG rendering: only redraw if the visual state changes significantly.
+      // Progress is rounded to 100 steps (1%) to avoid redrawing every single second 
+      // on long work phases where the text hasn't changed.
+      final roundedProgress = (progress * 100).roundToDouble() / 100.0;
+      if (_lastIconPath != null &&
+          _lastTrayText == text &&
+          _lastTrayColor == ringColor &&
+          _lastTrayProgress == roundedProgress &&
+          _lastTrayBlinkNudging == state.isBlinkNudging) {
+        return;
+      }
+
+      _lastTrayText = text;
+      _lastTrayColor = ringColor;
+      _lastTrayProgress = roundedProgress;
+      _lastTrayBlinkNudging = state.isBlinkNudging;
 
       // 3. Draw progress ring (thicker stroke, maximized to edge)
       final ringPaint = Paint()

@@ -101,6 +101,7 @@ class TimerHomePage extends StatefulWidget {
   final bool blinkReminderInteractiveEnabled;
   final bool autoPauseOnMediaEnabled;
   final String autoPostponeApps;
+  final bool reducedMotionEnabled;
   final Future<bool> Function()? isCameraInUseOverride;
   final Future<bool> Function()? isMicInUseOverride;
 
@@ -127,6 +128,7 @@ class TimerHomePage extends StatefulWidget {
     required this.allowSkip,
     required this.allowPostpone,
     required this.postponeDurationSeconds,
+    required this.reducedMotionEnabled,
     required this.smartIdleEnabled,
     required this.breakVisualizerStyle,
     required this.breakShowClock,
@@ -448,36 +450,44 @@ class TimerHomePageState extends State<TimerHomePage>
       vsync: this,
       duration: const Duration(seconds: 1),
     );
-    _pulseAnimation =
-        Tween<double>(begin: 1.0, end: 1.08).animate(
-          CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-        )..addStatusListener((status) {
-          if (status == AnimationStatus.completed) {
-            _pulseController.reverse();
-          } else if (status == AnimationStatus.dismissed) {
-            if (_remainingSeconds <= 5 && _isRunning) {
-              _pulseController.forward();
+    if (widget.reducedMotionEnabled) {
+      _pulseAnimation = const AlwaysStoppedAnimation(1.0);
+    } else {
+      _pulseAnimation =
+          Tween<double>(begin: 1.0, end: 1.08).animate(
+            CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+          )..addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
+              _pulseController.reverse();
+            } else if (status == AnimationStatus.dismissed) {
+              if (_remainingSeconds <= 5 && _isRunning) {
+                _pulseController.forward();
+              }
             }
-          }
-        });
+          });
+    }
 
     // Transition flash animation setup
     _flashController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _flashAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 0.55)
-            .chain(CurveTween(curve: Curves.easeIn)),
-        weight: 35,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.55, end: 0.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
-        weight: 65,
-      ),
-    ]).animate(_flashController);
+    if (widget.reducedMotionEnabled) {
+      _flashAnimation = const AlwaysStoppedAnimation(0.0);
+    } else {
+      _flashAnimation = TweenSequence<double>([
+        TweenSequenceItem(
+          tween: Tween<double>(begin: 0.0, end: 0.55)
+              .chain(CurveTween(curve: Curves.easeIn)),
+          weight: 35,
+        ),
+        TweenSequenceItem(
+          tween: Tween<double>(begin: 0.55, end: 0.0)
+              .chain(CurveTween(curve: Curves.easeOut)),
+          weight: 65,
+        ),
+      ]).animate(_flashController);
+    }
 
     _restoreInitialSession();
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {

@@ -88,6 +88,7 @@ class PreferencesService {
   static const String autoPauseOnMediaEnabledKey = 'autoPauseOnMediaEnabled';
   static const String activeProfileKey = 'activeProfile';
   static const String autoPostponeAppsKey = 'autoPostponeApps';
+  static const String reducedMotionEnabledKey = 'reducedMotionEnabled';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -251,6 +252,9 @@ class PreferencesService {
       autoPostponeApps:
           prefs.getString(autoPostponeAppsKey) ??
           TimerSettings.defaultAutoPostponeApps,
+      reducedMotionEnabled:
+          prefs.getBool(reducedMotionEnabledKey) ??
+          TimerSettings.defaultReducedMotionEnabled,
     );
   }
 
@@ -629,6 +633,7 @@ class PreferencesService {
     );
     await prefs.setString(activeProfileKey, settings.activeProfile);
     await prefs.setString(autoPostponeAppsKey, settings.autoPostponeApps);
+    await prefs.setBool(reducedMotionEnabledKey, settings.reducedMotionEnabled);
   }
 
   Future<bool> loadOnboardingCompleted() async {
@@ -724,6 +729,11 @@ class PreferencesService {
   Future<void> saveAmoledDarkEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(amoledDarkEnabledKey, enabled);
+  }
+
+  Future<void> saveReducedMotionEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(reducedMotionEnabledKey, enabled);
   }
 
   Future<void> saveCustomAccentColorHex(String hex) async {

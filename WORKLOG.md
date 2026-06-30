@@ -194,7 +194,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] **CI + expanded test coverage** — automated analyze/test on push; widen widget/unit coverage as new features land.
 - [ ] **Desktop auto-update + store distribution** — an update channel for the `.deb`/`.rpm`, plus publishing to Flathub/Snap, Microsoft Store, App Store, Play Store, and Homebrew.
 - [ ] **Opt-in, privacy-respecting analytics & crash reporting** — understand real usage/compliance without compromising the local-first stance.
-- [ ] **Accessibility & performance audit** — screen-reader pass, reduced-motion option, colorblind-safe palettes; revisit the once-per-second tray PNG render cadence on desktop.
+- [x] **Accessibility & performance audit** — screen-reader pass, reduced-motion option, colorblind-safe palettes; revisit the once-per-second tray PNG render cadence on desktop.
 
 ### P4 — Future AI-Driven Wellness Features
 - [ ] **AI Fatigue & Blink Detection** — local, privacy-first computer vision model using front camera (e.g. MediaPipe) to detect blink rate and eye fatigue to trigger breaks dynamically.

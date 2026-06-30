@@ -147,6 +147,8 @@
   "settingsDarkModeSubtitle": "डार्क या लाइट थीम इंटरफ़ेस टॉगल करें",
   "settingsAmoledDarkMode": "AMOLED डार्क मोड",
   "settingsAmoledDarkModeSubtitle": "बैटरी बचाने के लिए शुद्ध काले रंग के बैकग्राउंड का उपयोग करें",
+  "settingsReducedMotion": "कम मोशन (Reduced motion)",
+  "settingsReducedMotionSubtitle": "यूआई एनिमेशन और जटिल प्रभावों को कम करें",
   "settingsUseSystemAccent": "सिस्टम एक्सेंट रंग का उपयोग करें",
   "settingsUseSystemAccentSubtitle": "ओएस सिस्टम-एक्सेंट गतिशील रंगों का पालन करें",
   "settingsColorPreset": "रंग प्रीसेट",

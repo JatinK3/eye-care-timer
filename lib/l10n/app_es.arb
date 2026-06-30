@@ -147,6 +147,8 @@
   "settingsDarkModeSubtitle": "Alternar interfaz de tema oscuro o claro",
   "settingsAmoledDarkMode": "Modo oscuro AMOLED",
   "settingsAmoledDarkModeSubtitle": "Usar fondos negros puros para ahorrar batería",
+  "settingsReducedMotion": "Movimiento reducido",
+  "settingsReducedMotionSubtitle": "Minimizar animaciones y efectos complejos",
   "settingsUseSystemAccent": "Usar color de acento del sistema",
   "settingsUseSystemAccentSubtitle": "Seguir los colores dinámicos de acento del SO",
   "settingsColorPreset": "Ajuste de color",

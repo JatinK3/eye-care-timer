@@ -628,7 +628,15 @@
   },
   "settingsAmoledDarkModeSubtitle": "Use pure black backgrounds for battery saving",
   "@settingsAmoledDarkModeSubtitle": {
-    "description": "Subtitle for AMOLED dark mode setting"
+    "description": "Subtitle for AMOLED dark mode toggle"
+  },
+  "settingsReducedMotion": "Reduced motion",
+  "@settingsReducedMotion": {
+    "description": "Toggle for reduced motion"
+  },
+  "settingsReducedMotionSubtitle": "Minimize UI animations and complex effects",
+  "@settingsReducedMotionSubtitle": {
+    "description": "Subtitle for reduced motion toggle"
   },
   "settingsUseSystemAccent": "Use system accent color",
   "@settingsUseSystemAccent": {
