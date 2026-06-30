@@ -224,9 +224,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Added widget test coverage verifying stale yesterday session discarding behavior.
 - **Fixed desktop tray menu state synchronization on boot/startup**:
   - Replaced `WidgetsBinding.instance.addPostFrameCallback` with `scheduleMicrotask` (from `dart:async`) for initial session loading, catch-up, and timer auto-start routines. This ensures that session calculations and tray updates execute immediately on the next tick of the Dart event loop during minimized/hidden background startups, rather than hanging indefinitely waiting for a frame to render.
-  - Added a 200ms timeout to `windowManager.destroy()` inside `_quitApp()`- **Enlarged and polished the desktop tray indicator icon numbers**:
+  - Added a 200ms timeout to `windowManager.destroy()` inside `_quitApp()` to prevent the tray's \"Exit\" handler from locking up on Linux when the window is hidden/unmapped.
+- **Enlarged and polished the desktop tray indicator icon numbers**:
   - Adjusted the canvas-painted tray indicator progress ring stroke width to `3.5` scale to make the progress circle bolder and clearer at small panel sizes.
-  - Set the font sizes of the countdown numbers (2-digit font size to `17.5` scale, 3-digit font size to `13.5` scale) with `w900` weight (extra bold) to guarantee a clean margin/padding inside the bold circle boundaries without overlap.
+  - Set the font sizes of the countdown numbers (2-digit font size to `19.5` scale (39px), 3-digit font size to `14.5` scale (29px)) with `w900` weight (extra bold) to render a very clear and prominent number inside the bold circle.
   - Shifted the text drawing coordinates slightly upwards (`-1.0 * scale` offset) to visually center the digits inside the progress circle.
 - **Fixed UI rendering bugs (dial square background & custom switch overlaps)**:
   - Timer Dial: Removed `RepaintBoundary` from `_AnimatedTimerDial` in [timer_home_page.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/features/timer/timer_home_page.dart). On Linux/Impeller/Skia, repainting layers of transparent custom-painted widgets containing soft blur/glow shadows (`MaskFilter.blur`) inside scale transitions would produce a solid rectangular backing texture. Removing the boundary allows drawing directly onto the main application window surface, resolving the solid square background box completely.
@@ -242,6 +243,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - `fix(ui): resolve timer dial solid square background and theme switch overlaps`
 - `fix(ui): apply system accent color to dashboard gradient and glassmorphic blobs`
 - `fix(desktop): increase tray icon ring thickness and adjust countdown font size`
+- `fix(desktop): increase tray icon countdown text size to 39px`
 
 ---
 
