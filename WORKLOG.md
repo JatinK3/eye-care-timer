@@ -221,9 +221,13 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Flutter: Added day change verification at the beginning of `_syncTimerWithClock` and build cycles to reset the in-memory daily breaks (`_streakCount`) to `0` and stop the background timer if it belongs to a past day.
   - Android: Appended a `lastSavedAt` epoch milliseconds timestamp when persisting active state, and added a calendar-day match query in `restoreState()`. Discards/clears background session preferences and stops the service when the saved state is from a different day.
   - Added widget test coverage verifying stale yesterday session discarding behavior.
+- **Fixed desktop tray menu state synchronization on boot/startup**:
+  - Replaced `WidgetsBinding.instance.addPostFrameCallback` with `scheduleMicrotask` (from `dart:async`) for initial session loading, catch-up, and timer auto-start routines. This ensures that session calculations and tray updates execute immediately on the next tick of the Dart event loop during minimized/hidden background startups, rather than hanging indefinitely waiting for a frame to render.
+  - Added a 200ms timeout to `windowManager.destroy()` inside `_quitApp()` to prevent the tray's "Exit" handler from locking up on Linux when the window is hidden/unmapped.
 
 **Commits this session:**
 - `fix(timer): discard stale session and reset counters when day changes`
+- `fix(desktop): resolve boot startup tray menu synchronization and window exit hang`
 
 ---
 
