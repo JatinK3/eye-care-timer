@@ -229,7 +229,24 @@ class BreakOverlayService {
         final result = await Process.run('pactl', ['list', 'sink-inputs']);
         if (result.exitCode == 0) {
           final output = result.stdout as String;
-          return output.contains('Corked: no');
+          // Split by "Sink Input #" to analyze each stream independently
+          final inputs = output.split(RegExp(r'Sink Input #\d+'));
+          for (final input in inputs) {
+            if (input.trim().isEmpty) continue;
+            
+            // Check if this stream is active (uncorked)
+            final isUncorked = input.toLowerCase().contains('corked: no');
+            if (isUncorked) {
+              // Check if this stream belongs to our own app (BlinkKind / eye_care_timer)
+              final isOurApp = input.contains('eye_care_timer') || 
+                               input.contains('blinkkind') ||
+                               input.contains('com.jatin.eyecaretimer');
+              if (!isOurApp) {
+                // Found an active media stream from another application (e.g. Chrome, Spotify)
+                return true;
+              }
+            }
+          }
         }
       } catch (e) {
         // pactl not found
