@@ -702,7 +702,7 @@ class DesktopIntegrationService extends WindowListener {
             text: text,
             style: TextStyle(
               color: Colors.white,
-              fontSize: text.length > 2 ? (13.5 * scale) : (17.5 * scale),
+              fontSize: text.length > 2 ? (14.5 * scale) : (19.5 * scale),
               fontWeight: ui.FontWeight.w900,
               height: 1.0,
             ),
