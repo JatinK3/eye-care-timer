@@ -573,8 +573,8 @@ class DesktopIntegrationService extends WindowListener {
       final width = 64.0;
       final height = 64.0;
       final scale = width / 32.0;
-      final strokeWidth = 3.0 * scale;
-      final ringRadius = (width / 2) - (strokeWidth / 2);
+      final strokeWidth = 2.5 * scale;
+      final ringRadius = (width / 2) - (strokeWidth / 2) - 0.5;
 
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, width, height));
@@ -702,8 +702,8 @@ class DesktopIntegrationService extends WindowListener {
             text: text,
             style: TextStyle(
               color: Colors.white,
-              fontSize: text.length > 2 ? (13.0 * scale) : (18.5 * scale),
-              fontWeight: ui.FontWeight.bold,
+              fontSize: text.length > 2 ? (15.5 * scale) : (21.5 * scale),
+              fontWeight: ui.FontWeight.w900,
               height: 1.0,
             ),
           ),
@@ -714,7 +714,7 @@ class DesktopIntegrationService extends WindowListener {
           canvas,
           Offset(
             (width - textPainter.width) / 2,
-            (height - textPainter.height) / 2,
+            (height - textPainter.height) / 2 - (1.0 * scale),
           ),
         );
       } else {

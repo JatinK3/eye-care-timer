@@ -53,6 +53,13 @@ class TimerForegroundService : Service() {
     var postponedBreakDuration = -1
     var currentPhaseInitialDuration = 0
     var autoPostponeApps = ""
+
+    private var currentDateString: String? = null
+
+    private fun getTodayDateString(): String {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        return sdf.format(java.util.Date())
+    }
     var screenOffTimeMillis = 0L
     var isScreenOffPaused = false
     var pausedRemainingSeconds = 0L
@@ -122,6 +129,7 @@ class TimerForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         activeService = this
+        currentDateString = getTodayDateString()
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_SCREEN_OFF)
@@ -133,6 +141,12 @@ class TimerForegroundService : Service() {
     private val tick = object : Runnable {
         override fun run() {
             if (deadlineMillis <= 0L) return
+            val today = getTodayDateString()
+            if (currentDateString != null && currentDateString != today) {
+                currentDateString = today
+                streakCount = 0
+                saveState()
+            }
             if (secondsRemaining() <= 0L) {
                 handleComplete(deadlineMillis)
                 return
