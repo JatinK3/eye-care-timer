@@ -212,6 +212,21 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Session Log
 
+### 2026-06-30 (Session ongoing — IST)
+
+**Completed this session:**
+- **Fixed stale background session restoration and breaks-taken-today sync on day change**:
+  - Implemented day change validation in both Flutter and Android native foreground services.
+  - Flutter: Added calendar day comparison of the initial session timestamps (`phaseStartedAt` or `phaseEndsAt`) against `now` during launch session restore. Any session from a previous day is immediately discarded, and a fresh work phase is started if `autoStartSchedule` is active.
+  - Flutter: Added day change verification at the beginning of `_syncTimerWithClock` and build cycles to reset the in-memory daily breaks (`_streakCount`) to `0` and stop the background timer if it belongs to a past day.
+  - Android: Appended a `lastSavedAt` epoch milliseconds timestamp when persisting active state, and added a calendar-day match query in `restoreState()`. Discards/clears background session preferences and stops the service when the saved state is from a different day.
+  - Added widget test coverage verifying stale yesterday session discarding behavior.
+
+**Commits this session:**
+- `fix(timer): discard stale session and reset counters when day changes`
+
+---
+
 ### 2026-06-29 (Session ongoing — IST)
 
 **Completed this session:**
