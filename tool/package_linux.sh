@@ -582,17 +582,14 @@ if [ -n "$_INSTALL_PKG" ]; then
             fi
         done
 
-        if pgrep -x eye_care_timer >/dev/null 2>&1; then
-            echo "Stopping running BlinkKind process..."
-            pkill -x eye_care_timer || true
-            sleep 1
-            echo "Restarting BlinkKind..."
-            gtk-launch com.jatin.eyecaretimer.desktop >/dev/null 2>&1 || gtk-launch com.jatin.eyecaretimer >/dev/null 2>&1 || (blinkkind >/dev/null 2>&1 &)
-            echo "✓ BlinkKind restarted."
-            restarted=true
-        fi
-
-        [ "$restarted" = false ] && echo "No active services or running processes detected. Skipping restart."
+        # Ensure only one instance of BlinkKind is running by terminating any existing process first
+        pkill -x eye_care_timer || true
+        pkill -x blinkkind || true
+        pkill -f com.jatin.eyecaretimer || true
+        sleep 1
+        echo "Restarting BlinkKind..."
+        gtk-launch com.jatin.eyecaretimer.desktop >/dev/null 2>&1 || gtk-launch com.jatin.eyecaretimer >/dev/null 2>&1 || (blinkkind >/dev/null 2>&1 &) || true
+        echo "✓ BlinkKind restarted."
     else
         echo "Skipping installation."
         # Warn if an older system-installed version is still active — the fresh
