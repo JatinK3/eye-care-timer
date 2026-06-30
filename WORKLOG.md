@@ -877,9 +877,10 @@ Ideas captured from design review session. Prioritized by impact. None are sched
 
 ### 🟡 Medium Impact (polish & feel)
 
-- [ ] **Compact Android home-screen widget redesign** — the current widget is functional but plain; give it a sleek minimal card style with the ring, phase label, and countdown typeset in the app's Inter font.
+- [x] **Compact Android home-screen widget redesign** — the current widget is functional but plain; give it a sleek minimal card style with the ring, phase label, and countdown typeset in the app's Inter font.
+- [ ] **Desktop interactive mini-mode / PiP** — an always-on-top micro window for macOS/Windows/Linux showing only a tiny progress ring in the screen corner.
+- [x] **Haptic feedback patterns by event** — distinct vibration patterns for work-phase-complete vs. break-start vs. blink-reminder vs. postpone, instead of the current uniform haptic pulse.
 - [x] **Break countdown ring on the break screen itself** — a subtle thin ring around the break card showing how much of the break has elapsed, so users can gauge progress without needing to read the number.
-- [ ] **Haptic feedback patterns by event** — distinct vibration patterns for work-phase-complete vs. break-start vs. blink-reminder vs. postpone, instead of the current uniform haptic pulse.
 - [x] **Settings page sectioned cards** — group the flat settings list into visually distinct card sections with section header chips, so the page feels organized rather than a long scrollable list.
 - [x] **Onboarding flow improvement** — replace the current static onboarding text with a short animated explainer of the 20-20-20 rule (animated eye, animated 20ft/6m target, animated 20s clock).
 - [x] **Chime in blink interactive notifications** — play the selected chime sound when the user taps the "I blinked! 👁️" notification action. On Android, assign the chime as the notification channel sound (works without the app being open). On Linux, play via the existing notification callback.

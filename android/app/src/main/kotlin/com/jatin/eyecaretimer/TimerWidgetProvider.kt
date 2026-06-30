@@ -46,7 +46,7 @@ class TimerWidgetProvider : AppWidgetProvider() {
 
         private fun drawProgressRing(context: Context, progress: Float, color: Int): Bitmap {
             val density = context.resources.displayMetrics.density
-            val size = (100 * density).toInt() // 100dp size in pixels
+            val size = (64 * density).toInt() // 64dp size in pixels
             val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
             
