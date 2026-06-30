@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.9] - 2026-06-30
+
+### Added
+- **Continuous Integration (CI):** Added `.github/workflows/ci.yml` for automated `flutter analyze` and `flutter test` checks on push and PR.
+- **Accessibility / Reduced Motion:** Added a "Reduced Motion" toggle under "Theme & Appearance". When enabled, disables the pulsing eye mascot, radial background glow, and full-screen flashing phase transitions for users sensitive to motion.
+- **Android Home-Screen Widget Redesign:** Transformed the Android widget into a sleek, minimal side-by-side card style. Uses a smaller 64dp progress ring, modern `sans-serif-medium` typography, and adjusted button padding for a premium look on the launcher.
+
+### Changed
+- **Linux Tray Icon Rendering Optimization:** Throttled the desktop tray icon rendering loop, using state comparisons to only write new temporary icon files to disk when the timer state actually changes, dramatically reducing disk I/O and CPU usage on Linux.
+- **Flutter 3.27 Compatibility:** Resolved over 20 deprecation warnings in the onboarding screens by migrating `.withOpacity()` to `.withValues(alpha: ...)`.
+
+### Fixed
+- **System Accent Color Dashboard Glow:** Fixed a bug where enabling the system accent color would render the dashboard background gradient as dull grey. The custom hex background generator now uses significantly higher saturation (65%) and lightness for a vibrant, colored gradient.
+- **Settings Serialization Bug:** Restored missing `reducedMotionEnabled` parameters in `SettingsPage` constructor and `TimerSettings.fromJson`, resolving compiler errors and CI failures.
+
 ## [1.0.8] - 2026-06-29
 
 ### Added
