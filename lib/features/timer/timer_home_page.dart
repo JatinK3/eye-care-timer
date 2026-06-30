@@ -572,7 +572,7 @@ class TimerHomePageState extends State<TimerHomePage>
     }
 
     if (widget.aiMotivationEnabled) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      scheduleMicrotask(() {
         _fetchAiHealthInsight();
       });
     }
@@ -946,7 +946,7 @@ class TimerHomePageState extends State<TimerHomePage>
     final session = widget.initialSession;
     if (!session.isActive) {
       if (widget.autoStartSchedule) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+        scheduleMicrotask(() {
           if (mounted && !_isRunning) {
             _startTimer(_workDurationSeconds);
             _checkSchedule();
@@ -965,13 +965,13 @@ class TimerHomePageState extends State<TimerHomePage>
           sessionTime.month == now.month &&
           sessionTime.day == now.day;
       if (!isSameDay) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+        scheduleMicrotask(() {
           if (mounted) {
             widget.clearSession();
           }
         });
         if (widget.autoStartSchedule) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+          scheduleMicrotask(() {
             if (mounted && !_isRunning) {
               _startTimer(_workDurationSeconds);
               _checkSchedule();
@@ -988,7 +988,7 @@ class TimerHomePageState extends State<TimerHomePage>
     }
 
     if (phaseEndsAt == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      scheduleMicrotask(() {
         if (mounted) {
           widget.clearSession();
         }
@@ -1023,7 +1023,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
     // One or more boundaries elapsed while the app was closed. Defer applying
     // until after the first frame because it writes back to parent state.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    scheduleMicrotask(() {
       if (mounted) {
         _applyProjection(
           projection,

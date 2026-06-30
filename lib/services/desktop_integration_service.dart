@@ -470,7 +470,11 @@ class DesktopIntegrationService extends WindowListener {
       debugPrint('Failed to unregister hotkeys on exit: $e');
     }
     windowManager.removeListener(this);
-    await windowManager.destroy();
+    try {
+      await windowManager.destroy().timeout(const Duration(milliseconds: 200));
+    } catch (e) {
+      debugPrint('Failed to destroy window on exit: $e');
+    }
     exit(0);
   }
 
