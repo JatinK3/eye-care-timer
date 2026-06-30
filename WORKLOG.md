@@ -229,11 +229,15 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Adjusted the canvas-painted tray indicator progress ring stroke width to `2.5` scale (giving the inner circle more room).
   - Increased font sizes of the countdown numbers (2-digit font size increased from `18.5` to `21.5` scale, 3-digit font size from `13.0` to `15.5` scale) and changed weight to `w900` (extra bold) to maximize space inside the ring.
   - Shifted the text drawing coordinates slightly upwards (`-1.0 * scale` offset) to visually center the digits inside the progress circle and remove empty padding.
+- **Fixed UI rendering bugs (dial square background & custom switch overlaps)**:
+  - Timer Dial: Removed `RepaintBoundary` from `_AnimatedTimerDial` in [timer_home_page.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/features/timer/timer_home_page.dart). On Linux/Impeller/Skia, repainting layers of transparent custom-painted widgets containing soft blur/glow shadows (`MaskFilter.blur`) inside scale transitions would produce a solid rectangular backing texture. Removing the boundary allows drawing directly onto the main application window surface, resolving the solid square background box completely.
+  - Custom Theme Switch: Rearranged the `Stack` rendering order of `_AnimatedThemeSwitch` in [settings_page.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/features/settings/settings_page.dart). The static background light/dark icons are now placed first (at the bottom of the stack) and the sliding knob container last (on top of the stack). This stops the static icons from rendering on top of the sliding knob, eliminating the overlapping icon visual artifact.
 
 **Commits this session:**
 - `fix(timer): discard stale session and reset counters when day changes`
 - `fix(desktop): resolve boot startup tray menu synchronization and window exit hang`
 - `fix(timer): reset streak count on day change in native service and enlarge tray icon text`
+- `fix(ui): resolve timer dial solid square background and theme switch overlaps`
 
 ---
 
