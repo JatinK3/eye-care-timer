@@ -514,6 +514,8 @@ class TimerSettings {
           defaultCustomAccentColorHex,
       useSystemAccent:
           json['useSystemAccent'] as bool? ?? defaultUseSystemAccent,
+      reducedMotionEnabled:
+          json['reducedMotionEnabled'] as bool? ?? false,
       startMinimized: json['startMinimized'] as bool? ?? defaultStartMinimized,
       autoStartSchedule:
           json['autoStartSchedule'] as bool? ?? defaultAutoStartSchedule,

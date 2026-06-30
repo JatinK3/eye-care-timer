@@ -976,11 +976,23 @@ abstract class AppLocalizations {
   /// **'AMOLED dark mode'**
   String get settingsAmoledDarkMode;
 
-  /// Subtitle for AMOLED dark mode setting
+  /// Subtitle for AMOLED dark mode toggle
   ///
   /// In en, this message translates to:
   /// **'Use pure black backgrounds for battery saving'**
   String get settingsAmoledDarkModeSubtitle;
+
+  /// Toggle for reduced motion
+  ///
+  /// In en, this message translates to:
+  /// **'Reduced motion'**
+  String get settingsReducedMotion;
+
+  /// Subtitle for reduced motion toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Minimize UI animations and complex effects'**
+  String get settingsReducedMotionSubtitle;
 
   /// Title for system accent setting
   ///

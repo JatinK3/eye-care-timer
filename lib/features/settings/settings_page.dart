@@ -3211,6 +3211,7 @@ class _SettingsPageState extends State<SettingsPage>
       amoledDarkEnabled: widget.amoledDarkEnabled,
       customAccentColorHex: widget.customAccentColorHex,
       useSystemAccent: widget.useSystemAccent,
+      reducedMotionEnabled: widget.reducedMotionEnabled,
       startMinimized: widget.startMinimized,
       autoStartSchedule: widget.autoStartSchedule,
       aiMotivationEnabled: widget.aiMotivationEnabled,

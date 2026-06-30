@@ -505,6 +505,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Usar fondos negros puros para ahorrar batería';
 
   @override
+  String get settingsReducedMotion => 'Movimiento reducido';
+
+  @override
+  String get settingsReducedMotionSubtitle =>
+      'Minimizar animaciones y efectos complejos';
+
+  @override
   String get settingsUseSystemAccent => 'Usar color de acento del sistema';
 
   @override

@@ -157,12 +157,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   color: isDark 
-                      ? Colors.white.withOpacity(0.04) 
-                      : Colors.black.withOpacity(0.02),
+                      ? Colors.white.withValues(alpha: 0.04) 
+                      : Colors.black.withValues(alpha: 0.02),
                   border: Border.all(
                     color: isDark 
-                        ? Colors.white.withOpacity(0.08) 
-                        : Colors.black.withOpacity(0.05),
+                        ? Colors.white.withValues(alpha: 0.08) 
+                        : Colors.black.withValues(alpha: 0.05),
                   ),
                 ),
                 child: Row(
@@ -246,12 +246,12 @@ class _ExplainerSlide extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           color: isDark 
-              ? Colors.white.withOpacity(0.03) 
-              : Colors.black.withOpacity(0.015),
+              ? Colors.white.withValues(alpha: 0.03) 
+              : Colors.black.withValues(alpha: 0.015),
           border: Border.all(
             color: isDark 
-                ? Colors.white.withOpacity(0.06) 
-                : Colors.black.withOpacity(0.03),
+                ? Colors.white.withValues(alpha: 0.06) 
+                : Colors.black.withValues(alpha: 0.03),
           ),
         ),
         child: Column(
@@ -354,7 +354,7 @@ class _ScreenTimerPainter extends CustomPainter {
 
     // Draw monitor chassis
     final monitorPaint = Paint()
-      ..color = outlineColor.withOpacity(0.35)
+      ..color = outlineColor.withValues(alpha: 0.35)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
     final rrect = RRect.fromRectAndRadius(
@@ -378,7 +378,7 @@ class _ScreenTimerPainter extends CustomPainter {
 
     // Background track
     final trackPaint = Paint()
-      ..color = outlineColor.withOpacity(0.1)
+      ..color = outlineColor.withValues(alpha: 0.1)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4;
     canvas.drawCircle(center, radius, trackPaint);
@@ -402,7 +402,7 @@ class _ScreenTimerPainter extends CustomPainter {
 
     // Mini hourglass inside
     final hourglassPaint = Paint()
-      ..color = primaryColor.withOpacity(0.8)
+      ..color = primaryColor.withValues(alpha: 0.8)
       ..style = PaintingStyle.fill;
     final hgPath = Path()
       ..moveTo(center.dx - 6, center.dy - 10)
@@ -484,7 +484,7 @@ class _DepthTargetPainter extends CustomPainter {
 
     // Draw vanishing perspective grids
     final gridPaint = Paint()
-      ..color = outlineColor.withOpacity(0.15)
+      ..color = outlineColor.withValues(alpha: 0.15)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
@@ -513,8 +513,8 @@ class _DepthTargetPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            primaryColor.withOpacity(0.25),
-            primaryColor.withOpacity(0.0),
+            primaryColor.withValues(alpha: 0.25),
+            primaryColor.withValues(alpha: 0.0),
           ],
         ).createShader(Rect.fromCircle(center: vanishingPoint, radius: 12.0)),
     );
@@ -537,8 +537,8 @@ class _DepthTargetPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            primaryColor.withOpacity(opacity * 0.35),
-            primaryColor.withOpacity(0.0),
+            primaryColor.withValues(alpha: opacity * 0.35),
+            primaryColor.withValues(alpha: 0.0),
           ],
         ).createShader(Rect.fromCircle(center: targetOffset, radius: targetRadius * 1.8)),
     );
@@ -548,14 +548,14 @@ class _DepthTargetPainter extends CustomPainter {
       targetOffset,
       targetRadius * 0.75,
       Paint()
-        ..color = primaryColor.withOpacity(opacity)
+        ..color = primaryColor.withValues(alpha: opacity)
         ..style = PaintingStyle.fill,
     );
     canvas.drawCircle(
       targetOffset,
       targetRadius * 0.3,
       Paint()
-        ..color = Colors.white.withOpacity(opacity)
+        ..color = Colors.white.withValues(alpha: opacity)
         ..style = PaintingStyle.fill,
     );
   }
@@ -646,7 +646,7 @@ class _BlinkingEyePainter extends CustomPainter {
 
     // Draw outer decoration ring
     final decorationPaint = Paint()
-      ..color = outlineColor.withOpacity(0.1)
+      ..color = outlineColor.withValues(alpha: 0.1)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
     canvas.drawCircle(center, h * 0.4, decorationPaint);
@@ -672,7 +672,7 @@ class _BlinkingEyePainter extends CustomPainter {
     canvas.save();
     if (openAmount > 0.05) {
       final eyeballPaint = Paint()
-        ..color = Colors.white.withOpacity(0.85)
+        ..color = Colors.white.withValues(alpha: 0.85)
         ..style = PaintingStyle.fill;
       canvas.drawPath(outerPath, eyeballPaint);
 
@@ -693,7 +693,7 @@ class _BlinkingEyePainter extends CustomPainter {
         eyeCenter,
         irisRadius * 0.45,
         Paint()
-          ..color = Colors.black.withOpacity(0.9)
+          ..color = Colors.black.withValues(alpha: 0.9)
           ..style = PaintingStyle.fill,
       );
 

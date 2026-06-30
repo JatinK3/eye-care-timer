@@ -496,6 +496,13 @@ class AppLocalizationsHi extends AppLocalizations {
       'बैटरी बचाने के लिए शुद्ध काले रंग के बैकग्राउंड का उपयोग करें';
 
   @override
+  String get settingsReducedMotion => 'कम मोशन (Reduced motion)';
+
+  @override
+  String get settingsReducedMotionSubtitle =>
+      'यूआई एनिमेशन और जटिल प्रभावों को कम करें';
+
+  @override
   String get settingsUseSystemAccent => 'सिस्टम एक्सेंट रंग का उपयोग करें';
 
   @override
