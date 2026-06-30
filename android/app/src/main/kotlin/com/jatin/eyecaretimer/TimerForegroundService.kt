@@ -722,12 +722,26 @@ class TimerForegroundService : Service() {
             .putInt("maxConsecutiveSkips", maxConsecutiveSkips)
             .putInt("consecutiveSkips", consecutiveSkips)
             .putString("autoPostponeApps", autoPostponeApps)
+            .putLong("lastSavedAt", System.currentTimeMillis())
             .commit()
         TimerWidgetProvider.triggerUpdate(this)
     }
 
+    private fun isSameDay(time1: Long, time2: Long): Boolean {
+        val cal1 = java.util.Calendar.getInstance().apply { timeInMillis = time1 }
+        val cal2 = java.util.Calendar.getInstance().apply { timeInMillis = time2 }
+        return cal1.get(java.util.Calendar.YEAR) == cal2.get(java.util.Calendar.YEAR) &&
+               cal1.get(java.util.Calendar.DAY_OF_YEAR) == cal2.get(java.util.Calendar.DAY_OF_YEAR)
+    }
+
     private fun restoreState(): Boolean {
         val preferences = statePreferences()
+        val lastSavedAt = preferences.getLong("lastSavedAt", 0L)
+        val now = System.currentTimeMillis()
+        if (lastSavedAt > 0L && !isSameDay(lastSavedAt, now)) {
+            clearState()
+            return false
+        }
         isScreenOffPaused = preferences.getBoolean("isScreenOffPaused", false)
         pausedRemainingSeconds = preferences.getLong("pausedRemainingSeconds", 0L)
         deadlineMillis = preferences.getLong(EXTRA_DEADLINE, 0L)

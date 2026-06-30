@@ -356,6 +356,7 @@ class TimerHomePageState extends State<TimerHomePage>
   EyeHealthTip? _frozenBreakTip;
   DateTime? _phaseStartedAt;
   DateTime? _phaseEndsAt;
+  late String _currentDateKey;
 
   late final TimerBackgroundService _backgroundService;
   StreamSubscription<DesktopCommand>? _desktopCommandSubscription;
@@ -380,6 +381,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _autoRunCycleLimit = widget.autoRunCycleLimit;
     _autoRunCompletedCycles = widget.initialSession.completedAutoRunCycles;
     _streakCount = widget.initialStreakCount;
+    _currentDateKey = _todayKey();
     _initialDuration = _workDurationSeconds;
     _remainingSeconds = _initialDuration;
     _activeBreakVisualizerStyle = widget.breakVisualizerStyle;
@@ -954,14 +956,43 @@ class TimerHomePageState extends State<TimerHomePage>
       return;
     }
 
+    final phaseStartedAt = session.phaseStartedAt;
+    final phaseEndsAt = session.phaseEndsAt;
+    final sessionTime = phaseStartedAt ?? phaseEndsAt;
+    if (sessionTime != null) {
+      final now = DateTime.now();
+      final isSameDay = sessionTime.year == now.year &&
+          sessionTime.month == now.month &&
+          sessionTime.day == now.day;
+      if (!isSameDay) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            widget.clearSession();
+          }
+        });
+        if (widget.autoStartSchedule) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && !_isRunning) {
+              _startTimer(_workDurationSeconds);
+              _checkSchedule();
+            }
+          });
+        }
+        return;
+      }
+    }
+
     if (session.isPaused) {
       _restorePausedSession(session);
       return;
     }
 
-    final phaseEndsAt = session.phaseEndsAt;
     if (phaseEndsAt == null) {
-      widget.clearSession();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          widget.clearSession();
+        }
+      });
       return;
     }
 
@@ -1042,6 +1073,22 @@ class TimerHomePageState extends State<TimerHomePage>
       autoRunEnabled: _autoRunEnabled,
       autoRunCycleLimit: _autoRunCycleLimit,
     );
+  }
+
+  String _todayKey() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  void _checkDayChange() {
+    final today = _todayKey();
+    if (_currentDateKey != today) {
+      _currentDateKey = today;
+      setState(() {
+        _streakCount = 0;
+      });
+      widget.saveStreakCount(0);
+    }
   }
 
   /// Applies a [projectPhase] result: records any work phases that finished
@@ -1740,11 +1787,43 @@ class TimerHomePageState extends State<TimerHomePage>
       return;
     }
 
+    final now = DateTime.now();
+    final isSameDay = _phaseEndsAt!.year == now.year &&
+        _phaseEndsAt!.month == now.month &&
+        _phaseEndsAt!.day == now.day;
+    if (!isSameDay) {
+      await _backgroundService.stopPhase();
+      setState(() {
+        _isRunning = false;
+        _isPaused = false;
+        _phaseEndsAt = null;
+        _streakCount = 0;
+      });
+      _checkSchedule();
+      return;
+    }
+
     _animationController.stop();
     final bgSession = await _backgroundService.getBackgroundSession();
     if (!mounted) return;
     if (bgSession != null && bgSession['isActive'] == true) {
       final bgEndsAtMillis = bgSession['phaseEndsAtMillis'] as int;
+      final bgEndsAt = DateTime.fromMillisecondsSinceEpoch(bgEndsAtMillis);
+      final now = DateTime.now();
+      final isSameDay = bgEndsAt.year == now.year &&
+          bgEndsAt.month == now.month &&
+          bgEndsAt.day == now.day;
+      if (!isSameDay) {
+        await _backgroundService.stopPhase();
+        setState(() {
+          _isRunning = false;
+          _isPaused = false;
+          _phaseEndsAt = null;
+          _streakCount = 0;
+        });
+        _checkSchedule();
+        return;
+      }
       final bgIsBreak = bgSession['isBreak'] as bool;
       final bgStreakCount = bgSession['streakCount'] as int;
       final bgCompletedAutoRunCycles =
@@ -2943,6 +3022,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
   @override
   Widget build(BuildContext context) {
+    _checkDayChange();
     final isDark = widget.isDark || _isFocusMode;
     final textColor = isDark ? _textColorDark : _textColorLight;
     final ringBgColor = isDark

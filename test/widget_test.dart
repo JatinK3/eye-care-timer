@@ -392,6 +392,33 @@ void main() {
     expect(notificationService.breakReminderCount, 1);
   });
 
+  testWidgets('discards stale session from yesterday', (
+    WidgetTester tester,
+  ) async {
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.sessionIsActiveKey: true,
+      PreferencesService.sessionIsBreakKey: false,
+      PreferencesService.sessionIsPausedKey: false,
+      PreferencesService.sessionInitialDurationSecondsKey: 20 * 60,
+      PreferencesService.sessionRemainingSecondsKey: 15 * 60,
+      PreferencesService.sessionPhaseStartedAtKey: yesterday
+          .subtract(const Duration(minutes: 5))
+          .millisecondsSinceEpoch,
+      PreferencesService.sessionPhaseEndsAtKey: yesterday
+          .add(const Duration(minutes: 15))
+          .millisecondsSinceEpoch,
+      PreferencesService.autoStartScheduleKey: false,
+    });
+
+    final notificationService = await pumpBlinkKindApp(tester);
+
+    expect(find.text('Start'), findsOneWidget);
+    expect(find.text('20:00'), findsOneWidget);
+    expect(notificationService.workReminderCount, 0);
+  });
+
   testWidgets('expired saved work session moves into remaining break', (
     WidgetTester tester,
   ) async {
