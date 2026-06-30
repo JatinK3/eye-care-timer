@@ -65,13 +65,6 @@ To build a release APK or AAB for the Play Store (automatically detects JDK and 
 ./tool/package_android.sh
 ```
 
-### Complete Multi-Platform Release
-To trigger the entire build pipeline for both Android and Linux simultaneously:
-
-```bash
-./tool/release.sh
-```
-
 ---
 
 ## 🎮 How to Use
