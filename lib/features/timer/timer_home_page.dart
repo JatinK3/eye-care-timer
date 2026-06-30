@@ -3803,107 +3803,105 @@ class _AnimatedTimerDial extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dialSize = size * 0.92;
-    return RepaintBoundary(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: ScaleTransition(
-          scale: pulseAnimation,
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: AnimatedBuilder(
-              animation: progressAnimation,
-              child: null,
-              builder: (context, _) {
-                final remainingSeconds =
-                    (initialDuration * progressAnimation.value).ceil();
-                final currentProgressColor = _getCurrentProgressColor(progressAnimation.value);
-                final ringColors = _getRingColors(progressAnimation.value, progressColor);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: ScaleTransition(
+        scale: pulseAnimation,
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: AnimatedBuilder(
+            animation: progressAnimation,
+            child: null,
+            builder: (context, _) {
+              final remainingSeconds =
+                  (initialDuration * progressAnimation.value).ceil();
+              final currentProgressColor = _getCurrentProgressColor(progressAnimation.value);
+              final ringColors = _getRingColors(progressAnimation.value, progressColor);
 
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Frosted glass inner circle
-                    Container(
-                      width: dialSize - strokeWidth * 2,
-                      height: dialSize - strokeWidth * 2,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.04),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.07),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: currentProgressColor.withValues(alpha: 0.08),
-                            blurRadius: 24,
-                            spreadRadius: 2,
-                          ),
-                        ],
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Frosted glass inner circle
+                  Container(
+                    width: dialSize - strokeWidth * 2,
+                    height: dialSize - strokeWidth * 2,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.04),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.07),
+                        width: 1,
                       ),
-                    ),
-                    // Neon ring painter (ghost track + glowing arc + tip dot)
-                    SizedBox(
-                      width: dialSize,
-                      height: dialSize,
-                      child: CustomPaint(
-                        painter: _GradientTimerPainter(
-                          progress: progressAnimation.value,
-                          strokeWidth: strokeWidth,
-                          colors: ringColors,
-                          trackColor: ringBackgroundColor,
-                        ),
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _BlinkKindAnimatedEye(
-                          size: isFocusMode ? 36 : 26,
-                          color: textColor.withValues(alpha: 0.8),
-                          irisColor: currentProgressColor,
-                          isBlinkNudging: isBlinkNudging,
-                          isBreak: isBreak,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _formattedTime(remainingSeconds),
-                          style: Theme.of(context).textTheme.displaySmall
-                              ?.copyWith(
-                                fontSize: isLandscape ? 28 : (isFocusMode ? 54 : null),
-                                fontWeight: FontWeight.w200,
-                                color: textColor,
-                                shadows: isFocusMode
-                                    ? [
-                                        Shadow(
-                                          color: currentProgressColor.withValues(alpha: 0.25),
-                                          blurRadius: 16,
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          statusLabel,
-                          style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(
-                                fontSize: isFocusMode ? 14 : null,
-                                fontWeight: isFocusMode ? FontWeight.w300 : null,
-                                color: textColor.withValues(
-                                  alpha: isFocusMode ? 0.45 : 0.65,
-                                ),
-                                letterSpacing: isFocusMode ? 1.5 : null,
-                              ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: currentProgressColor.withValues(alpha: 0.08),
+                          blurRadius: 24,
+                          spreadRadius: 2,
                         ),
                       ],
                     ),
-                  ],
-                );
-              },
-            ),
+                  ),
+                  // Neon ring painter (ghost track + glowing arc + tip dot)
+                  SizedBox(
+                    width: dialSize,
+                    height: dialSize,
+                    child: CustomPaint(
+                      painter: _GradientTimerPainter(
+                        progress: progressAnimation.value,
+                        strokeWidth: strokeWidth,
+                        colors: ringColors,
+                        trackColor: ringBackgroundColor,
+                      ),
+                    ),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _BlinkKindAnimatedEye(
+                        size: isFocusMode ? 36 : 26,
+                        color: textColor.withValues(alpha: 0.8),
+                        irisColor: currentProgressColor,
+                        isBlinkNudging: isBlinkNudging,
+                        isBreak: isBreak,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _formattedTime(remainingSeconds),
+                        style: Theme.of(context).textTheme.displaySmall
+                            ?.copyWith(
+                              fontSize: isLandscape ? 28 : (isFocusMode ? 54 : null),
+                              fontWeight: FontWeight.w200,
+                              color: textColor,
+                              shadows: isFocusMode
+                                  ? [
+                                      Shadow(
+                                        color: currentProgressColor.withValues(alpha: 0.25),
+                                        blurRadius: 16,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        statusLabel,
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              fontSize: isFocusMode ? 14 : null,
+                              fontWeight: isFocusMode ? FontWeight.w300 : null,
+                              color: textColor.withValues(
+                                alpha: isFocusMode ? 0.45 : 0.65,
+                              ),
+                              letterSpacing: isFocusMode ? 1.5 : null,
+                            ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

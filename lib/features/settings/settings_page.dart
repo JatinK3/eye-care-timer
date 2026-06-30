@@ -3853,6 +3853,30 @@ class _AnimatedThemeSwitchState extends State<_AnimatedThemeSwitch>
             child: Stack(
               children: [
                 Positioned(
+                  left: 9,
+                  top: 9,
+                  child: Opacity(
+                    opacity: (1.0 - _slideAnimation.value).clamp(0.0, 1.0),
+                    child: Icon(
+                      Icons.light_mode,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 9,
+                  top: 9,
+                  child: Opacity(
+                    opacity: _slideAnimation.value.clamp(0.0, 1.0),
+                    child: Icon(
+                      Icons.dark_mode,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+                Positioned(
                   left: 2 + (_slideAnimation.value * 32),
                   top: 2,
                   child: Container(
@@ -3886,30 +3910,6 @@ class _AnimatedThemeSwitchState extends State<_AnimatedThemeSwitch>
                           color: isDark ? Colors.cyanAccent : Colors.white,
                         ),
                       ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 9,
-                  top: 9,
-                  child: Opacity(
-                    opacity: (1.0 - _slideAnimation.value).clamp(0.0, 1.0),
-                    child: Icon(
-                      Icons.light_mode,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: 9,
-                  top: 9,
-                  child: Opacity(
-                    opacity: _slideAnimation.value.clamp(0.0, 1.0),
-                    child: Icon(
-                      Icons.dark_mode,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                     ),
                   ),
                 ),
