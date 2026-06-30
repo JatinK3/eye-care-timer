@@ -138,8 +138,10 @@ class SettingsPage extends StatefulWidget {
   final void Function(bool) setUseSystemAccent;
   final bool startMinimized;
   final bool reducedMotionEnabled;
+  final bool analyticsEnabled;
   final void Function(bool) setStartMinimized;
   final void Function(bool) setReducedMotionEnabled;
+  final void Function(bool) setAnalyticsEnabled;
   final bool autoStartSchedule;
   final void Function(bool) setAutoStartSchedule;
 
@@ -248,6 +250,8 @@ class SettingsPage extends StatefulWidget {
     required this.showOverlayPreview,
     required this.showRealBreakTest,
     required this.refreshOverlayPermissionStatus,
+    required this.analyticsEnabled,
+    required this.setAnalyticsEnabled,
     required this.usageAccessStatus,
     required this.refreshUsageAccessStatus,
     required this.openUsageAccessSettings,
@@ -2718,6 +2722,19 @@ class _SettingsPageState extends State<SettingsPage>
         ),
       ),
       SettingItem(
+        title: 'Opt-in Analytics & Crash Reporting',
+        subtitle: 'Help improve BlinkKind by securely sending anonymous crash reports and basic usage metrics. We never track personal data.',
+        keywords: ['analytics', 'crash', 'reporting', 'sentry', 'telemetry', 'data'],
+        category: 'About BlinkKind',
+        widget: SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Opt-in Analytics & Crash Reporting'),
+          subtitle: const Text('Send anonymous error reports to help improve the app.'),
+          value: widget.analyticsEnabled,
+          onChanged: widget.setAnalyticsEnabled,
+        ),
+      ),
+      SettingItem(
         title: l10n.settingsAboutPrivacyTitle,
         subtitle: l10n.settingsAboutPrivacySubtitle,
         keywords: ['privacy', 'policy', 'data', 'offline', 'security'],
@@ -3230,6 +3247,7 @@ class _SettingsPageState extends State<SettingsPage>
       maxConsecutiveSkips: widget.maxConsecutiveSkips,
       activeProfile: widget.activeProfile,
       autoPostponeApps: widget.autoPostponeApps,
+      analyticsEnabled: widget.analyticsEnabled,
     );
   }
 

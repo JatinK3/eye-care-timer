@@ -89,6 +89,7 @@ class PreferencesService {
   static const String activeProfileKey = 'activeProfile';
   static const String autoPostponeAppsKey = 'autoPostponeApps';
   static const String reducedMotionEnabledKey = 'reducedMotionEnabled';
+  static const String analyticsEnabledKey = 'analyticsEnabled';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -255,6 +256,9 @@ class PreferencesService {
       reducedMotionEnabled:
           prefs.getBool(reducedMotionEnabledKey) ??
           TimerSettings.defaultReducedMotionEnabled,
+      analyticsEnabled:
+          prefs.getBool(analyticsEnabledKey) ??
+          TimerSettings.defaultAnalyticsEnabled,
     );
   }
 
@@ -734,6 +738,11 @@ class PreferencesService {
   Future<void> saveReducedMotionEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(reducedMotionEnabledKey, enabled);
+  }
+
+  Future<void> saveAnalyticsEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(analyticsEnabledKey, enabled);
   }
 
   Future<void> saveCustomAccentColorHex(String hex) async {

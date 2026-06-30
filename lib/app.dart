@@ -513,6 +513,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_preferencesService.saveReducedMotionEnabled(enabled));
   }
 
+  void _setAnalyticsEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(analyticsEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveAnalyticsEnabled(enabled));
+  }
+
   void _setCustomAccentColorHex(String hex) {
     setState(() {
       _settings = _settings.copyWith(customAccentColorHex: hex);
@@ -1100,11 +1107,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
           useSystemAccent: _settings.useSystemAccent,
           startMinimized: _settings.startMinimized,
           reducedMotionEnabled: _settings.reducedMotionEnabled,
+          analyticsEnabled: _settings.analyticsEnabled,
           setAmoledDarkEnabled: _setAmoledDarkEnabled,
           setCustomAccentColorHex: _setCustomAccentColorHex,
           setUseSystemAccent: _setUseSystemAccent,
           setStartMinimized: _setStartMinimized,
           setReducedMotionEnabled: _setReducedMotionEnabled,
+          setAnalyticsEnabled: _setAnalyticsEnabled,
           activeProfile: _settings.activeProfile,
           autoPostponeApps: _settings.autoPostponeApps,
           setActiveProfile: _setActiveProfile,

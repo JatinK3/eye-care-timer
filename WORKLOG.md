@@ -193,7 +193,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [ ] **Physical-device validation** (also tracked above) — Android OEM background restrictions, iOS immersive restore, desktop Wayland/X11 edge cases.
 - [x] **CI + expanded test coverage** — automated analyze/test on push; widen widget/unit coverage as new features land.
 - [ ] **Desktop auto-update + store distribution** — an update channel for the `.deb`/`.rpm`, plus publishing to Flathub/Snap, Microsoft Store, App Store, Play Store, and Homebrew.
-- [ ] **Opt-in, privacy-respecting analytics & crash reporting** — understand real usage/compliance without compromising the local-first stance.
+- [x] **Opt-in, privacy-respecting analytics & crash reporting** — understand real usage/compliance without compromising the local-first stance.
 - [x] **Accessibility & performance audit** — screen-reader pass, reduced-motion option, colorblind-safe palettes; revisit the once-per-second tray PNG render cadence on desktop.
 
 ### P4 — Future AI-Driven Wellness Features
