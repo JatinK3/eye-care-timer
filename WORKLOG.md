@@ -238,6 +238,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - **Fixed Linux Packaging Application Auto-Restart Bug**:
   - Modified [package_linux.sh](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/tool/package_linux.sh) to unconditionally launch/restart the application after a successful DEB or RPM installation.
   - Previously, the restart block checked `pgrep` to see if the process was running. However, because the script calls `pkill` to terminate running instances at the start of installation, `pgrep` would always return false and skip relaunching. It now terminates any lingering processes and starts a clean, single instance using `gtk-launch` at the end of the installation.
+- **Fixed Internal Audio Stream Pausing Break Timer**:
+  - Modified the media playback detector inside [break_overlay_service.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/services/break_overlay_service.dart).
+  - Previously, when the app played its own notification chime or break bell, `pactl list sink-inputs` detected the active (uncorked) stream and paused the timer.
+  - Now, we split and analyze the output block of each stream separately. If the uncorked stream belongs to our own app (matching `eye_care_timer`, `blinkkind`, or `com.jatin.eyecaretimer` properties), we ignore it and only pause the timer for external media sources (like Spotify, Chrome, etc.).
 
 **Commits this session:**
 - `fix(timer): discard stale session and reset counters when day changes`
@@ -247,7 +251,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - `fix(ui): apply system accent color to dashboard gradient and glassmorphic blobs`
 - `fix(desktop): increase tray icon ring thickness and adjust countdown font size`
 - `fix(desktop): increase tray icon countdown text size to 39px`
-- `fix(packaging): ensure app restarts after linux installation completes`ss and adjust countdown font size`
+- `fix(packaging): ensure app restarts after linux installation completes`
+- `fix(desktop): exclude internal application sounds from media playback check`ss and adjust countdown font size`
 - `fix(desktop): increase tray icon countdown text size to 39px`
 
 ---
