@@ -91,17 +91,17 @@ class ColorPresets {
     if (preset == 'Custom' && customHex != null) {
       final color = _parseHexColor(customHex);
       if (isDark) {
-        final darkBase = HSLColor.fromColor(color).withLightness(0.04).withSaturation(0.20).toColor();
-        final darkMid  = HSLColor.fromColor(color).withLightness(0.08).withSaturation(0.25).toColor();
+        final darkBase = HSLColor.fromColor(color).withLightness(0.08).withSaturation(0.60).toColor();
+        final darkMid  = HSLColor.fromColor(color).withLightness(0.14).withSaturation(0.65).toColor();
         return LinearGradient(
-          colors: <Color>[darkBase, darkMid, const Color(0xFF060606)],
+          colors: <Color>[darkBase, darkMid, const Color(0xFF050505)],
           stops: const [0.0, 0.55, 1.0],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         );
       } else {
-        final lightBase = HSLColor.fromColor(color).withLightness(0.97).withSaturation(0.18).toColor();
-        final lightMid  = HSLColor.fromColor(color).withLightness(0.93).withSaturation(0.22).toColor();
+        final lightBase = HSLColor.fromColor(color).withLightness(0.92).withSaturation(0.40).toColor();
+        final lightMid  = HSLColor.fromColor(color).withLightness(0.85).withSaturation(0.50).toColor();
         return LinearGradient(
           colors: <Color>[lightBase, lightMid, Colors.white],
           stops: const [0.0, 0.5, 1.0],
