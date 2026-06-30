@@ -1487,11 +1487,13 @@ class TimerHomePageState extends State<TimerHomePage>
     
     // Trigger transition flash
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
-    final accentColor = ColorPresets.swatchColor(
-      widget.colorPreset,
-      isDarkTheme,
-      customHex: widget.customAccentColorHex,
-    );
+    final accentColor = widget.useSystemAccent
+        ? Theme.of(context).colorScheme.primary
+        : ColorPresets.swatchColor(
+            widget.colorPreset,
+            isDarkTheme,
+            customHex: widget.customAccentColorHex,
+          );
     _flashColor = isBreak ? accentColor : Colors.white;
     _flashController.forward(from: 0.0);
 
@@ -2374,6 +2376,15 @@ class TimerHomePageState extends State<TimerHomePage>
   bool get _canChangeSettings => !_isRunning;
 
   LinearGradient _backgroundGradientFromPreset(String preset, bool isDark) {
+    if (widget.useSystemAccent) {
+      final primaryColor = Theme.of(context).colorScheme.primary;
+      final hex = '#${primaryColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
+      return ColorPresets.backgroundGradient(
+        'Custom',
+        isDark,
+        customHex: hex,
+      );
+    }
     return ColorPresets.backgroundGradient(
       preset,
       isDark,
@@ -2616,6 +2627,12 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   Color _progressColorForMode(bool isBreak, String preset, bool isDark) {
+    if (widget.useSystemAccent) {
+      if (isBreak) {
+        return isDark ? Colors.lightGreenAccent.shade100 : Colors.green;
+      }
+      return Theme.of(context).colorScheme.primary;
+    }
     return ColorPresets.progressColor(
       isBreak: isBreak,
       preset: preset,
@@ -3051,11 +3068,13 @@ class TimerHomePageState extends State<TimerHomePage>
     final effectiveTheme = _isFocusMode
         ? ThemeData.dark().copyWith(
             colorScheme: ColorScheme.dark(
-              primary: ColorPresets.swatchColor(
-                widget.colorPreset,
-                true,
-                customHex: widget.customAccentColorHex,
-              ),
+              primary: widget.useSystemAccent
+                  ? Theme.of(context).colorScheme.primary
+                  : ColorPresets.swatchColor(
+                      widget.colorPreset,
+                      true,
+                      customHex: widget.customAccentColorHex,
+                    ),
             ),
           )
         : theme;
@@ -3150,6 +3169,7 @@ class TimerHomePageState extends State<TimerHomePage>
                             colorPreset: widget.colorPreset,
                             isDark: isDark,
                             customAccentColorHex: widget.customAccentColorHex,
+                            useSystemAccent: widget.useSystemAccent,
                           ),
                         ),
                       if (_isFocusMode)
@@ -4119,11 +4139,13 @@ class _GlassmorphicBackground extends StatefulWidget {
   final String colorPreset;
   final bool isDark;
   final String? customAccentColorHex;
+  final bool useSystemAccent;
 
   const _GlassmorphicBackground({
     required this.colorPreset,
     required this.isDark,
     this.customAccentColorHex,
+    required this.useSystemAccent,
   });
 
   @override
@@ -4154,10 +4176,21 @@ class _GlassmorphicBackgroundState extends State<_GlassmorphicBackground>
 
   @override
   Widget build(BuildContext context) {
+    final String effectivePreset;
+    final String? effectiveHex;
+    if (widget.useSystemAccent) {
+      effectivePreset = 'Custom';
+      final primaryColor = Theme.of(context).colorScheme.primary;
+      effectiveHex = '#${primaryColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
+    } else {
+      effectivePreset = widget.colorPreset;
+      effectiveHex = widget.customAccentColorHex;
+    }
+
     final colors = ColorPresets.glassOrbColors(
-      widget.colorPreset,
+      effectivePreset,
       widget.isDark,
-      customHex: widget.customAccentColorHex,
+      customHex: effectiveHex,
     );
     final primaryOrbColor = colors[0];
     final secondaryOrbColor = colors[1];
