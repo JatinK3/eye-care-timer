@@ -220,14 +220,20 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Flutter: Added calendar day comparison of the initial session timestamps (`phaseStartedAt` or `phaseEndsAt`) against `now` during launch session restore. Any session from a previous day is immediately discarded, and a fresh work phase is started if `autoStartSchedule` is active.
   - Flutter: Added day change verification at the beginning of `_syncTimerWithClock` and build cycles to reset the in-memory daily breaks (`_streakCount`) to `0` and stop the background timer if it belongs to a past day.
   - Android: Appended a `lastSavedAt` epoch milliseconds timestamp when persisting active state, and added a calendar-day match query in `restoreState()`. Discards/clears background session preferences and stops the service when the saved state is from a different day.
+  - Android (Foreground Service): Added an active, real-time date verification inside the `tick` handler of `TimerForegroundService.kt` to reset `streakCount` to `0` and persist the change if a midnight boundary is crossed while the background service is running.
   - Added widget test coverage verifying stale yesterday session discarding behavior.
 - **Fixed desktop tray menu state synchronization on boot/startup**:
   - Replaced `WidgetsBinding.instance.addPostFrameCallback` with `scheduleMicrotask` (from `dart:async`) for initial session loading, catch-up, and timer auto-start routines. This ensures that session calculations and tray updates execute immediately on the next tick of the Dart event loop during minimized/hidden background startups, rather than hanging indefinitely waiting for a frame to render.
   - Added a 200ms timeout to `windowManager.destroy()` inside `_quitApp()` to prevent the tray's "Exit" handler from locking up on Linux when the window is hidden/unmapped.
+- **Enlarged and polished the desktop tray indicator icon numbers**:
+  - Adjusted the canvas-painted tray indicator progress ring stroke width to `2.5` scale (giving the inner circle more room).
+  - Increased font sizes of the countdown numbers (2-digit font size increased from `18.5` to `21.5` scale, 3-digit font size from `13.0` to `15.5` scale) and changed weight to `w900` (extra bold) to maximize space inside the ring.
+  - Shifted the text drawing coordinates slightly upwards (`-1.0 * scale` offset) to visually center the digits inside the progress circle and remove empty padding.
 
 **Commits this session:**
 - `fix(timer): discard stale session and reset counters when day changes`
 - `fix(desktop): resolve boot startup tray menu synchronization and window exit hang`
+- `fix(timer): reset streak count on day change in native service and enlarge tray icon text`
 
 ---
 
