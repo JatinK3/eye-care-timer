@@ -235,7 +235,10 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - **Fixed System Accent Color Dashboard Integration**:
   - Updated [timer_home_page.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/features/timer/timer_home_page.dart) to fully respect the "Use system accent color" setting.
   - Calculated background gradients, floating glassmorphic blobs, focus mode primary theme overrides, transition flash colors, and work progress colors dynamically from the active system theme (`Theme.of(context).colorScheme.primary`) rather than fallback static color presets when system accent color is enabled.
- 
+- **Fixed Linux Packaging Application Auto-Restart Bug**:
+  - Modified [package_linux.sh](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/tool/package_linux.sh) to unconditionally launch/restart the application after a successful DEB or RPM installation.
+  - Previously, the restart block checked `pgrep` to see if the process was running. However, because the script calls `pkill` to terminate running instances at the start of installation, `pgrep` would always return false and skip relaunching. It now terminates any lingering processes and starts a clean, single instance using `gtk-launch` at the end of the installation.
+
 **Commits this session:**
 - `fix(timer): discard stale session and reset counters when day changes`
 - `fix(desktop): resolve boot startup tray menu synchronization and window exit hang`
@@ -243,6 +246,8 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - `fix(ui): resolve timer dial solid square background and theme switch overlaps`
 - `fix(ui): apply system accent color to dashboard gradient and glassmorphic blobs`
 - `fix(desktop): increase tray icon ring thickness and adjust countdown font size`
+- `fix(desktop): increase tray icon countdown text size to 39px`
+- `fix(packaging): ensure app restarts after linux installation completes`ss and adjust countdown font size`
 - `fix(desktop): increase tray icon countdown text size to 39px`
 
 ---
