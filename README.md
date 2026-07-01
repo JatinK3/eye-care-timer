@@ -1,15 +1,20 @@
 # BlinkKind: Eye Break Timer 👁️⏱️
 
-A beautiful, highly customizable Flutter-based 20-20-20 eye break timer that helps developers and heavy computer users protect their vision. With automatic schedules, streak tracking, intelligent auto-postpone, AI wellness reminders, and gorgeous theme presets, BlinkKind keeps your eyes fresh without interrupting your deep focus.
+A beautiful, highly customizable Flutter-based 20-20-20 eye break timer that helps developers and heavy computer users protect their vision. With automatic schedules, interactive PiP mini-mode, system Do-Not-Disturb awareness, streak tracking, intelligent auto-postpone, AI wellness reminders, and gorgeous theme presets, BlinkKind keeps your eyes fresh without interrupting your deep focus.
+
+**Latest release:** v1.1.0
 
 ## ✨ Core Features
 - **The 20-20-20 Rule:** Automatically prompts you to take a 20-second break every 20 minutes to look 20 feet away.
+- **Interactive Mini-Mode (Linux Desktop):** Switches into a compact always-on-top PiP timer with live circular progress and quick controls for staying aware without keeping the full window open.
+- **System Do-Not-Disturb Awareness (Android & Linux GNOME):** Detects OS focus/DND state so break prompts and wellness nudges respect quiet hours.
 - **Smart Auto-Postpone (Linux & Android):** Detects active microphone or camera usage (e.g., during Zoom/Meet calls) and automatically postpones eye breaks so you aren't disturbed during meetings.
+- **Background Wellness Scheduling:** Keeps periodic hydration, posture, stretch, and blink nudges on cadence through native notification scheduling and Android foreground service integration.
 - **AI Wellness Coach:** Interactive, AI-generated micro-reminders for stretching, hydration, and posture.
 - **Sleek, Distraction-Free UI:** Built with Material 3, glassmorphism, dynamic gradients, smooth animations, and a pulsing eye mascot.
 - **Accessibility / Reduced Motion:** Optional support for disabling animations and full-screen color flashes for motion-sensitive users.
 - **In-Depth Analytics:** Visualizes your eye health score, daily goals, and historical compliance streaks.
-- **Cross-Platform System Integrations:** Native Linux tray icon (with dynamic rendering), Android foreground service, and Android home-screen widget.
+- **Cross-Platform System Integrations:** Native Linux tray icon (with dynamic rendering), Wayland-aware desktop window handling, Android foreground service, Android home-screen widget, and opt-in Sentry crash reporting.
 
 ---
 

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-07-01
+
+### Added
+- **Interactive Linux Mini-Mode (PiP):** Added a compact desktop timer mode with live circular progress and quick controls so the timer can stay visible without the full dashboard.
+- **System Do-Not-Disturb Integration:** Added Android and Linux GNOME focus/DND detection so timer and wellness notifications respect OS quiet modes.
+- **Background Wellness Scheduling:** Added native scheduling for periodic hydration, posture, stretch, and blink nudges to keep wellness reminders reliable in the background.
+- **Opt-In Sentry Reporting:** Added user-controlled crash/error reporting with settings integration and notification health checks.
+- **OEM Battery Restriction Detection:** Added Android battery optimization awareness to help users identify settings that may block background reminders.
+
+### Changed
+- **Linux Dependency Resolver:** Added libcurl checks to the desktop dependency resolver for Sentry-enabled builds.
+- **Linux PiP Window Behavior:** Moved PiP sizing/top-layer handling into native GTK/Wayland-aware window code with custom MethodChannel support.
+
+### Fixed
+- **Wayland PiP Sizing and Placement:** Fixed Linux PiP mode expanding to fill the parent window, staying trapped inside parent bounds, or failing to apply top-layer window hints on Wayland.
+- **PiP Layout Clipping:** Fixed circular progress indicator clipping inside the compact desktop timer.
+- **GTK Window Transparency:** Applied RGBA visuals for transparent Linux desktop window backgrounds.
+- **Notification Cadence Reliability:** Fixed wellness reminder cadence issues discovered while wiring background scheduling and Sentry checks.
+- **Flutter Analyze and Native Compile Errors:** Fixed analyzer parameter errors and native Linux compiler regressions from the PiP window integration.
+
 ## [1.0.9] - 2026-06-30
 
 ### Added
