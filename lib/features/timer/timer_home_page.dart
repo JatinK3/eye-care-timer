@@ -3785,6 +3785,8 @@ class TimerHomePageState extends State<TimerHomePage>
       setState(() {
         _isMiniMode = false;
       });
+      await windowManager.setMinimumSize(Size.zero);
+      await windowManager.setMaximumSize(Size.zero);
       await windowManager.setAlwaysOnTop(false);
       await windowManager.setResizable(true);
       if (_savedWindowSize != null) {
@@ -3802,9 +3804,11 @@ class TimerHomePageState extends State<TimerHomePage>
         _savedWindowPosition = pos;
         _isMiniMode = true;
       });
+      await windowManager.setMinimumSize(const Size(150, 150));
+      await windowManager.setMaximumSize(const Size(150, 150));
+      await windowManager.setSize(const Size(150, 150));
       await windowManager.setAlwaysOnTop(true);
       await windowManager.setResizable(false);
-      await windowManager.setSize(const Size(150, 150));
       try {
         final primaryDisplay = await ScreenRetriever.instance.getPrimaryDisplay();
         final displaySize = primaryDisplay.visibleSize ?? primaryDisplay.size;
