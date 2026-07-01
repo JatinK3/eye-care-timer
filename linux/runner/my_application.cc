@@ -432,6 +432,14 @@ static void my_application_activate(GApplication* application) {
 
   gtk_window_set_default_size(window, 1280, 720);
 
+  // Enable RGBA visual for window transparency
+  GdkScreen *screen = gtk_window_get_screen(window);
+  GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+  if (visual != nullptr) {
+    gtk_widget_set_visual(GTK_WIDGET(window), visual);
+  }
+  gtk_widget_set_app_paintable(GTK_WIDGET(window), TRUE);
+
   // Keep a reference to the main window and track its state so the break overlay
   // can transform and restore it from the native side.
   g_main_window = window;
