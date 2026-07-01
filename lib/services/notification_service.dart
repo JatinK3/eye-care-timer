@@ -919,6 +919,76 @@ class NotificationService {
     }
   }
 
+  Future<void> cancelWellnessRemindersBackground() async {
+    if (kIsWeb || Platform.isLinux) return;
+    for (int i = 0; i < 50; i++) {
+      try {
+        await _notificationsPlugin.cancel(id: 3000 + i);
+      } catch (_) {}
+    }
+  }
+
+  Future<void> scheduleWellnessRemindersBackground({
+    required int remainingSeconds,
+    required int cadenceSeconds,
+    required int currentAccumulator,
+    required int startIndex,
+  }) async {
+    if (kIsWeb || Platform.isLinux || cadenceSeconds <= 0) return;
+    
+    await cancelWellnessRemindersBackground();
+
+    int nextDelaySeconds = cadenceSeconds - currentAccumulator;
+    if (nextDelaySeconds <= 0) nextDelaySeconds = cadenceSeconds;
+
+    int scheduledCount = 0;
+    int index = startIndex;
+    
+    final exactAlarmsAllowed =
+        await exactAlarmStatus() == ExactAlarmStatus.allowed;
+
+    while (nextDelaySeconds < remainingSeconds && scheduledCount < 50) {
+      final type = WellnessType.values[index % WellnessType.values.length];
+      String title;
+      String body;
+      switch (type) {
+        case WellnessType.hydration:
+          title = 'Hydration check';
+          body = 'Take a sip of water and stay hydrated!';
+          break;
+        case WellnessType.posture:
+          title = 'Posture check';
+          body = 'Sit up straight, shoulders relaxed, screen at eye level.';
+          break;
+        case WellnessType.stretch:
+          title = 'Stretch reminder';
+          body = 'Stand up and stretch for 30 seconds. Your body will thank you!';
+          break;
+      }
+
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          id: 3000 + scheduledCount,
+          title: title,
+          body: body,
+          scheduledDate: tz.TZDateTime.now(tz.local).add(Duration(seconds: nextDelaySeconds)),
+          notificationDetails: _wellnessNotificationDetails,
+          androidScheduleMode: exactAlarmsAllowed
+              ? AndroidScheduleMode.exactAllowWhileIdle
+              : AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: 'wellness_reminder_background',
+        );
+      } catch (e) {
+        debugPrint('Unable to schedule background wellness reminder: $e');
+        break; // If one fails, stop scheduling more
+      }
+
+      nextDelaySeconds += cadenceSeconds;
+      index++;
+      scheduledCount++;
+    }
+  }
+
   Future<void> showAutoPostponeNotification() async {
     if (kIsWeb) return;
 
@@ -972,6 +1042,7 @@ class NotificationService {
     await initialize();
     try {
       await _notificationsPlugin.cancel(id: _phaseReminderId);
+      await cancelWellnessRemindersBackground();
     } on PlatformException catch (error) {
       debugPrint('Unable to cancel phase reminder: $error');
     }

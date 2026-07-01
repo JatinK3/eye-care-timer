@@ -2117,13 +2117,28 @@ class TimerHomePageState extends State<TimerHomePage>
     required bool isBreak,
   }) {
     if (!widget.notificationsEnabled) {
+      unawaited(widget.notificationService.cancelWellnessRemindersBackground());
       return Future<bool>.value(false);
     }
 
     final delay = Duration(seconds: durationSeconds);
     if (isBreak) {
+      unawaited(widget.notificationService.cancelWellnessRemindersBackground());
       return widget.notificationService.scheduleBreakCompleteReminder(delay);
     } else {
+      if (widget.wellnessRemindersEnabled && widget.wellnessReminderCadenceSeconds > 0) {
+        unawaited(
+          widget.notificationService.scheduleWellnessRemindersBackground(
+            remainingSeconds: durationSeconds,
+            cadenceSeconds: widget.wellnessReminderCadenceSeconds,
+            currentAccumulator: _wellnessAccumulator,
+            startIndex: _wellnessTypeIndex,
+          ),
+        );
+      } else {
+        unawaited(widget.notificationService.cancelWellnessRemindersBackground());
+      }
+
       final nextIsLong = _isNextBreakLong();
       if (durationSeconds > 10) {
         unawaited(

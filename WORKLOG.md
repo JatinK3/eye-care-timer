@@ -915,5 +915,5 @@ Ideas captured from design review session. Prioritized by impact. None are sched
   - **Pulsing Eye Mascot on Blink Nudges**: Added a scaling pulse transition and a glowing iris bloom background behind the dashboard's eye mascot in [timer_home_page.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/features/timer/timer_home_page.dart) when blink notifications trigger.
   - **Animated Sun/Moon Theme Switcher**: Replaced the standard dark mode switch in Settings with a highly responsive, custom sliding sun/moon switch in [settings_page.dart](file:///home/jatin/Desktop/JATIN/Flutter/eye-care-timer/lib/features/settings/settings_page.dart) featuring rotation animations and bouncy transitions.
 
-
-
+- Completed core improvements (version 1.0.9):
+  - **Background Scheduling for Wellness Micro-Breaks**: Enhanced `notification_service.dart` and `timer_home_page.dart` to fully support background OS scheduling of periodic wellness reminders. Now, when a work phase starts, up to 50 future wellness reminders are pre-scheduled using `zonedSchedule`, ensuring users receive hydration, posture, and stretch notifications even when the app is completely minimized or closed on mobile devices. Background reminders are perfectly synchronized with the active timer and properly cancelled during timer pauses or break phases.
