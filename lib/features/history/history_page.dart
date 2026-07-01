@@ -1,9 +1,11 @@
+import "dart:async";
 import "dart:convert";
 import "dart:io";
 import "dart:math" as math;
 import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import "../../models/timer_event_record.dart";
 import "../../services/ai_service.dart";
@@ -575,7 +577,8 @@ class _HistoryPageState extends State<HistoryPage> {
         _reportGeneratedForRange = _range;
         _isReportLoading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       setState(() {
         _reportError = 'Failed to generate report. Please verify connection/API key.';
         _isReportLoading = false;
@@ -1059,7 +1062,8 @@ class _HistoryPageState extends State<HistoryPage> {
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

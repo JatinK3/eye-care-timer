@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../models/timer_settings.dart';
 import '../../services/ai_service.dart';
@@ -3094,7 +3095,8 @@ class _SettingsPageState extends State<SettingsPage>
             : AiService.instance.getDefaultModels(provider);
         _aiLoadingModels = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       setState(() {

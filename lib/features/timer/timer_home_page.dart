@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:system_idle/system_idle.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../models/timer_session.dart';
 import '../../models/timer_settings.dart';
@@ -108,6 +109,8 @@ class TimerHomePage extends StatefulWidget {
   final String oemManufacturer;
   final VoidCallback onDismissBatteryWarning;
   final VoidCallback onFixBatteryRestriction;
+  final bool showNotificationWarning;
+  final VoidCallback onFixNotificationPermission;
 
   const TimerHomePage({
     super.key,
@@ -187,6 +190,8 @@ class TimerHomePage extends StatefulWidget {
     required this.oemManufacturer,
     required this.onDismissBatteryWarning,
     required this.onFixBatteryRestriction,
+    required this.showNotificationWarning,
+    required this.onFixNotificationPermission,
   });
 
   @override
@@ -314,7 +319,8 @@ class TimerHomePageState extends State<TimerHomePage>
         _aiHealthInsight = insight;
         _isAiInsightLoading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       setState(() {
         _aiInsightError =
             'Failed to fetch AI tip. Make sure your API key and connection are valid.';
@@ -871,7 +877,8 @@ class TimerHomePageState extends State<TimerHomePage>
               });
         }
       }());
-    } catch (e) {
+    } catch (e, stackTrace) {
+      unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       debugPrint('Failed to initialize desktop idle detection: $e');
     }
   }
@@ -2551,7 +2558,8 @@ class TimerHomePageState extends State<TimerHomePage>
           model: widget.aiModel,
           prompt: prompt,
         );
-      } catch (e) {
+      } catch (e, stackTrace) {
+        unawaited(Sentry.captureException(e, stackTrace: stackTrace));
         debugPrint('Failed to generate AI wellness reminder: $e');
       }
     }
@@ -3683,7 +3691,16 @@ class TimerHomePageState extends State<TimerHomePage>
                 ),
               ),
             ),
-            if (widget.showBatteryWarning && !_isFocusMode)
+            if (widget.showNotificationWarning && !_isFocusMode)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _NotificationWarningBanner(
+                  onFix: widget.onFixNotificationPermission,
+                ),
+              )
+            else if (widget.showBatteryWarning && !_isFocusMode)
               Positioned(
                 top: 0,
                 left: 0,
@@ -4871,4 +4888,124 @@ class _BatteryWarningBannerState extends State<_BatteryWarningBanner> {
   }
 }
 
+class _NotificationWarningBanner extends StatefulWidget {
+  final VoidCallback onFix;
 
+  const _NotificationWarningBanner({
+    required this.onFix,
+  });
+
+  @override
+  State<_NotificationWarningBanner> createState() => _NotificationWarningBannerState();
+}
+
+class _NotificationWarningBannerState extends State<_NotificationWarningBanner> {
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _visible = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSlide(
+      offset: _visible ? Offset.zero : const Offset(0, -1),
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(
+        opacity: _visible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 300),
+        child: SafeArea(
+          bottom: false,
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFE53935), Color(0xFFEF5350)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFE53935).withValues(alpha: 0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.notifications_off_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Notifications Blocked',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Break reminders cannot be shown without permission. Tap Fix to enable them.',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: widget.onFix,
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFFC62828),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Fix',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

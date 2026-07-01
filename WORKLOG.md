@@ -219,8 +219,13 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - Added full multi-language translations (EN, ES, HI) for the banner and settings copy in the ARB files.
 - **Wellness Micro-Breaks (Posture/Hydration/Stretch)**:
   - Re-implemented the wellness reminder timing logic to use a persistent accumulator (`_wellnessAccumulator`) that increments only when the work timer is actively running, rather than checking `elapsed % cadence == 0` (which would reset on every work/break phase boundary).
+- **Notification Permission Check**:
+  - Implemented dynamic detection of disabled `POST_NOTIFICATIONS` permissions on Android 13+.
+  - Handled rendering of the notification warning banner directly inside `TimerHomePage` alongside battery warnings.
+  - Wired a direct "Fix" action that dynamically triggers permission requests without requiring an app restart.
 - **Opt-in Analytics & Crash Reporting**:
-  - Wired Sentry crash reporting configuration dynamically using the `opt-in` analytics setting.
+  - Wired Sentry crash reporting configuration dynamically using the `opt-in` analytics setting to initialize `SentryFlutter` or call `Sentry.close()` at runtime without app restart.
+  - Added exception telemetry logic using `Sentry.captureException` into core `try/catch` blocks (AI motivation fetch failures, AI report generation failures, and LLM model fetch failures).
 
 ### 2026-06-30 (Session ongoing — IST)
 

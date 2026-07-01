@@ -25,7 +25,9 @@ import 'services/preferences_service.dart';
 import 'theme/color_presets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'generated/l10n/app_localizations.dart';
+import 'main.dart';
 
 const PageTransitionsTheme _smoothPageTransitionsTheme = PageTransitionsTheme(
   builders: <TargetPlatform, PageTransitionsBuilder>{
@@ -175,7 +177,7 @@ class BlinkKindApp extends StatefulWidget {
   State<BlinkKindApp> createState() => _BlinkKindAppState();
 }
 
-class _BlinkKindAppState extends State<BlinkKindApp> {
+class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver {
   final PreferencesService _preferencesService = PreferencesService();
   late final NotificationService _notificationService;
   late final BreakOverlayService _breakOverlayService;
@@ -199,6 +201,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   bool _isLoadingSettings = true;
   bool _showSplash = true;
   bool _showBatteryWarningCard = false;
+  bool _showNotificationWarningCard = false;
   String _oemManufacturer = '';
 
   final PermissionsService _permissionsService = PermissionsService();
@@ -208,6 +211,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _notificationService = widget.notificationService ?? NotificationService();
     _breakOverlayService = widget.breakOverlayService ?? BreakOverlayService();
     unawaited(_initializeNotifications());
@@ -216,22 +220,39 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     unawaited(_loadSettings());
   }
 
-  Future<void> _initializeNotifications() async {
-    await _notificationService.initialize();
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_checkBackgroundRestrictions());
+      unawaited(_refreshOverlayPermissionStatus());
+      unawaited(_refreshUsageAccessStatus());
+    }
+  }
+
+  Future<void> _checkBackgroundRestrictions() async {
     await _refreshNotificationReliabilityStatus();
-    if (!kIsWeb && Platform.isAndroid &&
-        _batteryOptimizationStatus == BatteryOptimizationStatus.restricted) {
-      final dismissed = await _preferencesService.isBatteryWarningDismissed();
-      if (!dismissed) {
-        final manufacturer = await _notificationService.detectOemManufacturer();
-        if (mounted) {
-          setState(() {
-            _showBatteryWarningCard = true;
-            _oemManufacturer = manufacturer;
-          });
-        }
+    if (!kIsWeb && Platform.isAndroid) {
+      bool shouldShowBattery = _batteryOptimizationStatus == BatteryOptimizationStatus.restricted;
+      bool shouldShowNotification = _notificationPermissionStatus == NotificationPermissionStatus.disabled;
+      
+      final batteryDismissed = await _preferencesService.isBatteryWarningDismissed();
+      
+      if (mounted) {
+        setState(() {
+          _showBatteryWarningCard = shouldShowBattery && !batteryDismissed;
+          _showNotificationWarningCard = shouldShowNotification;
+        });
       }
     }
+  }
+
+  Future<void> _initializeNotifications() async {
+    await _notificationService.initialize();
+    final manufacturer = await _notificationService.detectOemManufacturer();
+    if (mounted) {
+      setState(() => _oemManufacturer = manufacturer);
+    }
+    await _checkBackgroundRestrictions();
     _notificationSubscription = _notificationService.onNotificationResponse
         .listen(_handleNotificationResponse);
     _blinkReminderAcknowledgedSubscription = _notificationService
@@ -248,6 +269,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _notificationSubscription?.cancel();
     _blinkReminderAcknowledgedSubscription?.cancel();
     _timerEventHistoryListenable.dispose();
@@ -323,6 +345,18 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
     if (_batteryOptimizationStatus == BatteryOptimizationStatus.unrestricted) {
       setState(() {
         _showBatteryWarningCard = false;
+      });
+    }
+  }
+
+  Future<void> _fixNotificationPermission() async {
+    await _notificationService.requestPermissions();
+    await Future.delayed(const Duration(seconds: 1));
+    await _refreshNotificationReliabilityStatus();
+    if (!mounted) return;
+    if (_notificationPermissionStatus == NotificationPermissionStatus.allowed) {
+      setState(() {
+        _showNotificationWarningCard = false;
       });
     }
   }
@@ -559,6 +593,17 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
       _settings = _settings.copyWith(analyticsEnabled: enabled);
     });
     unawaited(_preferencesService.saveAnalyticsEnabled(enabled));
+    if (enabled && sentryDsn.isNotEmpty) {
+      unawaited(SentryFlutter.init(
+        (options) {
+          options.dsn = sentryDsn;
+          options.tracesSampleRate = 1.0;
+          options.enableAutoSessionTracking = true;
+        },
+      ));
+    } else {
+      unawaited(Sentry.close());
+    }
   }
 
   void _setCustomAccentColorHex(String hex) {
@@ -1395,6 +1440,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   oemManufacturer: _oemManufacturer,
                   onDismissBatteryWarning: _dismissBatteryWarning,
                   onFixBatteryRestriction: _fixBatteryRestriction,
+                  showNotificationWarning: _showNotificationWarningCard,
+                  onFixNotificationPermission: _fixNotificationPermission,
                 ),
         );
       },
