@@ -6,5 +6,4 @@
 * Adhere to Conventional Commits specifications (e.g., using prefixes like `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`) and maintain semver Git tags (e.g., `v1.0.0`) for every release, enabling clean changelog generation from tag differences. On every release, it is mandatory to create and update the CHANGELOG.md file.
 * Always refer to the `tool/` directory before executing build or release tasks, as scripts for dependency checking (`lib_resolver.sh`), compilation (`package_linux.sh`, `package_android.sh`), and releases (`release.sh`) are already present there.
 * Commit and push changes directly to GitHub alongside every change/fix made.
-
-
+* Be extremely precise and deliberate when making code modifications. Always double-check variable scopes, macro definitions, and bracket matching before proposing changes to avoid careless syntax and compilation errors.
