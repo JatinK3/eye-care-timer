@@ -3853,29 +3853,32 @@ class TimerHomePageState extends State<TimerHomePage>
         
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: GestureDetector(
-        onPanStart: (details) {
-          windowManager.startDragging();
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            color: _isBreak
-                ? Colors.blue.withValues(alpha: 0.95)
-                : const Color(0xFF1E1E1E).withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: progressColor.withValues(alpha: 0.3),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 10,
-                spreadRadius: 2,
+      body: Center(
+        child: GestureDetector(
+          onPanStart: (details) {
+            windowManager.startDragging();
+          },
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              color: _isBreak
+                  ? Colors.blue.withValues(alpha: 0.95)
+                  : const Color(0xFF1E1E1E).withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: progressColor.withValues(alpha: 0.3),
+                width: 1,
               ),
-            ],
-          ),
-          child: Stack(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Stack(
             children: [
               Center(
                 child: SizedBox(
@@ -3932,6 +3935,7 @@ class TimerHomePageState extends State<TimerHomePage>
             ],
           ),
         ),
+      ),
       ),
     );
   }
