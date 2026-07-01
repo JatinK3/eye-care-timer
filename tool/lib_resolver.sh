@@ -55,6 +55,9 @@ declare -a BUILD_DEPS=(
     "pkgcfg:gtk+-3.0|libgtk-3-dev|gtk3-devel|GTK3 development headers"
     "pkgcfg:glib-2.0|libglib2.0-dev|glib2-devel|GLib/GIO development headers"
 
+    # Sentry → libcurl
+    "pkgcfg:libcurl|libcurl4-openssl-dev|libcurl-devel|libcurl development headers (Sentry)"
+
     # hotkey_manager → keybinder-3.0
     "pkgcfg:keybinder-3.0|libkeybinder-3.0-dev|keybinder3-devel|keybinder-3.0 (hotkey_manager)"
 
