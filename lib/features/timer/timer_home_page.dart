@@ -3785,6 +3785,9 @@ class TimerHomePageState extends State<TimerHomePage>
       setState(() {
         _isMiniMode = false;
       });
+      if (Platform.isLinux) {
+        await windowManager.hide();
+      }
       await windowManager.setMinimumSize(Size.zero);
       await windowManager.setMaximumSize(Size.zero);
       if (Platform.isLinux) {
@@ -3803,6 +3806,9 @@ class TimerHomePageState extends State<TimerHomePage>
       if (_savedWindowPosition != null) {
         await windowManager.setPosition(_savedWindowPosition!);
       }
+      if (Platform.isLinux) {
+        await windowManager.show();
+      }
     } else {
       // Enter Mini Mode
       if (await windowManager.isMaximized()) {
@@ -3816,6 +3822,9 @@ class TimerHomePageState extends State<TimerHomePage>
         _savedWindowPosition = pos;
         _isMiniMode = true;
       });
+      if (Platform.isLinux) {
+        await windowManager.hide();
+      }
       await windowManager.setAsFrameless();
       await windowManager.setMinimumSize(const Size(150, 150));
       await windowManager.setMaximumSize(const Size(150, 150));
@@ -3829,6 +3838,9 @@ class TimerHomePageState extends State<TimerHomePage>
         final y = displaySize.height - 180; // 150 height + 30 margin
         await windowManager.setPosition(Offset(x, y));
       } catch (_) {}
+      if (Platform.isLinux) {
+        await windowManager.show();
+      }
     }
   }
 
