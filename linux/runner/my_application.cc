@@ -433,8 +433,8 @@ static void my_application_activate(GApplication* application) {
   gtk_window_set_default_size(window, 1280, 720);
 
   // Enable RGBA visual for window transparency
-  GdkScreen *screen = gtk_window_get_screen(window);
-  GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+  GdkScreen *window_screen = gtk_window_get_screen(window);
+  GdkVisual *visual = gdk_screen_get_rgba_visual(window_screen);
   if (visual != nullptr) {
     gtk_widget_set_visual(GTK_WIDGET(window), visual);
   }
