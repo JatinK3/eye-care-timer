@@ -3786,28 +3786,25 @@ class TimerHomePageState extends State<TimerHomePage>
         _isMiniMode = false;
       });
       if (Platform.isLinux) {
-        await windowManager.hide();
-      }
-      await windowManager.setMinimumSize(Size.zero);
-      await windowManager.setMaximumSize(Size.zero);
-      if (Platform.isLinux) {
-        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+        try {
+          const channel = MethodChannel('blinkkind/break_overlay');
+          await channel.invokeMethod('setPiPMode', false);
+        } catch (_) {}
       } else {
+        await windowManager.setMinimumSize(Size.zero);
+        await windowManager.setMaximumSize(Size.zero);
         await windowManager.setTitleBarStyle(
           TitleBarStyle.hidden,
           windowButtonVisibility: false,
         );
+        await windowManager.setAlwaysOnTop(false);
+        await windowManager.setResizable(true);
       }
-      await windowManager.setAlwaysOnTop(false);
-      await windowManager.setResizable(true);
       if (_savedWindowSize != null) {
         await windowManager.setSize(_savedWindowSize!);
       }
       if (_savedWindowPosition != null) {
         await windowManager.setPosition(_savedWindowPosition!);
-      }
-      if (Platform.isLinux) {
-        await windowManager.show();
       }
     } else {
       // Enter Mini Mode
@@ -3822,15 +3819,20 @@ class TimerHomePageState extends State<TimerHomePage>
         _savedWindowPosition = pos;
         _isMiniMode = true;
       });
+      
       if (Platform.isLinux) {
-        await windowManager.hide();
+        try {
+          const channel = MethodChannel('blinkkind/break_overlay');
+          await channel.invokeMethod('setPiPMode', true);
+        } catch (_) {}
+      } else {
+        await windowManager.setAsFrameless();
+        await windowManager.setMinimumSize(const Size(150, 150));
+        await windowManager.setMaximumSize(const Size(150, 150));
+        await windowManager.setSize(const Size(150, 150));
+        await windowManager.setAlwaysOnTop(true);
+        await windowManager.setResizable(false);
       }
-      await windowManager.setAsFrameless();
-      await windowManager.setMinimumSize(const Size(150, 150));
-      await windowManager.setMaximumSize(const Size(150, 150));
-      await windowManager.setSize(const Size(150, 150));
-      await windowManager.setAlwaysOnTop(true);
-      await windowManager.setResizable(false);
       try {
         final primaryDisplay = await ScreenRetriever.instance.getPrimaryDisplay();
         final displaySize = primaryDisplay.visibleSize ?? primaryDisplay.size;
@@ -3838,9 +3840,6 @@ class TimerHomePageState extends State<TimerHomePage>
         final y = displaySize.height - 180; // 150 height + 30 margin
         await windowManager.setPosition(Offset(x, y));
       } catch (_) {}
-      if (Platform.isLinux) {
-        await windowManager.show();
-      }
     }
   }
 

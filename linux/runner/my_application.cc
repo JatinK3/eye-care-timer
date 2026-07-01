@@ -485,6 +485,25 @@ static void my_application_activate(GApplication* application) {
         } else if (g_strcmp0(method, "exitBreak") == 0) {
           exit_break();
           fl_method_call_respond_success(method_call, nullptr, nullptr);
+        } else if (g_strcmp0(method, "setPiPMode") == 0) {
+          bool is_pip = false;
+          FlValue* args = fl_method_call_get_args(method_call);
+          if (args != nullptr && fl_value_get_type(args) == FL_VALUE_TYPE_BOOL) {
+            is_pip = fl_value_get_bool(args);
+          }
+          if (is_pip) {
+            gtk_window_unmaximize(g_main_window);
+            gtk_window_set_decorated(g_main_window, FALSE);
+            gtk_window_set_keep_above(g_main_window, TRUE);
+            gtk_window_set_type_hint(g_main_window, GDK_WINDOW_TYPE_HINT_UTILITY);
+            gtk_window_resize(g_main_window, 150, 150);
+          } else {
+            gtk_window_set_type_hint(g_main_window, GDK_WINDOW_TYPE_HINT_NORMAL);
+            gtk_window_set_decorated(g_main_window, TRUE);
+            gtk_window_set_keep_above(g_main_window, FALSE);
+            gtk_window_resize(g_main_window, 1280, 720);
+          }
+          fl_method_call_respond_success(method_call, nullptr, nullptr);
         } else {
           fl_method_call_respond_not_implemented(method_call, nullptr);
         }
