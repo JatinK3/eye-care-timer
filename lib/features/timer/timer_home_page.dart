@@ -249,6 +249,8 @@ class TimerHomePageState extends State<TimerHomePage>
 
   int? _postponedBreakDuration;
 
+  static const Size _miniModeWindowSize = Size(168, 168);
+
   bool _isMiniMode = false;
   Size? _savedWindowSize;
   Offset? _savedWindowPosition;
@@ -3101,7 +3103,7 @@ class TimerHomePageState extends State<TimerHomePage>
     );
 
     if (_isMiniMode) {
-      return _buildMiniModeWidget(textColor, progressColor, isDark);
+      return _buildMiniModeWidget(progressColor);
     }
 
     final systemOverlayStyle = SystemUiOverlayStyle(
@@ -3827,115 +3829,162 @@ class TimerHomePageState extends State<TimerHomePage>
         } catch (_) {}
       } else {
         await windowManager.setAsFrameless();
-        await windowManager.setMinimumSize(const Size(150, 150));
-        await windowManager.setMaximumSize(const Size(150, 150));
-        await windowManager.setSize(const Size(150, 150));
+        await windowManager.setMinimumSize(_miniModeWindowSize);
+        await windowManager.setMaximumSize(_miniModeWindowSize);
+        await windowManager.setSize(_miniModeWindowSize);
         await windowManager.setAlwaysOnTop(true);
         await windowManager.setResizable(false);
       }
       try {
         final primaryDisplay = await ScreenRetriever.instance.getPrimaryDisplay();
         final displaySize = primaryDisplay.visibleSize ?? primaryDisplay.size;
-        final x = displaySize.width - 180; // 150 width + 30 margin
-        final y = displaySize.height - 180; // 150 height + 30 margin
+        final x = displaySize.width - _miniModeWindowSize.width - 30;
+        final y = displaySize.height - _miniModeWindowSize.height - 30;
         await windowManager.setPosition(Offset(x, y));
       } catch (_) {}
     }
   }
 
-  Widget _buildMiniModeWidget(Color textColor, Color progressColor, bool isDark) {
+  Widget _buildMiniModeWidget(Color progressColor) {
     final remaining = _remainingSeconds.toDouble();
-
+    final progress = _initialDuration > 0
+        ? (1.0 - (remaining / _initialDuration)).clamp(0.0, 1.0).toDouble()
+        : 0.0;
     final minutes = _remainingSeconds ~/ 60;
     final seconds = _remainingSeconds % 60;
     final timeStr =
         '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-        
+    final miniTextColor = _isBreak
+        ? Colors.white
+        : Colors.white.withValues(alpha: 0.96);
+
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Center(
-        child: GestureDetector(
-          onPanStart: (details) {
-            windowManager.startDragging();
-          },
-          child: Container(
-            width: 150,
-            height: 150,
-            decoration: BoxDecoration(
-              color: _isBreak
-                  ? Colors.blue.withValues(alpha: 0.95)
-                  : const Color(0xFF1E1E1E).withValues(alpha: 0.95),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: progressColor.withValues(alpha: 0.3),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 10,
-                  spreadRadius: 2,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final available = math.min(
+            constraints.maxWidth.isFinite
+                ? constraints.maxWidth
+                : _miniModeWindowSize.width,
+            constraints.maxHeight.isFinite
+                ? constraints.maxHeight
+                : _miniModeWindowSize.height,
+          );
+          final cardSize = math.max(120.0, available - 12.0);
+          final ringSize = math.max(82.0, cardSize - 42.0);
+
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanStart: (_) {
+                  windowManager.startDragging();
+                },
+                child: SizedBox.square(
+                  dimension: cardSize,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: _isBreak
+                          ? Colors.blue.withValues(alpha: 0.95)
+                          : const Color(0xFF1E1E1E).withValues(alpha: 0.95),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: progressColor.withValues(alpha: 0.35),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.28),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Stack(
+                        clipBehavior: Clip.hardEdge,
+                        children: [
+                          Center(
+                            child: SizedBox.square(
+                              dimension: ringSize,
+                              child: CircularProgressIndicator(
+                                value: progress,
+                                strokeWidth: 5,
+                                strokeCap: StrokeCap.round,
+                                backgroundColor:
+                                    progressColor.withValues(alpha: 0.16),
+                                color: progressColor,
+                              ),
+                            ),
+                          ),
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      timeStr,
+                                      maxLines: 1,
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w800,
+                                        color: miniTextColor,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    _isBreak ? 'BREAK' : 'WORK',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.clip,
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      letterSpacing: 1.2,
+                                      fontWeight: FontWeight.w800,
+                                      color: progressColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 5,
+                            right: 5,
+                            child: Tooltip(
+                              message: 'Exit Mini-Mode',
+                              child: SizedBox.square(
+                                dimension: 28,
+                                child: IconButton(
+                                  icon: const Icon(Icons.fullscreen, size: 16),
+                                  color: miniTextColor,
+                                  onPressed: _toggleMiniMode,
+                                  constraints: const BoxConstraints.tightFor(
+                                    width: 28,
+                                    height: 28,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  splashRadius: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ],
+              ),
             ),
-            child: Stack(
-            children: [
-              Center(
-                child: SizedBox(
-                  width: 110,
-                  height: 110,
-                  child: CircularProgressIndicator(
-                    value: _initialDuration > 0
-                        ? 1.0 - (remaining / _initialDuration)
-                        : 0.0,
-                    strokeWidth: 5,
-                    backgroundColor: progressColor.withValues(alpha: 0.15),
-                    color: progressColor,
-                  ),
-                ),
-              ),
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      timeStr,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _isBreak ? 'BREAK' : 'WORK',
-                      style: TextStyle(
-                        fontSize: 9,
-                        letterSpacing: 1.5,
-                        fontWeight: FontWeight.w800,
-                        color: progressColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Positioned(
-                top: 4,
-                right: 4,
-                child: Tooltip(
-                  message: 'Exit Mini-Mode',
-                  child: IconButton(
-                    icon: const Icon(Icons.fullscreen, size: 16),
-                    onPressed: _toggleMiniMode,
-                    constraints: const BoxConstraints(),
-                    padding: const EdgeInsets.all(4),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+          );
+        },
       ),
     );
   }

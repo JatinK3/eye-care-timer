@@ -493,21 +493,33 @@ static void my_application_activate(GApplication* application) {
           }
           if (is_pip) {
             gtk_widget_hide(GTK_WIDGET(g_main_window));
+            gtk_window_unfullscreen(g_main_window);
             gtk_window_unmaximize(g_main_window);
             gtk_window_set_decorated(g_main_window, FALSE);
+            gtk_window_set_resizable(g_main_window, FALSE);
+            gtk_window_set_skip_taskbar_hint(g_main_window, TRUE);
+            gtk_window_set_skip_pager_hint(g_main_window, TRUE);
+            gtk_window_stick(g_main_window);
+            gtk_window_set_type_hint(g_main_window, GDK_WINDOW_TYPE_HINT_DOCK);
             gtk_window_set_keep_above(g_main_window, TRUE);
-            gtk_window_set_type_hint(g_main_window, GDK_WINDOW_TYPE_HINT_DIALOG);
-            gtk_window_resize(g_main_window, 150, 150);
+            gtk_window_set_default_size(g_main_window, 168, 168);
+            gtk_window_resize(g_main_window, 168, 168);
             gtk_widget_show(GTK_WIDGET(g_main_window));
-            gtk_window_present(g_main_window);
+            gtk_window_present_with_time(g_main_window, GDK_CURRENT_TIME);
+            gtk_window_set_keep_above(g_main_window, TRUE);
           } else {
             gtk_widget_hide(GTK_WIDGET(g_main_window));
+            gtk_window_unstick(g_main_window);
             gtk_window_set_type_hint(g_main_window, GDK_WINDOW_TYPE_HINT_NORMAL);
+            gtk_window_set_skip_taskbar_hint(g_main_window, FALSE);
+            gtk_window_set_skip_pager_hint(g_main_window, FALSE);
             gtk_window_set_decorated(g_main_window, TRUE);
+            gtk_window_set_resizable(g_main_window, TRUE);
             gtk_window_set_keep_above(g_main_window, FALSE);
+            gtk_window_set_default_size(g_main_window, 1280, 720);
             gtk_window_resize(g_main_window, 1280, 720);
             gtk_widget_show(GTK_WIDGET(g_main_window));
-            gtk_window_present(g_main_window);
+            gtk_window_present_with_time(g_main_window, GDK_CURRENT_TIME);
           }
           fl_method_call_respond_success(method_call, nullptr, nullptr);
         } else {
