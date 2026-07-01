@@ -3844,37 +3844,35 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   Widget _buildMiniModeWidget(Color textColor, Color progressColor, bool isDark) {
-    final remaining = _remainingSeconds;
-    final minutes = remaining ~/ 60;
-    final seconds = remaining % 60;
+    final remaining = _remainingSeconds.toDouble();
+
+    final minutes = _remainingSeconds ~/ 60;
+    final seconds = _remainingSeconds % 60;
     final timeStr =
         '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
         
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
         onPanStart: (details) {
-          unawaited(windowManager.startDragging());
+          windowManager.startDragging();
         },
-        onDoubleTap: _pauseOrResume,
-        child: Center(
-          child: Container(
-            width: 150,
-            height: 150,
-            decoration: BoxDecoration(
-            color: isDark ? Colors.black87 : Colors.white.withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: _isBreak
+                ? Colors.blue.withValues(alpha: 0.95)
+                : const Color(0xFF1E1E1E).withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: progressColor.withValues(alpha: 0.3),
-              width: 1.5,
+              width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 10,
                 spreadRadius: 2,
-              )
+              ),
             ],
           ),
           child: Stack(
@@ -3934,7 +3932,6 @@ class TimerHomePageState extends State<TimerHomePage>
             ],
           ),
         ),
-      ),
       ),
     );
   }
