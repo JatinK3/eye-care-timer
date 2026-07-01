@@ -230,6 +230,13 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - **Opt-in Analytics & Crash Reporting**:
   - Wired Sentry crash reporting configuration dynamically using the `opt-in` analytics setting to initialize `SentryFlutter` or call `Sentry.close()` at runtime without app restart.
   - Added exception telemetry logic using `Sentry.captureException` into core `try/catch` blocks (AI motivation fetch failures, AI report generation failures, and LLM model fetch failures).
+- **Desktop Interactive Mini-Mode / PiP**:
+  - Implemented desktop PiP (Mini-Mode) by toggling window sizing dynamically between a normal state (1280x720) and a compact layout (150x150).
+  - Wired always-on-top window manager status and turned off resizability for the mini-window widget.
+  - Integrated `ScreenRetriever` to automatically query the primary display dimensions and snap the PiP window to the bottom-right corner of the user's active screen.
+  - Designed a beautiful, glassmorphic floating PiP UI featuring a simplified, color-coded circular progress ring, double-tap pause/resume shortcuts, and custom window dragging support (`windowManager.startDragging`).
+  - Added a safety routine that automatically exits Mini-Mode when transitioning to a break phase, allowing the full-screen eye-exercise blocker overlay to take over.
+  - Placed a picture-in-picture action button in the main `AppBar` for seamless transitions.
 
 ### 2026-06-30 (Session ongoing — IST)
 
@@ -897,7 +904,7 @@ Ideas captured from design review session. Prioritized by impact. None are sched
 ### 🟡 Medium Impact (polish & feel)
 
 - [x] **Compact Android home-screen widget redesign** — the current widget is functional but plain; give it a sleek minimal card style with the ring, phase label, and countdown typeset in the app's Inter font.
-- [ ] **Desktop interactive mini-mode / PiP** — an always-on-top micro window for macOS/Windows/Linux showing only a tiny progress ring in the screen corner.
+- [x] **Desktop interactive mini-mode / PiP** — an always-on-top micro window for macOS/Windows/Linux showing only a tiny progress ring in the screen corner.
 - [x] **Haptic feedback patterns by event** — distinct vibration patterns for work-phase-complete vs. break-start vs. blink-reminder vs. postpone, instead of the current uniform haptic pulse.
 - [x] **Break countdown ring on the break screen itself** — a subtle thin ring around the break card showing how much of the break has elapsed, so users can gauge progress without needing to read the number.
 - [x] **Settings page sectioned cards** — group the flat settings list into visually distinct card sections with section header chips, so the page feels organized rather than a long scrollable list.

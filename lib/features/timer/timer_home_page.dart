@@ -10,6 +10,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:system_idle/system_idle.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:screen_retriever/screen_retriever.dart';
 
 import '../../models/timer_session.dart';
 import '../../models/timer_settings.dart';
@@ -247,6 +248,10 @@ class TimerHomePageState extends State<TimerHomePage>
   bool _lastDndState = false;
 
   int? _postponedBreakDuration;
+
+  bool _isMiniMode = false;
+  Size? _savedWindowSize;
+  Offset? _savedWindowPosition;
 
   String _resolveVisualizerStyle() {
     if (widget.breakVisualizerStyle == 'Random') {
@@ -1495,6 +1500,10 @@ class TimerHomePageState extends State<TimerHomePage>
           );
     _flashColor = isBreak ? accentColor : Colors.white;
     _flashController.forward(from: 0.0);
+
+    if (isBreak && _isMiniMode) {
+      unawaited(_toggleMiniMode());
+    }
 
     setState(() {
       _isBreak = isBreak;
@@ -3091,6 +3100,10 @@ class TimerHomePageState extends State<TimerHomePage>
       progressColor,
     );
 
+    if (_isMiniMode) {
+      return _buildMiniModeWidget(textColor, progressColor, isDark);
+    }
+
     final systemOverlayStyle = SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
@@ -3186,6 +3199,15 @@ class TimerHomePageState extends State<TimerHomePage>
                           widget.openSettings(context, _canChangeSettings),
                       tooltip: 'Settings',
                     ),
+                    if (!kIsWeb &&
+                        (defaultTargetPlatform == TargetPlatform.linux ||
+                            defaultTargetPlatform == TargetPlatform.macOS ||
+                            defaultTargetPlatform == TargetPlatform.windows))
+                      IconButton(
+                        icon: const Icon(Icons.picture_in_picture_alt_rounded),
+                        onPressed: _toggleMiniMode,
+                        tooltip: 'Enter Mini Mode (PiP)',
+                      ),
                   ],
                 ),
           body: Stack(
@@ -3748,6 +3770,141 @@ class TimerHomePageState extends State<TimerHomePage>
       _lastDndState = shouldBeEnabled;
       unawaited(OsFocusService.instance.setDndEnabled(shouldBeEnabled));
     }
+  }
+
+  Future<void> _toggleMiniMode() async {
+    if (kIsWeb) return;
+    if (defaultTargetPlatform != TargetPlatform.linux &&
+        defaultTargetPlatform != TargetPlatform.macOS &&
+        defaultTargetPlatform != TargetPlatform.windows) {
+      return;
+    }
+    
+    if (_isMiniMode) {
+      // Exit Mini Mode
+      setState(() {
+        _isMiniMode = false;
+      });
+      await windowManager.setAlwaysOnTop(false);
+      await windowManager.setResizable(true);
+      if (_savedWindowSize != null) {
+        await windowManager.setSize(_savedWindowSize!);
+      }
+      if (_savedWindowPosition != null) {
+        await windowManager.setPosition(_savedWindowPosition!);
+      }
+    } else {
+      // Enter Mini Mode
+      final size = await windowManager.getSize();
+      final pos = await windowManager.getPosition();
+      setState(() {
+        _savedWindowSize = size;
+        _savedWindowPosition = pos;
+        _isMiniMode = true;
+      });
+      await windowManager.setAlwaysOnTop(true);
+      await windowManager.setResizable(false);
+      await windowManager.setSize(const Size(150, 150));
+      try {
+        final primaryDisplay = await ScreenRetriever.instance.getPrimaryDisplay();
+        final displaySize = primaryDisplay.visibleSize ?? primaryDisplay.size;
+        final x = displaySize.width - 180; // 150 width + 30 margin
+        final y = displaySize.height - 180; // 150 height + 30 margin
+        await windowManager.setPosition(Offset(x, y));
+      } catch (_) {}
+    }
+  }
+
+  Widget _buildMiniModeWidget(Color textColor, Color progressColor, bool isDark) {
+    final remaining = _remainingSeconds;
+    final minutes = remaining ~/ 60;
+    final seconds = remaining % 60;
+    final timeStr =
+        '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+        
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onPanStart: (details) {
+          unawaited(windowManager.startDragging());
+        },
+        onDoubleTap: _pauseOrResume,
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? Colors.black87 : Colors.white.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: progressColor.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 10,
+                spreadRadius: 2,
+              )
+            ],
+          ),
+          child: Stack(
+            children: [
+              Center(
+                child: SizedBox(
+                  width: 110,
+                  height: 110,
+                  child: CircularProgressIndicator(
+                    value: _initialDuration > 0
+                        ? 1.0 - (remaining / _initialDuration)
+                        : 0.0,
+                    strokeWidth: 5,
+                    backgroundColor: progressColor.withValues(alpha: 0.15),
+                    color: progressColor,
+                  ),
+                ),
+              ),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      timeStr,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _isBreak ? 'BREAK' : 'WORK',
+                      style: TextStyle(
+                        fontSize: 9,
+                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w800,
+                        color: progressColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Tooltip(
+                  message: 'Exit Mini-Mode',
+                  child: IconButton(
+                    icon: const Icon(Icons.fullscreen, size: 16),
+                    onPressed: _toggleMiniMode,
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _updateDesktopState() {
