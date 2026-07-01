@@ -1385,5 +1385,29 @@
   "close": "Close",
   "@close": {
     "description": "Label for a generic Close action button"
+  },
+  "batteryWarningTitle": "Battery Restrictions Detected",
+  "@batteryWarningTitle": {
+    "description": "Title of the battery warning banner on home screen"
+  },
+  "batteryWarningSubtitleGeneric": "Battery optimization is blocking background break reminders. Tap Fix to whitelist BlinkKind.",
+  "@batteryWarningSubtitleGeneric": {
+    "description": "Generic battery warning subtitle"
+  },
+  "batteryWarningFix": "Fix",
+  "@batteryWarningFix": {
+    "description": "Fix button label on battery warning"
+  },
+  "batteryWarningDismiss": "Dismiss",
+  "@batteryWarningDismiss": {
+    "description": "Dismiss button label on battery warning"
+  },
+  "settingsBatteryOptimizationRestricted": "Restricted — breaks may be delayed or not delivered",
+  "@settingsBatteryOptimizationRestricted": {
+    "description": "Battery restricted status description"
+  },
+  "settingsBatteryOptimizationFix": "Fix Battery Settings",
+  "@settingsBatteryOptimizationFix": {
+    "description": "Fix battery optimization button label in settings"
   }
 }

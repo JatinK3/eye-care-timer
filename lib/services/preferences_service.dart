@@ -1092,4 +1092,16 @@ class PreferencesService {
       BreakMode.gentle => 'gentle',
     };
   }
+
+  static const String batteryWarningDismissedKey = 'batteryWarningDismissed';
+
+  Future<bool> isBatteryWarningDismissed() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(batteryWarningDismissedKey) ?? false;
+  }
+
+  Future<void> dismissBatteryWarning() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(batteryWarningDismissedKey, true);
+  }
 }

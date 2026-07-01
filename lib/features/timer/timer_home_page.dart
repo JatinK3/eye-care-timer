@@ -104,6 +104,10 @@ class TimerHomePage extends StatefulWidget {
   final bool reducedMotionEnabled;
   final Future<bool> Function()? isCameraInUseOverride;
   final Future<bool> Function()? isMicInUseOverride;
+  final bool showBatteryWarning;
+  final String oemManufacturer;
+  final VoidCallback onDismissBatteryWarning;
+  final VoidCallback onFixBatteryRestriction;
 
   const TimerHomePage({
     super.key,
@@ -179,6 +183,10 @@ class TimerHomePage extends StatefulWidget {
     required this.notificationService,
     this.backgroundService,
     required this.maxConsecutiveSkips,
+    required this.showBatteryWarning,
+    required this.oemManufacturer,
+    required this.onDismissBatteryWarning,
+    required this.onFixBatteryRestriction,
   });
 
   @override
@@ -343,6 +351,7 @@ class TimerHomePageState extends State<TimerHomePage>
   DateTime? _lastTrayBlinkNudgeAt;
   DateTime? _lastAnimationTickAt;
   int _wellnessTypeIndex = 0;
+  int _wellnessAccumulator = 0;
   Timer? _phaseTransitionTimer;
   Timer? _phaseDeadlineTimer;
   // Wall-clock 1Hz ticker (desktop only) that keeps the tray/app-indicator
@@ -411,6 +420,7 @@ class TimerHomePageState extends State<TimerHomePage>
                 (_animationController.value * _initialDuration).round();
             final nextRemaining = _initialDuration - elapsedSeconds;
             if (nextRemaining != _remainingSeconds) {
+              final delta = _remainingSeconds - nextRemaining;
               _remainingSeconds = nextRemaining;
               setState(() {});
               
@@ -420,22 +430,7 @@ class TimerHomePageState extends State<TimerHomePage>
                 _pulseController.forward();
               }
               _processBlinkReminderCadences();
-              // Wellness reminders (fires independently, including during breaks)
-              if (widget.wellnessRemindersEnabled &&
-                  _isRunning &&
-                  !_isPaused &&
-                  !_isSchedulePaused &&
-                  !_isSystemIdlePaused &&
-                  !_isSnoozed) {
-                final elapsed = _initialDuration - _remainingSeconds;
-                if (elapsed > 0 &&
-                    elapsed % widget.wellnessReminderCadenceSeconds == 0) {
-                  final type = WellnessType
-                      .values[_wellnessTypeIndex % WellnessType.values.length];
-                  _wellnessTypeIndex++;
-                  unawaited(_triggerWellnessReminder(type));
-                }
-              }
+              _processWellnessReminders(delta);
               _updateDesktopState();
             }
           })
@@ -627,26 +622,12 @@ class TimerHomePageState extends State<TimerHomePage>
       final isAnimationTicking = lastTick != null &&
           DateTime.now().difference(lastTick).inMilliseconds < 200;
       if (!isAnimationTicking || (clamped - _remainingSeconds).abs() > 1) {
+        final delta = _remainingSeconds - clamped;
         _remainingSeconds = clamped;
         setState(() {});
         
         _processBlinkReminderCadences();
-        // Wellness reminders (fires independently, including during breaks)
-        if (widget.wellnessRemindersEnabled &&
-            _isRunning &&
-            !_isPaused &&
-            !_isSchedulePaused &&
-            !_isSystemIdlePaused &&
-            !_isSnoozed) {
-          final elapsed = _initialDuration - _remainingSeconds;
-          if (elapsed > 0 &&
-              elapsed % widget.wellnessReminderCadenceSeconds == 0) {
-            final type = WellnessType
-                .values[_wellnessTypeIndex % WellnessType.values.length];
-            _wellnessTypeIndex++;
-            unawaited(_triggerWellnessReminder(type));
-          }
-        }
+        _processWellnessReminders(delta);
         _updateDesktopState();
       }
     }
@@ -2522,6 +2503,28 @@ class TimerHomePageState extends State<TimerHomePage>
     unawaited(widget.notificationService.showAutoPostponeNotification());
   }
 
+  void _processWellnessReminders(int delta) {
+    if (!widget.wellnessRemindersEnabled) return;
+
+    // Only accumulate if running, not paused, not snoozed, not schedule-paused, not idle-paused
+    final isTimerActive = _isRunning &&
+        !_isPaused &&
+        !_isSchedulePaused &&
+        !_isSystemIdlePaused &&
+        !_isSnoozed;
+
+    if (isTimerActive && delta > 0 && delta < 10) {
+      _wellnessAccumulator += delta;
+      if (_wellnessAccumulator >= widget.wellnessReminderCadenceSeconds) {
+        _wellnessAccumulator = 0;
+        final type =
+            WellnessType.values[_wellnessTypeIndex % WellnessType.values.length];
+        _wellnessTypeIndex++;
+        unawaited(_triggerWellnessReminder(type));
+      }
+    }
+  }
+
   Future<void> _triggerWellnessReminder(WellnessType type) async {
     String? aiMessage;
     if (widget.aiMotivationEnabled && widget.aiApiKey.isNotEmpty) {
@@ -3665,6 +3668,17 @@ class TimerHomePageState extends State<TimerHomePage>
                 ),
               ),
             ),
+            if (widget.showBatteryWarning && !_isFocusMode)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _BatteryWarningBanner(
+                  oemManufacturer: widget.oemManufacturer,
+                  onFix: widget.onFixBatteryRestriction,
+                  onDismiss: widget.onDismissBatteryWarning,
+                ),
+              ),
             if (_showConfetti)
               const Positioned.fill(
                 child: IgnorePointer(
@@ -4681,6 +4695,165 @@ class _ConfettiPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ConfettiPainter oldDelegate) => true;
+}
+
+class _BatteryWarningBanner extends StatefulWidget {
+  final String oemManufacturer;
+  final VoidCallback onFix;
+  final VoidCallback onDismiss;
+
+  const _BatteryWarningBanner({
+    required this.oemManufacturer,
+    required this.onFix,
+    required this.onDismiss,
+  });
+
+  @override
+  State<_BatteryWarningBanner> createState() => _BatteryWarningBannerState();
+}
+
+class _BatteryWarningBannerState extends State<_BatteryWarningBanner> {
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _visible = true);
+    });
+  }
+
+  String _subtitle() {
+    final m = widget.oemManufacturer.toLowerCase();
+    if (m.contains('samsung')) {
+      return 'Samsung One UI may stop break reminders in the background. Tap Fix to open Power Saving settings.';
+    } else if (m.contains('xiaomi') || m.contains('redmi') || m.contains('miui')) {
+      return 'MIUI battery manager may block break reminders. Tap Fix to allow BlinkKind in background.';
+    } else if (m.contains('huawei') || m.contains('honor')) {
+      return 'Huawei Protected Apps list may stop break reminders. Tap Fix to add BlinkKind.';
+    } else if (m.contains('oppo') || m.contains('realme') || m.contains('coloros')) {
+      return 'ColorOS may restrict BlinkKind in background. Tap Fix to enable unrestricted access.';
+    } else if (m.contains('oneplus') || m.contains('oxygen')) {
+      return 'OnePlus battery optimization may stop break reminders. Tap Fix to set BlinkKind to unrestricted.';
+    } else if (m.contains('vivo')) {
+      return 'Vivo background manager may block break reminders. Tap Fix to allow BlinkKind.';
+    }
+    return 'Battery optimization is blocking background break reminders. Tap Fix to whitelist BlinkKind.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSlide(
+      offset: _visible ? Offset.zero : const Offset(0, -1),
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(
+        opacity: _visible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 300),
+        child: SafeArea(
+          bottom: false,
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF8C00), Color(0xFFFFB347)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF8C00).withValues(alpha: 0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.battery_alert_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Battery Restrictions Detected',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _subtitle(),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: widget.onFix,
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFFB35900),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Fix',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    TextButton(
+                      onPressed: widget.onDismiss,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white70,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        'Dismiss',
+                        style: TextStyle(fontSize: 11),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 

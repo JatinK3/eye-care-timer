@@ -444,6 +444,25 @@ class NotificationService {
   Future<bool> openReminderChannelSettings() =>
       _openSystemSettings('openReminderChannelSettings');
 
+  Future<bool> requestIgnoreBatteryOptimizations() =>
+      _openSystemSettings('requestIgnoreBatteryOptimizations');
+
+  Future<bool> openOemBatterySettings() =>
+      _openSystemSettings('openOemBatterySettings');
+
+  Future<String> detectOemManufacturer() async {
+    if (kIsWeb || !Platform.isAndroid) return '';
+    try {
+      return await _settingsChannel.invokeMethod<String>(
+            'detectOemManufacturer') ??
+          '';
+    } on PlatformException {
+      return '';
+    } on MissingPluginException {
+      return '';
+    }
+  }
+
   Future<bool> _openSystemSettings(String method) async {
     if (kIsWeb) return false;
     try {

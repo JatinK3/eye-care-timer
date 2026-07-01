@@ -91,6 +91,9 @@ class MainActivity : FlutterActivity() {
                 "openReminderChannelSettings" -> result.success(openReminderChannelSettings())
                 "isBatteryOptimizationIgnored" -> result.success(isBatteryOptimizationIgnored())
                 "openBatteryOptimizationSettings" -> result.success(openBatteryOptimizationSettings())
+                "requestIgnoreBatteryOptimizations" -> result.success(requestIgnoreBatteryOptimizations())
+                "openOemBatterySettings" -> result.success(openOemBatterySettings())
+                "detectOemManufacturer" -> result.success(Build.MANUFACTURER.lowercase())
                 else -> result.notImplemented()
             }
         }
@@ -287,6 +290,85 @@ class MainActivity : FlutterActivity() {
         } catch (_: Exception) {
             false
         }
+    }
+
+    private fun requestIgnoreBatteryOptimizations(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return false
+        return try {
+            startActivity(
+                Intent(
+                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    Uri.parse("package:$packageName")
+                )
+            )
+            true
+        } catch (_: Exception) {
+            openBatteryOptimizationSettings()
+        }
+    }
+
+    private fun openOemBatterySettings(): Boolean {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        val oemIntents: List<() -> Intent> = when {
+            manufacturer.contains("samsung") -> listOf(
+                { Intent("com.samsung.android.sm.ACTION_BATTERY_SETTINGS") },
+                { Intent("com.samsung.android.lool.ACTION_WHITELIST") }
+            )
+            manufacturer.contains("xiaomi") || manufacturer.contains("redmi") -> listOf(
+                {
+                    Intent().setClassName(
+                        "com.miui.powerkeeper",
+                        "com.miui.powerkeeper.ui.HiddenAppsConfigActivity"
+                    ).putExtra("package_name", packageName)
+                        .putExtra("package_label", applicationInfo.loadLabel(packageManager))
+                },
+                { Intent("com.miui.powerkeeper.ACTION_IGNORE_BATTERY_OPTIMIZATION") }
+            )
+            manufacturer.contains("huawei") || manufacturer.contains("honor") -> listOf(
+                {
+                    Intent().setClassName(
+                        "com.huawei.systemmanager",
+                        "com.huawei.systemmanager.optimize.process.ProtectActivity"
+                    )
+                }
+            )
+            manufacturer.contains("oppo") || manufacturer.contains("realme") || manufacturer.contains("coloros") -> listOf(
+                {
+                    Intent().setClassName(
+                        "com.coloros.safecenter",
+                        "com.coloros.safecenter.permission.startupapp.StartupAppListActivity"
+                    )
+                },
+                {
+                    Intent().setClassName(
+                        "com.oppo.safe",
+                        "com.oppo.safe.permission.startup.StartupAppListActivity"
+                    )
+                }
+            )
+            manufacturer.contains("oneplus") -> listOf(
+                { Intent("com.oneplus.security.chainlaunch.VIEW") }
+            )
+            manufacturer.contains("vivo") -> listOf(
+                {
+                    Intent().setClassName(
+                        "com.vivo.permissionmanager",
+                        "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"
+                    )
+                }
+            )
+            else -> emptyList()
+        }
+        for (intentFactory in oemIntents) {
+            try {
+                startActivity(intentFactory())
+                return true
+            } catch (_: Exception) {
+                // try next
+            }
+        }
+        // Fall back to the direct whitelist request or generic battery settings
+        return requestIgnoreBatteryOptimizations()
     }
 
     private fun openReminderChannelSettings(): Boolean {

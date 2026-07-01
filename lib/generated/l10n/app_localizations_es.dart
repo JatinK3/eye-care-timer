@@ -1118,4 +1118,24 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get close => 'Cerrar';
+
+  @override
+  String get batteryWarningTitle => 'Restricciones de batería detectadas';
+
+  @override
+  String get batteryWarningSubtitleGeneric =>
+      'La optimización de batería está bloqueando los recordatorios de descanso en segundo plano. Toca Solucionar para agregar BlinkKind a la lista blanca.';
+
+  @override
+  String get batteryWarningFix => 'Solucionar';
+
+  @override
+  String get batteryWarningDismiss => 'Descartar';
+
+  @override
+  String get settingsBatteryOptimizationRestricted =>
+      'Restringido — los descansos pueden retrasarse o no entregarse';
+
+  @override
+  String get settingsBatteryOptimizationFix => 'Solucionar ajustes de batería';
 }

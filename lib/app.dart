@@ -198,6 +198,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   bool _hasCompletedOnboarding = false;
   bool _isLoadingSettings = true;
   bool _showSplash = true;
+  bool _showBatteryWarningCard = false;
+  String _oemManufacturer = '';
 
   final PermissionsService _permissionsService = PermissionsService();
   StreamSubscription<NotificationResponse>? _notificationSubscription;
@@ -217,6 +219,19 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   Future<void> _initializeNotifications() async {
     await _notificationService.initialize();
     await _refreshNotificationReliabilityStatus();
+    if (!kIsWeb && Platform.isAndroid &&
+        _batteryOptimizationStatus == BatteryOptimizationStatus.restricted) {
+      final dismissed = await _preferencesService.isBatteryWarningDismissed();
+      if (!dismissed) {
+        final manufacturer = await _notificationService.detectOemManufacturer();
+        if (mounted) {
+          setState(() {
+            _showBatteryWarningCard = true;
+            _oemManufacturer = manufacturer;
+          });
+        }
+      }
+    }
     _notificationSubscription = _notificationService.onNotificationResponse
         .listen(_handleNotificationResponse);
     _blinkReminderAcknowledgedSubscription = _notificationService
@@ -284,6 +299,32 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
   Future<void> _requestNotificationPermissions() async {
     await _notificationService.requestPermissions();
     await _refreshNotificationPermissionStatus();
+  }
+
+  Future<void> _dismissBatteryWarning() async {
+    await _preferencesService.dismissBatteryWarning();
+    if (mounted) {
+      setState(() {
+        _showBatteryWarningCard = false;
+      });
+    }
+  }
+
+  Future<void> _fixBatteryRestriction() async {
+    final directDone =
+        await _notificationService.requestIgnoreBatteryOptimizations();
+    if (!directDone) {
+      await _notificationService.openOemBatterySettings();
+    }
+    // Re-check after the user returns from settings
+    await Future.delayed(const Duration(seconds: 1));
+    await _refreshNotificationReliabilityStatus();
+    if (!mounted) return;
+    if (_batteryOptimizationStatus == BatteryOptimizationStatus.unrestricted) {
+      setState(() {
+        _showBatteryWarningCard = false;
+      });
+    }
   }
 
   Future<void> _completeOnboarding({required bool requestReminders}) async {
@@ -1350,6 +1391,10 @@ class _BlinkKindAppState extends State<BlinkKindApp> {
                   openHistory: _openHistory,
                   isCameraInUseOverride: widget.isCameraInUseOverride,
                   isMicInUseOverride: widget.isMicInUseOverride,
+                  showBatteryWarning: _showBatteryWarningCard,
+                  oemManufacturer: _oemManufacturer,
+                  onDismissBatteryWarning: _dismissBatteryWarning,
+                  onFixBatteryRestriction: _fixBatteryRestriction,
                 ),
         );
       },

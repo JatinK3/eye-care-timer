@@ -2043,6 +2043,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get close;
+
+  /// Title of the battery warning banner on home screen
+  ///
+  /// In en, this message translates to:
+  /// **'Battery Restrictions Detected'**
+  String get batteryWarningTitle;
+
+  /// Generic battery warning subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Battery optimization is blocking background break reminders. Tap Fix to whitelist BlinkKind.'**
+  String get batteryWarningSubtitleGeneric;
+
+  /// Fix button label on battery warning
+  ///
+  /// In en, this message translates to:
+  /// **'Fix'**
+  String get batteryWarningFix;
+
+  /// Dismiss button label on battery warning
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get batteryWarningDismiss;
+
+  /// Battery restricted status description
+  ///
+  /// In en, this message translates to:
+  /// **'Restricted — breaks may be delayed or not delivered'**
+  String get settingsBatteryOptimizationRestricted;
+
+  /// Fix battery optimization button label in settings
+  ///
+  /// In en, this message translates to:
+  /// **'Fix Battery Settings'**
+  String get settingsBatteryOptimizationFix;
 }
 
 class _AppLocalizationsDelegate

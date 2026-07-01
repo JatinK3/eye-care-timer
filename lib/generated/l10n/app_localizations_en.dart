@@ -1083,4 +1083,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get close => 'Close';
+
+  @override
+  String get batteryWarningTitle => 'Battery Restrictions Detected';
+
+  @override
+  String get batteryWarningSubtitleGeneric =>
+      'Battery optimization is blocking background break reminders. Tap Fix to whitelist BlinkKind.';
+
+  @override
+  String get batteryWarningFix => 'Fix';
+
+  @override
+  String get batteryWarningDismiss => 'Dismiss';
+
+  @override
+  String get settingsBatteryOptimizationRestricted =>
+      'Restricted — breaks may be delayed or not delivered';
+
+  @override
+  String get settingsBatteryOptimizationFix => 'Fix Battery Settings';
 }

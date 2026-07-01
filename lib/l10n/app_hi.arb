@@ -323,5 +323,11 @@
   "settingsAboutPrivacyBody": "BlinkKind एक स्थानीय-प्रथम और 100% ऑफ़लाइन एप्लिकेशन है। आपका इतिहास, डेटा और सेटिंग्स पूरी तरह से आपके डिवाइस पर सुरक्षित रहते हैं। हम किसी भी व्यक्तिगत जानकारी को न तो ट्रैक करते हैं और न ही एकत्र करते हैं।",
   "settingsAboutLicensesTitle": "ओपन सोर्स लाइसेंस",
   "settingsAboutLicensesSubtitle": "उपयोग की गई तृतीय-पक्ष सॉफ़्टवेयर लाइब्रेरी",
-  "close": "बंद करें"
+  "close": "बंद करें",
+  "batteryWarningTitle": "बैटरी प्रतिबंध पाए गए",
+  "batteryWarningSubtitleGeneric": "बैटरी अनुकूलन पृष्ठभूमि अंतराल अनुस्मारक को रोक रहा है। BlinkKind को अनुमति देने के लिए 'सुधारें' पर टैप करें।",
+  "batteryWarningFix": "सुधारें",
+  "batteryWarningDismiss": "हटाएं",
+  "settingsBatteryOptimizationRestricted": "प्रतिबंधित — अंतराल अनुस्मारक में देरी हो सकती है",
+  "settingsBatteryOptimizationFix": "बैटरी सेटिंग्स ठीक करें"
 }

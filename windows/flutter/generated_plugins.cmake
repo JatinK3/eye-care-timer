@@ -7,6 +7,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   dynamic_color
   hotkey_manager_windows
   screen_retriever_windows
+  sentry_flutter
   system_tray
   window_manager
 )

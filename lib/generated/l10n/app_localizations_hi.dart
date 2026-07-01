@@ -1094,4 +1094,24 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get close => 'बंद करें';
+
+  @override
+  String get batteryWarningTitle => 'बैटरी प्रतिबंध पाए गए';
+
+  @override
+  String get batteryWarningSubtitleGeneric =>
+      'बैटरी अनुकूलन पृष्ठभूमि अंतराल अनुस्मारक को रोक रहा है। BlinkKind को अनुमति देने के लिए सुधारें पर टैप करें।';
+
+  @override
+  String get batteryWarningFix => 'सुधारें';
+
+  @override
+  String get batteryWarningDismiss => 'हटाएं';
+
+  @override
+  String get settingsBatteryOptimizationRestricted =>
+      'प्रतिबंधित — अंतराल अनुस्मारक में देरी हो सकती है';
+
+  @override
+  String get settingsBatteryOptimizationFix => 'बैटरी सेटिंग्स ठीक करें';
 }

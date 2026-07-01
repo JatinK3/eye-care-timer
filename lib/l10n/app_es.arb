@@ -323,5 +323,11 @@
   "settingsAboutPrivacyBody": "BlinkKind es una aplicación local-first y 100% sin conexión. Tus sesiones de enfoque, configuración e historial se guardan exclusivamente en tu dispositivo local. No recopilamos, almacenamos ni transmitimos ningún dato personal, métricas de uso ni transmisiones de cámara o micrófono.",
   "settingsAboutLicensesTitle": "Licencias de código abierto",
   "settingsAboutLicensesSubtitle": "Bibliotecas de software de terceros utilizadas",
-  "close": "Cerrar"
+  "close": "Cerrar",
+  "batteryWarningTitle": "Restricciones de batería detectadas",
+  "batteryWarningSubtitleGeneric": "La optimización de batería está bloqueando los recordatorios de descanso en segundo plano. Toca Solucionar para agregar BlinkKind a la lista blanca.",
+  "batteryWarningFix": "Solucionar",
+  "batteryWarningDismiss": "Descartar",
+  "settingsBatteryOptimizationRestricted": "Restringido — los descansos pueden retrasarse o no entregarse",
+  "settingsBatteryOptimizationFix": "Solucionar ajustes de batería"
 }

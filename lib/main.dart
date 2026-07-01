@@ -12,7 +12,8 @@ import 'services/preferences_service.dart';
 import 'models/timer_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String _sentryDsn = ''; // TODO: Replace with your actual Sentry DSN
+const String _sentryDsn =
+    'https://abc123xyz789@o123456.ingest.sentry.io/4500000000000000'; // Replace with actual Sentry DSN if building for release
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

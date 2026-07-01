@@ -2173,7 +2173,7 @@ class _SettingsPageState extends State<SettingsPage>
               _batteryOptimizationStatus ==
                   BatteryOptimizationStatus.unrestricted
               ? l10n.settingsBatteryUnrestricted
-              : l10n.settingsBatteryOptimized,
+              : l10n.settingsBatteryOptimizationRestricted,
           keywords: [
             'battery',
             'reliability',
@@ -2195,14 +2195,23 @@ class _SettingsPageState extends State<SettingsPage>
               _batteryOptimizationStatus ==
                       BatteryOptimizationStatus.unrestricted
                   ? l10n.settingsBatteryUnrestricted
-                  : l10n.settingsBatteryOptimized,
+                  : l10n.settingsBatteryOptimizationRestricted,
             ),
             trailing:
                 _batteryOptimizationStatus ==
                     BatteryOptimizationStatus.restricted
-                ? TextButton(
+                ? ElevatedButton.icon(
                     onPressed: _openBatteryOptimizationSettings,
-                    child: Text(l10n.settingsReview),
+                    icon: const Icon(Icons.open_in_new, size: 14),
+                    label: Text(l10n.settingsBatteryOptimizationFix),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                    ),
                   )
                 : null,
           ),

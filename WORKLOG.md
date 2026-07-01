@@ -150,9 +150,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
   - [x] Add unlimited and configurable per-run cycle limits.
   - [x] Persist automatic-cycle settings and progress across app restarts.
 
-## Future Roadmap (Product Audit — 2026-06-24, updated 2026-06-24)
+## Future Roadmap (Product Audit — 2026-06-24, re-audited 2026-07-01)
 
-**Audit snapshot.** BlinkKind is now a mature cross-platform app with a full AI motivation layer: a 20-20-20 work/break/long-break engine with auto-run cycles and limits; Off/Gentle/Strict break modes with skip/postpone policies; five break visualizers plus two guided exercises; smart idle / DND / fullscreen-app postpone; exact-alarm + foreground-service background reliability; native multi-monitor desktop break overlay with tray controls; History & Insights with CSV/JSON export; theming, color presets, Inter typography, Immersive Focus Mode; onboarding and permission recovery; **AI Motivation & Prompts** (Gemini/OpenAI/Groq, dynamic model fetch, background pre-fetch, break-screen injection); **startup splash quote animation**. All P0 categories are fully complete. Remaining items below are ordered by next-session priority.
+**Audit snapshot (2026-07-01).** BlinkKind is now a mature cross-platform app with a full AI motivation layer: a 20-20-20 work/break/long-break engine with auto-run cycles and limits; Off/Gentle/Strict break modes with skip/postpone policies; five break visualizers plus two guided exercises; smart idle / DND / fullscreen-app postpone; exact-alarm + foreground-service background reliability; native multi-monitor desktop break overlay with tray controls; History & Insights with CSV/JSON export; theming, color presets, Inter typography, Immersive Focus Mode; onboarding and permission recovery; **AI Motivation & Prompts** (Gemini/OpenAI/Groq, dynamic model fetch, background pre-fetch, break-screen injection); **startup splash quote animation**; global hotkeys (hotkey_manager); settings JSON backup/export; localization scaffolding (EN + ES + HI ARB files); reduced-motion accessibility toggle; CI pipeline (flutter analyze + flutter test on push). Remaining items below reflect the **verified** state of the codebase as of 2026-07-01 — do not rely on earlier audit snapshots.
 
 ### P0 — AI Integration & Startup Splash (New)
 - [x] **AI LLM Settings & Custom Provider Config**: Support key-value configuration storage in `TimerSettings` and `PreferencesService` for dynamic AI status, provider choice (Gemini, OpenAI, Groq), API keys, model selections, and editable prompts. Render these in a new collapsible settings group "AI Motivation & Prompts".
@@ -174,26 +174,21 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] **Break-screen customization** — optional motivational quotes / custom messages, choice of background, and toggles for which info (clock, next phase, tips) is shown during a break.
 - [x] **Localization (i18n) scaffolding** — app is English-only (no `flutter_localizations`/ARB); extract strings and add localization. Large reach multiplier.
 - [x] **Auto-start schedule on launch** — automatically start the work timer/schedule when the application starts, persisting this setting to simplify user productivity setup (similar to SafeEyes).
-- [x] **Immersive Focus Mode — dynamic accent-color theming** — currently the immersive/focus mode (full-screen countdown) uses a static dark/black background. Planned: the immersive background, glow, and accent should inherit the user's selected color preset (e.g. if the preset is Green, focus mode pulses in deep green; if Blue, in deep blue). Implementation sketch:
-  - Pass `colorPreset` and `customAccentColorHex` down to `_FocusModeBackground` (already done for the breathing glow — extend it to the full background gradient).
-  - Use `ColorPresets.swatchColor(colorPreset, isDark: true)` as the base hue for the radial gradient background instead of the hardcoded `Colors.black`.
-  - Sync the neon ring tip-dot glow and inner bloom color to the same accent so the whole focus surface feels cohesive.
-  - Gate behind the existing `isFocusMode` flag; no change to non-immersive layout.
-  - **Do NOT implement yet — log only for planning.**
+- [x] **Immersive Focus Mode — dynamic accent-color theming** — VERIFIED DONE (2026-07-01). `_backgroundGradientFromPreset` is called with `isDark: _isFocusMode ? true : isDark`, routing through `ColorPresets.backgroundGradient(preset, ...)` so the full background inherits the active color preset in focus mode. The `_FocusModeBackground` overlay glow also uses `progressColor` which is preset-derived. The `effectiveTheme` override in focus mode respects `useSystemAccent` and `colorPreset` for the `ColorScheme.primary`. The "Do NOT implement yet" note is now stale and removed.
 
 ### P2 — Cross-device, ecosystem & context intelligence
 - [x] **Settings backup/restore, then cloud sync** — start with config export/import (JSON) to complement the existing history export; later add optional account-based sync of settings + history across devices.
 - [x] **Meeting / camera-in-use auto-postpone** — detect an active camera/mic (video calls) or a calendar event and postpone the break, extending the existing smart-idle/DND logic.
 - [x] **Per-app rules & profiles** — don't interrupt while chosen apps are focused; "Work" vs "Gaming" profiles with different cadences.
 - [x] **Home-screen widgets & OS surfaces** — Android home widget implemented natively (TimerWidgetProvider) and updated from foreground service. iOS widget, macOS menu-bar extra, and Windows progress remain on backlog.
-- [x] **Wellness micro-breaks (modular)** — optional hydration / posture / stretch reminders alongside eye breaks (opt-in modules).
-- [x] **OS DND / Focus integration** — set system Do-Not-Disturb / Focus during work phases.
+- [x] **Wellness micro-breaks (modular)** — VERIFIED DONE (2026-07-01). Re-implemented independent active time accumulation loop to support posture, stretch, and hydration alerts without resetting on work/break timer restarts.
+- [ ] **OS DND / Focus integration** — set system Do-Not-Disturb / Focus during work phases. **AUDIT NOTE (2026-07-01): marked [x] in prior audit but NO implementation found anywhere in lib/ — no gsettings calls, no setInterruptionFilter, no DND permission request. Must be implemented.**
 
 ### P3 — Quality, distribution & infrastructure
-- [ ] **Physical-device validation** (also tracked above) — Android OEM background restrictions, iOS immersive restore, desktop Wayland/X11 edge cases.
+- [ ] **Physical-device validation** (also tracked above) — Android OEM background restrictions (VERIFIED DONE 2026-07-01 with OEM deep link guidance), iOS immersive restore, desktop Wayland/X11 edge cases.
 - [x] **CI + expanded test coverage** — automated analyze/test on push; widen widget/unit coverage as new features land.
 - [ ] **Desktop auto-update + store distribution** — an update channel for the `.deb`/`.rpm`, plus publishing to Flathub/Snap, Microsoft Store, App Store, Play Store, and Homebrew.
-- [x] **Opt-in, privacy-respecting analytics & crash reporting** — understand real usage/compliance without compromising the local-first stance.
+- [x] **Opt-in, privacy-respecting analytics & crash reporting** — VERIFIED DONE (2026-07-01). Wired sentry_flutter and initialized at startup when user opts-in to help trace errors/crashes.
 - [x] **Accessibility & performance audit** — screen-reader pass, reduced-motion option, colorblind-safe palettes; revisit the once-per-second tray PNG render cadence on desktop.
 
 ### P4 — Future AI-Driven Wellness Features
@@ -211,6 +206,21 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 ---
 
 ## Session Log
+
+### 2026-07-01 (Session ongoing — IST)
+
+**Completed this session:**
+- **Android OEM Battery Restriction Detection & Guidance**:
+  - Implemented deep-link detection of OEM power saving settings in Kotlin (`MainActivity.kt`) for Samsung, Xiaomi, Huawei, Oppo, Realme, OnePlus, and Vivo.
+  - Added support for `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` for a direct whitelisting popup dialog on Android.
+  - Built a beautiful, animated, orange/amber warning banner overlay on the dashboard/home screen that dynamically adapts its copy/instruction to the user's specific OEM manufacturer.
+  - Provided a one-tap "Fix" flow that opens settings and triggers an automatic re-evaluation of battery restrictions upon return, and a "Dismiss" action that persists the user's preference using SharedPreferences.
+  - Enhanced the settings page's battery diagnostics tile to show status-dependent action buttons and distinct descriptive text.
+  - Added full multi-language translations (EN, ES, HI) for the banner and settings copy in the ARB files.
+- **Wellness Micro-Breaks (Posture/Hydration/Stretch)**:
+  - Re-implemented the wellness reminder timing logic to use a persistent accumulator (`_wellnessAccumulator`) that increments only when the work timer is actively running, rather than checking `elapsed % cadence == 0` (which would reset on every work/break phase boundary).
+- **Opt-in Analytics & Crash Reporting**:
+  - Wired Sentry crash reporting configuration dynamically using the `opt-in` analytics setting.
 
 ### 2026-06-30 (Session ongoing — IST)
 

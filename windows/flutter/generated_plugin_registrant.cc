@@ -10,6 +10,7 @@
 #include <dynamic_color/dynamic_color_plugin_c_api.h>
 #include <hotkey_manager_windows/hotkey_manager_windows_plugin_c_api.h>
 #include <screen_retriever_windows/screen_retriever_windows_plugin_c_api.h>
+#include <sentry_flutter/sentry_flutter_plugin.h>
 #include <system_tray/system_tray_plugin.h>
 #include <window_manager/window_manager_plugin.h>
 
@@ -22,6 +23,8 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("HotkeyManagerWindowsPluginCApi"));
   ScreenRetrieverWindowsPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("ScreenRetrieverWindowsPluginCApi"));
+  SentryFlutterPluginRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("SentryFlutterPlugin"));
   SystemTrayPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("SystemTrayPlugin"));
   WindowManagerPluginRegisterWithRegistrar(
