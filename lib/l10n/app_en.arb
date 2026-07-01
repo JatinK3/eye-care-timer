@@ -470,7 +470,7 @@
   "@settingsOsFocusMode": {
     "description": "Title for OS Focus Mode setting"
   },
-  "settingsOsFocusModeSubtitle": "Toggle system Do Not Disturb (DND) automatically during work phases (Linux GNOME)",
+  "settingsOsFocusModeSubtitle": "Toggle system Do Not Disturb (DND) automatically during work phases (Linux GNOME / Android)",
   "@settingsOsFocusModeSubtitle": {
     "description": "Subtitle for OS Focus Mode setting"
   },

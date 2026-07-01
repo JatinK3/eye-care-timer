@@ -12,7 +12,7 @@ import 'services/preferences_service.dart';
 import 'models/timer_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String _sentryDsn =
+const String sentryDsn =
     'https://abc123xyz789@o123456.ingest.sentry.io/4500000000000000'; // Replace with actual Sentry DSN if building for release
 
 Future<void> main() async {
@@ -33,10 +33,10 @@ Future<void> main() async {
     );
   }
 
-  if (analyticsEnabled && _sentryDsn.isNotEmpty) {
+  if (analyticsEnabled && sentryDsn.isNotEmpty) {
     await SentryFlutter.init(
       (options) {
-        options.dsn = _sentryDsn;
+        options.dsn = sentryDsn;
         options.tracesSampleRate = 1.0;
         options.enableAutoSessionTracking = true;
       },

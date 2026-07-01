@@ -107,7 +107,7 @@
   "settingsAutoStartSchedule": "ऑटो-स्टार्ट शेड्यूल",
   "settingsAutoStartScheduleSubtitle": "लॉन्च पर स्वचालित रूप से टाइमर शुरू करें",
   "settingsOsFocusMode": "ओएस फोकस मोड (DND)",
-  "settingsOsFocusModeSubtitle": "काम के चरणों के दौरान स्वचालित रूप से सिस्टम डू नॉट डिस्टर्ब (DND) को टॉगल करें (Linux GNOME)",
+  "settingsOsFocusModeSubtitle": "काम के चरणों के दौरान स्वचालित रूप से सिस्टम डू नॉट डिस्टर्ब (DND) को टॉगल करें (Linux GNOME / Android)",
   "settingsOsFocusModeToggle": "काम के चरणों के दौरान सिस्टम DND टॉगल करें",
   "settingsOsFocusModeGnomeNote": "नोट: Ubuntu/GNOME मूल रूप से DND अपवादों/श्वेतसूची का समर्थन नहीं करता है। यदि आप चाहते हैं कि विशिष्ट ऐप DND को बायपास करें, तो इस टॉगल को बंद कर दें और इसके बजाय उबंटू सिस्टम सेटिंग्स -> सूचनाएं के तहत शोर करने वाले ऐप्स को मैन्युअल रूप से शांत करें।",
   "settingsBreakScreenMode": "अंतराल स्क्रीन मोड",

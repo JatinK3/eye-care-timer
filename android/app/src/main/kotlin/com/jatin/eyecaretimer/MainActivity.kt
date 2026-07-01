@@ -164,6 +164,7 @@ class MainActivity : FlutterActivity() {
                             postponeDurationSeconds = call.argument<Int>("postponeDurationSeconds") ?: 120,
                             smartIdleEnabled = call.argument<Boolean>("smartIdleEnabled") ?: true,
                             naturalBreakCreditEnabled = call.argument<Boolean>("naturalBreakCreditEnabled") ?: true,
+                            osFocusDndEnabled = call.argument<Boolean>("osFocusDndEnabled") ?: false,
                             postponedBreakDuration = call.argument<Int>("postponedBreakDuration"),
                             currentPhaseDurationSeconds = call.argument<Int>("currentPhaseDurationSeconds"),
                             autoPostponeApps = call.argument<String>("autoPostponeApps") ?: "",
@@ -209,14 +210,55 @@ class MainActivity : FlutterActivity() {
             flutterEngine.dartExecutor.binaryMessenger,
             permissionsChannel,
         ).setMethodCallHandler { call, result ->
-            when (call.method) {
                 "usageAccessPermissionStatus" ->
                     result.success(isUsageAccessGranted())
                 "openUsageAccessSettings" ->
                     result.success(openUsageAccessSettings())
+                "dndPermissionStatus" ->
+                    result.success(isDndPermissionGranted())
+                "openDndPermissionSettings" ->
+                    result.success(openDndPermissionSettings())
+                "setDndEnabled" -> {
+                    val enabled = call.arguments as? Boolean ?: false
+                    result.success(setDndEnabled(enabled))
+                }
                 else -> result.notImplemented()
             }
         }
+    }
+
+    private fun isDndPermissionGranted(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+        return notificationManager?.isNotificationPolicyAccessGranted ?: true
+    }
+
+    private fun openDndPermissionSettings(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+        return try {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun setDndEnabled(enabled: Boolean): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return false
+        if (notificationManager.isNotificationPolicyAccessGranted) {
+            try {
+                if (enabled) {
+                    notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
+                } else {
+                    notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+                }
+                return true
+            } catch (e: SecurityException) {
+                return false
+            }
+        }
+        return false
     }
 
     private fun isUsageAccessGranted(): Boolean {

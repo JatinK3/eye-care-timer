@@ -39,4 +39,29 @@ class PermissionsService {
       // no-op on platforms without the channel
     }
   }
+
+  /// Checks if Do Not Disturb (Notification Policy Access) permission is granted on Android.
+  Future<bool> isDndPermissionGranted() async {
+    if (!_isAndroid) return true;
+    try {
+      final granted = await _channel.invokeMethod<bool>('dndPermissionStatus');
+      return granted ?? true;
+    } on PlatformException {
+      return true;
+    } on MissingPluginException {
+      return true;
+    }
+  }
+
+  /// Opens the system Do Not Disturb (Notification Policy Access) settings screen.
+  Future<void> openDndPermissionSettings() async {
+    if (!_isAndroid) return;
+    try {
+      await _channel.invokeMethod<void>('openDndPermissionSettings');
+    } on PlatformException catch (e) {
+      debugPrint('Could not open DND permission settings: $e');
+    } on MissingPluginException {
+      // no-op
+    }
+  }
 }

@@ -107,7 +107,7 @@
   "settingsAutoStartSchedule": "Inicio automático del horario",
   "settingsAutoStartScheduleSubtitle": "Iniciar el temporizador automáticamente al arrancar",
   "settingsOsFocusMode": "Modo de enfoque del SO (No molestar)",
-  "settingsOsFocusModeSubtitle": "Activar el modo No molestar (DND) automáticamente durante las fases de trabajo (Linux GNOME)",
+  "settingsOsFocusModeSubtitle": "Activar el modo No molestar (DND) automáticamente durante las fases de trabajo (Linux GNOME / Android)",
   "settingsOsFocusModeToggle": "Activar No molestar durante las fases de trabajo",
   "settingsOsFocusModeGnomeNote": "Nota: Ubuntu/GNOME no admite de forma nativa excepciones o listas blancas de No molestar. Si deseas que aplicaciones específicas omitan No molestar, desactiva esta opción y silencia manualmente las aplicaciones ruidosas en Ajustes de Ubuntu -> Notificaciones.",
   "settingsBreakScreenMode": "Modo de pantalla de descanso",

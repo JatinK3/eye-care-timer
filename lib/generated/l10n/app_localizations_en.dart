@@ -356,7 +356,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsOsFocusModeSubtitle =>
-      'Toggle system Do Not Disturb (DND) automatically during work phases (Linux GNOME)';
+      'Toggle system Do Not Disturb (DND) automatically during work phases (Linux GNOME / Android)';
 
   @override
   String get settingsOsFocusModeToggle =>

@@ -1235,6 +1235,7 @@ class TimerHomePageState extends State<TimerHomePage>
         postponeDurationSeconds: widget.postponeDurationSeconds,
         smartIdleEnabled: widget.smartIdleEnabled,
         naturalBreakCreditEnabled: widget.naturalBreakCreditEnabled,
+        osFocusDndEnabled: widget.osFocusDndEnabled,
         postponedBreakDuration: _postponedBreakDuration,
         currentPhaseDurationSeconds: _initialDuration,
         maxConsecutiveSkips: widget.maxConsecutiveSkips,

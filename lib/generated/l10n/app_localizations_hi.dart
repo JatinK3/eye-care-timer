@@ -360,7 +360,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get settingsOsFocusModeSubtitle =>
-      'काम के चरणों के दौरान स्वचालित रूप से सिस्टम डू नॉट डिस्टर्ब (DND) को टॉगल करें (Linux GNOME)';
+      'काम के चरणों के दौरान स्वचालित रूप से सिस्टम डू नॉट डिस्टर्ब (DND) को टॉगल करें (Linux GNOME / Android)';
 
   @override
   String get settingsOsFocusModeToggle =>

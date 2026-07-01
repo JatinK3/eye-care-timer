@@ -53,6 +53,7 @@ class TimerForegroundService : Service() {
     var postponedBreakDuration = -1
     var currentPhaseInitialDuration = 0
     var autoPostponeApps = ""
+    var osFocusDndEnabled = false
 
     private var currentDateString: String? = null
 
@@ -223,6 +224,7 @@ class TimerForegroundService : Service() {
         currentPhaseInitialDuration = intent.getIntExtra("currentPhaseInitialDuration", if (isBreak) breakDurationForCompletedCycle(streakCount) else workDurationSeconds)
         maxConsecutiveSkips = intent.getIntExtra("maxConsecutiveSkips", 0)
         autoPostponeApps = intent.getStringExtra("autoPostponeApps") ?: ""
+        osFocusDndEnabled = intent.getBooleanExtra("osFocusDndEnabled", false)
 
         ensureChannel()
         startInForeground(buildOngoingNotification())
@@ -509,6 +511,7 @@ class TimerForegroundService : Service() {
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(NOTIFICATION_ID, buildOngoingNotification())
         scheduleExactAlarm(deadlineMillis)
+        updateDndState()
         handler.post(tick)
     }
 
@@ -527,6 +530,7 @@ class TimerForegroundService : Service() {
             stopForeground(false)
         }
         deadlineMillis = 0L
+        updateDndState()
         stopSelf()
     }
 
@@ -542,6 +546,8 @@ class TimerForegroundService : Service() {
             @Suppress("DEPRECATION")
             stopForeground(true)
         }
+        deadlineMillis = 0L
+        updateDndState()
         stopSelf()
     }
 
@@ -551,6 +557,8 @@ class TimerForegroundService : Service() {
         try {
             unregisterReceiver(screenStateReceiver)
         } catch (_: Exception) {}
+        deadlineMillis = 0L
+        updateDndState()
         super.onDestroy()
     }
 
@@ -736,6 +744,7 @@ class TimerForegroundService : Service() {
             .putInt("maxConsecutiveSkips", maxConsecutiveSkips)
             .putInt("consecutiveSkips", consecutiveSkips)
             .putString("autoPostponeApps", autoPostponeApps)
+            .putBoolean("osFocusDndEnabled", osFocusDndEnabled)
             .putLong("lastSavedAt", System.currentTimeMillis())
             .commit()
         TimerWidgetProvider.triggerUpdate(this)
@@ -782,6 +791,7 @@ class TimerForegroundService : Service() {
         maxConsecutiveSkips = preferences.getInt("maxConsecutiveSkips", 0)
         consecutiveSkips = preferences.getInt("consecutiveSkips", 0)
         autoPostponeApps = preferences.getString("autoPostponeApps", "") ?: ""
+        osFocusDndEnabled = preferences.getBoolean("osFocusDndEnabled", false)
 
         val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
         val isScreenOn = powerManager?.isInteractive ?: true
@@ -790,6 +800,33 @@ class TimerForegroundService : Service() {
             deadlineMillis = System.currentTimeMillis() + pausedRemainingSeconds * 1000L
         }
         return true
+    }
+
+    private fun updateDndState() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            if (manager != null && manager.isNotificationPolicyAccessGranted) {
+                val shouldBeDnd = osFocusDndEnabled && !isBreak && deadlineMillis > 0L && !isScreenOffPaused
+                val currentFilter = manager.currentInterruptionFilter
+                if (shouldBeDnd) {
+                    if (currentFilter != NotificationManager.INTERRUPTION_FILTER_PRIORITY) {
+                        try {
+                            manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
+                        } catch (e: SecurityException) {
+                            // Ignore if permission was revoked
+                        }
+                    }
+                } else {
+                    if (currentFilter != NotificationManager.INTERRUPTION_FILTER_ALL) {
+                        try {
+                            manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+                        } catch (e: SecurityException) {
+                            // Ignore
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun clearState() {
@@ -855,6 +892,7 @@ class TimerForegroundService : Service() {
             currentPhaseDurationSeconds: Int? = null,
             maxConsecutiveSkips: Int = 0,
             autoPostponeApps: String = "",
+            osFocusDndEnabled: Boolean = false,
         ) {
             val intent = Intent(context, TimerForegroundService::class.java).apply {
                 action = ACTION_START
@@ -878,6 +916,7 @@ class TimerForegroundService : Service() {
                 putExtra(EXTRA_NATURAL_BREAK_CREDIT, naturalBreakCreditEnabled)
                 putExtra("postponedBreakDuration", postponedBreakDuration ?: -1)
                 putExtra("maxConsecutiveSkips", maxConsecutiveSkips)
+                putExtra("osFocusDndEnabled", osFocusDndEnabled)
                 if (currentPhaseDurationSeconds != null) {
                     putExtra("currentPhaseInitialDuration", currentPhaseDurationSeconds)
                 }

@@ -745,7 +745,7 @@ abstract class AppLocalizations {
   /// Subtitle for OS Focus Mode setting
   ///
   /// In en, this message translates to:
-  /// **'Toggle system Do Not Disturb (DND) automatically during work phases (Linux GNOME)'**
+  /// **'Toggle system Do Not Disturb (DND) automatically during work phases (Linux GNOME / Android)'**
   String get settingsOsFocusModeSubtitle;
 
   /// Switch label for OS Focus Mode setting

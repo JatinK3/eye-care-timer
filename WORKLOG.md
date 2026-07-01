@@ -182,7 +182,11 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] **Per-app rules & profiles** — don't interrupt while chosen apps are focused; "Work" vs "Gaming" profiles with different cadences.
 - [x] **Home-screen widgets & OS surfaces** — Android home widget implemented natively (TimerWidgetProvider) and updated from foreground service. iOS widget, macOS menu-bar extra, and Windows progress remain on backlog.
 - [x] **Wellness micro-breaks (modular)** — VERIFIED DONE (2026-07-01). Re-implemented independent active time accumulation loop to support posture, stretch, and hydration alerts without resetting on work/break timer restarts.
-- [ ] **OS DND / Focus integration** — set system Do-Not-Disturb / Focus during work phases. **AUDIT NOTE (2026-07-01): marked [x] in prior audit but NO implementation found anywhere in lib/ — no gsettings calls, no setInterruptionFilter, no DND permission request. Must be implemented.**
+- [x] **OS DND / Focus integration** — set system Do-Not-Disturb / Focus during work phases.
+  - Implemented system Do-Not-Disturb (DND) toggle support on Android by checking/requesting DND policy access (`ACCESS_NOTIFICATION_POLICY`) and managing interruption filters via native `NotificationManager`.
+  - Updated `MainActivity.kt` and `TimerForegroundService.kt` to handle DND enabling during work phases and disabling during break phases natively (ensuring reboot-safety and background execution robustness).
+  - Integrated DND permission verification in `app.dart` to automatically detect permission revocation and prompt users to grant permission when enabling DND in Settings.
+  - Updated localized subtitles (EN, ES, HI) to explicitly mention both Linux GNOME and Android support.
 
 ### P3 — Quality, distribution & infrastructure
 - [ ] **Physical-device validation** (also tracked above) — Android OEM background restrictions (VERIFIED DONE 2026-07-01 with OEM deep link guidance), iOS immersive restore, desktop Wayland/X11 edge cases.

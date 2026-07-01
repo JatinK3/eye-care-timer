@@ -364,7 +364,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsOsFocusModeSubtitle =>
-      'Activar el modo No molestar (DND) automáticamente durante las fases de trabajo (Linux GNOME)';
+      'Activar el modo No molestar (DND) automáticamente durante las fases de trabajo (Linux GNOME / Android)';
 
   @override
   String get settingsOsFocusModeToggle =>

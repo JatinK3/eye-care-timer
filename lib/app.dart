@@ -235,7 +235,24 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
       bool shouldShowBattery = _batteryOptimizationStatus == BatteryOptimizationStatus.restricted;
       bool shouldShowNotification = _notificationPermissionStatus == NotificationPermissionStatus.disabled;
       
-      final batteryDismissed = await _preferencesService.isBatteryWarningDismissed();
+       final batteryDismissed = await _preferencesService.isBatteryWarningDismissed();
+      
+      if (_settings.osFocusDndEnabled) {
+        final dndGranted = await _permissionsService.isDndPermissionGranted();
+        if (!dndGranted) {
+          setState(() {
+            _settings = _settings.copyWith(osFocusDndEnabled: false);
+          });
+          unawaited(_preferencesService.saveOsFocusDndEnabled(false));
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('DND focus mode disabled because DND permission was not granted.'),
+              ),
+            );
+          }
+        }
+      }
       
       if (mounted) {
         setState(() {
@@ -719,7 +736,39 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     unawaited(_preferencesService.saveBlinkReminderInteractiveEnabled(enabled));
   }
 
-  void _setOsFocusDndEnabled(bool enabled) {
+  Future<void> _setOsFocusDndEnabled(bool enabled) async {
+    if (enabled && !kIsWeb && Platform.isAndroid) {
+      final granted = await _permissionsService.isDndPermissionGranted();
+      if (!granted) {
+        if (mounted) {
+          final proceed = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('DND Permission Required'),
+              content: const Text(
+                'BlinkKind needs "Do Not Disturb" access to silence distractions during your work phases. Please grant it in the next screen.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Grant'),
+                ),
+              ],
+            ),
+          );
+          if (proceed == true) {
+            await _permissionsService.openDndPermissionSettings();
+          } else {
+            return;
+          }
+        }
+      }
+    }
+
     setState(() {
       _settings = _settings.copyWith(osFocusDndEnabled: enabled);
     });
