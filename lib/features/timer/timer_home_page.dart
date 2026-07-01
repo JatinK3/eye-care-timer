@@ -3859,8 +3859,11 @@ class TimerHomePageState extends State<TimerHomePage>
           unawaited(windowManager.startDragging());
         },
         onDoubleTap: _pauseOrResume,
-        child: Container(
-          decoration: BoxDecoration(
+        child: Center(
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
             color: isDark ? Colors.black87 : Colors.white.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
@@ -3932,6 +3935,7 @@ class TimerHomePageState extends State<TimerHomePage>
             ],
           ),
         ),
+      ),
       ),
     );
   }
