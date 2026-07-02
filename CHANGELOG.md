@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Water Break Reminders (Android & Linux):** New opt-in hydration reminders with a daily goal expressed in **glasses *and* volume** (enter glasses; millilitres shown via a configurable glass size). Reminders are paced by spreading the goal evenly across your active-hours window and fire only while the timer is running.
 - **Water Intake Tracking:** A "Water today" card on the home screen (shown when water reminders are enabled) tracks glasses consumed against your goal with live `X / goal glasses · Y ml`, a button to log a glass and one to undo, a goal-met celebration state, and an automatic daily reset.
 - **"Log a glass" notification action:** Record a glass of water straight from the reminder notification without opening the app. On Android this works whether the app is foregrounded or fully killed (handled in a background isolate); on Linux it is delivered through the notification daemon and captured over D-Bus. The home-screen counter updates on resume.
+- **Water Intake History & Insights:** Hydration history is now fully integrated into the History & Insights screen. Displays compliance cards, goal-met details, logged entries, and a hydration metric on the interactive activity chart. CSV and JSON exports also include water consumption logs.
+- **Max Consecutive Postpones Limit:** Added a setting to restrict consecutive postpones (No Limit, 1, 2, 3, 5). When the limit is reached, the snooze button is hidden/blocked on the Break Screen, Desktop Controls (Linux D-Bus/Tray), and Android notification actions, forcing the user to take a break.
+- **Hydration Undo Action:** Added an undo button/tooltip on the home screen card, and a SnackBar confirmation with an "Undo" action when a glass is logged from a notification, to easily correct mistakes.
+- **Smarter Hydration Pacing:** Reminders are automatically skipped if the user is ahead of the daily goal pace.
+- **Darwin Notification Categories:** Registered notification categories for iOS and macOS water reminders to support logging actions on Apple devices.
+- **Hydration Translations:** Fully localized all new water reminders and tracking strings into Spanish (`es`) and Hindi (`hi`).
 
 ### Changed
 - **Removed the manual "Auto-Postpone Apps" field:** Dropped the technical per-app package/window-class list (which was X11-only on Linux and silently did nothing on Wayland). The non-technical smart triggers remain — automatic game/video detection, camera/mic auto-postpone, system-idle pause, and Do-Not-Disturb postpone.
@@ -19,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Android wellness reminders not firing:** Reworked wellness reminder scheduling to be anchored to a wall-clock session start and pre-scheduled across the whole active-hours horizon, so the cadence survives work/break phase changes. Previously a cadence longer than a single work phase (e.g. 30-minute reminders with 20-minute work phases) scheduled zero reminders.
 - **Android build under the Kotlin 2.2 toolchain:** Restored the release build by raising the Kotlin `languageVersion`/`apiVersion` for sub-1.9 modules and fixing a native `MainActivity` handler regression.
+- **Settings Layout Polish:** Adjusted the category header border radius to match the cards for a clean, nested visual theme.
+- **GNOME Focus Mode Note:** Removed the obsolete Ubuntu/GNOME DND whitelisting note as support works out of the box.
 
 ## [1.1.0] - 2026-07-01
 
