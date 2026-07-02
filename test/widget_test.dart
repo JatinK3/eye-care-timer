@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:eyeapptimer/app.dart';
 import 'package:eyeapptimer/services/break_overlay_service.dart';
 import 'package:eyeapptimer/services/notification_service.dart';
+import 'package:eyeapptimer/services/desktop_controls_controller.dart';
 import 'package:eyeapptimer/services/preferences_service.dart';
 import 'package:eyeapptimer/models/work_session_record.dart';
 import 'package:eyeapptimer/models/timer_event_record.dart';
@@ -1156,9 +1157,15 @@ void main() {
         todayKey(): 3,
         dateKey(yesterday): 6,
       }),
+      PreferencesService.waterHistoryKey: jsonEncode({
+        todayKey(): 4,
+        dateKey(yesterday): 8,
+      }),
       PreferencesService.streakDateKey: todayKey(),
       PreferencesService.streakCountKey: 3,
       PreferencesService.dailyGoalKey: 6,
+      PreferencesService.waterDailyGoalGlassesKey: 8,
+      PreferencesService.waterGlassSizeMlKey: 250,
       PreferencesService.workSessionHistoryKey: jsonEncode([
         WorkSessionRecord.completed(
           completedAt: DateTime.now(),
@@ -1196,6 +1203,11 @@ void main() {
     expect(find.text('Goal rate'), findsOneWidget);
     expect(find.text('Focus duration'), findsOneWidget);
     expect(find.text('Peak focus hour'), findsOneWidget);
+    expect(find.text('Hydration logged'), findsOneWidget);
+    expect(find.text('Hydration goal'), findsOneWidget);
+    expect(find.text('12 glasses'), findsAtLeastNWidgets(1));
+    expect(find.text('3000 ml total'), findsOneWidget);
+    expect(find.text('14%'), findsAtLeastNWidgets(1));
     expect(find.text('30 days'), findsOneWidget);
     expect(find.text('20m'), findsOneWidget);
 
@@ -1219,7 +1231,7 @@ void main() {
 
     expect(logsTitle, findsOneWidget);
     expect(find.text('Today'), findsAtLeastNWidgets(1));
-    expect(find.text('Yesterday'), findsOneWidget);
+    expect(find.text('Yesterday'), findsAtLeastNWidgets(1));
     expect(find.text('3 / 6'), findsOneWidget);
 
     await tester.scrollUntilVisible(
@@ -1890,11 +1902,15 @@ void main() {
     await tester.tap(find.byTooltip('Productivity Insights'));
     await tester.pumpAndSettle();
 
-    final listFinder = find.byType(ListView);
-    await tester.drag(listFinder, const Offset(0, -400));
+    final reportTitle = find.text('AI Wellness & Focus Report');
+    await tester.scrollUntilVisible(
+      reportTitle,
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
 
-    expect(find.text('AI Wellness & Focus Report'), findsOneWidget);
+    expect(reportTitle, findsOneWidget);
     expect(
       find.text('To unlock AI Wellness Reports, please enable AI motivation and configure your API key in Settings.'),
       findsOneWidget,
@@ -1915,11 +1931,15 @@ void main() {
     await tester.tap(find.byTooltip('Productivity Insights'));
     await tester.pumpAndSettle();
 
-    final listFinder = find.byType(ListView);
-    await tester.drag(listFinder, const Offset(0, -400));
+    final reportTitle = find.text('AI Wellness & Focus Report');
+    await tester.scrollUntilVisible(
+      reportTitle,
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
 
-    expect(find.text('AI Wellness & Focus Report'), findsOneWidget);
+    expect(reportTitle, findsOneWidget);
     expect(
       find.text('API key is missing. Please configure it in Settings to unlock AI Wellness Reports.'),
       findsOneWidget,
@@ -1940,11 +1960,15 @@ void main() {
     await tester.tap(find.byTooltip('Productivity Insights'));
     await tester.pumpAndSettle();
 
-    final listFinder = find.byType(ListView);
-    await tester.drag(listFinder, const Offset(0, -400));
+    final reportTitle = find.text('AI Wellness & Focus Report');
+    await tester.scrollUntilVisible(
+      reportTitle,
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
 
-    expect(find.text('AI Wellness & Focus Report'), findsOneWidget);
+    expect(reportTitle, findsOneWidget);
     expect(
       find.textContaining('personalized occupational wellness analysis'),
       findsOneWidget,
@@ -2092,7 +2116,7 @@ void main() {
       PreferencesService.waterRemindersEnabledKey: true,
       PreferencesService.waterDailyGoalGlassesKey: 99,
       PreferencesService.waterGlassesDateKey: todayKey(),
-      PreferencesService.waterGlassesTodayKey: 2,
+      PreferencesService.waterGlassesTodayKey: 0,
     });
 
     final notificationService = await pumpBlinkKindApp(tester);
@@ -2109,10 +2133,68 @@ void main() {
 
     expect(notificationService.waterReminderCount, greaterThan(0));
     expect(notificationService.lastWaterGoalGlasses, 99);
-    expect(notificationService.lastWaterConsumedGlasses, 2);
+    expect(notificationService.lastWaterConsumedGlasses, 0);
 
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('water reminders skip when already on pace', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 1200,
+      PreferencesService.waterRemindersEnabledKey: true,
+      PreferencesService.waterDailyGoalGlassesKey: 99,
+      PreferencesService.waterGlassesDateKey: todayKey(),
+      PreferencesService.waterGlassesTodayKey: 2,
+    });
+
+    final notificationService = await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.text('Start'));
+    await tester.pump();
+
+    await tester.pump(const Duration(seconds: 305));
+    await tester.idle();
+    await tester.pump();
+
+    expect(notificationService.waterReminderCount, 0);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('water notification action shows logged confirmation with undo', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.waterRemindersEnabledKey: true,
+      PreferencesService.waterDailyGoalGlassesKey: 8,
+      PreferencesService.waterGlassSizeMlKey: 250,
+      PreferencesService.waterGlassesDateKey: todayKey(),
+      PreferencesService.waterGlassesTodayKey: 3,
+    });
+
+    await pumpBlinkKindApp(tester);
+
+    DesktopControlsController.instance.triggerCommand(
+      DesktopCommand.logWaterGlass,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Logged — 4/8 glasses'), findsOneWidget);
+
+    var prefs = await SharedPreferences.getInstance();
+    expect(prefs.getInt(PreferencesService.waterGlassesTodayKey), 4);
+    expect(await PreferencesService().loadWaterHistory(), {todayKey(): 4});
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+
+    prefs = await SharedPreferences.getInstance();
+    expect(prefs.getInt(PreferencesService.waterGlassesTodayKey), 3);
+    expect(await PreferencesService().loadWaterHistory(), {todayKey(): 3});
   });
 
   testWidgets('water reminders stay silent when the toggle is off', (
@@ -2265,6 +2347,7 @@ void main() {
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getInt(PreferencesService.waterGlassesTodayKey), 3);
+      expect(await service.loadWaterHistory(), {todayKey(): 3});
       // A fresh read reflects the same persisted value.
       expect(await service.loadWaterGlassesToday(), 3);
     });
@@ -2284,6 +2367,10 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getInt(PreferencesService.waterGlassesTodayKey), 1);
       expect(prefs.getString(PreferencesService.waterGlassesDateKey), todayKey());
+      expect(await service.loadWaterHistory(), {
+        '2000-01-01': 7,
+        todayKey(): 1,
+      });
     });
 
     test('incrementWaterGlassesToday clamps into 0..99', () async {
@@ -2294,7 +2381,10 @@ void main() {
       final service = PreferencesService();
 
       expect(await service.incrementWaterGlassesToday(1), 99);
+      expect(await service.loadWaterHistory(), {todayKey(): 99});
+
       expect(await service.incrementWaterGlassesToday(-200), 0);
+      expect(await service.loadWaterHistory(), isEmpty);
     });
   });
 }

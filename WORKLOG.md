@@ -223,13 +223,14 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 
 ### P1 — Close the gaps the new features left open
 - [ ] **Localize the new strings** (ES + HI ARB): the "Water reminders" settings group, the "Water today" card, "Log a glass"/undo, and any wellness strings still hardcoded in English. The EN/ES/HI scaffolding already exists — this is string extraction + translation only.
-- [ ] **iOS parity for water**: register a `DarwinNotificationCategory` with a "Log a glass" action (today it is Android/Linux only, matching the blink pattern) and confirm iOS water/wellness delivery.
-- [ ] **Water tracking → History & Insights**: persist a daily water total (e.g. via `TimerEventRecord`) so consumption appears on the History screen with a weekly hydration trend, instead of a value that silently resets each day.
+- [x] **iOS water notification action wiring**: registered a `DarwinNotificationCategory` with a "Log a glass" action and attached it to water reminders.
+- [ ] **iOS device validation**: confirm iOS water/wellness delivery and background action behavior on a physical iPhone.
+- [x] **Water tracking → History & Insights**: persist a daily water total so consumption appears on the History screen with hydration summaries, daily logs, chart metric, AI-report context, and CSV/JSON export.
 
 ### P2 — Polish & product depth
-- [ ] **Notification-action UX**: a brief in-app confirmation ("💧 Logged — 4/8 glasses") when a glass is logged from the notification, plus an "undo last glass" affordance.
+- [x] **Notification-action UX**: a brief in-app confirmation ("Logged — 4/8 glasses") when a glass is logged from the notification, plus an "undo last glass" affordance.
 - [ ] **Windows PiP verification**: confirm `setAlwaysOnTop` / `HWND_TOPMOST` floats over borderless-fullscreen apps and surface the exclusive-fullscreen caveat in-app.
-- [ ] **Smarter water pacing**: optionally skip a reminder when the user is already ahead of the goal pace — now feasible because we track real intake.
+- [x] **Smarter water pacing**: skip water reminders when the user is already at or ahead of the expected daily goal pace.
 
 ### P3 — Release & distribution (carried from roadmap)
 - [ ] **Desktop auto-update + store distribution**: an update channel for the `.deb`/`.rpm`, plus publishing to Flathub/Snap, Microsoft Store, and Play Store.
@@ -298,6 +299,18 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 - `PreferencesService.incrementWaterGlassesToday(delta)` bumps today's count atomically, honours the daily reset, and clamps 0..99. iOS not wired (matches the existing blink-action pattern — Android/Linux only).
 - Verified: `flutter analyze` clean, `flutter test` **89/89** (3 new increment/reset/clamp tests), `flutter build apk --debug` succeeds.
 - [ ] **On-device validation pending:** confirm the "Log a glass" action increments the home-screen counter both while the app is foregrounded and while it is fully killed (Android background isolate), and that the Linux notification action fires under the running notification daemon.
+
+**Completed functionality-first pass — reminder validation + water history/insights:**
+- Added persisted `waterHistory` alongside `waterGlassesToday`. The daily counter now writes today's total into history, carries a stale day's nonzero total into history on date rollover, removes zero-count days, and clears water history with the rest of activity history.
+- Wired water history through `app.dart` and the History page refresh/reset path. History & Insights now shows hydration summary cards, hydration insight rows, a dedicated "Hydration logs" section, and a Water metric in the activity chart. AI wellness reports and CSV/JSON exports now include water intake context.
+- Added/updated tests for daily water persistence, stale-day rollover, zero clamp removal, History hydration rendering, and the AI report card scroll behavior after the new sections.
+- Local validation completed: `flutter analyze`, full `flutter test` (**91/91**), `flutter build linux --debug`, and `flutter build apk --release` all pass. The release APK build confirms no local R8/AOT compile issue for the notification background handler, but killed-app Android action behavior still needs physical-device verification.
+
+**Completed iOS water action + notification UX/pacing pass:**
+- Registered a Darwin notification category for water reminders with the shared `log_water_glass` action and attached the category identifier to iOS/macOS water reminder details. This brings the Dart notification wiring to parity with Android/Linux; physical iOS delivery still needs device validation.
+- Added an undoable in-app confirmation for notification-originated water logs: `Logged — X/Y glasses` with an `Undo` action that decrements the last logged glass and persists the corrected daily/history totals. Background/killed-app logs show the same confirmation after the app resumes and reloads the updated count.
+- Added smarter pacing: desktop foreground reminders use active-time reminder slots, and Android/iOS pre-scheduled reminders filter future slots so reminders are skipped while the user is already at or ahead of expected hydration pace. Logging or undoing a glass reschedules the future water reminders.
+- Local validation completed: `flutter analyze`, full `flutter test` (**93/93**), `flutter build linux --debug`, and `flutter build apk --release` all pass. iOS build/device action validation is pending because the dev environment is Linux.
 
 ### 2026-07-01 (Session ongoing — IST)
 

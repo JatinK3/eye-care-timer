@@ -388,6 +388,7 @@ class TimerHomePageState extends State<TimerHomePage>
   // foreground accumulators drive delivery instead.
   DateTime? _reminderSessionAnchor;
   int _waterAccumulator = 0;
+  int _waterReminderSlotIndex = 0;
   // Real glasses-of-water logged today (persisted, resets on day change).
   late int _waterGlassesToday;
   Timer? _phaseTransitionTimer;
@@ -604,8 +605,8 @@ class TimerHomePageState extends State<TimerHomePage>
               break;
             case DesktopCommand.logWaterGlass:
               // User tapped "Log a glass" on the water reminder while the app
-              // was alive. Record it against today's count.
-              _logWaterGlass(1);
+              // was alive. Record it and show an undoable confirmation.
+              _logWaterGlass(1, showConfirmation: true);
               break;
           }
         });
@@ -1135,13 +1136,36 @@ class TimerHomePageState extends State<TimerHomePage>
     }
   }
 
-  void _logWaterGlass(int delta) {
+  void _logWaterGlass(int delta, {bool showConfirmation = false}) {
     final next = (_waterGlassesToday + delta).clamp(0, 99);
     if (next == _waterGlassesToday) return;
     setState(() {
       _waterGlassesToday = next;
     });
     widget.saveWaterGlassesToday(next);
+    _scheduleBackgroundIntervalReminders();
+
+    if (showConfirmation && delta > 0) {
+      _showWaterLoggedSnackBar(next);
+    }
+  }
+
+  void _showWaterLoggedSnackBar(int count) {
+    final goal = widget.waterDailyGoalGlasses;
+    final progress = goal > 0 ? '$count/$goal' : '$count';
+    _showTimerSnackBar(
+      SnackBar(
+        content: Text('Logged — $progress glasses'),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            _logWaterGlass(-1);
+          },
+        ),
+      ),
+    );
   }
 
   /// Re-reads today's persisted glass count and updates the UI. Called on app
@@ -1154,11 +1178,16 @@ class TimerHomePageState extends State<TimerHomePage>
     try {
       final value = await loader();
       if (!mounted || value == _waterGlassesToday) return;
+      final previous = _waterGlassesToday;
       setState(() {
         _waterGlassesToday = value;
       });
       // Keep the parent's copy in step without a redundant re-save.
       widget.saveWaterGlassesToday(value);
+      _scheduleBackgroundIntervalReminders();
+      if (value > previous) {
+        _showWaterLoggedSnackBar(value);
+      }
     } catch (_) {
       // Ignore — a failed reload just leaves the last-known count on screen.
     }
@@ -1619,6 +1648,7 @@ class TimerHomePageState extends State<TimerHomePage>
       _reminderSessionAnchor = DateTime.now();
       _wellnessAccumulator = 0;
       _waterAccumulator = 0;
+      _waterReminderSlotIndex = 0;
     }
 
     _animationController.forward(from: 0.0);
@@ -1844,6 +1874,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _reminderSessionAnchor = null;
     _wellnessAccumulator = 0;
     _waterAccumulator = 0;
+    _waterReminderSlotIndex = 0;
     unawaited(widget.notificationService.cancelWellnessRemindersBackground());
     unawaited(widget.notificationService.cancelWaterRemindersBackground());
     unawaited(_backgroundService.stopPhase());
@@ -2623,17 +2654,26 @@ class TimerHomePageState extends State<TimerHomePage>
   void _processWaterReminders(int elapsedActiveSeconds) {
     if (!widget.waterRemindersEnabled) {
       _waterAccumulator = 0;
+      _waterReminderSlotIndex = 0;
       return;
     }
     final cadence = _waterCadenceSeconds();
     if (cadence <= 0) {
       _waterAccumulator = 0;
+      _waterReminderSlotIndex = 0;
       return;
     }
 
     _waterAccumulator += elapsedActiveSeconds;
     if (_waterAccumulator >= cadence) {
       _waterAccumulator %= cadence;
+      _waterReminderSlotIndex++;
+      final now = DateTime.now();
+      final paceStart = _waterPaceWindowStart(now);
+      final reminderAt = paceStart.add(
+        Duration(seconds: _waterReminderSlotIndex * cadence),
+      );
+      if (!_shouldSendWaterReminderAt(reminderAt)) return;
       unawaited(
         widget.notificationService.showWaterReminder(
           consumedGlasses: _waterGlassesToday,
@@ -2641,6 +2681,64 @@ class TimerHomePageState extends State<TimerHomePage>
         ),
       );
     }
+  }
+
+  bool _shouldSendWaterReminderAt(DateTime at) {
+    final goal = widget.waterDailyGoalGlasses;
+    if (!widget.waterRemindersEnabled || goal <= 0) return false;
+    if (_waterGlassesToday >= goal) return false;
+    final expected = _expectedWaterGlassesBy(at);
+    return expected > 0 && _waterGlassesToday < expected;
+  }
+
+  int _expectedWaterGlassesBy(DateTime at) {
+    final goal = widget.waterDailyGoalGlasses;
+    if (goal <= 0) return 0;
+
+    final start = _waterPaceWindowStart(at);
+    final end = _waterPaceWindowEnd(at, start);
+    if (!at.isAfter(start)) return 0;
+    if (!at.isBefore(end)) return goal;
+
+    final spanSeconds = end.difference(start).inSeconds;
+    if (spanSeconds <= 0) return goal;
+    final elapsedSeconds = at.difference(start).inSeconds.clamp(0, spanSeconds);
+    return (goal * elapsedSeconds / spanSeconds).ceil().clamp(0, goal);
+  }
+
+  DateTime _waterPaceWindowStart(DateTime at) {
+    if (widget.workHoursEnabled) {
+      return DateTime(
+        at.year,
+        at.month,
+        at.day,
+        widget.workHoursStartHour,
+        widget.workHoursStartMinute,
+      );
+    }
+
+    final anchor = _reminderSessionAnchor;
+    if (anchor != null &&
+        anchor.year == at.year &&
+        anchor.month == at.month &&
+        anchor.day == at.day) {
+      return anchor;
+    }
+    return DateTime(at.year, at.month, at.day);
+  }
+
+  DateTime _waterPaceWindowEnd(DateTime at, DateTime start) {
+    if (widget.workHoursEnabled) {
+      final end = DateTime(
+        at.year,
+        at.month,
+        at.day,
+        widget.workHoursEndHour,
+        widget.workHoursEndMinute,
+      );
+      if (end.isAfter(start)) return end;
+    }
+    return start.add(const Duration(hours: 8));
   }
 
   /// Seconds between water reminders: the daily goal spread evenly across the
@@ -2718,6 +2816,8 @@ class TimerHomePageState extends State<TimerHomePage>
         cadenceSeconds: waterCadence,
         firstDelaySeconds: firstDelay,
         horizonSeconds: horizon,
+        shouldScheduleDelay: (delaySeconds) =>
+            _shouldSendWaterReminderAt(now.add(Duration(seconds: delaySeconds))),
       ));
     } else {
       unawaited(widget.notificationService.cancelWaterRemindersBackground());

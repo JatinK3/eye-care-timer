@@ -14,6 +14,8 @@ import 'preferences_service.dart';
 /// Action id for the "Log a glass" button attached to water reminders.
 const String kLogWaterGlassActionId = 'log_water_glass';
 
+const String _waterNotificationCategoryId = 'blinkkind_water_reminder';
+
 /// Background isolate handler for notification action taps that must work even
 /// when the app is terminated (Android/iOS). Currently only the water
 /// reminder's "Log a glass" action needs this: it increments the persisted
@@ -128,10 +130,15 @@ class NotificationService {
             ),
           ],
         ),
-        iOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentSound: false,
+          categoryIdentifier: _waterNotificationCategoryId,
+        ),
         macOS: DarwinNotificationDetails(
           presentAlert: true,
           presentSound: false,
+          categoryIdentifier: _waterNotificationCategoryId,
         ),
       );
 
@@ -342,18 +349,27 @@ class NotificationService {
 
     tz_data.initializeTimeZones();
 
-    const initializationSettings = InitializationSettings(
-      android: AndroidInitializationSettings('ic_stat_eye'),
-      iOS: DarwinInitializationSettings(
-        requestAlertPermission: false,
-        requestBadgePermission: false,
-        requestSoundPermission: false,
-      ),
-      macOS: DarwinInitializationSettings(
-        requestAlertPermission: false,
-        requestBadgePermission: false,
-        requestSoundPermission: false,
-      ),
+    final darwinSettings = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+      notificationCategories: <DarwinNotificationCategory>[
+        DarwinNotificationCategory(
+          _waterNotificationCategoryId,
+          actions: <DarwinNotificationAction>[
+            DarwinNotificationAction.plain(
+              kLogWaterGlassActionId,
+              'Log a glass \u{1F4A7}',
+            ),
+          ],
+        ),
+      ],
+    );
+
+    final initializationSettings = InitializationSettings(
+      android: const AndroidInitializationSettings('ic_stat_eye'),
+      iOS: darwinSettings,
+      macOS: darwinSettings,
     );
 
     await _notificationsPlugin.initialize(
@@ -1046,6 +1062,7 @@ class NotificationService {
     required int startIndex,
     required List<List<String>> messages,
     NotificationDetails details = _wellnessNotificationDetails,
+    bool Function(int delaySeconds)? shouldScheduleDelay,
   }) async {
     if (kIsWeb || Platform.isLinux) return;
     await _cancelIntervalRange(idBase);
@@ -1060,27 +1077,30 @@ class NotificationService {
     int index = startIndex;
     int scheduledCount = 0;
     while (delay <= horizonSeconds && scheduledCount < 50) {
-      final message = messages[index % messages.length];
-      try {
-        await _notificationsPlugin.zonedSchedule(
-          id: idBase + scheduledCount,
-          title: message[0],
-          body: message[1],
-          scheduledDate:
-              tz.TZDateTime.now(tz.local).add(Duration(seconds: delay)),
-          notificationDetails: details,
-          androidScheduleMode: exactAlarmsAllowed
-              ? AndroidScheduleMode.exactAllowWhileIdle
-              : AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: 'interval_reminder_background',
-        );
-      } catch (e) {
-        debugPrint('Unable to schedule background interval reminder: $e');
-        break; // If one fails, stop scheduling more
+      final shouldSchedule = shouldScheduleDelay?.call(delay) ?? true;
+      if (shouldSchedule) {
+        final message = messages[index % messages.length];
+        try {
+          await _notificationsPlugin.zonedSchedule(
+            id: idBase + scheduledCount,
+            title: message[0],
+            body: message[1],
+            scheduledDate:
+                tz.TZDateTime.now(tz.local).add(Duration(seconds: delay)),
+            notificationDetails: details,
+            androidScheduleMode: exactAlarmsAllowed
+                ? AndroidScheduleMode.exactAllowWhileIdle
+                : AndroidScheduleMode.inexactAllowWhileIdle,
+            payload: 'interval_reminder_background',
+          );
+          scheduledCount++;
+        } catch (e) {
+          debugPrint('Unable to schedule background interval reminder: $e');
+          break; // If one fails, stop scheduling more
+        }
       }
       delay += cadenceSeconds;
       index++;
-      scheduledCount++;
     }
   }
 
@@ -1131,6 +1151,7 @@ class NotificationService {
     required int cadenceSeconds,
     required int firstDelaySeconds,
     required int horizonSeconds,
+    bool Function(int delaySeconds)? shouldScheduleDelay,
   }) async {
     await _scheduleIntervalRemindersBackground(
       idBase: 3100,
@@ -1142,6 +1163,7 @@ class NotificationService {
         ['Hydration break 💧', 'Time to drink a glass of water.'],
       ],
       details: _waterNotificationDetails,
+      shouldScheduleDelay: shouldScheduleDelay,
     );
   }
 

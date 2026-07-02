@@ -186,6 +186,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
   int _waterGlassesToday = 0;
   TimerSession _session = const TimerSession.idle();
   Map<String, int> _history = <String, int>{};
+  Map<String, int> _waterHistory = <String, int>{};
   List<WorkSessionRecord> _workSessionHistory = <WorkSessionRecord>[];
   List<TimerEventRecord> _timerEventHistory = <TimerEventRecord>[];
   final ValueNotifier<List<TimerEventRecord>> _timerEventHistoryListenable =
@@ -537,6 +538,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     final hasCompletedOnboarding = await _preferencesService
         .loadOnboardingCompleted();
     final waterGlassesToday = await _preferencesService.loadWaterGlassesToday();
+    final waterHistory = await _preferencesService.loadWaterHistory();
     if (!mounted) {
       return;
     }
@@ -546,6 +548,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
       _waterGlassesToday = waterGlassesToday;
       _session = session;
       _history = history;
+      _waterHistory = waterHistory;
       _workSessionHistory = workSessionHistory;
       _timerEventHistory = timerEventHistory;
       _timerEventHistoryListenable.value = List<TimerEventRecord>.unmodifiable(
@@ -1092,6 +1095,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
   void _resetHistory() {
     setState(() {
       _history = <String, int>{};
+      _waterHistory = <String, int>{};
       _workSessionHistory = <WorkSessionRecord>[];
       _timerEventHistory = <TimerEventRecord>[];
       _timerEventHistoryListenable.value = const <TimerEventRecord>[];
@@ -1128,18 +1132,27 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
   void _saveWaterGlassesToday(int count) {
     setState(() {
       _waterGlassesToday = count;
+      final updatedWaterHistory = Map<String, int>.from(_waterHistory);
+      if (count <= 0) {
+        updatedWaterHistory.remove(_todayKey());
+      } else {
+        updatedWaterHistory[_todayKey()] = count;
+      }
+      _waterHistory = updatedWaterHistory;
     });
     unawaited(_preferencesService.saveWaterGlassesToday(count));
   }
 
   Future<HistoryDataSnapshot> _refreshHistoryData() async {
     final history = await _preferencesService.loadHistory();
+    final waterHistory = await _preferencesService.loadWaterHistory();
     final workSessions = await _preferencesService.loadWorkSessionHistory();
     final timerEvents = await _preferencesService.loadTimerEventHistory();
 
     if (mounted) {
       setState(() {
         _history = history;
+        _waterHistory = waterHistory;
         _workSessionHistory = workSessions;
         _timerEventHistory = timerEvents;
         _timerEventHistoryListenable.value =
@@ -1149,6 +1162,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
 
     return HistoryDataSnapshot(
       history: history,
+      waterHistory: waterHistory,
       workSessions: workSessions,
       timerEvents: timerEvents,
     );
@@ -1159,11 +1173,14 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
       MaterialPageRoute<void>(
         builder: (_) => HistoryPage(
           history: _history,
+          waterHistory: _waterHistory,
           workSessions: _workSessionHistory,
           timerEvents: _timerEventHistory,
           timerEventsListenable: _timerEventHistoryListenable,
           refreshHistoryData: _refreshHistoryData,
           dailyGoal: _settings.dailyGoal,
+          waterDailyGoalGlasses: _settings.waterDailyGoalGlasses,
+          waterGlassSizeMl: _settings.waterGlassSizeMl,
           resetHistory: _resetHistory,
           aiProvider: _settings.aiProvider,
           aiApiKey: _settings.aiApiKey,

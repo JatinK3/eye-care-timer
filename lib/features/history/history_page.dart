@@ -16,11 +16,13 @@ enum HistoryRange { sevenDays, thirtyDays, all }
 
 class HistoryDataSnapshot {
   final Map<String, int> history;
+  final Map<String, int> waterHistory;
   final List<WorkSessionRecord> workSessions;
   final List<TimerEventRecord> timerEvents;
 
   const HistoryDataSnapshot({
     required this.history,
+    required this.waterHistory,
     required this.workSessions,
     required this.timerEvents,
   });
@@ -28,11 +30,14 @@ class HistoryDataSnapshot {
 
 class HistoryPage extends StatefulWidget {
   final Map<String, int> history;
+  final Map<String, int> waterHistory;
   final List<WorkSessionRecord> workSessions;
   final List<TimerEventRecord> timerEvents;
   final ValueListenable<List<TimerEventRecord>>? timerEventsListenable;
   final Future<HistoryDataSnapshot> Function()? refreshHistoryData;
   final int dailyGoal;
+  final int waterDailyGoalGlasses;
+  final int waterGlassSizeMl;
   final VoidCallback resetHistory;
   final String aiProvider;
   final String aiApiKey;
@@ -42,11 +47,14 @@ class HistoryPage extends StatefulWidget {
   const HistoryPage({
     super.key,
     required this.history,
+    required this.waterHistory,
     required this.workSessions,
     required this.timerEvents,
     this.timerEventsListenable,
     this.refreshHistoryData,
     required this.dailyGoal,
+    required this.waterDailyGoalGlasses,
+    required this.waterGlassSizeMl,
     required this.resetHistory,
     required this.aiProvider,
     required this.aiApiKey,
@@ -60,6 +68,7 @@ class HistoryPage extends StatefulWidget {
 
 class _HistoryPageState extends State<HistoryPage> {
   late Map<String, int> _history;
+  late Map<String, int> _waterHistory;
   late List<WorkSessionRecord> _workSessions;
   late List<TimerEventRecord> _timerEvents;
   HistoryRange _range = HistoryRange.sevenDays;
@@ -74,6 +83,7 @@ class _HistoryPageState extends State<HistoryPage> {
   void initState() {
     super.initState();
     _history = Map<String, int>.from(widget.history);
+    _waterHistory = Map<String, int>.from(widget.waterHistory);
     _workSessions = List<WorkSessionRecord>.from(widget.workSessions);
     _timerEvents = List<TimerEventRecord>.from(widget.timerEvents);
     widget.timerEventsListenable?.addListener(_syncTimerEvents);
@@ -87,6 +97,7 @@ class _HistoryPageState extends State<HistoryPage> {
       widget.timerEventsListenable?.addListener(_syncTimerEvents);
     }
     _history = Map<String, int>.from(widget.history);
+    _waterHistory = Map<String, int>.from(widget.waterHistory);
     _workSessions = List<WorkSessionRecord>.from(widget.workSessions);
     _timerEvents = List<TimerEventRecord>.from(
       widget.timerEventsListenable?.value ?? widget.timerEvents,
@@ -116,6 +127,7 @@ class _HistoryPageState extends State<HistoryPage> {
       if (!mounted) return;
       setState(() {
         _history = Map<String, int>.from(snapshot.history);
+        _waterHistory = Map<String, int>.from(snapshot.waterHistory);
         _workSessions = List<WorkSessionRecord>.from(snapshot.workSessions);
         _timerEvents = List<TimerEventRecord>.from(snapshot.timerEvents);
       });
@@ -147,6 +159,23 @@ class _HistoryPageState extends State<HistoryPage> {
     final blinksLoggedCount = rangeEvents
         .where((e) => e.type == TimerEventType.blinkReminderAcknowledged)
         .length;
+    final totalWaterGlasses = dates.fold<int>(
+      0,
+      (sum, date) => sum + (_waterHistory[_dateKey(date)] ?? 0),
+    );
+    final totalWaterMl = totalWaterGlasses * widget.waterGlassSizeMl;
+    final waterGoalDays = widget.waterDailyGoalGlasses <= 0
+        ? 0
+        : dates
+            .where(
+              (date) =>
+                  (_waterHistory[_dateKey(date)] ?? 0) >=
+                  widget.waterDailyGoalGlasses,
+            )
+            .length;
+    final waterGoalRate = dates.isEmpty || widget.waterDailyGoalGlasses <= 0
+        ? 0
+        : ((waterGoalDays / dates.length) * 100).round();
 
     // Calculate range-specific statistics
     final goalDays = dates
@@ -233,9 +262,11 @@ class _HistoryPageState extends State<HistoryPage> {
                 : _ActivityBarChart(
                     dates: dates,
                     history: _history,
+                    waterHistory: _waterHistory,
                     workSessions: _workSessions,
                     timerEvents: _timerEvents,
                     dailyGoal: widget.dailyGoal,
+                    waterDailyGoal: widget.waterDailyGoalGlasses,
                   ),
           ),
           const SizedBox(height: 16),
@@ -268,6 +299,21 @@ class _HistoryPageState extends State<HistoryPage> {
               label: AppLocalizations.of(context)!.peakFocusHourLabel,
               value: peakHour,
               detail: "Most active time",
+            ),
+          ),
+          const SizedBox(height: 12),
+          _MetricRow(
+            first: _MetricCard(
+              icon: Icons.water_drop_outlined,
+              label: "Hydration logged",
+              value: "$totalWaterGlasses glasses",
+              detail: totalWaterMl > 0 ? "$totalWaterMl ml total" : "No water logged",
+            ),
+            second: _MetricCard(
+              icon: Icons.flag_outlined,
+              label: "Hydration goal",
+              value: "$waterGoalRate%",
+              detail: "$waterGoalDays of ${dates.length} days met",
             ),
           ),
           const SizedBox(height: 12),
@@ -333,6 +379,18 @@ class _HistoryPageState extends State<HistoryPage> {
                   color: Colors.teal,
                 ),
                 _InsightRow(
+                  label: "Water logged",
+                  value: "$totalWaterGlasses glasses",
+                  icon: Icons.water_drop_outlined,
+                  color: const Color(0xFF3BA7E6),
+                ),
+                _InsightRow(
+                  label: "Hydration goal rate",
+                  value: "$waterGoalRate%",
+                  icon: Icons.flag_outlined,
+                  color: Colors.blue,
+                ),
+                _InsightRow(
                   label: AppLocalizations.of(context)!.complianceRate,
                   value: "$complianceRate%",
                   icon: Icons.verified_outlined,
@@ -355,6 +413,24 @@ class _HistoryPageState extends State<HistoryPage> {
                             label: _friendlyDateLabel(date),
                             count: _history[_dateKey(date)] ?? 0,
                             dailyGoal: widget.dailyGoal,
+                          ),
+                        )
+                        .toList(),
+                  ),
+          ),
+          const SizedBox(height: 16),
+
+          _HistorySection(
+            title: "Hydration logs",
+            child: dates.isEmpty
+                ? _EmptyMessage(AppLocalizations.of(context)!.noActivityRange)
+                : Column(
+                    children: dates
+                        .map(
+                          (date) => _HistoryRow(
+                            label: _friendlyDateLabel(date),
+                            count: _waterHistory[_dateKey(date)] ?? 0,
+                            dailyGoal: widget.waterDailyGoalGlasses,
                           ),
                         )
                         .toList(),
@@ -475,7 +551,10 @@ class _HistoryPageState extends State<HistoryPage> {
 
           // Clear History Action Button
           OutlinedButton.icon(
-            onPressed: _history.isEmpty && _workSessions.isEmpty
+            onPressed: _history.isEmpty &&
+                    _waterHistory.isEmpty &&
+                    _workSessions.isEmpty &&
+                    _timerEvents.isEmpty
                 ? null
                 : _confirmResetHistory,
             icon: const Icon(Icons.delete_outline),
@@ -524,6 +603,20 @@ class _HistoryPageState extends State<HistoryPage> {
       final blinksLoggedCount = rangeEvents
           .where((e) => e.type == TimerEventType.blinkReminderAcknowledged)
           .length;
+      final totalWaterGlasses = dates.fold<int>(
+        0,
+        (sum, date) => sum + (_waterHistory[_dateKey(date)] ?? 0),
+      );
+      final totalWaterMl = totalWaterGlasses * widget.waterGlassSizeMl;
+      final waterGoalDays = widget.waterDailyGoalGlasses <= 0
+          ? 0
+          : dates
+              .where(
+                (date) =>
+                    (_waterHistory[_dateKey(date)] ?? 0) >=
+                    widget.waterDailyGoalGlasses,
+              )
+              .length;
 
       final goalDays = dates
           .where((date) => (_history[_dateKey(date)] ?? 0) >= widget.dailyGoal)
@@ -559,7 +652,8 @@ class _HistoryPageState extends State<HistoryPage> {
           '- Daily Streak: $longestStreak days\n'
           '- Peak Focus Hour: $peakHour\n'
           '- Break Compliance Rate: $complianceRate% ($completedWorkCount taken, $skippedBreakCount skipped, $postponedBreakCount postponed)\n'
-          '- Conscious Blinks Registered: $blinksLoggedCount\n\n'
+          '- Conscious Blinks Registered: $blinksLoggedCount\n'
+          '- Water Intake Logged: $totalWaterGlasses glasses (${totalWaterMl}ml), hydration goal met on $waterGoalDays days\n\n'
           'Generate a concise, insightful, and encouraging wellness report (maximum 100 words). '
           'Identify exactly one key strength and one actionable improvement area (e.g. eye-strain prevention, posture, consistency, or pacing breaks) specifically tailored to these metrics. '
           'Keep the tone professional, friendly, and motivating. Do not use markdown headers, just clean paragraphs.';
@@ -750,13 +844,13 @@ class _HistoryPageState extends State<HistoryPage> {
         (index) => today.subtract(Duration(days: index)),
       );
     }
-    final dates =
-        _history.keys
-            .map(DateTime.tryParse)
-            .whereType<DateTime>()
-            .map(_startOfDay)
-            .toList()
-          ..sort((a, b) => b.compareTo(a));
+    final allKeys = <String>{..._history.keys, ..._waterHistory.keys};
+    final dates = allKeys
+        .map(DateTime.tryParse)
+        .whereType<DateTime>()
+        .map(_startOfDay)
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
     return dates;
   }
 
@@ -907,7 +1001,9 @@ class _HistoryPageState extends State<HistoryPage> {
     widget.resetHistory();
     setState(() {
       _history = <String, int>{};
+      _waterHistory = <String, int>{};
       _workSessions = <WorkSessionRecord>[];
+      _timerEvents = <TimerEventRecord>[];
     });
   }
 
@@ -969,10 +1065,10 @@ class _HistoryPageState extends State<HistoryPage> {
     final String content;
     final String formatName;
     if (isCsv) {
-      content = _generateCSV(_workSessions, _timerEvents);
+      content = _generateCSV(_workSessions, _timerEvents, _waterHistory);
       formatName = "CSV";
     } else {
-      content = _generateJSON(_workSessions, _timerEvents);
+      content = _generateJSON(_workSessions, _timerEvents, _waterHistory);
       formatName = "JSON";
     }
 
@@ -999,8 +1095,8 @@ class _HistoryPageState extends State<HistoryPage> {
   }) async {
     try {
       final String content = isCsv
-          ? _generateCSV(_workSessions, _timerEvents)
-          : _generateJSON(_workSessions, _timerEvents);
+          ? _generateCSV(_workSessions, _timerEvents, _waterHistory)
+          : _generateJSON(_workSessions, _timerEvents, _waterHistory);
 
       final extension = isCsv ? 'csv' : 'json';
       final timestamp = DateTime.now()
@@ -1096,14 +1192,20 @@ class _HistoryPageState extends State<HistoryPage> {
   String _generateCSV(
     List<WorkSessionRecord> workSessions,
     List<TimerEventRecord> events,
+    Map<String, int> waterHistory,
   ) {
     final buffer = StringBuffer();
-    buffer.writeln("Event Type,Timestamp,Duration (seconds)");
+    buffer.writeln("Record Type,Timestamp,Duration (seconds),Water Glasses");
     for (final event in events) {
       final type = event.type.name;
       final date = event.timestamp.toIso8601String();
       final duration = event.durationSeconds;
-      buffer.writeln("$type,$date,$duration");
+      buffer.writeln("$type,$date,$duration,");
+    }
+    final waterEntries = waterHistory.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
+    for (final entry in waterEntries) {
+      buffer.writeln("waterTotal,${entry.key}T00:00:00,0,${entry.value}");
     }
     return buffer.toString();
   }
@@ -1111,11 +1213,13 @@ class _HistoryPageState extends State<HistoryPage> {
   String _generateJSON(
     List<WorkSessionRecord> workSessions,
     List<TimerEventRecord> events,
+    Map<String, int> waterHistory,
   ) {
     final Map<String, dynamic> exportData = {
       "exportDate": DateTime.now().toIso8601String(),
       "completedWorkSessions": workSessions.map((s) => s.toJson()).toList(),
       "timerEvents": events.map((e) => e.toJson()).toList(),
+      "waterHistory": waterHistory,
     };
     return const JsonEncoder.withIndent('  ').convert(exportData);
   }
@@ -1428,21 +1532,25 @@ class _HistoryRow extends StatelessWidget {
   }
 }
 
-enum ChartMetric { cycles, focusTime, compliance }
+enum ChartMetric { cycles, focusTime, compliance, water }
 
 class _ActivityBarChart extends StatefulWidget {
   final List<DateTime> dates;
   final Map<String, int> history;
+  final Map<String, int> waterHistory;
   final List<WorkSessionRecord> workSessions;
   final List<TimerEventRecord> timerEvents;
   final int dailyGoal;
+  final int waterDailyGoal;
 
   const _ActivityBarChart({
     required this.dates,
     required this.history,
+    required this.waterHistory,
     required this.workSessions,
     required this.timerEvents,
     required this.dailyGoal,
+    required this.waterDailyGoal,
   });
 
   @override
@@ -1484,6 +1592,8 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
           final postponed = dayEvents.where((e) => e.type == TimerEventType.breakPostponed).length;
           final totalDecisions = completed + skipped + postponed;
           return totalDecisions == 0 ? 0.0 : (completed / totalDecisions * 100.0);
+        case ChartMetric.water:
+          return (widget.waterHistory[key] ?? 0).toDouble();
       }
     }).toList();
 
@@ -1507,6 +1617,10 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
       case ChartMetric.compliance:
         goalValue = 80.0; // 80% baseline compliance goal
         maxValue = 100.0;
+        break;
+      case ChartMetric.water:
+        goalValue = widget.waterDailyGoal.toDouble();
+        maxValue = values.fold<double>(goalValue, (prev, val) => val > prev ? val : prev);
         break;
     }
 
@@ -1535,6 +1649,11 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                   value: ChartMetric.compliance,
                   icon: Icon(Icons.favorite_border, size: 16),
                   label: Text("Eye Health", style: TextStyle(fontSize: 12)),
+                ),
+                ButtonSegment(
+                  value: ChartMetric.water,
+                  icon: Icon(Icons.water_drop_outlined, size: 16),
+                  label: Text("Water", style: TextStyle(fontSize: 12)),
                 ),
               ],
               selected: {_activeMetric},
@@ -1569,14 +1688,18 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                       ? "${values[_selectedIndex!].toInt()} cycles / goal: ${goalValue.toInt()}"
                       : _activeMetric == ChartMetric.focusTime
                           ? "${values[_selectedIndex!].toStringAsFixed(1)} mins / goal: ${goalValue.toStringAsFixed(1)} mins"
-                          : "${values[_selectedIndex!].toStringAsFixed(1)}% Eye Health Score / goal: 80%",
+                          : _activeMetric == ChartMetric.water
+                              ? "${values[_selectedIndex!].toInt()} glasses / goal: ${goalValue.toInt()}"
+                              : "${values[_selectedIndex!].toStringAsFixed(1)}% Eye Health Score / goal: 80%",
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: values[_selectedIndex!] >= goalValue
                         ? (_activeMetric == ChartMetric.cycles
                             ? Colors.green
                             : _activeMetric == ChartMetric.focusTime
                                 ? Colors.cyan
-                                : Colors.teal)
+                                : _activeMetric == ChartMetric.water
+                                    ? const Color(0xFF3BA7E6)
+                                    : Colors.teal)
                         : Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1687,6 +1810,18 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                         );
+                                } else if (_activeMetric == ChartMetric.water) {
+                                  gradient = isGoalReached
+                                      ? const LinearGradient(
+                                          colors: [Color(0xFF3BA7E6), Color(0xFF7DD3FC)],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        )
+                                      : const LinearGradient(
+                                          colors: [Color(0xFF60A5FA), Color(0xFF93C5FD)],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        );
                                 } else {
                                   gradient = isGoalReached
                                       ? const LinearGradient(
@@ -1720,12 +1855,16 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                                           ? Colors.green
                                                           : _activeMetric == ChartMetric.focusTime
                                                               ? Colors.cyan
-                                                              : Colors.deepPurple)
+                                                              : _activeMetric == ChartMetric.water
+                                                                  ? const Color(0xFF3BA7E6)
+                                                                  : Colors.deepPurple)
                                                       : (_activeMetric == ChartMetric.cycles
                                                           ? Theme.of(context).colorScheme.primary
                                                           : _activeMetric == ChartMetric.focusTime
                                                               ? Colors.blue
-                                                              : Colors.orange))
+                                                              : _activeMetric == ChartMetric.water
+                                                                  ? const Color(0xFF60A5FA)
+                                                                  : Colors.orange))
                                                   .withValues(alpha: 0.4),
                                               blurRadius: 8,
                                               spreadRadius: 2,
@@ -1774,7 +1913,9 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                                 ? Colors.green
                                                 : _activeMetric == ChartMetric.focusTime
                                                     ? Colors.cyan
-                                                    : Colors.deepPurple)
+                                                    : _activeMetric == ChartMetric.water
+                                                        ? const Color(0xFF3BA7E6)
+                                                        : Colors.deepPurple)
                                             .withValues(alpha: 0.4)
                                         : Colors.transparent,
                                   ),

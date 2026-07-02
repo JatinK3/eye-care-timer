@@ -87,6 +87,7 @@ class PreferencesService {
   static const String waterGlassSizeMlKey = 'waterGlassSizeMl';
   static const String waterGlassesTodayKey = 'waterGlassesToday';
   static const String waterGlassesDateKey = 'waterGlassesDate';
+  static const String waterHistoryKey = 'waterHistory';
   static const String blinkReminderInteractiveEnabledKey =
       'blinkReminderInteractiveEnabled';
   static const String maxConsecutiveSkipsKey = 'maxConsecutiveSkips';
@@ -277,6 +278,11 @@ class PreferencesService {
     return _historyFromPrefs(prefs);
   }
 
+  Future<Map<String, int>> loadWaterHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    return _waterHistoryFromPrefs(prefs);
+  }
+
   Future<List<WorkSessionRecord>> loadWorkSessionHistory() async {
     final prefs = await SharedPreferences.getInstance();
     final rawRecords = prefs.getString(workSessionHistoryKey);
@@ -375,6 +381,7 @@ class PreferencesService {
     await prefs.remove(dailyHistoryKey);
     await prefs.remove(workSessionHistoryKey);
     await prefs.remove(timerEventsHistoryKey);
+    await prefs.remove(waterHistoryKey);
   }
 
   Future<TimerSettings> resetToDefaultSettings(int currentStreak) async {
@@ -849,18 +856,29 @@ class PreferencesService {
   Future<int> loadWaterGlassesToday() async {
     final prefs = await SharedPreferences.getInstance();
     final today = _dateKey(DateTime.now());
-    if (prefs.getString(waterGlassesDateKey) != today) {
+    final savedDate = prefs.getString(waterGlassesDateKey);
+    if (savedDate != today) {
+      final previousCount = prefs.getInt(waterGlassesTodayKey) ?? 0;
+      if (savedDate != null && previousCount > 0) {
+        await _saveWaterHistoryCount(prefs, savedDate, previousCount);
+      }
       await prefs.setString(waterGlassesDateKey, today);
       await prefs.setInt(waterGlassesTodayKey, 0);
       return 0;
     }
-    return prefs.getInt(waterGlassesTodayKey) ?? 0;
+    final todayCount = prefs.getInt(waterGlassesTodayKey) ?? 0;
+    if (todayCount > 0) {
+      await _saveWaterHistoryCount(prefs, today, todayCount);
+    }
+    return todayCount;
   }
 
   Future<void> saveWaterGlassesToday(int count) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(waterGlassesDateKey, _dateKey(DateTime.now()));
+    final today = _dateKey(DateTime.now());
+    await prefs.setString(waterGlassesDateKey, today);
     await prefs.setInt(waterGlassesTodayKey, count);
+    await _saveWaterHistoryCount(prefs, today, count);
   }
 
   /// Atomically bumps today's glass count by [delta] (honouring the daily reset)
@@ -1074,7 +1092,15 @@ class PreferencesService {
   }
 
   Map<String, int> _historyFromPrefs(SharedPreferences prefs) {
-    final rawHistory = prefs.getString(dailyHistoryKey);
+    return _intMapFromPrefs(prefs, dailyHistoryKey);
+  }
+
+  Map<String, int> _waterHistoryFromPrefs(SharedPreferences prefs) {
+    return _intMapFromPrefs(prefs, waterHistoryKey);
+  }
+
+  Map<String, int> _intMapFromPrefs(SharedPreferences prefs, String key) {
+    final rawHistory = prefs.getString(key);
     if (rawHistory == null || rawHistory.isEmpty) {
       return <String, int>{};
     }
@@ -1108,6 +1134,20 @@ class PreferencesService {
       history[dateKey] = count;
     }
     await prefs.setString(dailyHistoryKey, jsonEncode(history));
+  }
+
+  Future<void> _saveWaterHistoryCount(
+    SharedPreferences prefs,
+    String dateKey,
+    int count,
+  ) async {
+    final history = _waterHistoryFromPrefs(prefs);
+    if (count <= 0) {
+      history.remove(dateKey);
+    } else {
+      history[dateKey] = count;
+    }
+    await prefs.setString(waterHistoryKey, jsonEncode(history));
   }
 
   ThemeMode _themeModeFromString(String? value) {
