@@ -265,9 +265,12 @@ class TimerHomePageState extends State<TimerHomePage>
   static const Size _miniModeWindowSize = Size(168, 168);
 
   bool _isMiniMode = false;
+  bool _restoreMiniModeAfterBreak = false;
+  int _breakOverlayRequestId = 0;
   bool _androidPipSupported = false;
   Size? _savedWindowSize;
   Offset? _savedWindowPosition;
+  Offset? _savedMiniModePosition;
 
   String _resolveVisualizerStyle() {
     if (widget.breakVisualizerStyle == 'Random') {
@@ -1195,7 +1198,7 @@ class TimerHomePageState extends State<TimerHomePage>
       _cancelReminders();
       _cancelPhaseDeadlineTimer();
       unawaited(_backgroundService.stopPhase());
-      unawaited(widget.breakOverlayService?.stopBreakOverlay());
+      unawaited(_stopBreakOverlayAndRestoreMiniIfNeeded());
       setState(() {
         _isRunning = false;
         _isPaused = false;
@@ -1254,19 +1257,14 @@ class TimerHomePageState extends State<TimerHomePage>
     );
     if (projection.isBreak && widget.breakMode != BreakMode.off) {
       unawaited(
-        widget.breakOverlayService?.showBreakOverlay(
+        _showBreakOverlayAfterMiniExit(
           durationSeconds: projection.remainingSeconds,
-          breakMode: widget.breakMode,
           breakVisualizerStyle: _activeBreakVisualizerStyle,
           aiQuote: _cachedAiQuote,
-          showClock: widget.breakShowClock,
-          showTips: widget.breakShowTips,
-          showProgress: widget.breakShowProgress,
-          customMessage: widget.breakCustomMessage,
         ),
       );
     } else {
-      unawaited(widget.breakOverlayService?.stopBreakOverlay());
+      unawaited(_stopBreakOverlayAndRestoreMiniIfNeeded());
     }
     _updateDesktopState();
   }
@@ -1569,8 +1567,12 @@ class TimerHomePageState extends State<TimerHomePage>
     _flashColor = isBreak ? accentColor : Colors.white;
     _flashController.forward(from: 0.0);
 
-    if (isBreak && _isMiniMode) {
-      unawaited(_toggleMiniMode());
+    final breakStartedFromMiniMode = isBreak &&
+        widget.breakMode != BreakMode.off &&
+        _isMiniMode &&
+        _isDesktopMiniModePlatform;
+    if (breakStartedFromMiniMode) {
+      _restoreMiniModeAfterBreak = true;
     }
 
     setState(() {
@@ -1613,15 +1615,14 @@ class TimerHomePageState extends State<TimerHomePage>
     _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: isBreak);
     if (isBreak && widget.breakMode != BreakMode.off) {
       unawaited(
-        widget.breakOverlayService?.showBreakOverlay(
+        _showBreakOverlayAfterMiniExit(
           durationSeconds: duration,
-          breakMode: widget.breakMode,
           breakVisualizerStyle: _activeBreakVisualizerStyle,
           aiQuote: _cachedAiQuote,
         ),
       );
     } else {
-      unawaited(widget.breakOverlayService?.stopBreakOverlay());
+      unawaited(_stopBreakOverlayAndRestoreMiniIfNeeded());
       if (!isBreak) {
         unawaited(_preFetchAiQuote());
       }
@@ -1699,8 +1700,8 @@ class TimerHomePageState extends State<TimerHomePage>
       _saveActiveSession(isPaused: true);
       _cancelReminders();
       unawaited(_backgroundService.stopPhase());
-      unawaited(widget.breakOverlayService?.stopBreakOverlay());
     });
+    unawaited(_stopBreakOverlayAndRestoreMiniIfNeeded());
     _updateDesktopState();
   }
 
@@ -1786,10 +1787,9 @@ class TimerHomePageState extends State<TimerHomePage>
     // break started. Without this it would still fire at the original break-end
     // time and tell the user the break completed even though they postponed it.
     _cancelReminders();
-    // Tear down the break overlay too, so postponing from the tray menu (which
-    // doesn't go through the overlay's own dismiss path) doesn't leave the
-    // fullscreen break screen up over the resumed work phase.
-    unawaited(widget.breakOverlayService?.stopBreakOverlay());
+    // Tear down the break overlay after switching back to a work phase, so
+    // postponing from PiP can restore the compact timer instead of exposing the
+    // full dashboard inside the tiny PiP-sized native window.
     final postponeSeconds = widget.postponeDurationSeconds;
     widget.saveTimerEventRecord(
       TimerEventRecord(
@@ -1814,6 +1814,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: false);
     _saveActiveSession(remainingSeconds: _remainingSeconds);
     _schedulePhaseDeadlineTimer(_phaseEndsAt!);
+    unawaited(_stopBreakOverlayAndRestoreMiniIfNeeded());
     // Schedule the reminder for the new (postponed) work window so it behaves
     // like any other work phase instead of ending silently.
     unawaited(_schedulePhaseReminder(postponeSeconds, isBreak: false));
@@ -1832,6 +1833,8 @@ class TimerHomePageState extends State<TimerHomePage>
     unawaited(widget.notificationService.cancelWellnessRemindersBackground());
     unawaited(widget.notificationService.cancelWaterRemindersBackground());
     unawaited(_backgroundService.stopPhase());
+    _restoreMiniModeAfterBreak = false;
+    _breakOverlayRequestId++;
     unawaited(widget.breakOverlayService?.stopBreakOverlay());
     if (!_isBreak) {
       final elapsed = _initialDuration - _remainingSeconds;
@@ -2083,7 +2086,7 @@ class TimerHomePageState extends State<TimerHomePage>
           _animationController.reset();
           _pulseController.reset();
         });
-        unawaited(widget.breakOverlayService?.stopBreakOverlay());
+        unawaited(_stopBreakOverlayAndRestoreMiniIfNeeded());
         widget.clearSession();
         _updateDesktopState();
         return;
@@ -4020,6 +4023,63 @@ class TimerHomePageState extends State<TimerHomePage>
     });
   }
 
+  bool get _isDesktopMiniModePlatform =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.windows);
+
+  Future<void> _showBreakOverlayAfterMiniExit({
+    required int durationSeconds,
+    required String breakVisualizerStyle,
+    String? aiQuote,
+  }) async {
+    final requestId = ++_breakOverlayRequestId;
+    if (_restoreMiniModeAfterBreak &&
+        _isMiniMode &&
+        _isDesktopMiniModePlatform) {
+      await _setDesktopMiniMode(false);
+    }
+    if (!_isActiveBreakOverlayRequest(requestId)) return;
+
+    await widget.breakOverlayService?.showBreakOverlay(
+      durationSeconds: durationSeconds,
+      breakMode: widget.breakMode,
+      breakVisualizerStyle: breakVisualizerStyle,
+      aiQuote: aiQuote,
+      showClock: widget.breakShowClock,
+      showTips: widget.breakShowTips,
+      showProgress: widget.breakShowProgress,
+      customMessage: widget.breakCustomMessage,
+    );
+
+    if (!_isActiveBreakOverlayRequest(requestId)) {
+      await widget.breakOverlayService?.stopBreakOverlay();
+    }
+  }
+
+  bool _isActiveBreakOverlayRequest(int requestId) {
+    return mounted &&
+        requestId == _breakOverlayRequestId &&
+        _isRunning &&
+        _isBreak;
+  }
+
+  Future<void> _stopBreakOverlayAndRestoreMiniIfNeeded() async {
+    _breakOverlayRequestId++;
+    await widget.breakOverlayService?.stopBreakOverlay();
+    await _restoreMiniModeAfterBreakIfNeeded();
+  }
+
+  Future<void> _restoreMiniModeAfterBreakIfNeeded() async {
+    if (!_restoreMiniModeAfterBreak) return;
+    _restoreMiniModeAfterBreak = false;
+    if (!mounted || !_isDesktopMiniModePlatform || _isBreak) {
+      return;
+    }
+    await _setDesktopMiniMode(true, captureBounds: false);
+  }
+
   Future<void> _toggleMiniMode() async {
     if (kIsWeb) return;
 
@@ -4033,17 +4093,25 @@ class TimerHomePageState extends State<TimerHomePage>
       return;
     }
 
-    if (defaultTargetPlatform != TargetPlatform.linux &&
-        defaultTargetPlatform != TargetPlatform.macOS &&
-        defaultTargetPlatform != TargetPlatform.windows) {
-      return;
-    }
+    await _setDesktopMiniMode(!_isMiniMode);
+  }
 
-    if (_isMiniMode) {
-      // Exit Mini Mode
-      setState(() {
-        _isMiniMode = false;
-      });
+  Future<void> _setDesktopMiniMode(
+    bool enabled, {
+    bool captureBounds = true,
+  }) async {
+    if (!_isDesktopMiniModePlatform) return;
+
+    if (!enabled) {
+      if (!_isMiniMode) return;
+      try {
+        _savedMiniModePosition = await windowManager.getPosition();
+      } catch (_) {}
+      if (mounted) {
+        setState(() {
+          _isMiniMode = false;
+        });
+      }
       if (Platform.isLinux) {
         try {
           const channel = MethodChannel('blinkkind/break_overlay');
@@ -4065,41 +4133,60 @@ class TimerHomePageState extends State<TimerHomePage>
       if (_savedWindowPosition != null) {
         await windowManager.setPosition(_savedWindowPosition!);
       }
-    } else {
-      // Enter Mini Mode
-      if (await windowManager.isMaximized()) {
-        await windowManager.unmaximize();
-      }
-      
-      final size = await windowManager.getSize();
-      final pos = await windowManager.getPosition();
-      setState(() {
-        _savedWindowSize = size;
-        _savedWindowPosition = pos;
-        _isMiniMode = true;
-      });
-      
-      if (Platform.isLinux) {
-        try {
-          const channel = MethodChannel('blinkkind/break_overlay');
-          await channel.invokeMethod('setPiPMode', true);
-        } catch (_) {}
-      } else {
-        await windowManager.setAsFrameless();
-        await windowManager.setMinimumSize(_miniModeWindowSize);
-        await windowManager.setMaximumSize(_miniModeWindowSize);
-        await windowManager.setSize(_miniModeWindowSize);
-        await windowManager.setAlwaysOnTop(true);
-        await windowManager.setResizable(false);
-      }
-      try {
-        final primaryDisplay = await ScreenRetriever.instance.getPrimaryDisplay();
-        final displaySize = primaryDisplay.visibleSize ?? primaryDisplay.size;
-        final x = displaySize.width - _miniModeWindowSize.width - 30;
-        final y = displaySize.height - _miniModeWindowSize.height - 30;
-        await windowManager.setPosition(Offset(x, y));
-      } catch (_) {}
+      return;
     }
+
+    if (_isMiniMode) return;
+
+    if (await windowManager.isMaximized()) {
+      await windowManager.unmaximize();
+    }
+
+    Size? size;
+    Offset? pos;
+    if (captureBounds ||
+        _savedWindowSize == null ||
+        _savedWindowPosition == null) {
+      size = await windowManager.getSize();
+      pos = await windowManager.getPosition();
+    }
+
+    if (!mounted) return;
+    setState(() {
+      if (size != null) _savedWindowSize = size;
+      if (pos != null) _savedWindowPosition = pos;
+      _isMiniMode = true;
+    });
+
+    if (Platform.isLinux) {
+      try {
+        const channel = MethodChannel('blinkkind/break_overlay');
+        await channel.invokeMethod('setPiPMode', true);
+      } catch (_) {}
+    } else {
+      await windowManager.setAsFrameless();
+      await windowManager.setMinimumSize(_miniModeWindowSize);
+      await windowManager.setMaximumSize(_miniModeWindowSize);
+      await windowManager.setSize(_miniModeWindowSize);
+      await windowManager.setAlwaysOnTop(true);
+      await windowManager.setResizable(false);
+    }
+
+    try {
+      final targetPosition =
+          _savedMiniModePosition ?? await _defaultMiniModePosition();
+      await windowManager.setPosition(targetPosition);
+    } catch (_) {}
+  }
+
+  Future<Offset> _defaultMiniModePosition() async {
+    final primaryDisplay = await ScreenRetriever.instance.getPrimaryDisplay();
+    final displaySize = primaryDisplay.visibleSize ?? primaryDisplay.size;
+    final displayOrigin = primaryDisplay.visiblePosition ?? Offset.zero;
+    return Offset(
+      displayOrigin.dx + displaySize.width - _miniModeWindowSize.width - 30,
+      displayOrigin.dy + displaySize.height - _miniModeWindowSize.height - 30,
+    );
   }
 
   Widget _buildMiniModeWidget(Color progressColor) {
