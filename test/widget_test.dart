@@ -2181,4 +2181,50 @@ void main() {
     await tester.pumpAndSettle();
     expect(prefs.getBool(PreferencesService.wellnessRemindersEnabledKey), false);
   });
+
+  group('water glass "Log a glass" action logging', () {
+    test('incrementWaterGlassesToday bumps and persists today\'s count', () async {
+      SharedPreferences.setMockInitialValues({
+        PreferencesService.waterGlassesDateKey: todayKey(),
+        PreferencesService.waterGlassesTodayKey: 2,
+      });
+      final service = PreferencesService();
+
+      final next = await service.incrementWaterGlassesToday(1);
+      expect(next, 3);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt(PreferencesService.waterGlassesTodayKey), 3);
+      // A fresh read reflects the same persisted value.
+      expect(await service.loadWaterGlassesToday(), 3);
+    });
+
+    test('incrementWaterGlassesToday resets a stale day before counting',
+        () async {
+      SharedPreferences.setMockInitialValues({
+        PreferencesService.waterGlassesDateKey: '2000-01-01',
+        PreferencesService.waterGlassesTodayKey: 7,
+      });
+      final service = PreferencesService();
+
+      // Yesterday's 7 glasses must not carry over; the tap counts as day 1.
+      final next = await service.incrementWaterGlassesToday(1);
+      expect(next, 1);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt(PreferencesService.waterGlassesTodayKey), 1);
+      expect(prefs.getString(PreferencesService.waterGlassesDateKey), todayKey());
+    });
+
+    test('incrementWaterGlassesToday clamps into 0..99', () async {
+      SharedPreferences.setMockInitialValues({
+        PreferencesService.waterGlassesDateKey: todayKey(),
+        PreferencesService.waterGlassesTodayKey: 99,
+      });
+      final service = PreferencesService();
+
+      expect(await service.incrementWaterGlassesToday(1), 99);
+      expect(await service.incrementWaterGlassesToday(-200), 0);
+    });
+  });
 }

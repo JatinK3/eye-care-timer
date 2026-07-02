@@ -1,12 +1,38 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+
+import 'preferences_service.dart';
+
+/// Action id for the "Log a glass" button attached to water reminders.
+const String kLogWaterGlassActionId = 'log_water_glass';
+
+/// Background isolate handler for notification action taps that must work even
+/// when the app is terminated (Android/iOS). Currently only the water
+/// reminder's "Log a glass" action needs this: it increments the persisted
+/// daily glass count directly so the tap counts without opening the app. The UI
+/// reloads the count on resume. Foreground taps are delivered separately via
+/// [NotificationService.onNotificationResponse].
+@pragma('vm:entry-point')
+void notificationBackgroundHandler(NotificationResponse response) {
+  if (response.actionId != kLogWaterGlassActionId) return;
+  // Register plugins for this background isolate so SharedPreferences works.
+  ui.DartPluginRegistrant.ensureInitialized();
+  unawaited(
+    PreferencesService().incrementWaterGlassesToday(1).then(
+      (_) {},
+      onError: (Object e) =>
+          debugPrint('Background water-glass log failed: $e'),
+    ),
+  );
+}
 
 enum NotificationPermissionStatus { unknown, allowed, disabled, unsupported }
 
@@ -69,6 +95,38 @@ class NotificationService {
           playSound: false,
           enableVibration: false,
           silent: true,
+        ),
+        iOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
+        macOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentSound: false,
+        ),
+      );
+
+  // Water reminders reuse the wellness channel but carry a "Log a glass" action
+  // so the user can record a glass straight from the notification shade. The
+  // action opens no UI (showsUserInterface: false) and is handled in a
+  // background isolate via [notificationBackgroundHandler] when the app is not
+  // running, or via [onNotificationResponse] when it is.
+  static const NotificationDetails _waterNotificationDetails =
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _wellnessChannelId,
+          _wellnessChannelName,
+          channelDescription: _wellnessChannelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          playSound: false,
+          enableVibration: false,
+          silent: true,
+          actions: <AndroidNotificationAction>[
+            AndroidNotificationAction(
+              kLogWaterGlassActionId,
+              'Log a glass \u{1F4A7}',
+              cancelNotification: true,
+              showsUserInterface: false,
+            ),
+          ],
         ),
         iOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
         macOS: DarwinNotificationDetails(
@@ -277,7 +335,7 @@ class NotificationService {
       return;
     }
     if (!kIsWeb && Platform.isLinux) {
-      await _ensureLinuxBlinkActionMonitor();
+      await _ensureLinuxNotificationActionMonitor();
       _isInitialized = true;
       return;
     }
@@ -303,6 +361,7 @@ class NotificationService {
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         _notificationResponseController.add(response);
       },
+      onDidReceiveBackgroundNotificationResponse: notificationBackgroundHandler,
     );
     final android = _notificationsPlugin
         .resolvePlatformSpecificImplementation<
@@ -654,7 +713,7 @@ class NotificationService {
   }) async {
     try {
       if (interactive) {
-        await _ensureLinuxBlinkActionMonitor();
+        await _ensureLinuxNotificationActionMonitor();
       }
       await cancelBlinkReminder();
       final id = await _showLinuxNotificationViaDbus(
@@ -714,7 +773,12 @@ class NotificationService {
     return int.tryParse(match.group(1)!);
   }
 
-  Future<void> _ensureLinuxBlinkActionMonitor() async {
+  /// Starts (once) a `dbus-monitor` that watches the freedesktop notification
+  /// daemon for `ActionInvoked` signals and forwards every action id to
+  /// [onNotificationResponse] (and `blink_done` additionally to
+  /// [onBlinkReminderAcknowledged]). Shared by the blink and water reminders so
+  /// their notification action buttons work on Linux.
+  Future<void> _ensureLinuxNotificationActionMonitor() async {
     if (_linuxBlinkActionMonitor != null || kIsWeb || !Platform.isLinux) {
       return;
     }
@@ -940,6 +1004,7 @@ class NotificationService {
     required int horizonSeconds,
     required int startIndex,
     required List<List<String>> messages,
+    NotificationDetails details = _wellnessNotificationDetails,
   }) async {
     if (kIsWeb || Platform.isLinux) return;
     await _cancelIntervalRange(idBase);
@@ -962,7 +1027,7 @@ class NotificationService {
           body: message[1],
           scheduledDate:
               tz.TZDateTime.now(tz.local).add(Duration(seconds: delay)),
-          notificationDetails: _wellnessNotificationDetails,
+          notificationDetails: details,
           androidScheduleMode: exactAlarmsAllowed
               ? AndroidScheduleMode.exactAllowWhileIdle
               : AndroidScheduleMode.inexactAllowWhileIdle,
@@ -1035,6 +1100,7 @@ class NotificationService {
       messages: const [
         ['Hydration break 💧', 'Time to drink a glass of water.'],
       ],
+      details: _waterNotificationDetails,
     );
   }
 
@@ -1047,22 +1113,7 @@ class NotificationService {
         : 'Time to drink a glass of water.';
 
     if (Platform.isLinux) {
-      try {
-        await Process.run('notify-send', [
-          '-a',
-          'BlinkKind',
-          '-i',
-          'blinkkind',
-          '-u',
-          'low',
-          '-t',
-          '5000',
-          title,
-          body,
-        ]);
-      } catch (e) {
-        debugPrint('Failed to send Linux water notification: $e');
-      }
+      await _showLinuxWaterReminder(title: title, body: body);
       return;
     }
 
@@ -1072,11 +1123,73 @@ class NotificationService {
         id: _waterReminderId,
         title: title,
         body: body,
-        notificationDetails: _wellnessNotificationDetails,
+        notificationDetails: _waterNotificationDetails,
         payload: 'water_reminder',
       );
     } on PlatformException catch (e) {
       debugPrint('Unable to show water reminder: $e');
+    }
+  }
+
+  /// Shows the Linux water reminder with a "Log a glass" action. Delivery goes
+  /// through the freedesktop notification daemon (gdbus, with a notify-send
+  /// fallback); action taps are captured by the shared DBus action monitor and
+  /// forwarded to [onNotificationResponse] as [kLogWaterGlassActionId].
+  Future<void> _showLinuxWaterReminder({
+    required String title,
+    required String body,
+  }) async {
+    // The monitor is the single source of truth for action taps on both the
+    // gdbus and notify-send paths, so we don't parse notify-send stdout (that
+    // would double-count when the monitor also catches the same signal).
+    await _ensureLinuxNotificationActionMonitor();
+
+    try {
+      final result = await Process.run('gdbus', [
+        'call',
+        '--session',
+        '--dest',
+        'org.freedesktop.Notifications',
+        '--object-path',
+        '/org/freedesktop/Notifications',
+        '--method',
+        'org.freedesktop.Notifications.Notify',
+        'BlinkKind',
+        '0',
+        'blinkkind',
+        title,
+        body,
+        "['$kLogWaterGlassActionId', 'Log a glass \u{1F4A7}']",
+        "{'urgency': <byte 0>}",
+        '8000',
+      ]);
+      if (result.exitCode == 0) return;
+      debugPrint('Failed to send Linux water notification: ${result.stderr}');
+    } catch (e) {
+      debugPrint('Failed to send Linux water notification via DBus: $e');
+    }
+
+    // Fallback: notify-send with the same action. The daemon still emits
+    // ActionInvoked, which the monitor catches — so no stdout parsing here.
+    try {
+      final process = await Process.start('notify-send', [
+        '-a',
+        'BlinkKind',
+        '-i',
+        'blinkkind',
+        '-u',
+        'low',
+        '-t',
+        '8000',
+        '-A',
+        '$kLogWaterGlassActionId=Log a glass \u{1F4A7}',
+        title,
+        body,
+      ]);
+      unawaited(process.stdout.drain<void>());
+      unawaited(process.stderr.drain<void>());
+    } catch (e) {
+      debugPrint('Failed to send Linux water notification via notify-send: $e');
     }
   }
 

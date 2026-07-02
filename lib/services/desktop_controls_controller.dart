@@ -19,6 +19,9 @@ enum DesktopCommand {
   // TimerHomePage can play the confirmation chime even when the notification
   // fires while the app is backgrounded.
   playChime,
+  // Emitted when the user taps the "Log a glass" water-reminder notification
+  // action while the app is alive, so TimerHomePage records a glass of water.
+  logWaterGlass,
 }
 
 class DesktopTimerState {

@@ -38,6 +38,10 @@ class TimerHomePage extends StatefulWidget {
   final int initialStreakCount;
   final int initialWaterGlassesToday;
   final void Function(int glasses) saveWaterGlassesToday;
+  // Reloads today's persisted glass count (e.g. after the "Log a glass"
+  // notification action logged a glass in a background isolate while the app
+  // was not in the foreground). Optional so tests can omit it.
+  final Future<int> Function()? loadWaterGlassesToday;
   final int dailyGoal;
   final bool longBreakEnabled;
   final int longBreakDurationSeconds;
@@ -128,6 +132,7 @@ class TimerHomePage extends StatefulWidget {
     required this.initialStreakCount,
     required this.initialWaterGlassesToday,
     required this.saveWaterGlassesToday,
+    this.loadWaterGlassesToday,
     required this.dailyGoal,
     required this.longBreakEnabled,
     required this.longBreakDurationSeconds,
@@ -595,6 +600,11 @@ class TimerHomePageState extends State<TimerHomePage>
               // "I blinked!" notification action button.
               unawaited(_playChime(hapticEvent: 'blink_reminder'));
               break;
+            case DesktopCommand.logWaterGlass:
+              // User tapped "Log a glass" on the water reminder while the app
+              // was alive. Record it against today's count.
+              _logWaterGlass(1);
+              break;
           }
         });
     _scheduleCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
@@ -843,6 +853,9 @@ class TimerHomePageState extends State<TimerHomePage>
       if (_isFocusMode) {
         unawaited(_systemUiService.setFocusModeEnabled(true));
       }
+      // Pick up glasses logged from the water reminder's notification action
+      // while the app was backgrounded (handled in a background isolate).
+      unawaited(_reloadWaterGlassesToday());
       _checkSchedule();
     } else {
       if (_isFocusMode &&
@@ -1128,6 +1141,26 @@ class TimerHomePageState extends State<TimerHomePage>
       _waterGlassesToday = next;
     });
     widget.saveWaterGlassesToday(next);
+  }
+
+  /// Re-reads today's persisted glass count and updates the UI. Called on app
+  /// resume so glasses logged via the notification's "Log a glass" action (which
+  /// increments prefs from a background isolate while the app is backgrounded)
+  /// are reflected on the home screen.
+  Future<void> _reloadWaterGlassesToday() async {
+    final loader = widget.loadWaterGlassesToday;
+    if (loader == null) return;
+    try {
+      final value = await loader();
+      if (!mounted || value == _waterGlassesToday) return;
+      setState(() {
+        _waterGlassesToday = value;
+      });
+      // Keep the parent's copy in step without a redundant re-save.
+      widget.saveWaterGlassesToday(value);
+    } catch (_) {
+      // Ignore — a failed reload just leaves the last-known count on screen.
+    }
   }
 
   /// Applies a [projectPhase] result: records any work phases that finished

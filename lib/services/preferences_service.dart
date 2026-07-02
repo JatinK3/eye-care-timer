@@ -863,6 +863,17 @@ class PreferencesService {
     await prefs.setInt(waterGlassesTodayKey, count);
   }
 
+  /// Atomically bumps today's glass count by [delta] (honouring the daily reset)
+  /// and returns the new value, clamped to 0..99. Safe to call from a background
+  /// isolate — used by the water reminder's "Log a glass" notification action
+  /// when the app is not in the foreground.
+  Future<int> incrementWaterGlassesToday(int delta) async {
+    final current = await loadWaterGlassesToday();
+    final next = (current + delta).clamp(0, 99);
+    await saveWaterGlassesToday(next);
+    return next;
+  }
+
   Future<void> saveBlinkReminderInteractiveEnabled(bool v) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(blinkReminderInteractiveEnabledKey, v);

@@ -305,6 +305,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
       DesktopControlsController.instance.triggerCommand(DesktopCommand.postponeBreak);
     } else if (response.actionId == 'skip_break') {
       DesktopControlsController.instance.triggerCommand(DesktopCommand.skipBreak);
+    } else if (response.actionId == kLogWaterGlassActionId) {
+      // App is alive — record the glass through the timer page. (When the app
+      // is backgrounded this action is handled in a background isolate instead;
+      // see notificationBackgroundHandler.)
+      DesktopControlsController.instance.triggerCommand(
+        DesktopCommand.logWaterGlass,
+      );
     }
   }
 
@@ -1444,6 +1451,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   initialStreakCount: _settings.streakCount,
                   initialWaterGlassesToday: _waterGlassesToday,
                   saveWaterGlassesToday: _saveWaterGlassesToday,
+                  loadWaterGlassesToday:
+                      _preferencesService.loadWaterGlassesToday,
                   dailyGoal: _settings.dailyGoal,
                   longBreakEnabled: _settings.longBreakEnabled,
                   longBreakDurationSeconds: _settings.longBreakDurationSeconds,

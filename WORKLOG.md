@@ -262,6 +262,15 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - The desktop water reminder now shows live progress ("X of goal glasses so far today").
 - Verified: `flutter analyze` clean, `flutter test` 86/86, `flutter build apk --debug` succeeds.
 
+**Added a "Log a glass" action to the water reminder notification (Android + Linux):**
+- The user can now record a glass straight from the notification shade — no need to open the app.
+- **Shared action id** `kLogWaterGlassActionId` (`log_water_glass`). New `_waterNotificationDetails` carries an Android `AndroidNotificationAction` (`showsUserInterface: false`, `cancelNotification: true`); wired into both delivery paths — the immediate `showWaterReminder` and the pre-scheduled background reminders (`_scheduleIntervalRemindersBackground` now takes a `details` param; wellness keeps the plain details, water gets the action one).
+- **Android tap handling — foreground *and* killed.** Foreground taps arrive via `onDidReceiveNotificationResponse` → routed through the `DesktopControlsController` command bus (`DesktopCommand.logWaterGlass`) → `TimerHomePage._logWaterGlass(1)`. Background/terminated taps hit a new top-level `@pragma('vm:entry-point') notificationBackgroundHandler` (registered via `onDidReceiveBackgroundNotificationResponse`) which calls `DartPluginRegistrant.ensureInitialized()` and increments the persisted count directly (`PreferencesService.incrementWaterGlassesToday`). `TimerHomePage` reloads the count on app resume (new optional `loadWaterGlassesToday` callback) so background-logged glasses show on the home card.
+- **Linux tap handling.** `showWaterReminder` now uses `_showLinuxWaterReminder`: ensures the shared DBus `ActionInvoked` monitor is running (renamed `_ensureLinuxBlinkActionMonitor` → `_ensureLinuxNotificationActionMonitor` since it now serves blink *and* water), then sends via `gdbus` with a `notify-send -A` fallback. The monitor is the single source of truth for taps (no notify-send stdout parsing → no double counting) and forwards `log_water_glass` to `onNotificationResponse` → same command bus → `_logWaterGlass(1)`.
+- `PreferencesService.incrementWaterGlassesToday(delta)` bumps today's count atomically, honours the daily reset, and clamps 0..99. iOS not wired (matches the existing blink-action pattern — Android/Linux only).
+- Verified: `flutter analyze` clean, `flutter test` **89/89** (3 new increment/reset/clamp tests), `flutter build apk --debug` succeeds.
+- [ ] **On-device validation pending:** confirm the "Log a glass" action increments the home-screen counter both while the app is foregrounded and while it is fully killed (Android background isolate), and that the Linux notification action fires under the running notification daemon.
+
 ### 2026-07-01 (Session ongoing — IST)
 
 **Completed this session:**
