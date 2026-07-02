@@ -239,6 +239,8 @@ class MainActivity : FlutterActivity() {
                             osFocusDndEnabled = call.argument<Boolean>("osFocusDndEnabled") ?: false,
                             postponedBreakDuration = call.argument<Int>("postponedBreakDuration"),
                             currentPhaseDurationSeconds = call.argument<Int>("currentPhaseDurationSeconds"),
+                            maxConsecutiveSkips = call.argument<Int>("maxConsecutiveSkips") ?: 0,
+                            maxConsecutivePostpones = call.argument<Int>("maxConsecutivePostpones") ?: 0,
                         )
                     } else {
                         TimerForegroundService.stop(this)
@@ -268,7 +270,9 @@ class MainActivity : FlutterActivity() {
                             "autoRunEnabled" to service.autoRunEnabled,
                             "autoRunCycleLimit" to service.autoRunCycleLimit,
                             "pendingEvents" to events,
-                            "postponedBreakDuration" to if (service.postponedBreakDuration > 0) service.postponedBreakDuration else null
+                            "postponedBreakDuration" to if (service.postponedBreakDuration > 0) service.postponedBreakDuration else null,
+                            "consecutiveSkips" to service.consecutiveSkips,
+                            "consecutivePostpones" to service.consecutivePostpones
                         ))
                     } else {
                         result.success(null)

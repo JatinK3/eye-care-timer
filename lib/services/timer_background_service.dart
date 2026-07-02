@@ -38,6 +38,7 @@ class TimerBackgroundService {
     int? postponedBreakDuration,
     int? currentPhaseDurationSeconds,
     int maxConsecutiveSkips = 0,
+    int maxConsecutivePostpones = 0,
   }) async {
     if (!_isSupported) return;
     try {
@@ -63,6 +64,7 @@ class TimerBackgroundService {
         'postponedBreakDuration': postponedBreakDuration,
         'currentPhaseDurationSeconds': currentPhaseDurationSeconds,
         'maxConsecutiveSkips': maxConsecutiveSkips,
+        'maxConsecutivePostpones': maxConsecutivePostpones,
       });
     } on PlatformException catch (error) {
       debugPrint('Unable to start background phase: $error');

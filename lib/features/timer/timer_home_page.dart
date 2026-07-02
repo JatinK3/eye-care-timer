@@ -72,6 +72,7 @@ class TimerHomePage extends StatefulWidget {
   final TimerBackgroundService? backgroundService;
   final bool allowSkip;
   final int maxConsecutiveSkips;
+  final int maxConsecutivePostpones;
   final bool allowPostpone;
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
@@ -200,6 +201,7 @@ class TimerHomePage extends StatefulWidget {
     required this.notificationService,
     this.backgroundService,
     required this.maxConsecutiveSkips,
+    required this.maxConsecutivePostpones,
     required this.showBatteryWarning,
     required this.oemManufacturer,
     required this.onDismissBatteryWarning,
@@ -401,6 +403,7 @@ class TimerHomePageState extends State<TimerHomePage>
   Timer? _educationTipTimer;
   int _educationTipIndex = 0;
   int _consecutiveSkips = 0;
+  int _consecutivePostpones = 0;
   // Tip frozen at break start — stays the same for the whole break so the
   // message never changes mid-break and no extra LLM calls are triggered.
   EyeHealthTip? _frozenBreakTip;
@@ -1352,6 +1355,7 @@ class TimerHomePageState extends State<TimerHomePage>
         postponedBreakDuration: _postponedBreakDuration,
         currentPhaseDurationSeconds: _initialDuration,
         maxConsecutiveSkips: widget.maxConsecutiveSkips,
+        maxConsecutivePostpones: widget.maxConsecutivePostpones,
       ),
     );
   }
@@ -1808,6 +1812,7 @@ class TimerHomePageState extends State<TimerHomePage>
       return;
     }
     _consecutiveSkips++;
+    _consecutivePostpones = 0;
     _animationController.stop();
     widget.saveTimerEventRecord(
       TimerEventRecord(
@@ -1823,6 +1828,25 @@ class TimerHomePageState extends State<TimerHomePage>
 
   void _postponeBreak() {
     if (!_isRunning) return;
+    // Enforce postpone limit
+    final limit = widget.maxConsecutivePostpones;
+    if (limit > 0 && _consecutivePostpones >= limit) {
+      _showTimerSnackBar(
+        SnackBar(
+          content: Text(
+            'You\'ve postponed this break $limit time${limit == 1 ? '' : 's'} in a row — take a moment to rest your eyes! 👁️',
+          ),
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
+        ),
+      );
+      return;
+    }
     _animationController.stop();
     _playChime(hapticEvent: 'postpone');
     _pulseController.stop();
@@ -1853,6 +1877,7 @@ class TimerHomePageState extends State<TimerHomePage>
       _animationController.duration = Duration(seconds: _initialDuration);
       _animationController.reset();
       _animationController.forward(from: 0.0);
+      _consecutivePostpones++;
     });
     _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: false);
     _saveActiveSession(remainingSeconds: _remainingSeconds);
@@ -2023,6 +2048,8 @@ class TimerHomePageState extends State<TimerHomePage>
         _autoRunCompletedCycles = bgCompletedAutoRunCycles;
         _phaseEndsAt = DateTime.fromMillisecondsSinceEpoch(bgEndsAtMillis);
         _postponedBreakDuration = bgPostponedBreakDuration;
+        _consecutiveSkips = bgSession['consecutiveSkips'] as int? ?? _consecutiveSkips;
+        _consecutivePostpones = bgSession['consecutivePostpones'] as int? ?? _consecutivePostpones;
 
         _workDurationSeconds = bgSession['workDurationSeconds'] as int;
         _breakDurationSeconds = bgSession['breakDurationSeconds'] as int;
@@ -2110,8 +2137,9 @@ class TimerHomePageState extends State<TimerHomePage>
       }
 
       if (completedBreakPhase) {
-        // Reset skip counter — the user actually took the break
+        // Reset skip and postpone counters — the user actually took the break
         _consecutiveSkips = 0;
+        _consecutivePostpones = 0;
         if (_shouldContinueAutoRun()) {
           _startTimer(_workDurationSeconds);
           return;
@@ -3693,7 +3721,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                         shape: const StadiumBorder(),
                                       ),
                                     ),
-                                  if (widget.allowPostpone)
+                                  if (widget.allowPostpone && (widget.maxConsecutivePostpones == 0 || _consecutivePostpones < widget.maxConsecutivePostpones))
                                     ElevatedButton.icon(
                                       onPressed: _postponeBreak,
                                       icon: const Icon(Icons.snooze),
@@ -4488,7 +4516,7 @@ class TimerHomePageState extends State<TimerHomePage>
           isPaused: _isPaused || _isSystemIdlePaused,
           isBreak: _isBreak,
           remainingSeconds: _remainingSeconds,
-          allowPostpone: widget.allowPostpone,
+          allowPostpone: widget.allowPostpone && (widget.maxConsecutivePostpones == 0 || _consecutivePostpones < widget.maxConsecutivePostpones),
           postponeDurationMinutes: widget.postponeDurationSeconds ~/ 60,
           initialDurationSeconds: _initialDuration,
           isBlinkNudging: _isBlinkNudging,
@@ -4502,6 +4530,19 @@ class TimerHomePageState extends State<TimerHomePage>
         ),
       );
     }
+  }
+
+  @visibleForTesting
+  int get consecutivePostpones => _consecutivePostpones;
+
+  @visibleForTesting
+  int get consecutiveSkips => _consecutiveSkips;
+
+  @visibleForTesting
+  void setBreakPhaseForTesting(bool isBreak) {
+    setState(() {
+      _isBreak = isBreak;
+    });
   }
 }
 

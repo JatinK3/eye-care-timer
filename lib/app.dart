@@ -983,6 +983,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     unawaited(_preferencesService.saveMaxConsecutiveSkips(count));
   }
 
+  void _setMaxConsecutivePostpones(int count) {
+    setState(() {
+      _settings = _settings.copyWith(maxConsecutivePostpones: count);
+    });
+    unawaited(_preferencesService.saveMaxConsecutivePostpones(count));
+  }
+
   void _setAllowPostpone(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(allowPostpone: enabled);
@@ -1212,6 +1219,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           maxConsecutiveSkips: _settings.maxConsecutiveSkips,
           setMaxConsecutiveSkips: _setMaxConsecutiveSkips,
           allowPostpone: _settings.allowPostpone,
+          maxConsecutivePostpones: _settings.maxConsecutivePostpones,
+          setMaxConsecutivePostpones: _setMaxConsecutivePostpones,
           postponeDurationSeconds: _settings.postponeDurationSeconds,
           smartIdleEnabled: _settings.smartIdleEnabled,
           breakVisualizerStyle: _settings.breakVisualizerStyle,
@@ -1499,6 +1508,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   allowSkip: _settings.allowSkip,
                   maxConsecutiveSkips: _settings.maxConsecutiveSkips,
                   allowPostpone: _settings.allowPostpone,
+                  maxConsecutivePostpones: _settings.maxConsecutivePostpones,
                   postponeDurationSeconds: _settings.postponeDurationSeconds,
                   reducedMotionEnabled: _settings.reducedMotionEnabled,
                   smartIdleEnabled: _settings.smartIdleEnabled,

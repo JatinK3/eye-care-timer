@@ -27,6 +27,7 @@ class SettingsPage extends StatefulWidget {
   final int dailyGoal;
   final bool allowSkip;
   final int maxConsecutiveSkips;
+  final int maxConsecutivePostpones;
   final bool allowPostpone;
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
@@ -37,6 +38,7 @@ class SettingsPage extends StatefulWidget {
   final String breakCustomMessage;
   final void Function(bool) setAllowSkip;
   final void Function(int) setMaxConsecutiveSkips;
+  final void Function(int) setMaxConsecutivePostpones;
   final void Function(bool) setAllowPostpone;
   final void Function(int) setPostponeDurationSeconds;
   final void Function(bool) setSmartIdleEnabled;
@@ -191,6 +193,8 @@ class SettingsPage extends StatefulWidget {
     required this.maxConsecutiveSkips,
     required this.setMaxConsecutiveSkips,
     required this.allowPostpone,
+    required this.maxConsecutivePostpones,
+    required this.setMaxConsecutivePostpones,
     required this.postponeDurationSeconds,
     required this.smartIdleEnabled,
     required this.breakVisualizerStyle,
@@ -1283,15 +1287,69 @@ class _SettingsPageState extends State<SettingsPage>
         SettingItem(
           title: l10n.settingsAllowPostpone,
           subtitle: l10n.settingsAllowPostponeSubtitle,
-          keywords: ['postpone', 'break', 'allow', 'gentle', 'delay'],
+          keywords: ['postpone', 'break', 'allow', 'gentle', 'delay', 'consecutive', 'limit'],
           category: 'Break Screen & Behavior',
-          widget: SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.snooze_outlined),
-            title: Text(l10n.settingsAllowPostpone),
-            subtitle: Text(l10n.settingsAllowPostponeSubtitle),
-            value: widget.allowPostpone,
-            onChanged: widget.setAllowPostpone,
+          widget: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.snooze_outlined),
+                title: Text(l10n.settingsAllowPostpone),
+                subtitle: Text(l10n.settingsAllowPostponeSubtitle),
+                value: widget.allowPostpone,
+                onChanged: widget.setAllowPostpone,
+              ),
+              if (widget.allowPostpone) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 40.0, top: 4.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "Max consecutive postpones",
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ),
+                      DropdownButton<int>(
+                        value: widget.maxConsecutivePostpones,
+                        underline: const SizedBox(),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 0,
+                            child: Text("No Limit"),
+                          ),
+                          DropdownMenuItem(
+                            value: 1,
+                            child: Text("1 postpone"),
+                          ),
+                          DropdownMenuItem(
+                            value: 2,
+                            child: Text("2 postpones"),
+                          ),
+                          DropdownMenuItem(
+                            value: 3,
+                            child: Text("3 postpones"),
+                          ),
+                          DropdownMenuItem(
+                            value: 5,
+                            child: Text("5 postpones"),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            widget.setMaxConsecutivePostpones(val);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
         SettingItem(
@@ -3296,6 +3354,7 @@ class _SettingsPageState extends State<SettingsPage>
       waterGlassSizeMl: widget.waterGlassSizeMl,
       blinkReminderInteractiveEnabled: widget.blinkReminderInteractiveEnabled,
       maxConsecutiveSkips: widget.maxConsecutiveSkips,
+      maxConsecutivePostpones: widget.maxConsecutivePostpones,
       activeProfile: widget.activeProfile,
       analyticsEnabled: widget.analyticsEnabled,
     );

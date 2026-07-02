@@ -48,6 +48,8 @@ class TimerForegroundService : Service() {
     var postponeDurationSeconds = 120
     var maxConsecutiveSkips = 0
     var consecutiveSkips = 0
+    var maxConsecutivePostpones = 0
+    var consecutivePostpones = 0
     var smartIdleEnabled = true
     var naturalBreakCreditEnabled = true
     var postponedBreakDuration = -1
@@ -222,6 +224,7 @@ class TimerForegroundService : Service() {
         postponedBreakDuration = intent.getIntExtra("postponedBreakDuration", -1)
         currentPhaseInitialDuration = intent.getIntExtra("currentPhaseInitialDuration", if (isBreak) breakDurationForCompletedCycle(streakCount) else workDurationSeconds)
         maxConsecutiveSkips = intent.getIntExtra("maxConsecutiveSkips", 0)
+        maxConsecutivePostpones = intent.getIntExtra("maxConsecutivePostpones", 0)
         osFocusDndEnabled = intent.getBooleanExtra("osFocusDndEnabled", false)
 
         ensureChannel()
@@ -242,6 +245,7 @@ class TimerForegroundService : Service() {
                 return // silently block — UI will already hide the button
             }
             consecutiveSkips++
+            consecutivePostpones = 0
             pendingEvents.add(mapOf(
                 "type" to "breakSkipped",
                 "timestamp" to System.currentTimeMillis(),
@@ -254,6 +258,10 @@ class TimerForegroundService : Service() {
 
     private fun handlePostponeBreak() {
         if (isBreak) {
+            if (maxConsecutivePostpones > 0 && consecutivePostpones >= maxConsecutivePostpones) {
+                return
+            }
+            consecutivePostpones++
             BreakOverlayController.hide()
             isBreak = false
             postponedBreakDuration = currentPhaseInitialDuration
@@ -420,6 +428,7 @@ class TimerForegroundService : Service() {
             BreakOverlayController.hide()
             // Break completed naturally — reset consecutive skip counter
             consecutiveSkips = 0
+            consecutivePostpones = 0
             if (!shouldContinueAutoRun() || workDurationSeconds <= 0) {
                 return false
             }
@@ -732,6 +741,8 @@ class TimerForegroundService : Service() {
             .putLong("pausedRemainingSeconds", pausedRemainingSeconds)
             .putInt("maxConsecutiveSkips", maxConsecutiveSkips)
             .putInt("consecutiveSkips", consecutiveSkips)
+            .putInt("maxConsecutivePostpones", maxConsecutivePostpones)
+            .putInt("consecutivePostpones", consecutivePostpones)
             .putBoolean("osFocusDndEnabled", osFocusDndEnabled)
             .putLong("lastSavedAt", System.currentTimeMillis())
             .commit()
@@ -778,6 +789,8 @@ class TimerForegroundService : Service() {
         screenOffTimeMillis = preferences.getLong("screenOffTimeMillis", 0L)
         maxConsecutiveSkips = preferences.getInt("maxConsecutiveSkips", 0)
         consecutiveSkips = preferences.getInt("consecutiveSkips", 0)
+        maxConsecutivePostpones = preferences.getInt("maxConsecutivePostpones", 0)
+        consecutivePostpones = preferences.getInt("consecutivePostpones", 0)
         osFocusDndEnabled = preferences.getBoolean("osFocusDndEnabled", false)
 
         val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
@@ -878,6 +891,7 @@ class TimerForegroundService : Service() {
             postponedBreakDuration: Int? = null,
             currentPhaseDurationSeconds: Int? = null,
             maxConsecutiveSkips: Int = 0,
+            maxConsecutivePostpones: Int = 0,
             osFocusDndEnabled: Boolean = false,
         ) {
             val intent = Intent(context, TimerForegroundService::class.java).apply {
@@ -901,6 +915,7 @@ class TimerForegroundService : Service() {
                 putExtra(EXTRA_NATURAL_BREAK_CREDIT, naturalBreakCreditEnabled)
                 putExtra("postponedBreakDuration", postponedBreakDuration ?: -1)
                 putExtra("maxConsecutiveSkips", maxConsecutiveSkips)
+                putExtra("maxConsecutivePostpones", maxConsecutivePostpones)
                 putExtra("osFocusDndEnabled", osFocusDndEnabled)
                 if (currentPhaseDurationSeconds != null) {
                     putExtra("currentPhaseInitialDuration", currentPhaseDurationSeconds)

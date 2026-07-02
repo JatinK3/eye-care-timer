@@ -1614,6 +1614,42 @@ void main() {
     expect(records.any((r) => r.type == TimerEventType.breakPostponed), isTrue);
   });
 
+  testWidgets('consecutive postpones limit blocks postpone action', (tester) async {
+    final now = DateTime.now();
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.sessionIsActiveKey: true,
+      PreferencesService.sessionIsBreakKey: true,
+      PreferencesService.sessionIsPausedKey: false,
+      PreferencesService.sessionInitialDurationSecondsKey: 20,
+      PreferencesService.sessionRemainingSecondsKey: 20,
+      PreferencesService.sessionPhaseStartedAtKey: now.millisecondsSinceEpoch,
+      PreferencesService.sessionPhaseEndsAtKey: now
+          .add(const Duration(seconds: 20))
+          .millisecondsSinceEpoch,
+      PreferencesService.allowPostponeKey: true,
+      PreferencesService.maxConsecutivePostponesKey: 1,
+    });
+
+    await pumpBlinkKindApp(tester);
+    expect(find.text('Postpone'), findsOneWidget);
+
+    final state = tester.state<TimerHomePageState>(find.byType(TimerHomePage));
+    expect(state.consecutivePostpones, 0);
+
+    // Tap Postpone. It should succeed and increment the counter.
+    await tester.tap(find.text('Postpone'));
+    await tester.pump();
+    expect(state.consecutivePostpones, 1);
+
+    // Transition back to break.
+    state.setBreakPhaseForTesting(true);
+    await tester.pump();
+
+    // Since the limit is 1, the Postpone button should be hidden (consecutivePostpones == 1 >= limit)
+    expect(find.text('Postpone'), findsNothing);
+  });
+
   testWidgets('settings screen toggles OS Focus Mode DND preference', (
     WidgetTester tester,
   ) async {

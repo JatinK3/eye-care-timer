@@ -54,6 +54,7 @@ class TimerSettings {
   static const String defaultAiCustomSystemPrompt =
       'You are a friendly health and wellness assistant for a developer. Generate a very short, warm, and highly engaging health tip or motivational quote (strict limit of 25 words) encouraging them to blink, rest their eyes, stretch their body/legs/shoulders, stand up, drink water regularly, or take a deep breath. Keep it fresh, productive, encouraging, and extremely punchy.';
   static const int defaultMaxConsecutiveSkips = 0; // 0 means no limit
+  static const int defaultMaxConsecutivePostpones = 0; // 0 means no limit
   static const String defaultActiveProfile = 'standard';
   static const bool defaultReducedMotionEnabled = false;
   static const bool defaultAnalyticsEnabled = false;
@@ -115,6 +116,7 @@ class TimerSettings {
   final int waterGlassSizeMl;
   final bool blinkReminderInteractiveEnabled;
   final int maxConsecutiveSkips;
+  final int maxConsecutivePostpones;
   final bool autoPauseOnMediaEnabled;
   final String activeProfile;
   final bool reducedMotionEnabled;
@@ -153,6 +155,7 @@ class TimerSettings {
     required this.workHoursEnabled,
     required this.workHoursStartHour,
     required this.maxConsecutiveSkips,
+    required this.maxConsecutivePostpones,
     required this.workHoursStartMinute,
     required this.workHoursEndHour,
     required this.workHoursEndMinute,
@@ -242,6 +245,7 @@ class TimerSettings {
       waterGlassSizeMl = defaultWaterGlassSizeMl,
       blinkReminderInteractiveEnabled = defaultBlinkReminderInteractiveEnabled,
       maxConsecutiveSkips = defaultMaxConsecutiveSkips,
+      maxConsecutivePostpones = defaultMaxConsecutivePostpones,
       autoPauseOnMediaEnabled = defaultAutoPauseOnMediaEnabled,
       activeProfile = defaultActiveProfile,
       reducedMotionEnabled = defaultReducedMotionEnabled,
@@ -305,6 +309,7 @@ class TimerSettings {
     int? waterGlassSizeMl,
     bool? blinkReminderInteractiveEnabled,
     int? maxConsecutiveSkips,
+    int? maxConsecutivePostpones,
     bool? autoPauseOnMediaEnabled,
     String? activeProfile,
     bool? reducedMotionEnabled,
@@ -384,6 +389,8 @@ class TimerSettings {
           blinkReminderInteractiveEnabled ??
           this.blinkReminderInteractiveEnabled,
       maxConsecutiveSkips: maxConsecutiveSkips ?? this.maxConsecutiveSkips,
+      maxConsecutivePostpones:
+          maxConsecutivePostpones ?? this.maxConsecutivePostpones,
       autoPauseOnMediaEnabled:
           autoPauseOnMediaEnabled ?? this.autoPauseOnMediaEnabled,
       activeProfile: activeProfile ?? this.activeProfile,
@@ -450,6 +457,7 @@ class TimerSettings {
       'waterGlassSizeMl': waterGlassSizeMl,
       'blinkReminderInteractiveEnabled': blinkReminderInteractiveEnabled,
       'maxConsecutiveSkips': maxConsecutiveSkips,
+      'maxConsecutivePostpones': maxConsecutivePostpones,
       'autoPauseOnMediaEnabled': autoPauseOnMediaEnabled,
       'activeProfile': activeProfile,
       'reducedMotionEnabled': reducedMotionEnabled,
@@ -510,6 +518,8 @@ class TimerSettings {
           defaultBlinkReminderInteractiveEnabled,
       maxConsecutiveSkips:
           json['maxConsecutiveSkips'] as int? ?? defaultMaxConsecutiveSkips,
+      maxConsecutivePostpones: json['maxConsecutivePostpones'] as int? ??
+          defaultMaxConsecutivePostpones,
       trayBlinkNudgesEnabled:
           json['trayBlinkNudgesEnabled'] as bool? ??
           defaultTrayBlinkNudgesEnabled,

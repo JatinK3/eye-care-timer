@@ -324,6 +324,12 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 - Removed the outdated Ubuntu/GNOME DND limitations note from the OS Focus Mode setting tile in `settings_page.dart`.
 - Cleaned up the unused `settingsOsFocusModeGnomeNote` key and its metadata from `app_en.arb`, `app_es.arb`, and `app_hi.arb`.
 
+**Implemented Max Consecutive Postpone Limit:**
+- Defined `maxConsecutivePostpones` (default 0/No Limit) in the `TimerSettings` model, and wired its loading and saving in `PreferencesService`.
+- Added a dropdown selector under the "Allow postpone" setting tile in `settings_page.dart` to configure the consecutive postpones limit.
+- Enforced the consecutive postpone limit on the Break Screen, Desktop Controls (Linux D-Bus/Tray), and Android Foreground Service notifications.
+- Added a widget test `consecutive postpones limit blocks postpone action` to verify the functionality on the Break Screen. All 94 tests pass successfully.
+
 ### 2026-07-01 (Session ongoing — IST)
 
 **Completed this session:**

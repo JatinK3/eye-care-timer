@@ -91,6 +91,7 @@ class PreferencesService {
   static const String blinkReminderInteractiveEnabledKey =
       'blinkReminderInteractiveEnabled';
   static const String maxConsecutiveSkipsKey = 'maxConsecutiveSkips';
+  static const String maxConsecutivePostponesKey = 'maxConsecutivePostpones';
   static const String autoPauseOnMediaEnabledKey = 'autoPauseOnMediaEnabled';
   static const String activeProfileKey = 'activeProfile';
   static const String reducedMotionEnabledKey = 'reducedMotionEnabled';
@@ -261,6 +262,9 @@ class PreferencesService {
       maxConsecutiveSkips:
           prefs.getInt(maxConsecutiveSkipsKey) ??
           TimerSettings.defaultMaxConsecutiveSkips,
+      maxConsecutivePostpones:
+          prefs.getInt(maxConsecutivePostponesKey) ??
+          TimerSettings.defaultMaxConsecutivePostpones,
       activeProfile:
           prefs.getString(activeProfileKey) ??
           TimerSettings.defaultActiveProfile,
@@ -672,6 +676,10 @@ class PreferencesService {
       maxConsecutiveSkipsKey,
       settings.maxConsecutiveSkips,
     );
+    await prefs.setInt(
+      maxConsecutivePostponesKey,
+      settings.maxConsecutivePostpones,
+    );
     await prefs.setBool(
       autoPauseOnMediaEnabledKey,
       settings.autoPauseOnMediaEnabled,
@@ -946,6 +954,11 @@ class PreferencesService {
   Future<void> saveMaxConsecutiveSkips(int count) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(maxConsecutiveSkipsKey, count);
+  }
+
+  Future<void> saveMaxConsecutivePostpones(int count) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(maxConsecutivePostponesKey, count);
   }
 
   Future<void> saveAllowPostpone(bool enabled) async {
