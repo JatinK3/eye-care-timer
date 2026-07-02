@@ -478,10 +478,7 @@
   "@settingsOsFocusModeToggle": {
     "description": "Switch label for OS Focus Mode setting"
   },
-  "settingsOsFocusModeGnomeNote": "Note: Ubuntu/GNOME does not natively support DND exceptions/whitelist. If you want specific apps to bypass DND, turn this toggle off and instead manually silence noisy apps under Ubuntu System Settings -> Notifications.",
-  "@settingsOsFocusModeGnomeNote": {
-    "description": "Helpful note about GNOME DND behavior"
-  },
+
   "settingsBreakScreenMode": "Break screen mode",
   "@settingsBreakScreenMode": {
     "description": "Title for break screen mode setting"

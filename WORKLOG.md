@@ -320,6 +320,10 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 **Polished settings category card design:**
 - Changed the settings page's category title highlight background container radius from `BorderRadius.circular(20)` (capsule shape) to `BorderRadius.circular(12)` to match the outer card's `BorderRadius.circular(16)` squarish-curved theme.
 
+**Removed GNOME DND limitations note:**
+- Removed the outdated Ubuntu/GNOME DND limitations note from the OS Focus Mode setting tile in `settings_page.dart`.
+- Cleaned up the unused `settingsOsFocusModeGnomeNote` key and its metadata from `app_en.arb`, `app_es.arb`, and `app_hi.arb`.
+
 ### 2026-07-01 (Session ongoing — IST)
 
 **Completed this session:**

@@ -363,10 +363,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Toggle system DND during work phases';
 
   @override
-  String get settingsOsFocusModeGnomeNote =>
-      'Note: Ubuntu/GNOME does not natively support DND exceptions/whitelist. If you want specific apps to bypass DND, turn this toggle off and instead manually silence noisy apps under Ubuntu System Settings -> Notifications.';
-
-  @override
   String get settingsBreakScreenMode => 'Break screen mode';
 
   @override

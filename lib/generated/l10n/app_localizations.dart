@@ -754,12 +754,6 @@ abstract class AppLocalizations {
   /// **'Toggle system DND during work phases'**
   String get settingsOsFocusModeToggle;
 
-  /// Helpful note about GNOME DND behavior
-  ///
-  /// In en, this message translates to:
-  /// **'Note: Ubuntu/GNOME does not natively support DND exceptions/whitelist. If you want specific apps to bypass DND, turn this toggle off and instead manually silence noisy apps under Ubuntu System Settings -> Notifications.'**
-  String get settingsOsFocusModeGnomeNote;
-
   /// Title for break screen mode setting
   ///
   /// In en, this message translates to:

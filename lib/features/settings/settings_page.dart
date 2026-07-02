@@ -1169,35 +1169,13 @@ class _SettingsPageState extends State<SettingsPage>
           'system',
         ],
         category: 'General Schedule',
-        widget: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.do_not_disturb_on),
-              title: Text(l10n.settingsOsFocusMode),
-              subtitle: Text(l10n.settingsOsFocusModeToggle),
-              value: widget.osFocusDndEnabled,
-              onChanged: widget.setOsFocusDndEnabled,
-            ),
-            if (widget.osFocusDndEnabled)
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: 48.0,
-                  top: 4.0,
-                  bottom: 8.0,
-                ),
-                child: Text(
-                  l10n.settingsOsFocusModeGnomeNote,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.textTheme.bodySmall?.color?.withValues(
-                      alpha: 0.7,
-                    ),
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-          ],
+        widget: SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.do_not_disturb_on),
+          title: Text(l10n.settingsOsFocusMode),
+          subtitle: Text(l10n.settingsOsFocusModeToggle),
+          value: widget.osFocusDndEnabled,
+          onChanged: widget.setOsFocusDndEnabled,
         ),
       ),
 

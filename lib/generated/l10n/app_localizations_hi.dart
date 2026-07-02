@@ -367,10 +367,6 @@ class AppLocalizationsHi extends AppLocalizations {
       'काम के चरणों के दौरान सिस्टम DND टॉगल करें';
 
   @override
-  String get settingsOsFocusModeGnomeNote =>
-      'नोट: Ubuntu/GNOME मूल रूप से DND अपवादों/श्वेतसूची का समर्थन नहीं करता है। यदि आप चाहते हैं कि विशिष्ट ऐप DND को बायपास करें, तो इस टॉगल को बंद कर दें और इसके बजाय उबंटू सिस्टम सेटिंग्स -> सूचनाएं के तहत शोर करने वाले ऐप्स को मैन्युअल रूप से शांत करें।';
-
-  @override
   String get settingsBreakScreenMode => 'अंतराल स्क्रीन मोड';
 
   @override

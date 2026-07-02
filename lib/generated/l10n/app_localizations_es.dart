@@ -371,10 +371,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Activar No molestar durante las fases de trabajo';
 
   @override
-  String get settingsOsFocusModeGnomeNote =>
-      'Nota: Ubuntu/GNOME no admite de forma nativa excepciones o listas blancas de No molestar. Si deseas que aplicaciones específicas omitan No molestar, desactiva esta opción y silencia manualmente las aplicaciones ruidosas en Ajustes de Ubuntu -> Notificaciones.';
-
-  @override
   String get settingsBreakScreenMode => 'Modo de pantalla de descanso';
 
   @override
