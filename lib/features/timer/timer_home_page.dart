@@ -252,6 +252,7 @@ class TimerHomePageState extends State<TimerHomePage>
   static const Size _miniModeWindowSize = Size(168, 168);
 
   bool _isMiniMode = false;
+  bool _androidPipSupported = false;
   Size? _savedWindowSize;
   Offset? _savedWindowPosition;
 
@@ -394,6 +395,7 @@ class TimerHomePageState extends State<TimerHomePage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _initAndroidPip();
     _audioPlayer = AudioPlayer();
     _backgroundService = widget.backgroundService ?? TimerBackgroundService();
     _workDurationSeconds = widget.initialWorkDurationSeconds;
@@ -3204,7 +3206,9 @@ class TimerHomePageState extends State<TimerHomePage>
                     if (!kIsWeb &&
                         (defaultTargetPlatform == TargetPlatform.linux ||
                             defaultTargetPlatform == TargetPlatform.macOS ||
-                            defaultTargetPlatform == TargetPlatform.windows))
+                            defaultTargetPlatform == TargetPlatform.windows ||
+                            (defaultTargetPlatform == TargetPlatform.android &&
+                                _androidPipSupported)))
                       IconButton(
                         icon: const Icon(Icons.picture_in_picture_alt_rounded),
                         onPressed: _toggleMiniMode,
@@ -3774,14 +3778,54 @@ class TimerHomePageState extends State<TimerHomePage>
     }
   }
 
+  /// Wires up Android's OS-native Picture-in-Picture. Unlike the desktop
+  /// always-on-top window — which a Wayland/GNOME compositor keeps below other
+  /// apps' fullscreen surfaces — Android PiP genuinely floats over other apps,
+  /// including fullscreen ones. The compact [_buildMiniModeWidget] is reused as
+  /// the PiP surface; [_isMiniMode] is driven by the native onPipModeChanged
+  /// callback so it stays in sync when the user expands/closes via OS controls.
+  void _initAndroidPip() {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    const channel = MethodChannel('blinkkind/break_overlay');
+    channel.setMethodCallHandler((call) async {
+      if (call.method == 'onPipModeChanged') {
+        final inPip = call.arguments == true;
+        if (mounted && _isMiniMode != inPip) {
+          setState(() => _isMiniMode = inPip);
+        }
+      }
+      return null;
+    });
+    scheduleMicrotask(() async {
+      try {
+        final supported =
+            await channel.invokeMethod<bool>('isPipSupported') ?? false;
+        if (mounted && supported != _androidPipSupported) {
+          setState(() => _androidPipSupported = supported);
+        }
+      } catch (_) {}
+    });
+  }
+
   Future<void> _toggleMiniMode() async {
     if (kIsWeb) return;
+
+    // Android: drive the OS-native PiP window instead of the desktop
+    // window_manager resize path. _isMiniMode is updated by onPipModeChanged.
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        const channel = MethodChannel('blinkkind/break_overlay');
+        await channel.invokeMethod(_isMiniMode ? 'exitPip' : 'enterPip');
+      } catch (_) {}
+      return;
+    }
+
     if (defaultTargetPlatform != TargetPlatform.linux &&
         defaultTargetPlatform != TargetPlatform.macOS &&
         defaultTargetPlatform != TargetPlatform.windows) {
       return;
     }
-    
+
     if (_isMiniMode) {
       // Exit Mini Mode
       setState(() {

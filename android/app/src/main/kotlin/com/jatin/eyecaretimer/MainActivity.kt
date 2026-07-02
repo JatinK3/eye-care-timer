@@ -1,7 +1,11 @@
 package com.jatin.eyecaretimer
 
 import android.app.AppOpsManager
+import android.app.NotificationManager
+import android.app.PictureInPictureParams
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -10,6 +14,7 @@ import android.provider.Settings
 import android.content.Context
 import android.hardware.camera2.CameraManager
 import android.media.AudioManager
+import android.util.Rational
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -20,6 +25,10 @@ class MainActivity : FlutterActivity() {
     private val timerBackgroundChannel = "blinkkind/timer_background"
     private val permissionsChannel = "blinkkind/permissions"
     private val reminderChannelId = "blinkkind_phase_reminders_v2"
+
+    // Kept so onPictureInPictureModeChanged can notify Dart to swap in/out the
+    // compact PiP UI and keep _isMiniMode in sync with the OS PiP window state.
+    private var breakOverlayMethodChannel: MethodChannel? = null
 
     private var isCameraActive = false
     private val cameraCallback = object : CameraManager.AvailabilityCallback() {
@@ -65,6 +74,7 @@ class MainActivity : FlutterActivity() {
         } catch (e: Exception) {
         }
         AppVisibility.isActivityResumed = false
+        breakOverlayMethodChannel = null
         super.onDestroy()
     }
 
@@ -78,6 +88,60 @@ class MainActivity : FlutterActivity() {
             false
         }
         return isMicActive || isCallActive
+    }
+
+    // --- Picture-in-Picture (Mini-Mode) ---------------------------------------
+    // On Android the OS-native PiP window genuinely floats over other apps,
+    // including fullscreen ones — unlike the desktop always-on-top window, which
+    // a compositor may place below a fullscreen surface. See WORKLOG.md.
+
+    private fun isPipSupported(): Boolean {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+    }
+
+    private fun enterPipMode(): Boolean {
+        // Inline SDK_INT guard (not the isPipSupported() helper) so lint's NewApi
+        // check can prove the API-26 calls below are version-safe.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false
+        if (!packageManager.hasSystemFeature(
+                PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+            return false
+        }
+        return try {
+            val params = PictureInPictureParams.Builder()
+                .setAspectRatio(Rational(1, 1))
+                .build()
+            enterPictureInPictureMode(params)
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // There is no direct "leave PiP" API; relaunching the activity in singleTop
+    // reorders it to the front, which expands it out of the PiP window.
+    private fun exitPipMode(): Boolean {
+        return try {
+            val intent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            startActivity(intent)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration,
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        breakOverlayMethodChannel?.invokeMethod(
+            "onPipModeChanged",
+            isInPictureInPictureMode,
+        )
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -97,11 +161,19 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
-        MethodChannel(
+        val breakOverlay = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             breakOverlayChannel,
-        ).setMethodCallHandler { call, result ->
+        )
+        breakOverlayMethodChannel = breakOverlay
+        breakOverlay.setMethodCallHandler { call, result ->
             when (call.method) {
+                "isPipSupported" ->
+                    result.success(isPipSupported())
+                "enterPip" ->
+                    result.success(enterPipMode())
+                "exitPip" ->
+                    result.success(exitPipMode())
                 "overlayPermissionStatus" ->
                     result.success(BreakOverlayController.canDraw(this))
                 "openOverlayPermissionSettings" ->
@@ -210,6 +282,7 @@ class MainActivity : FlutterActivity() {
             flutterEngine.dartExecutor.binaryMessenger,
             permissionsChannel,
         ).setMethodCallHandler { call, result ->
+            when (call.method) {
                 "usageAccessPermissionStatus" ->
                     result.success(isUsageAccessGranted())
                 "openUsageAccessSettings" ->

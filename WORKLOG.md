@@ -211,6 +211,34 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ## Session Log
 
+### 2026-07-02 (Session ongoing — IST)
+
+**Desktop PiP over-fullscreen limitation (root-caused) + cross-platform PiP strategy:**
+
+- **Symptom investigated:** the desktop Mini-Mode (PiP) window does not float above other applications that are in *true fullscreen* (fullscreen video, games, presentations). It floats fine over normal windows.
+- **Root cause — this is a window-manager limitation, NOT an app bug.** Environment confirmed as **GNOME + Wayland (Ubuntu)**.
+  - Both X11 (EWMH) and Mutter order windows bottom→top roughly as: `desktop < below < normal < [DOCK + keep-above/ABOVE] < focused FULLSCREEN`. The PiP uses `gtk_window_set_keep_above(TRUE)` + `GDK_WINDOW_TYPE_HINT_DOCK` (`linux/runner/my_application.cc`), which lands in the dock/above layer — **still below** a focused fullscreen window by design. Keep-above/DOCK cannot beat fullscreen.
+  - Under **Wayland** it is weaker still: clients are forbidden from controlling their own stacking/position, so `set_keep_above`, `DOCK` type hint, and `stick` are hints Mutter is free to ignore (and largely does).
+  - The one Wayland protocol that *would* place a surface above fullscreen — **`wlr-layer-shell` (overlay layer)** — is implemented only by wlroots compositors (Sway, Hyprland). **GNOME/Mutter does not implement it.**
+  - Same reason browser Picture-in-Picture / Discord / Steam floating windows don't sit over exclusive-fullscreen games on GNOME Wayland (those overlays that do work inject into the game's own GL/Vulkan render, not a separate window).
+  - Note: the app's *break overlay* CAN cover fullscreen because it calls `gtk_window_fullscreen_on_monitor()` — it becomes a real fullscreen window itself (and grabs focus). A corner PiP can't do that without ceasing to be PiP.
+- **Decision:** the Linux native `setPiPMode` implementation is **final / do not modify** (added a rule to `.agents/AGENTS.md`). Deliver PiP-over-fullscreen through the mechanisms each OS actually supports.
+
+**Cross-platform PiP matrix (after this session):**
+
+| Platform | Mechanism | Floats over fullscreen apps? |
+|---|---|---|
+| **Android** | OS-native Picture-in-Picture (`enterPictureInPictureMode`) — implemented this session | **Yes** — OS-managed, floats over other apps incl. fullscreen |
+| **Windows** | `window_manager` `setAlwaysOnTop` → `HWND_TOPMOST` (already wired) | **Mostly** — over normal + borderless-fullscreen; not true DirectX *exclusive* fullscreen (a documented OS caveat) |
+| **Linux (GNOME/Wayland)** | best-effort `keep-above` + `DOCK` (final, do not modify) | **No** — hard Mutter/Wayland limitation (above) |
+
+**Implemented this session — native Android Picture-in-Picture:**
+- `AndroidManifest.xml`: added `android:supportsPictureInPicture="true"` and `android:resizeableActivity="true"` to `.MainActivity` (the required `configChanges` — `screenSize|smallestScreenSize|screenLayout|orientation` — were already present).
+- `MainActivity.kt`: added `isPipSupported` (API ≥ 26 + `FEATURE_PICTURE_IN_PICTURE`), `enterPip` (`PictureInPictureParams` with 1:1 aspect ratio), `exitPip` (relaunch activity via `FLAG_ACTIVITY_REORDER_TO_FRONT|SINGLE_TOP` to expand out of PiP), and an `onPictureInPictureModeChanged` override that pushes `onPipModeChanged` back to Dart. All guarded for API < 26.
+- `timer_home_page.dart`: on Android, `_toggleMiniMode` routes to the native `enterPip`/`exitPip` instead of the desktop `window_manager` resize path; a `blinkkind/break_overlay` handler receives `onPipModeChanged` to drive `_isMiniMode` (so the compact widget renders in the PiP window and the state stays in sync when the user expands/closes via OS controls); the AppBar PiP button is now shown on Android too, gated on a runtime `isPipSupported` probe.
+- Reused the existing `_buildMiniModeWidget` compact UI for the Android PiP surface.
+- [ ] **On-device validation pending:** verify enter/exit PiP, over-fullscreen floating, aspect ratio, and expand/close via system PiP controls on a physical Android 8+ device.
+
 ### 2026-07-01 (Session ongoing — IST)
 
 **Completed this session:**
