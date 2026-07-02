@@ -209,6 +209,34 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ---
 
+## Next Steps — post v1.2.0 (planned 2026-07-02)
+
+Prioritized follow-ups after the v1.2.0 release (native Android PiP, water reminders + intake tracking, the "Log a glass" notification action, and the wellness-reminder scheduling fix). Ordered by value vs. risk. Everything in P0 was built and passes `flutter analyze` / `flutter test` / `apk --debug`, but **could not be exercised on hardware from the dev environment** — that is the single biggest confidence gap for the release.
+
+### P0 — Validate what v1.2.0 shipped (highest risk)
+- [ ] **Android native PiP** on a physical Android 8+ device: enter/exit via the button, float over another app's fullscreen video/game, correct 1:1 aspect ratio, and expand/close via the OS PiP controls with `_isMiniMode` staying in sync.
+- [ ] **Wellness reminders fire on cadence** across work→break→work phases while backgrounded (the new anchor-based schedule) — the original bug was *zero* reminders with a 30-min cadence on ~20-min phases.
+- [ ] **Water reminders fire** on Android (background `zonedSchedule`, id 3100–3149) and Linux (`notify-send`) across a long session, respecting the active-hours horizon and the "only while running" rule.
+- [ ] **"Log a glass" action** end-to-end: Android foreground (command bus) *and* app fully killed (background isolate → prefs increment → home card reloads on resume), plus the Linux D-Bus `ActionInvoked` path. Confirm no double-count and that the count survives a relaunch.
+- [ ] **Release-mode (R8/AOT) check** for the `@pragma('vm:entry-point')` background handler — verify it isn't tree-shaken in `flutter build apk --release` and still logs a glass while the app is killed.
+- [ ] Carry over the still-open device matrix (from P3 below): background / screen-lock / Doze / app-killed multi-cycle auto-run, iOS immersive restore, desktop Wayland/X11 break edge cases.
+
+### P1 — Close the gaps the new features left open
+- [ ] **Localize the new strings** (ES + HI ARB): the "Water reminders" settings group, the "Water today" card, "Log a glass"/undo, and any wellness strings still hardcoded in English. The EN/ES/HI scaffolding already exists — this is string extraction + translation only.
+- [ ] **iOS parity for water**: register a `DarwinNotificationCategory` with a "Log a glass" action (today it is Android/Linux only, matching the blink pattern) and confirm iOS water/wellness delivery.
+- [ ] **Water tracking → History & Insights**: persist a daily water total (e.g. via `TimerEventRecord`) so consumption appears on the History screen with a weekly hydration trend, instead of a value that silently resets each day.
+
+### P2 — Polish & product depth
+- [ ] **Notification-action UX**: a brief in-app confirmation ("💧 Logged — 4/8 glasses") when a glass is logged from the notification, plus an "undo last glass" affordance.
+- [ ] **Windows PiP verification**: confirm `setAlwaysOnTop` / `HWND_TOPMOST` floats over borderless-fullscreen apps and surface the exclusive-fullscreen caveat in-app.
+- [ ] **Smarter water pacing**: optionally skip a reminder when the user is already ahead of the goal pace — now feasible because we track real intake.
+
+### P3 — Release & distribution (carried from roadmap)
+- [ ] **Desktop auto-update + store distribution**: an update channel for the `.deb`/`.rpm`, plus publishing to Flathub/Snap, Microsoft Store, and Play Store.
+- [ ] Build the packaged **v1.2.0** artifacts via `tool/release.sh` and attach them to a GitHub release for tag `v1.2.0`.
+
+---
+
 ## Session Log
 
 ### 2026-07-02 (Session ongoing — IST)
