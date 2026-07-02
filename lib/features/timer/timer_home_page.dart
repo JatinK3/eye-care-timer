@@ -1155,10 +1155,10 @@ class TimerHomePageState extends State<TimerHomePage>
     final progress = goal > 0 ? '$count/$goal' : '$count';
     _showTimerSnackBar(
       SnackBar(
-        content: Text('Logged — $progress glasses'),
+        content: Text(AppLocalizations.of(context)!.waterLoggedMessage(progress)),
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
-          label: 'Undo',
+          label: AppLocalizations.of(context)!.waterUndo,
           onPressed: () {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
             _logWaterGlass(-1);
@@ -3071,14 +3071,16 @@ class TimerHomePageState extends State<TimerHomePage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  goalReached ? 'Water goal met 🎉' : 'Water today',
+                  goalReached
+                      ? AppLocalizations.of(context)!.waterGoalMet
+                      : AppLocalizations.of(context)!.waterToday,
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '$consumed / $goal glasses · $ml ml',
+                  AppLocalizations.of(context)!.waterGlassesAndVolume(consumed, ml),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -3090,14 +3092,14 @@ class TimerHomePageState extends State<TimerHomePage>
             onPressed: consumed > 0 ? () => _logWaterGlass(-1) : null,
             icon: const Icon(Icons.remove_circle_outline),
             color: waterColor,
-            tooltip: 'Undo a glass',
+            tooltip: AppLocalizations.of(context)!.waterUndoTooltip,
             visualDensity: VisualDensity.compact,
           ),
           IconButton(
             onPressed: () => _logWaterGlass(1),
             icon: const Icon(Icons.add_circle),
             color: waterColor,
-            tooltip: 'Log a glass',
+            tooltip: AppLocalizations.of(context)!.waterLogTooltip,
             visualDensity: VisualDensity.compact,
           ),
         ],

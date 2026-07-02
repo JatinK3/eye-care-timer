@@ -1103,4 +1103,78 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsBatteryOptimizationFix => 'Fix Battery Settings';
+
+  @override
+  String get waterReminders => 'Water reminders';
+
+  @override
+  String get waterRemindersSubtitle =>
+      'Hydration nudges spread evenly across your day';
+
+  @override
+  String get waterDailyGoal => 'Daily goal';
+
+  @override
+  String get waterGlassSize => 'Glass size';
+
+  @override
+  String get waterGlassSizeSubtitle => 'Used to convert your goal to a volume';
+
+  @override
+  String waterGlassesCount(int count) {
+    return '$count glasses';
+  }
+
+  @override
+  String waterGlassesAndVolume(int count, int volume) {
+    return '$count glasses · $volume ml';
+  }
+
+  @override
+  String get waterUndoTooltip => 'Undo a glass';
+
+  @override
+  String get waterLogTooltip => 'Log a glass';
+
+  @override
+  String waterLoggedMessage(String progress) {
+    return 'Logged — $progress glasses';
+  }
+
+  @override
+  String get waterGoalMet => 'Water goal met 🎉';
+
+  @override
+  String get waterToday => 'Water today';
+
+  @override
+  String get waterLoggedHistory => 'Water logged';
+
+  @override
+  String get hydrationGoalRate => 'Hydration goal rate';
+
+  @override
+  String get hydrationGoal => 'Hydration goal';
+
+  @override
+  String get hydrationLogs => 'Hydration logs';
+
+  @override
+  String get waterUndo => 'Undo';
+
+  @override
+  String get waterChartLabel => 'Water';
+
+  @override
+  String get noWaterLogged => 'No water logged';
+
+  @override
+  String waterVolumeTotal(int volume) {
+    return '$volume ml total';
+  }
+
+  @override
+  String daysGoalMetDetail(int metCount, int totalCount) {
+    return '$metCount of $totalCount days met';
+  }
 }

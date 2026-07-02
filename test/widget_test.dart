@@ -1203,7 +1203,7 @@ void main() {
     expect(find.text('Goal rate'), findsOneWidget);
     expect(find.text('Focus duration'), findsOneWidget);
     expect(find.text('Peak focus hour'), findsOneWidget);
-    expect(find.text('Hydration logged'), findsOneWidget);
+    expect(find.text('Water logged'), findsNWidgets(2));
     expect(find.text('Hydration goal'), findsOneWidget);
     expect(find.text('12 glasses'), findsAtLeastNWidgets(1));
     expect(find.text('3000 ml total'), findsOneWidget);

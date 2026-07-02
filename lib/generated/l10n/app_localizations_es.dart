@@ -1138,4 +1138,79 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsBatteryOptimizationFix => 'Solucionar ajustes de batería';
+
+  @override
+  String get waterReminders => 'Recordatorios de agua';
+
+  @override
+  String get waterRemindersSubtitle =>
+      'Recordatorios de hidratación distribuidos a lo largo del día';
+
+  @override
+  String get waterDailyGoal => 'Objetivo diario';
+
+  @override
+  String get waterGlassSize => 'Tamaño del vaso';
+
+  @override
+  String get waterGlassSizeSubtitle =>
+      'Utilizado para convertir su objetivo en un volumen';
+
+  @override
+  String waterGlassesCount(int count) {
+    return '$count vasos';
+  }
+
+  @override
+  String waterGlassesAndVolume(int count, int volume) {
+    return '$count vasos · $volume ml';
+  }
+
+  @override
+  String get waterUndoTooltip => 'Deshacer un vaso';
+
+  @override
+  String get waterLogTooltip => 'Registrar un vaso';
+
+  @override
+  String waterLoggedMessage(String progress) {
+    return 'Registrado — $progress vasos';
+  }
+
+  @override
+  String get waterGoalMet => '¡Objetivo de agua alcanzado! 🎉';
+
+  @override
+  String get waterToday => 'Agua hoy';
+
+  @override
+  String get waterLoggedHistory => 'Agua registrada';
+
+  @override
+  String get hydrationGoalRate => 'Tasa de objetivo de hidratación';
+
+  @override
+  String get hydrationGoal => 'Objetivo de hidratación';
+
+  @override
+  String get hydrationLogs => 'Registros de hidratación';
+
+  @override
+  String get waterUndo => 'Deshacer';
+
+  @override
+  String get waterChartLabel => 'Agua';
+
+  @override
+  String get noWaterLogged => 'Sin agua registrada';
+
+  @override
+  String waterVolumeTotal(int volume) {
+    return '$volume ml en total';
+  }
+
+  @override
+  String daysGoalMetDetail(int metCount, int totalCount) {
+    return '$metCount de $totalCount días cumplidos';
+  }
 }

@@ -222,7 +222,7 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 - [ ] Carry over the still-open device matrix (from P3 below): background / screen-lock / Doze / app-killed multi-cycle auto-run, iOS immersive restore, desktop Wayland/X11 break edge cases.
 
 ### P1 — Close the gaps the new features left open
-- [ ] **Localize the new strings** (ES + HI ARB): the "Water reminders" settings group, the "Water today" card, "Log a glass"/undo, and any wellness strings still hardcoded in English. The EN/ES/HI scaffolding already exists — this is string extraction + translation only.
+- [x] **Localize the new strings** (ES + HI ARB): the "Water reminders" settings group, the "Water today" card, "Log a glass"/undo, and any wellness strings still hardcoded in English. The EN/ES/HI scaffolding already exists — this is string extraction + translation only.
 - [x] **iOS water notification action wiring**: registered a `DarwinNotificationCategory` with a "Log a glass" action and attached it to water reminders.
 - [ ] **iOS device validation**: confirm iOS water/wellness delivery and background action behavior on a physical iPhone.
 - [x] **Water tracking → History & Insights**: persist a daily water total so consumption appears on the History screen with hydration summaries, daily logs, chart metric, AI-report context, and CSV/JSON export.
@@ -311,6 +311,11 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 - Added an undoable in-app confirmation for notification-originated water logs: `Logged — X/Y glasses` with an `Undo` action that decrements the last logged glass and persists the corrected daily/history totals. Background/killed-app logs show the same confirmation after the app resumes and reloads the updated count.
 - Added smarter pacing: desktop foreground reminders use active-time reminder slots, and Android/iOS pre-scheduled reminders filter future slots so reminders are skipped while the user is already at or ahead of expected hydration pace. Logging or undoing a glass reschedules the future water reminders.
 - Local validation completed: `flutter analyze`, full `flutter test` (**93/93**), `flutter build linux --debug`, and `flutter build apk --release` all pass. iOS build/device action validation is pending because the dev environment is Linux.
+
+**Completed localization pass for water tracking & reminders (all platforms):**
+- Defined water-related localized strings in English, Spanish, and Hindi (`app_en.arb`, `app_es.arb`, `app_hi.arb`).
+- Wired `AppLocalizations` translations into `settings_page.dart` (reminders switch, daily goal selector, glass size selector), `timer_home_page.dart` (water status card, log/undo icon button tooltips, undo SnackBar), and `history_page.dart` (hydration summary cards, insight rows, chart metric toggle, logs title).
+- Updated widget test expectations for "Water logged" metric cards to match localized strings and verified that the entire test suite (**93/93** tests) passes.
 
 ### 2026-07-01 (Session ongoing — IST)
 

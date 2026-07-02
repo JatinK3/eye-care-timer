@@ -1114,4 +1114,78 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get settingsBatteryOptimizationFix => 'बैटरी सेटिंग्स ठीक करें';
+
+  @override
+  String get waterReminders => 'पानी के अनुस्मारक';
+
+  @override
+  String get waterRemindersSubtitle =>
+      'दिन भर में समान रूप से हाइड्रेशन अनुस्मारक';
+
+  @override
+  String get waterDailyGoal => 'दैनिक लक्ष्य';
+
+  @override
+  String get waterGlassSize => 'ग्लास का आकार';
+
+  @override
+  String get waterGlassSizeSubtitle => 'आपके लक्ष्य को मात्रा में बदलने के लिए';
+
+  @override
+  String waterGlassesCount(int count) {
+    return '$count गिलास';
+  }
+
+  @override
+  String waterGlassesAndVolume(int count, int volume) {
+    return '$count गिलास · $volume एमएल';
+  }
+
+  @override
+  String get waterUndoTooltip => 'एक गिलास पूर्ववत करें';
+
+  @override
+  String get waterLogTooltip => 'एक गिलास दर्ज करें';
+
+  @override
+  String waterLoggedMessage(String progress) {
+    return 'दर्ज किया गया — $progress गिलास';
+  }
+
+  @override
+  String get waterGoalMet => 'पानी का लक्ष्य पूरा हुआ 🎉';
+
+  @override
+  String get waterToday => 'आज पानी';
+
+  @override
+  String get waterLoggedHistory => 'पानी दर्ज किया गया';
+
+  @override
+  String get hydrationGoalRate => 'हाइड्रेशन लक्ष्य दर';
+
+  @override
+  String get hydrationGoal => 'हाइड्रेशन लक्ष्य';
+
+  @override
+  String get hydrationLogs => 'हाइड्रेशन लॉग';
+
+  @override
+  String get waterUndo => 'पूर्ववत करें';
+
+  @override
+  String get waterChartLabel => 'पानी';
+
+  @override
+  String get noWaterLogged => 'कोई पानी दर्ज नहीं';
+
+  @override
+  String waterVolumeTotal(int volume) {
+    return '$volume एमएल कुल';
+  }
+
+  @override
+  String daysGoalMetDetail(int metCount, int totalCount) {
+    return '$metCount / $totalCount दिन पूरे हुए';
+  }
 }

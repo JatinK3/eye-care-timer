@@ -2442,8 +2442,8 @@ class _SettingsPageState extends State<SettingsPage>
         ),
       ),
       SettingItem(
-        title: 'Water reminders',
-        subtitle: 'Hydration nudges spread across your active hours',
+        title: AppLocalizations.of(context)!.waterReminders,
+        subtitle: AppLocalizations.of(context)!.waterRemindersSubtitle,
         keywords: [
           'water',
           'hydration',
@@ -2459,9 +2459,9 @@ class _SettingsPageState extends State<SettingsPage>
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               secondary: const Icon(Icons.local_drink_outlined),
-              title: const Text('Water reminders'),
-              subtitle: const Text(
-                'Hydration nudges spread evenly across your day',
+              title: Text(AppLocalizations.of(context)!.waterReminders),
+              subtitle: Text(
+                AppLocalizations.of(context)!.waterRemindersSubtitle,
               ),
               value: widget.waterRemindersEnabled,
               onChanged: widget.setWaterRemindersEnabled,
@@ -2471,10 +2471,12 @@ class _SettingsPageState extends State<SettingsPage>
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.water_drop_outlined),
-                title: const Text('Daily goal'),
+                title: Text(AppLocalizations.of(context)!.waterDailyGoal),
                 subtitle: Text(
-                  '${widget.waterDailyGoalGlasses} glasses · '
-                  '${widget.waterDailyGoalGlasses * widget.waterGlassSizeMl} ml',
+                  AppLocalizations.of(context)!.waterGlassesAndVolume(
+                    widget.waterDailyGoalGlasses,
+                    widget.waterDailyGoalGlasses * widget.waterGlassSizeMl,
+                  ),
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -2503,8 +2505,10 @@ class _SettingsPageState extends State<SettingsPage>
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.straighten_outlined),
-                title: const Text('Glass size'),
-                subtitle: const Text('Used to convert your goal to a volume'),
+                title: Text(AppLocalizations.of(context)!.waterGlassSize),
+                subtitle: Text(
+                  AppLocalizations.of(context)!.waterGlassSizeSubtitle,
+                ),
                 trailing: DropdownButton<int>(
                   value: widget.waterGlassSizeMl,
                   items: const [200, 250, 300, 330, 500].map((value) {

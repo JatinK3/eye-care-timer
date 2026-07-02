@@ -2079,6 +2079,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fix Battery Settings'**
   String get settingsBatteryOptimizationFix;
+
+  /// Title for the water reminders setting section
+  ///
+  /// In en, this message translates to:
+  /// **'Water reminders'**
+  String get waterReminders;
+
+  /// Subtitle for the water reminders setting section
+  ///
+  /// In en, this message translates to:
+  /// **'Hydration nudges spread evenly across your day'**
+  String get waterRemindersSubtitle;
+
+  /// Label for daily water goal setting
+  ///
+  /// In en, this message translates to:
+  /// **'Daily goal'**
+  String get waterDailyGoal;
+
+  /// Label for water glass size setting
+  ///
+  /// In en, this message translates to:
+  /// **'Glass size'**
+  String get waterGlassSize;
+
+  /// Subtitle for water glass size setting
+  ///
+  /// In en, this message translates to:
+  /// **'Used to convert your goal to a volume'**
+  String get waterGlassSizeSubtitle;
+
+  /// Label for count of water glasses
+  ///
+  /// In en, this message translates to:
+  /// **'{count} glasses'**
+  String waterGlassesCount(int count);
+
+  /// Label for count of glasses and volume in ml
+  ///
+  /// In en, this message translates to:
+  /// **'{count} glasses · {volume} ml'**
+  String waterGlassesAndVolume(int count, int volume);
+
+  /// Tooltip for undoing a water glass log
+  ///
+  /// In en, this message translates to:
+  /// **'Undo a glass'**
+  String get waterUndoTooltip;
+
+  /// Tooltip for logging a water glass
+  ///
+  /// In en, this message translates to:
+  /// **'Log a glass'**
+  String get waterLogTooltip;
+
+  /// Snackbar message when a water glass is logged
+  ///
+  /// In en, this message translates to:
+  /// **'Logged — {progress} glasses'**
+  String waterLoggedMessage(String progress);
+
+  /// Message shown when the daily water goal is achieved
+  ///
+  /// In en, this message translates to:
+  /// **'Water goal met 🎉'**
+  String get waterGoalMet;
+
+  /// Label for today's water card
+  ///
+  /// In en, this message translates to:
+  /// **'Water today'**
+  String get waterToday;
+
+  /// History metric label for water logged
+  ///
+  /// In en, this message translates to:
+  /// **'Water logged'**
+  String get waterLoggedHistory;
+
+  /// History metric label for hydration goal rate
+  ///
+  /// In en, this message translates to:
+  /// **'Hydration goal rate'**
+  String get hydrationGoalRate;
+
+  /// History metric label for hydration goal
+  ///
+  /// In en, this message translates to:
+  /// **'Hydration goal'**
+  String get hydrationGoal;
+
+  /// History section title for hydration logs
+  ///
+  /// In en, this message translates to:
+  /// **'Hydration logs'**
+  String get hydrationLogs;
+
+  /// Undo action label
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get waterUndo;
+
+  /// Label for water metric in charts
+  ///
+  /// In en, this message translates to:
+  /// **'Water'**
+  String get waterChartLabel;
+
+  /// Detail text shown when no water has been logged
+  ///
+  /// In en, this message translates to:
+  /// **'No water logged'**
+  String get noWaterLogged;
+
+  /// Detail text showing total water volume in ml
+  ///
+  /// In en, this message translates to:
+  /// **'{volume} ml total'**
+  String waterVolumeTotal(int volume);
+
+  /// Detail text showing days a goal was met
+  ///
+  /// In en, this message translates to:
+  /// **'{metCount} of {totalCount} days met'**
+  String daysGoalMetDetail(int metCount, int totalCount);
 }
 
 class _AppLocalizationsDelegate

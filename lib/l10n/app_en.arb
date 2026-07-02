@@ -1409,5 +1409,127 @@
   "settingsBatteryOptimizationFix": "Fix Battery Settings",
   "@settingsBatteryOptimizationFix": {
     "description": "Fix battery optimization button label in settings"
+  },
+  "waterReminders": "Water reminders",
+  "@waterReminders": {
+    "description": "Title for the water reminders setting section"
+  },
+  "waterRemindersSubtitle": "Hydration nudges spread evenly across your day",
+  "@waterRemindersSubtitle": {
+    "description": "Subtitle for the water reminders setting section"
+  },
+  "waterDailyGoal": "Daily goal",
+  "@waterDailyGoal": {
+    "description": "Label for daily water goal setting"
+  },
+  "waterGlassSize": "Glass size",
+  "@waterGlassSize": {
+    "description": "Label for water glass size setting"
+  },
+  "waterGlassSizeSubtitle": "Used to convert your goal to a volume",
+  "@waterGlassSizeSubtitle": {
+    "description": "Subtitle for water glass size setting"
+  },
+  "waterGlassesCount": "{count} glasses",
+  "@waterGlassesCount": {
+    "description": "Label for count of water glasses",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "waterGlassesAndVolume": "{count} glasses · {volume} ml",
+  "@waterGlassesAndVolume": {
+    "description": "Label for count of glasses and volume in ml",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
+      "volume": {
+        "type": "int",
+        "example": "750"
+      }
+    }
+  },
+  "waterUndoTooltip": "Undo a glass",
+  "@waterUndoTooltip": {
+    "description": "Tooltip for undoing a water glass log"
+  },
+  "waterLogTooltip": "Log a glass",
+  "@waterLogTooltip": {
+    "description": "Tooltip for logging a water glass"
+  },
+  "waterLoggedMessage": "Logged — {progress} glasses",
+  "@waterLoggedMessage": {
+    "description": "Snackbar message when a water glass is logged",
+    "placeholders": {
+      "progress": {
+        "type": "String",
+        "example": "4/8"
+      }
+    }
+  },
+  "waterGoalMet": "Water goal met 🎉",
+  "@waterGoalMet": {
+    "description": "Message shown when the daily water goal is achieved"
+  },
+  "waterToday": "Water today",
+  "@waterToday": {
+    "description": "Label for today's water card"
+  },
+  "waterLoggedHistory": "Water logged",
+  "@waterLoggedHistory": {
+    "description": "History metric label for water logged"
+  },
+  "hydrationGoalRate": "Hydration goal rate",
+  "@hydrationGoalRate": {
+    "description": "History metric label for hydration goal rate"
+  },
+  "hydrationGoal": "Hydration goal",
+  "@hydrationGoal": {
+    "description": "History metric label for hydration goal"
+  },
+  "hydrationLogs": "Hydration logs",
+  "@hydrationLogs": {
+    "description": "History section title for hydration logs"
+  },
+  "waterUndo": "Undo",
+  "@waterUndo": {
+    "description": "Undo action label"
+  },
+  "waterChartLabel": "Water",
+  "@waterChartLabel": {
+    "description": "Label for water metric in charts"
+  },
+  "noWaterLogged": "No water logged",
+  "@noWaterLogged": {
+    "description": "Detail text shown when no water has been logged"
+  },
+  "waterVolumeTotal": "{volume} ml total",
+  "@waterVolumeTotal": {
+    "description": "Detail text showing total water volume in ml",
+    "placeholders": {
+      "volume": {
+        "type": "int",
+        "example": "1000"
+      }
+    }
+  },
+  "daysGoalMetDetail": "{metCount} of {totalCount} days met",
+  "@daysGoalMetDetail": {
+    "description": "Detail text showing days a goal was met",
+    "placeholders": {
+      "metCount": {
+        "type": "int",
+        "example": "3"
+      },
+      "totalCount": {
+        "type": "int",
+        "example": "7"
+      }
+    }
   }
 }

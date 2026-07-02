@@ -283,7 +283,7 @@ class _HistoryPageState extends State<HistoryPage> {
               icon: Icons.track_changes_outlined,
               label: AppLocalizations.of(context)!.goalRate,
               value: "$goalRate%",
-              detail: "$goalDays of ${dates.length} days met",
+              detail: AppLocalizations.of(context)!.daysGoalMetDetail(goalDays, dates.length),
             ),
           ),
           const SizedBox(height: 12),
@@ -305,15 +305,17 @@ class _HistoryPageState extends State<HistoryPage> {
           _MetricRow(
             first: _MetricCard(
               icon: Icons.water_drop_outlined,
-              label: "Hydration logged",
-              value: "$totalWaterGlasses glasses",
-              detail: totalWaterMl > 0 ? "$totalWaterMl ml total" : "No water logged",
+              label: AppLocalizations.of(context)!.waterLoggedHistory,
+              value: AppLocalizations.of(context)!.waterGlassesCount(totalWaterGlasses),
+              detail: totalWaterMl > 0
+                  ? AppLocalizations.of(context)!.waterVolumeTotal(totalWaterMl)
+                  : AppLocalizations.of(context)!.noWaterLogged,
             ),
             second: _MetricCard(
               icon: Icons.flag_outlined,
-              label: "Hydration goal",
+              label: AppLocalizations.of(context)!.hydrationGoal,
               value: "$waterGoalRate%",
-              detail: "$waterGoalDays of ${dates.length} days met",
+              detail: AppLocalizations.of(context)!.daysGoalMetDetail(waterGoalDays, dates.length),
             ),
           ),
           const SizedBox(height: 12),
@@ -379,13 +381,13 @@ class _HistoryPageState extends State<HistoryPage> {
                   color: Colors.teal,
                 ),
                 _InsightRow(
-                  label: "Water logged",
-                  value: "$totalWaterGlasses glasses",
+                  label: AppLocalizations.of(context)!.waterLoggedHistory,
+                  value: AppLocalizations.of(context)!.waterGlassesCount(totalWaterGlasses),
                   icon: Icons.water_drop_outlined,
                   color: const Color(0xFF3BA7E6),
                 ),
                 _InsightRow(
-                  label: "Hydration goal rate",
+                  label: AppLocalizations.of(context)!.hydrationGoalRate,
                   value: "$waterGoalRate%",
                   icon: Icons.flag_outlined,
                   color: Colors.blue,
@@ -421,7 +423,7 @@ class _HistoryPageState extends State<HistoryPage> {
           const SizedBox(height: 16),
 
           _HistorySection(
-            title: "Hydration logs",
+            title: AppLocalizations.of(context)!.hydrationLogs,
             child: dates.isEmpty
                 ? _EmptyMessage(AppLocalizations.of(context)!.noActivityRange)
                 : Column(
@@ -1634,26 +1636,29 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: SegmentedButton<ChartMetric>(
-              segments: const [
-                ButtonSegment(
+              segments: [
+                const ButtonSegment(
                   value: ChartMetric.cycles,
                   icon: Icon(Icons.refresh, size: 16),
                   label: Text("Cycles", style: TextStyle(fontSize: 12)),
                 ),
-                ButtonSegment(
+                const ButtonSegment(
                   value: ChartMetric.focusTime,
                   icon: Icon(Icons.access_time, size: 16),
                   label: Text("Minutes", style: TextStyle(fontSize: 12)),
                 ),
-                ButtonSegment(
+                const ButtonSegment(
                   value: ChartMetric.compliance,
                   icon: Icon(Icons.favorite_border, size: 16),
                   label: Text("Eye Health", style: TextStyle(fontSize: 12)),
                 ),
                 ButtonSegment(
                   value: ChartMetric.water,
-                  icon: Icon(Icons.water_drop_outlined, size: 16),
-                  label: Text("Water", style: TextStyle(fontSize: 12)),
+                  icon: const Icon(Icons.water_drop_outlined, size: 16),
+                  label: Text(
+                    AppLocalizations.of(context)!.waterChartLabel,
+                    style: const TextStyle(fontSize: 12),
+                  ),
                 ),
               ],
               selected: {_activeMetric},
@@ -1689,7 +1694,7 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                       : _activeMetric == ChartMetric.focusTime
                           ? "${values[_selectedIndex!].toStringAsFixed(1)} mins / goal: ${goalValue.toStringAsFixed(1)} mins"
                           : _activeMetric == ChartMetric.water
-                              ? "${values[_selectedIndex!].toInt()} glasses / goal: ${goalValue.toInt()}"
+                              ? "${AppLocalizations.of(context)!.waterGlassesCount(values[_selectedIndex!].toInt())} / goal: ${AppLocalizations.of(context)!.waterGlassesCount(goalValue.toInt())}"
                               : "${values[_selectedIndex!].toStringAsFixed(1)}% Eye Health Score / goal: 80%",
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: values[_selectedIndex!] >= goalValue
