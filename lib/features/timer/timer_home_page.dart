@@ -470,8 +470,7 @@ class TimerHomePageState extends State<TimerHomePage>
                 _pulseController.forward();
               }
               _processBlinkReminderCadences();
-              _processWellnessReminders(delta);
-              _processWaterReminders(delta);
+              _processIntervalReminders(delta);
               _updateDesktopState();
             }
           })
@@ -673,8 +672,7 @@ class TimerHomePageState extends State<TimerHomePage>
         setState(() {});
         
         _processBlinkReminderCadences();
-        _processWellnessReminders(delta);
-        _processWaterReminders(delta);
+        _processIntervalReminders(delta);
         _updateDesktopState();
       }
     }
@@ -1166,6 +1164,20 @@ class TimerHomePageState extends State<TimerHomePage>
     }
   }
 
+  void _hideTimerSnackBars() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  }
+
+  void _showTimerSnackBar(SnackBar snackBar) {
+    if (!mounted) return;
+    if (_isMiniMode) {
+      _hideTimerSnackBars();
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
   /// Applies a [projectPhase] result: records any work phases that finished
   /// while the app was away, then either lands on the running phase or resets
   /// to idle. Used by both launch-restore and resume reconciliation so the two
@@ -1529,7 +1541,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: false);
     _updateDesktopState();
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    _showTimerSnackBar(
       SnackBar(
         content: Text(AppLocalizations.of(context)!.timerNaturalBreakCredited),
         duration: const Duration(seconds: 4),
@@ -1605,6 +1617,7 @@ class TimerHomePageState extends State<TimerHomePage>
     // full stop so cadence isn't reset every phase.
     if (_reminderSessionAnchor == null) {
       _reminderSessionAnchor = DateTime.now();
+      _wellnessAccumulator = 0;
       _waterAccumulator = 0;
     }
 
@@ -1748,7 +1761,7 @@ class TimerHomePageState extends State<TimerHomePage>
     // Enforce skip limit
     final limit = widget.maxConsecutiveSkips;
     if (limit > 0 && _consecutiveSkips >= limit) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      _showTimerSnackBar(
         SnackBar(
           content: Text(
             'You\'ve skipped $limit break${limit == 1 ? '' : 's'} in a row — take a moment to rest your eyes! 👁️',
@@ -1829,6 +1842,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _stopTimerCleanup(resetPulse: true);
     _cancelReminders();
     _reminderSessionAnchor = null;
+    _wellnessAccumulator = 0;
     _waterAccumulator = 0;
     unawaited(widget.notificationService.cancelWellnessRemindersBackground());
     unawaited(widget.notificationService.cancelWaterRemindersBackground());
@@ -1954,7 +1968,7 @@ class TimerHomePageState extends State<TimerHomePage>
         if (hasNaturalBreak) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
+            _showTimerSnackBar(
               SnackBar(
                 content: const Text(
                   'Natural break detected while away! Timer reset.',
@@ -2572,53 +2586,60 @@ class TimerHomePageState extends State<TimerHomePage>
     unawaited(widget.notificationService.showAutoPostponeNotification());
   }
 
-  void _processWellnessReminders(int delta) {
-    if (!widget.wellnessRemindersEnabled) return;
+  bool get _canRunIntervalReminders =>
+      _isRunning &&
+      !_isPaused &&
+      !_isSchedulePaused &&
+      !_isSystemIdlePaused &&
+      !_isSnoozed;
 
-    // Only accumulate if running, not paused, not snoozed, not schedule-paused, not idle-paused
-    final isTimerActive = _isRunning &&
-        !_isPaused &&
-        !_isSchedulePaused &&
-        !_isSystemIdlePaused &&
-        !_isSnoozed;
+  void _processIntervalReminders(int elapsedActiveSeconds) {
+    if (!_canRunIntervalReminders || elapsedActiveSeconds <= 0) return;
 
-    if (isTimerActive && delta > 0 && delta < 10) {
-      _wellnessAccumulator += delta;
-      if (_wellnessAccumulator >= widget.wellnessReminderCadenceSeconds) {
-        _wellnessAccumulator = 0;
-        final type =
-            WellnessType.values[_wellnessTypeIndex % WellnessType.values.length];
-        _wellnessTypeIndex++;
-        unawaited(_triggerWellnessReminder(type));
-      }
+    _processWellnessReminders(elapsedActiveSeconds);
+    _processWaterReminders(elapsedActiveSeconds);
+  }
+
+  void _processWellnessReminders(int elapsedActiveSeconds) {
+    if (!widget.wellnessRemindersEnabled ||
+        widget.wellnessReminderCadenceSeconds <= 0) {
+      _wellnessAccumulator = 0;
+      return;
+    }
+
+    _wellnessAccumulator += elapsedActiveSeconds;
+    if (_wellnessAccumulator >= widget.wellnessReminderCadenceSeconds) {
+      _wellnessAccumulator %= widget.wellnessReminderCadenceSeconds;
+      final type =
+          WellnessType.values[_wellnessTypeIndex % WellnessType.values.length];
+      _wellnessTypeIndex++;
+      unawaited(_triggerWellnessReminder(type));
     }
   }
 
   /// Desktop foreground water-reminder accumulator (Android/iOS use the
   /// pre-scheduled background path instead). Advances only while the timer is
   /// actively running and fires a "drink a glass" nudge every derived interval.
-  void _processWaterReminders(int delta) {
-    if (!widget.waterRemindersEnabled) return;
+  void _processWaterReminders(int elapsedActiveSeconds) {
+    if (!widget.waterRemindersEnabled) {
+      _waterAccumulator = 0;
+      return;
+    }
     final cadence = _waterCadenceSeconds();
-    if (cadence <= 0) return;
+    if (cadence <= 0) {
+      _waterAccumulator = 0;
+      return;
+    }
 
-    final isTimerActive = _isRunning &&
-        !_isPaused &&
-        !_isSchedulePaused &&
-        !_isSystemIdlePaused &&
-        !_isSnoozed;
-
-    if (isTimerActive && delta > 0 && delta < 10) {
-      _waterAccumulator += delta;
-      if (_waterAccumulator >= cadence) {
-        _waterAccumulator = 0;
-        unawaited(
-          widget.notificationService.showWaterReminder(
-            consumedGlasses: _waterGlassesToday,
-            goalGlasses: widget.waterDailyGoalGlasses,
-          ),
-        );
-      }
+    _waterAccumulator += elapsedActiveSeconds;
+    if (_waterAccumulator >= cadence) {
+      _waterAccumulator %= cadence;
+      unawaited(
+        widget.notificationService.showWaterReminder(
+          consumedGlasses: _waterGlassesToday,
+          goalGlasses: widget.waterDailyGoalGlasses,
+        ),
+      );
     }
   }
 
@@ -4007,6 +4028,9 @@ class TimerHomePageState extends State<TimerHomePage>
       if (call.method == 'onPipModeChanged') {
         final inPip = call.arguments == true;
         if (mounted && _isMiniMode != inPip) {
+          if (inPip) {
+            _hideTimerSnackBars();
+          }
           setState(() => _isMiniMode = inPip);
         }
       }
@@ -4152,6 +4176,7 @@ class TimerHomePageState extends State<TimerHomePage>
     }
 
     if (!mounted) return;
+    _hideTimerSnackBars();
     setState(() {
       if (size != null) _savedWindowSize = size;
       if (pos != null) _savedWindowPosition = pos;

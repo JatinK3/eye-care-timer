@@ -79,6 +79,9 @@ class FakeNotificationService extends NotificationService {
   WellnessType? lastWellnessType;
   String? lastAiMessage;
   int autoPostponeNotificationCount = 0;
+  int waterReminderCount = 0;
+  int? lastWaterConsumedGlasses;
+  int? lastWaterGoalGlasses;
 
   FakeNotificationService({this.status = NotificationPermissionStatus.allowed});
 
@@ -169,6 +172,13 @@ class FakeNotificationService extends NotificationService {
   @override
   Future<void> showAutoPostponeNotification() async {
     autoPostponeNotificationCount++;
+  }
+
+  @override
+  Future<void> showWaterReminder({int? consumedGlasses, int? goalGlasses}) async {
+    waterReminderCount++;
+    lastWaterConsumedGlasses = consumedGlasses;
+    lastWaterGoalGlasses = goalGlasses;
   }
 }
 
@@ -2065,6 +2075,66 @@ void main() {
     await tester.pump();
 
     expect(notificationService.wellnessReminderCount, greaterThan(0));
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('water reminders fire on the desktop foreground accumulator', (
+    tester,
+  ) async {
+    // A large daily goal drives the derived cadence down to its 5-minute
+    // (300s) floor; the long work duration keeps the animation running well
+    // past that so the accumulator can cross the cadence in-phase.
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 1200,
+      PreferencesService.waterRemindersEnabledKey: true,
+      PreferencesService.waterDailyGoalGlassesKey: 99,
+      PreferencesService.waterGlassesDateKey: todayKey(),
+      PreferencesService.waterGlassesTodayKey: 2,
+    });
+
+    final notificationService = await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.text('Start'));
+    await tester.pump();
+
+    // A single delayed tick well over the old 10s cap — this mirrors the app
+    // being hidden/minimized and then resuming. It must not be dropped: the
+    // accumulator should absorb the whole delta and cross the cadence.
+    await tester.pump(const Duration(seconds: 305));
+    await tester.idle();
+    await tester.pump();
+
+    expect(notificationService.waterReminderCount, greaterThan(0));
+    expect(notificationService.lastWaterGoalGlasses, 99);
+    expect(notificationService.lastWaterConsumedGlasses, 2);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('water reminders stay silent when the toggle is off', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 1200,
+      PreferencesService.waterRemindersEnabledKey: false,
+      PreferencesService.waterDailyGoalGlassesKey: 99,
+    });
+
+    final notificationService = await pumpBlinkKindApp(tester);
+
+    await tester.tap(find.text('Start'));
+    await tester.pump();
+
+    await tester.pump(const Duration(seconds: 305));
+    await tester.idle();
+    await tester.pump();
+
+    expect(notificationService.waterReminderCount, 0);
 
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();

@@ -717,8 +717,12 @@ class NotificationService {
       }
       await cancelBlinkReminder();
       final id = await _showLinuxNotificationViaDbus(
+        title: 'Blink reminder',
         body: body,
-        interactive: interactive,
+        replaceId: _linuxBlinkNotificationReplaceId ?? 0,
+        actions: interactive ? "['blink_done', 'I blinked']" : '[]',
+        urgency: 1,
+        timeoutMs: 7000,
       );
       if (id != null) {
         if (id > 0) {
@@ -739,11 +743,13 @@ class NotificationService {
   }
 
   Future<int?> _showLinuxNotificationViaDbus({
+    required String title,
     required String body,
-    required bool interactive,
+    int replaceId = 0,
+    String actions = '[]',
+    int urgency = 1,
+    int timeoutMs = 7000,
   }) async {
-    final replaceId = _linuxBlinkNotificationReplaceId ?? 0;
-    final actions = interactive ? "['blink_done', 'I blinked']" : '[]';
     final result = await Process.run('gdbus', [
       'call',
       '--session',
@@ -756,14 +762,14 @@ class NotificationService {
       'BlinkKind',
       replaceId.toString(),
       'blinkkind',
-      'Blink reminder',
+      title,
       body,
       actions,
-      "{'urgency': <byte 1>}",
-      '7000',
+      "{'urgency': <byte $urgency>}",
+      timeoutMs.toString(),
     ]);
     if (result.exitCode != 0) {
-      debugPrint('Failed to send Linux blink notification: ${result.stderr}');
+      debugPrint('Failed to send Linux notification: ${result.stderr}');
       return null;
     }
 
@@ -771,6 +777,35 @@ class NotificationService {
     final match = RegExp(r'uint32\s+(\d+)').firstMatch(stdout);
     if (match == null) return 0; // Success but unable to parse ID
     return int.tryParse(match.group(1)!);
+  }
+
+  Future<void> _showLinuxNotificationViaNotifySend({
+    required String title,
+    required String body,
+    int urgency = 1,
+    int timeoutMs = 7000,
+    List<String> actionArgs = const [],
+  }) async {
+    final urgencyName = urgency <= 0
+        ? 'low'
+        : urgency >= 2
+            ? 'critical'
+            : 'normal';
+    final process = await Process.start('notify-send', [
+      '-a',
+      'BlinkKind',
+      '-i',
+      'blinkkind',
+      '-u',
+      urgencyName,
+      '-t',
+      timeoutMs.toString(),
+      ...actionArgs,
+      title,
+      body,
+    ]);
+    unawaited(process.stdout.drain<void>());
+    unawaited(process.stderr.drain<void>());
   }
 
   /// Starts (once) a `dbus-monitor` that watches the freedesktop notification
@@ -952,20 +987,26 @@ class NotificationService {
 
     if (Platform.isLinux) {
       try {
-        await Process.run('notify-send', [
-          '-a',
-          'BlinkKind',
-          '-i',
-          'blinkkind',
-          '-u',
-          'low',
-          '-t',
-          '5000',
-          title,
-          body,
-        ]);
+        final id = await _showLinuxNotificationViaDbus(
+          title: title,
+          body: body,
+          urgency: 1,
+          timeoutMs: 8000,
+        );
+        if (id != null) return;
       } catch (e) {
-        debugPrint('Failed to send Linux wellness notification: $e');
+        debugPrint('Failed to send Linux wellness notification via DBus: $e');
+      }
+
+      try {
+        await _showLinuxNotificationViaNotifySend(
+          title: title,
+          body: body,
+          urgency: 1,
+          timeoutMs: 8000,
+        );
+      } catch (e) {
+        debugPrint('Failed to send Linux wellness notification via notify-send: $e');
       }
       return;
     }
@@ -1144,50 +1185,30 @@ class NotificationService {
     // would double-count when the monitor also catches the same signal).
     await _ensureLinuxNotificationActionMonitor();
 
+    const actionLabel = 'Log a glass \u{1F4A7}';
     try {
-      final result = await Process.run('gdbus', [
-        'call',
-        '--session',
-        '--dest',
-        'org.freedesktop.Notifications',
-        '--object-path',
-        '/org/freedesktop/Notifications',
-        '--method',
-        'org.freedesktop.Notifications.Notify',
-        'BlinkKind',
-        '0',
-        'blinkkind',
-        title,
-        body,
-        "['$kLogWaterGlassActionId', 'Log a glass \u{1F4A7}']",
-        "{'urgency': <byte 0>}",
-        '8000',
-      ]);
-      if (result.exitCode == 0) return;
-      debugPrint('Failed to send Linux water notification: ${result.stderr}');
+      final id = await _showLinuxNotificationViaDbus(
+        title: title,
+        body: body,
+        actions: "['$kLogWaterGlassActionId', '$actionLabel']",
+        urgency: 1,
+        timeoutMs: 8000,
+      );
+      if (id != null) return;
     } catch (e) {
       debugPrint('Failed to send Linux water notification via DBus: $e');
     }
 
     // Fallback: notify-send with the same action. The daemon still emits
-    // ActionInvoked, which the monitor catches — so no stdout parsing here.
+    // ActionInvoked, which the monitor catches, so no stdout parsing here.
     try {
-      final process = await Process.start('notify-send', [
-        '-a',
-        'BlinkKind',
-        '-i',
-        'blinkkind',
-        '-u',
-        'low',
-        '-t',
-        '8000',
-        '-A',
-        '$kLogWaterGlassActionId=Log a glass \u{1F4A7}',
-        title,
-        body,
-      ]);
-      unawaited(process.stdout.drain<void>());
-      unawaited(process.stderr.drain<void>());
+      await _showLinuxNotificationViaNotifySend(
+        title: title,
+        body: body,
+        urgency: 1,
+        timeoutMs: 8000,
+        actionArgs: ['-A', '$kLogWaterGlassActionId=$actionLabel'],
+      );
     } catch (e) {
       debugPrint('Failed to send Linux water notification via notify-send: $e');
     }
