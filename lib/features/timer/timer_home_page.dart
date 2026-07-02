@@ -36,6 +36,8 @@ class TimerHomePage extends StatefulWidget {
   final int initialWorkDurationSeconds;
   final int initialBreakDurationSeconds;
   final int initialStreakCount;
+  final int initialWaterGlassesToday;
+  final void Function(int glasses) saveWaterGlassesToday;
   final int dailyGoal;
   final bool longBreakEnabled;
   final int longBreakDurationSeconds;
@@ -124,6 +126,8 @@ class TimerHomePage extends StatefulWidget {
     required this.initialWorkDurationSeconds,
     required this.initialBreakDurationSeconds,
     required this.initialStreakCount,
+    required this.initialWaterGlassesToday,
+    required this.saveWaterGlassesToday,
     required this.dailyGoal,
     required this.longBreakEnabled,
     required this.longBreakDurationSeconds,
@@ -376,7 +380,8 @@ class TimerHomePageState extends State<TimerHomePage>
   // foreground accumulators drive delivery instead.
   DateTime? _reminderSessionAnchor;
   int _waterAccumulator = 0;
-  int _waterGlassCount = 0;
+  // Real glasses-of-water logged today (persisted, resets on day change).
+  late int _waterGlassesToday;
   Timer? _phaseTransitionTimer;
   Timer? _phaseDeadlineTimer;
   // Wall-clock 1Hz ticker (desktop only) that keeps the tray/app-indicator
@@ -418,6 +423,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _autoRunCycleLimit = widget.autoRunCycleLimit;
     _autoRunCompletedCycles = widget.initialSession.completedAutoRunCycles;
     _streakCount = widget.initialStreakCount;
+    _waterGlassesToday = widget.initialWaterGlassesToday;
     _currentDateKey = _todayKey();
     _initialDuration = _workDurationSeconds;
     _remainingSeconds = _initialDuration;
@@ -1108,9 +1114,20 @@ class TimerHomePageState extends State<TimerHomePage>
       _currentDateKey = today;
       setState(() {
         _streakCount = 0;
+        _waterGlassesToday = 0;
       });
       widget.saveStreakCount(0);
+      widget.saveWaterGlassesToday(0);
     }
+  }
+
+  void _logWaterGlass(int delta) {
+    final next = (_waterGlassesToday + delta).clamp(0, 99);
+    if (next == _waterGlassesToday) return;
+    setState(() {
+      _waterGlassesToday = next;
+    });
+    widget.saveWaterGlassesToday(next);
   }
 
   /// Applies a [projectPhase] result: records any work phases that finished
@@ -1554,7 +1571,6 @@ class TimerHomePageState extends State<TimerHomePage>
     if (_reminderSessionAnchor == null) {
       _reminderSessionAnchor = DateTime.now();
       _waterAccumulator = 0;
-      _waterGlassCount = 0;
     }
 
     _animationController.forward(from: 0.0);
@@ -1780,7 +1796,6 @@ class TimerHomePageState extends State<TimerHomePage>
     _cancelReminders();
     _reminderSessionAnchor = null;
     _waterAccumulator = 0;
-    _waterGlassCount = 0;
     unawaited(widget.notificationService.cancelWellnessRemindersBackground());
     unawaited(widget.notificationService.cancelWaterRemindersBackground());
     unawaited(_backgroundService.stopPhase());
@@ -2561,10 +2576,9 @@ class TimerHomePageState extends State<TimerHomePage>
       _waterAccumulator += delta;
       if (_waterAccumulator >= cadence) {
         _waterAccumulator = 0;
-        _waterGlassCount++;
         unawaited(
           widget.notificationService.showWaterReminder(
-            glassNumber: _waterGlassCount,
+            consumedGlasses: _waterGlassesToday,
             goalGlasses: widget.waterDailyGoalGlasses,
           ),
         );
@@ -2865,6 +2879,69 @@ class TimerHomePageState extends State<TimerHomePage>
               color: accentColor,
               fontWeight: FontWeight.w700,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaterSummary(ThemeData theme) {
+    final goal = widget.waterDailyGoalGlasses;
+    final consumed = _waterGlassesToday;
+    final goalReached = goal > 0 && consumed >= goal;
+    final ml = consumed * widget.waterGlassSizeMl;
+    const waterColor = Color(0xFF3BA7E6);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: waterColor.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: waterColor.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            goalReached
+                ? Icons.emoji_events_outlined
+                : Icons.local_drink_outlined,
+            color: waterColor,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  goalReached ? 'Water goal met 🎉' : 'Water today',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$consumed / $goal glasses · $ml ml',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: consumed > 0 ? () => _logWaterGlass(-1) : null,
+            icon: const Icon(Icons.remove_circle_outline),
+            color: waterColor,
+            tooltip: 'Undo a glass',
+            visualDensity: VisualDensity.compact,
+          ),
+          IconButton(
+            onPressed: () => _logWaterGlass(1),
+            icon: const Icon(Icons.add_circle),
+            color: waterColor,
+            tooltip: 'Log a glass',
+            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
@@ -3574,6 +3651,13 @@ class TimerHomePageState extends State<TimerHomePage>
                                               Theme.of(context),
                                               progressColor,
                                             ),
+                                            if (widget
+                                                .waterRemindersEnabled) ...[
+                                              const SizedBox(height: 12),
+                                              _buildWaterSummary(
+                                                Theme.of(context),
+                                              ),
+                                            ],
                                             const SizedBox(height: 12),
                                             _buildHomeQuickActions(
                                               Theme.of(context),
@@ -3769,6 +3853,10 @@ class TimerHomePageState extends State<TimerHomePage>
                                     Theme.of(context),
                                     progressColor,
                                   ),
+                                  if (widget.waterRemindersEnabled) ...[
+                                    const SizedBox(height: 12),
+                                    _buildWaterSummary(Theme.of(context)),
+                                  ],
                                   const SizedBox(height: 12),
                                   _buildHomeQuickActions(
                                     Theme.of(context),

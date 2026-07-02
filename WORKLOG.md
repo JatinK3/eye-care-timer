@@ -255,6 +255,13 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - **Kept the non-technical smart triggers:** Android automatic game/video detection (`isGameOrVideoApp`), camera/mic auto-postpone, system-idle pause, and DND postpone. Gaming Mode profile remains (now just applies its relaxed 45/5 cadence). Updated the affected widget test.
 - Verified: `flutter analyze` clean, `flutter test` 86/86, `flutter build apk --debug` succeeds.
 
+**Added real water-intake tracking on the home screen:**
+- Previously nothing tracked actual consumption — `_waterGlassCount` only counted desktop reminders fired (for the notification label) and wasn't persisted or shown. Replaced it with a genuine daily counter.
+- New persisted `waterGlassesToday` (PreferencesService, own date key, resets on day change — mirrors the streak counter; kept out of TimerSettings/backup as a daily runtime value). Loaded in `app.dart` and passed to `TimerHomePage` with a save callback.
+- Home screen shows a "Water today" card (only when water reminders are on) with `X / goal glasses · Y ml`, a **+ Glass** button to log a drink and a **−** to undo, a goal-met state, and daily reset via `_checkDayChange`.
+- The desktop water reminder now shows live progress ("X of goal glasses so far today").
+- Verified: `flutter analyze` clean, `flutter test` 86/86, `flutter build apk --debug` succeeds.
+
 ### 2026-07-01 (Session ongoing — IST)
 
 **Completed this session:**

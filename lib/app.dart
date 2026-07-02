@@ -183,6 +183,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
   late final BreakOverlayService _breakOverlayService;
 
   TimerSettings _settings = const TimerSettings.defaults();
+  int _waterGlassesToday = 0;
   TimerSession _session = const TimerSession.idle();
   Map<String, int> _history = <String, int>{};
   List<WorkSessionRecord> _workSessionHistory = <WorkSessionRecord>[];
@@ -528,12 +529,14 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     final timerEventHistory = await _preferencesService.loadTimerEventHistory();
     final hasCompletedOnboarding = await _preferencesService
         .loadOnboardingCompleted();
+    final waterGlassesToday = await _preferencesService.loadWaterGlassesToday();
     if (!mounted) {
       return;
     }
 
     setState(() {
       _settings = settings;
+      _waterGlassesToday = waterGlassesToday;
       _session = session;
       _history = history;
       _workSessionHistory = workSessionHistory;
@@ -1115,6 +1118,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     unawaited(_preferencesService.saveStreakCount(streakCount));
   }
 
+  void _saveWaterGlassesToday(int count) {
+    setState(() {
+      _waterGlassesToday = count;
+    });
+    unawaited(_preferencesService.saveWaterGlassesToday(count));
+  }
+
   Future<HistoryDataSnapshot> _refreshHistoryData() async {
     final history = await _preferencesService.loadHistory();
     final workSessions = await _preferencesService.loadWorkSessionHistory();
@@ -1432,6 +1442,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   initialWorkDurationSeconds: _settings.workDurationSeconds,
                   initialBreakDurationSeconds: _settings.breakDurationSeconds,
                   initialStreakCount: _settings.streakCount,
+                  initialWaterGlassesToday: _waterGlassesToday,
+                  saveWaterGlassesToday: _saveWaterGlassesToday,
                   dailyGoal: _settings.dailyGoal,
                   longBreakEnabled: _settings.longBreakEnabled,
                   longBreakDurationSeconds: _settings.longBreakDurationSeconds,

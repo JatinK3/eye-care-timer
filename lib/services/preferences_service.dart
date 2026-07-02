@@ -85,6 +85,8 @@ class PreferencesService {
   static const String waterRemindersEnabledKey = 'waterRemindersEnabled';
   static const String waterDailyGoalGlassesKey = 'waterDailyGoalGlasses';
   static const String waterGlassSizeMlKey = 'waterGlassSizeMl';
+  static const String waterGlassesTodayKey = 'waterGlassesToday';
+  static const String waterGlassesDateKey = 'waterGlassesDate';
   static const String blinkReminderInteractiveEnabledKey =
       'blinkReminderInteractiveEnabled';
   static const String maxConsecutiveSkipsKey = 'maxConsecutiveSkips';
@@ -840,6 +842,25 @@ class PreferencesService {
   Future<void> saveWaterGlassSizeMl(int v) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(waterGlassSizeMlKey, v);
+  }
+
+  /// Glasses of water logged today. Resets to 0 (and rewrites the stored date)
+  /// when the saved date is not today, mirroring the daily streak behaviour.
+  Future<int> loadWaterGlassesToday() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = _dateKey(DateTime.now());
+    if (prefs.getString(waterGlassesDateKey) != today) {
+      await prefs.setString(waterGlassesDateKey, today);
+      await prefs.setInt(waterGlassesTodayKey, 0);
+      return 0;
+    }
+    return prefs.getInt(waterGlassesTodayKey) ?? 0;
+  }
+
+  Future<void> saveWaterGlassesToday(int count) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(waterGlassesDateKey, _dateKey(DateTime.now()));
+    await prefs.setInt(waterGlassesTodayKey, count);
   }
 
   Future<void> saveBlinkReminderInteractiveEnabled(bool v) async {

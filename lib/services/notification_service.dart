@@ -1039,11 +1039,11 @@ class NotificationService {
   }
 
   /// Shows an immediate water reminder (used by the desktop foreground path).
-  Future<void> showWaterReminder({int? glassNumber, int? goalGlasses}) async {
+  Future<void> showWaterReminder({int? consumedGlasses, int? goalGlasses}) async {
     if (kIsWeb) return;
     const title = 'Hydration break 💧';
-    final body = (glassNumber != null && goalGlasses != null)
-        ? 'Time to drink a glass of water — glass $glassNumber of $goalGlasses today.'
+    final body = (consumedGlasses != null && goalGlasses != null)
+        ? 'Time for some water — $consumedGlasses of $goalGlasses glasses so far today.'
         : 'Time to drink a glass of water.';
 
     if (Platform.isLinux) {
