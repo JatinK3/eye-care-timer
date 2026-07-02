@@ -912,12 +912,6 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     unawaited(_preferencesService.saveActiveProfile(profile));
   }
 
-  void _setAutoPostponeApps(String apps) {
-    setState(() {
-      _settings = _settings.copyWith(autoPostponeApps: apps);
-    });
-    unawaited(_preferencesService.saveAutoPostponeApps(apps));
-  }
 
   void _saveLongBreakSettings({
     required bool enabled,
@@ -1277,9 +1271,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           setReducedMotionEnabled: _setReducedMotionEnabled,
           setAnalyticsEnabled: _setAnalyticsEnabled,
           activeProfile: _settings.activeProfile,
-          autoPostponeApps: _settings.autoPostponeApps,
           setActiveProfile: _setActiveProfile,
-          setAutoPostponeApps: _setAutoPostponeApps,
           setNotificationsEnabled: _setNotificationsEnabled,
           setHapticsEnabled: _setHapticsEnabled,
           setSoundEnabled: _setSoundEnabled,
@@ -1503,7 +1495,6 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                       _settings.cameraMicAutoPostponeEnabled,
                    autoPauseOnMediaEnabled:
                        _settings.autoPauseOnMediaEnabled,
-                  autoPostponeApps: _settings.autoPostponeApps,
                   wellnessRemindersEnabled: _settings.wellnessRemindersEnabled,
                   wellnessReminderCadenceSeconds:
                       _settings.wellnessReminderCadenceSeconds,

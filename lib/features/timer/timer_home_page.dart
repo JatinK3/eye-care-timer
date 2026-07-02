@@ -105,7 +105,6 @@ class TimerHomePage extends StatefulWidget {
   final int waterGlassSizeMl;
   final bool blinkReminderInteractiveEnabled;
   final bool autoPauseOnMediaEnabled;
-  final String autoPostponeApps;
   final bool reducedMotionEnabled;
   final Future<bool> Function()? isCameraInUseOverride;
   final Future<bool> Function()? isMicInUseOverride;
@@ -175,7 +174,6 @@ class TimerHomePage extends StatefulWidget {
     required this.waterGlassSizeMl,
     required this.blinkReminderInteractiveEnabled,
     required this.autoPauseOnMediaEnabled,
-    required this.autoPostponeApps,
     this.isCameraInUseOverride,
     this.isMicInUseOverride,
     this.breakOverlayService,
@@ -1265,7 +1263,6 @@ class TimerHomePageState extends State<TimerHomePage>
         postponedBreakDuration: _postponedBreakDuration,
         currentPhaseDurationSeconds: _initialDuration,
         maxConsecutiveSkips: widget.maxConsecutiveSkips,
-        autoPostponeApps: widget.autoPostponeApps,
       ),
     );
   }
@@ -1964,40 +1961,6 @@ class TimerHomePageState extends State<TimerHomePage>
     );
   }
 
-  Future<bool> _isRestrictedAppFocused() async {
-    final rawApps = widget.autoPostponeApps;
-    if (rawApps.trim().isEmpty) return false;
-    final apps = rawApps
-        .split(',')
-        .map((e) => e.trim().toLowerCase())
-        .where((e) => e.isNotEmpty)
-        .toList();
-    if (apps.isEmpty) return false;
-
-    if (!kIsWeb && Platform.isLinux) {
-      try {
-        final activeWindowResult = await Process.run('xprop', ['-root', '_NET_ACTIVE_WINDOW']);
-        if (activeWindowResult.exitCode != 0) return false;
-        final out = activeWindowResult.stdout.toString();
-        final match = RegExp(r'window id # (0x[0-9a-fA-F]+)').firstMatch(out);
-        if (match == null) return false;
-        final windowId = match.group(1);
-        if (windowId == null) return false;
-
-        final wmClassResult = await Process.run('xprop', ['-id', windowId, 'WM_CLASS']);
-        if (wmClassResult.exitCode != 0) return false;
-        final classOut = wmClassResult.stdout.toString().toLowerCase();
-
-        for (final app in apps) {
-          if (classOut.contains(app)) {
-            return true;
-          }
-        }
-      } catch (_) {}
-    }
-    return false;
-  }
-
   Future<void> _onPhaseComplete() async {
     if (!_isRunning || _phaseEndsAt == null || _isCancelled || !mounted) {
       return;
@@ -2024,12 +1987,6 @@ class TimerHomePageState extends State<TimerHomePage>
         final camInUse = await _isCameraInUse();
         final micInUse = await _isMicInUse();
         if (camInUse || micInUse) {
-          shouldAutoPostpone = true;
-        }
-      }
-      if (!shouldAutoPostpone && widget.autoPostponeApps.trim().isNotEmpty) {
-        final appFocused = await _isRestrictedAppFocused();
-        if (appFocused) {
           shouldAutoPostpone = true;
         }
       }

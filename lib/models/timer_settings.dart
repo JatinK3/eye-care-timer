@@ -55,7 +55,6 @@ class TimerSettings {
       'You are a friendly health and wellness assistant for a developer. Generate a very short, warm, and highly engaging health tip or motivational quote (strict limit of 25 words) encouraging them to blink, rest their eyes, stretch their body/legs/shoulders, stand up, drink water regularly, or take a deep breath. Keep it fresh, productive, encouraging, and extremely punchy.';
   static const int defaultMaxConsecutiveSkips = 0; // 0 means no limit
   static const String defaultActiveProfile = 'standard';
-  static const String defaultAutoPostponeApps = '';
   static const bool defaultReducedMotionEnabled = false;
   static const bool defaultAnalyticsEnabled = false;
 
@@ -118,7 +117,6 @@ class TimerSettings {
   final int maxConsecutiveSkips;
   final bool autoPauseOnMediaEnabled;
   final String activeProfile;
-  final String autoPostponeApps;
   final bool reducedMotionEnabled;
   final bool analyticsEnabled;
 
@@ -182,7 +180,6 @@ class TimerSettings {
     required this.blinkReminderInteractiveEnabled,
     required this.autoPauseOnMediaEnabled,
     required this.activeProfile,
-    required this.autoPostponeApps,
     required this.reducedMotionEnabled,
     required this.analyticsEnabled,
   });
@@ -247,7 +244,6 @@ class TimerSettings {
       maxConsecutiveSkips = defaultMaxConsecutiveSkips,
       autoPauseOnMediaEnabled = defaultAutoPauseOnMediaEnabled,
       activeProfile = defaultActiveProfile,
-      autoPostponeApps = defaultAutoPostponeApps,
       reducedMotionEnabled = defaultReducedMotionEnabled,
       analyticsEnabled = defaultAnalyticsEnabled;
 
@@ -311,7 +307,6 @@ class TimerSettings {
     int? maxConsecutiveSkips,
     bool? autoPauseOnMediaEnabled,
     String? activeProfile,
-    String? autoPostponeApps,
     bool? reducedMotionEnabled,
     bool? analyticsEnabled,
   }) {
@@ -392,7 +387,6 @@ class TimerSettings {
       autoPauseOnMediaEnabled:
           autoPauseOnMediaEnabled ?? this.autoPauseOnMediaEnabled,
       activeProfile: activeProfile ?? this.activeProfile,
-      autoPostponeApps: autoPostponeApps ?? this.autoPostponeApps,
       reducedMotionEnabled: reducedMotionEnabled ?? this.reducedMotionEnabled,
       analyticsEnabled: analyticsEnabled ?? this.analyticsEnabled,
     );
@@ -458,7 +452,6 @@ class TimerSettings {
       'maxConsecutiveSkips': maxConsecutiveSkips,
       'autoPauseOnMediaEnabled': autoPauseOnMediaEnabled,
       'activeProfile': activeProfile,
-      'autoPostponeApps': autoPostponeApps,
       'reducedMotionEnabled': reducedMotionEnabled,
       'analyticsEnabled': analyticsEnabled,
     };
@@ -586,7 +579,6 @@ class TimerSettings {
           json['autoPauseOnMediaEnabled'] as bool? ??
           defaultAutoPauseOnMediaEnabled,
       activeProfile: json['activeProfile'] as String? ?? defaultActiveProfile,
-      autoPostponeApps: json['autoPostponeApps'] as String? ?? defaultAutoPostponeApps,
       analyticsEnabled: json['analyticsEnabled'] as bool? ?? defaultAnalyticsEnabled,
     );
   }

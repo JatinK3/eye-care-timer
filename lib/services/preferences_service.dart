@@ -90,7 +90,6 @@ class PreferencesService {
   static const String maxConsecutiveSkipsKey = 'maxConsecutiveSkips';
   static const String autoPauseOnMediaEnabledKey = 'autoPauseOnMediaEnabled';
   static const String activeProfileKey = 'activeProfile';
-  static const String autoPostponeAppsKey = 'autoPostponeApps';
   static const String reducedMotionEnabledKey = 'reducedMotionEnabled';
   static const String analyticsEnabledKey = 'analyticsEnabled';
 
@@ -262,9 +261,6 @@ class PreferencesService {
       activeProfile:
           prefs.getString(activeProfileKey) ??
           TimerSettings.defaultActiveProfile,
-      autoPostponeApps:
-          prefs.getString(autoPostponeAppsKey) ??
-          TimerSettings.defaultAutoPostponeApps,
       reducedMotionEnabled:
           prefs.getBool(reducedMotionEnabledKey) ??
           TimerSettings.defaultReducedMotionEnabled,
@@ -672,7 +668,6 @@ class PreferencesService {
       settings.autoPauseOnMediaEnabled,
     );
     await prefs.setString(activeProfileKey, settings.activeProfile);
-    await prefs.setString(autoPostponeAppsKey, settings.autoPostponeApps);
     await prefs.setBool(reducedMotionEnabledKey, settings.reducedMotionEnabled);
   }
 
@@ -867,10 +862,6 @@ class PreferencesService {
     await prefs.setString(activeProfileKey, profile);
   }
 
-  Future<void> saveAutoPostponeApps(String apps) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(autoPostponeAppsKey, apps);
-  }
 
   Future<void> saveLongBreakSettings({
     required bool enabled,

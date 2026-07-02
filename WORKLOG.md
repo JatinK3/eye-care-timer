@@ -249,6 +249,12 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - Verified: `flutter analyze` clean, `flutter test` 86/86, `flutter build apk --debug` succeeds.
 - [ ] **On-device validation pending:** confirm wellness + water reminders actually fire on a physical Android device across work/break phases and that desktop `notify-send` reminders appear over a long running session.
 
+**Removed the manual "Auto-Postpone Apps" (App Package / Class Names) field:**
+- It required users to type package/window-class keywords — too technical, and on Linux it relied on `xprop` (X11-only), so it silently did nothing for native Wayland apps.
+- Fully removed the feature end-to-end: the settings text field, `autoPostponeApps` across TimerSettings/PreferencesService (incl. backup/restore & reset), app.dart plumbing, TimerHomePage field + the Linux `_isRestrictedAppFocused` (`xprop`) check, TimerBackgroundService param, and the Android native handling (MainActivity + TimerForegroundService).
+- **Kept the non-technical smart triggers:** Android automatic game/video detection (`isGameOrVideoApp`), camera/mic auto-postpone, system-idle pause, and DND postpone. Gaming Mode profile remains (now just applies its relaxed 45/5 cadence). Updated the affected widget test.
+- Verified: `flutter analyze` clean, `flutter test` 86/86, `flutter build apk --debug` succeeds.
+
 ### 2026-07-01 (Session ongoing — IST)
 
 **Completed this session:**

@@ -803,7 +803,7 @@ void main() {
     expect(find.textContaining('for 5 min'), findsOneWidget);
   });
 
-  testWidgets('settings configures focus profile and auto-postpone apps', (
+  testWidgets('settings configures focus profile cadence', (
     WidgetTester tester,
   ) async {
     await pumpBlinkKindApp(tester);
@@ -820,19 +820,8 @@ void main() {
     await tester.tap(categoryHeader);
     await tester.pumpAndSettle();
 
-    // Tap the Gaming Mode profile chip
+    // Tap the Gaming Mode profile chip — applies its relaxed 45/5 cadence.
     await tester.tap(find.text('Gaming Mode'));
-    await tester.pumpAndSettle();
-
-    // Verify auto-postpone apps text field has default gaming keywords
-    final textFinder = find.byType(TextField).last;
-    expect(textFinder, findsOneWidget);
-    final TextField textField = tester.widget(textFinder);
-    expect(textField.controller?.text, contains('steam'));
-    expect(textField.controller?.text, contains('discord'));
-
-    // Enter a custom app class name
-    await tester.enterText(textFinder, 'obs, vlc');
     await tester.pumpAndSettle();
 
     await tester.pageBack();

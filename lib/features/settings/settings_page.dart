@@ -169,9 +169,7 @@ class SettingsPage extends StatefulWidget {
   final VoidCallback restoreDefaultSettings;
   final Future<void> Function(TimerSettings) importSettings;
   final String activeProfile;
-  final String autoPostponeApps;
   final void Function(String) setActiveProfile;
-  final void Function(String) setAutoPostponeApps;
 
   const SettingsPage({
     super.key,
@@ -315,9 +313,7 @@ class SettingsPage extends StatefulWidget {
     required this.restoreDefaultSettings,
     required this.importSettings,
     required this.activeProfile,
-    required this.autoPostponeApps,
     required this.setActiveProfile,
-    required this.setAutoPostponeApps,
   });
 
   @override
@@ -376,8 +372,6 @@ class _SettingsPageState extends State<SettingsPage>
       TextEditingController();
   final TextEditingController _dailyGoalCustomController =
       TextEditingController();
-  final TextEditingController _autoPostponeAppsController =
-      TextEditingController();
   Timer? _aiApiKeyDebounce;
 
   String _searchQuery = '';
@@ -407,7 +401,6 @@ class _SettingsPageState extends State<SettingsPage>
     _autoRunCycleLimit = widget.autoRunCycleLimit;
     _breakMode = widget.breakMode;
     _aiApiKeyController.text = widget.aiApiKey;
-    _autoPostponeAppsController.text = widget.autoPostponeApps;
     _aiAvailableModels = AiService.instance.getDefaultModels(widget.aiProvider);
     _loadDesktopSettings();
     if (widget.aiApiKey.isNotEmpty) {
@@ -450,10 +443,6 @@ class _SettingsPageState extends State<SettingsPage>
     if (oldWidget.breakMode != widget.breakMode) {
       _breakMode = widget.breakMode;
     }
-    if (oldWidget.autoPostponeApps != widget.autoPostponeApps &&
-        _autoPostponeAppsController.text != widget.autoPostponeApps) {
-      _autoPostponeAppsController.text = widget.autoPostponeApps;
-    }
   }
 
   @override
@@ -464,7 +453,6 @@ class _SettingsPageState extends State<SettingsPage>
     _aiApiKeyController.dispose();
     _aiModelCustomController.dispose();
     _dailyGoalCustomController.dispose();
-    _autoPostponeAppsController.dispose();
     _aiApiKeyDebounce?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -801,7 +789,6 @@ class _SettingsPageState extends State<SettingsPage>
                   onSelected: () {
                     widget.setActiveProfile('gaming');
                     widget.saveDurations(45 * 60, 5 * 60);
-                    widget.setAutoPostponeApps('steam, dota2, league, csgo, minecraft, retroarch, playstation, discord, mpv, vlc');
                   },
                 ),
                 _PresetChip(
@@ -831,31 +818,6 @@ class _SettingsPageState extends State<SettingsPage>
               ),
             ),
           ],
-        ),
-      ),
-      SettingItem(
-        title: 'Auto-Postpone Apps',
-        subtitle: 'Postpone breaks automatically while any of these apps are active.',
-        keywords: ['app', 'postpone', 'rules', 'gaming', 'whitelist', 'ignore'],
-        category: 'General Schedule',
-        widget: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _autoPostponeAppsController,
-                onChanged: widget.setAutoPostponeApps,
-                decoration: InputDecoration(
-                  labelText: 'App Package / Class Names',
-                  hintText: 'e.g. steam, discord, zoom, teams',
-                  helperText: 'Comma-separated keywords. Active on Linux (Window Class) and Android.',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.app_settings_alt),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
       SettingItem(
@@ -3353,7 +3315,6 @@ class _SettingsPageState extends State<SettingsPage>
       blinkReminderInteractiveEnabled: widget.blinkReminderInteractiveEnabled,
       maxConsecutiveSkips: widget.maxConsecutiveSkips,
       activeProfile: widget.activeProfile,
-      autoPostponeApps: widget.autoPostponeApps,
       analyticsEnabled: widget.analyticsEnabled,
     );
   }

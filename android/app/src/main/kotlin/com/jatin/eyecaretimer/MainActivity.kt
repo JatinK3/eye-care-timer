@@ -239,7 +239,6 @@ class MainActivity : FlutterActivity() {
                             osFocusDndEnabled = call.argument<Boolean>("osFocusDndEnabled") ?: false,
                             postponedBreakDuration = call.argument<Int>("postponedBreakDuration"),
                             currentPhaseDurationSeconds = call.argument<Int>("currentPhaseDurationSeconds"),
-                            autoPostponeApps = call.argument<String>("autoPostponeApps") ?: "",
                         )
                     } else {
                         TimerForegroundService.stop(this)
