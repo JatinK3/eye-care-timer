@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-07-02
+
+### Added
+- **Native Android Picture-in-Picture (Mini-Mode):** Mini-Mode on Android now uses the OS-native Picture-in-Picture window (`enterPictureInPictureMode`) instead of a resized in-app window, so the compact timer floats over other apps — including fullscreen video and games. Enter/exit and expand/close via the system PiP controls stay in sync with the app, and the PiP button appears only on devices that support it.
+- **Water Break Reminders (Android & Linux):** New opt-in hydration reminders with a daily goal expressed in **glasses *and* volume** (enter glasses; millilitres shown via a configurable glass size). Reminders are paced by spreading the goal evenly across your active-hours window and fire only while the timer is running.
+- **Water Intake Tracking:** A "Water today" card on the home screen (shown when water reminders are enabled) tracks glasses consumed against your goal with live `X / goal glasses · Y ml`, a button to log a glass and one to undo, a goal-met celebration state, and an automatic daily reset.
+- **"Log a glass" notification action:** Record a glass of water straight from the reminder notification without opening the app. On Android this works whether the app is foregrounded or fully killed (handled in a background isolate); on Linux it is delivered through the notification daemon and captured over D-Bus. The home-screen counter updates on resume.
+
+### Changed
+- **Removed the manual "Auto-Postpone Apps" field:** Dropped the technical per-app package/window-class list (which was X11-only on Linux and silently did nothing on Wayland). The non-technical smart triggers remain — automatic game/video detection, camera/mic auto-postpone, system-idle pause, and Do-Not-Disturb postpone.
+
+### Fixed
+- **Android wellness reminders not firing:** Reworked wellness reminder scheduling to be anchored to a wall-clock session start and pre-scheduled across the whole active-hours horizon, so the cadence survives work/break phase changes. Previously a cadence longer than a single work phase (e.g. 30-minute reminders with 20-minute work phases) scheduled zero reminders.
+- **Android build under the Kotlin 2.2 toolchain:** Restored the release build by raising the Kotlin `languageVersion`/`apiVersion` for sub-1.9 modules and fixing a native `MainActivity` handler regression.
+
 ## [1.1.0] - 2026-07-01
 
 ### Added
