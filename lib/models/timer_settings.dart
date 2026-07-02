@@ -44,6 +44,9 @@ class TimerSettings {
   static const bool defaultWellnessRemindersEnabled = false;
   static const bool defaultAutoPauseOnMediaEnabled = false;
   static const int defaultWellnessReminderCadenceSeconds = 3600;
+  static const bool defaultWaterRemindersEnabled = false;
+  static const int defaultWaterDailyGoalGlasses = 8;
+  static const int defaultWaterGlassSizeMl = 250;
   static const bool defaultBlinkReminderInteractiveEnabled = true;
   static const String defaultAiProvider = 'Gemini';
   static const String defaultAiApiKey = '';
@@ -108,6 +111,9 @@ class TimerSettings {
   final bool cameraMicAutoPostponeEnabled;
   final bool wellnessRemindersEnabled;
   final int wellnessReminderCadenceSeconds;
+  final bool waterRemindersEnabled;
+  final int waterDailyGoalGlasses;
+  final int waterGlassSizeMl;
   final bool blinkReminderInteractiveEnabled;
   final int maxConsecutiveSkips;
   final bool autoPauseOnMediaEnabled;
@@ -170,6 +176,9 @@ class TimerSettings {
     required this.cameraMicAutoPostponeEnabled,
     required this.wellnessRemindersEnabled,
     required this.wellnessReminderCadenceSeconds,
+    required this.waterRemindersEnabled,
+    required this.waterDailyGoalGlasses,
+    required this.waterGlassSizeMl,
     required this.blinkReminderInteractiveEnabled,
     required this.autoPauseOnMediaEnabled,
     required this.activeProfile,
@@ -231,6 +240,9 @@ class TimerSettings {
       cameraMicAutoPostponeEnabled = defaultCameraMicAutoPostponeEnabled,
       wellnessRemindersEnabled = defaultWellnessRemindersEnabled,
       wellnessReminderCadenceSeconds = defaultWellnessReminderCadenceSeconds,
+      waterRemindersEnabled = defaultWaterRemindersEnabled,
+      waterDailyGoalGlasses = defaultWaterDailyGoalGlasses,
+      waterGlassSizeMl = defaultWaterGlassSizeMl,
       blinkReminderInteractiveEnabled = defaultBlinkReminderInteractiveEnabled,
       maxConsecutiveSkips = defaultMaxConsecutiveSkips,
       autoPauseOnMediaEnabled = defaultAutoPauseOnMediaEnabled,
@@ -292,6 +304,9 @@ class TimerSettings {
     bool? cameraMicAutoPostponeEnabled,
     bool? wellnessRemindersEnabled,
     int? wellnessReminderCadenceSeconds,
+    bool? waterRemindersEnabled,
+    int? waterDailyGoalGlasses,
+    int? waterGlassSizeMl,
     bool? blinkReminderInteractiveEnabled,
     int? maxConsecutiveSkips,
     bool? autoPauseOnMediaEnabled,
@@ -365,6 +380,11 @@ class TimerSettings {
           wellnessRemindersEnabled ?? this.wellnessRemindersEnabled,
       wellnessReminderCadenceSeconds:
           wellnessReminderCadenceSeconds ?? this.wellnessReminderCadenceSeconds,
+      waterRemindersEnabled:
+          waterRemindersEnabled ?? this.waterRemindersEnabled,
+      waterDailyGoalGlasses:
+          waterDailyGoalGlasses ?? this.waterDailyGoalGlasses,
+      waterGlassSizeMl: waterGlassSizeMl ?? this.waterGlassSizeMl,
       blinkReminderInteractiveEnabled:
           blinkReminderInteractiveEnabled ??
           this.blinkReminderInteractiveEnabled,
@@ -431,6 +451,9 @@ class TimerSettings {
       'cameraMicAutoPostponeEnabled': cameraMicAutoPostponeEnabled,
       'wellnessRemindersEnabled': wellnessRemindersEnabled,
       'wellnessReminderCadenceSeconds': wellnessReminderCadenceSeconds,
+      'waterRemindersEnabled': waterRemindersEnabled,
+      'waterDailyGoalGlasses': waterDailyGoalGlasses,
+      'waterGlassSizeMl': waterGlassSizeMl,
       'blinkReminderInteractiveEnabled': blinkReminderInteractiveEnabled,
       'maxConsecutiveSkips': maxConsecutiveSkips,
       'autoPauseOnMediaEnabled': autoPauseOnMediaEnabled,
@@ -551,6 +574,14 @@ class TimerSettings {
       wellnessReminderCadenceSeconds:
           json['wellnessReminderCadenceSeconds'] as int? ??
           defaultWellnessReminderCadenceSeconds,
+      waterRemindersEnabled:
+          json['waterRemindersEnabled'] as bool? ??
+          defaultWaterRemindersEnabled,
+      waterDailyGoalGlasses:
+          json['waterDailyGoalGlasses'] as int? ??
+          defaultWaterDailyGoalGlasses,
+      waterGlassSizeMl:
+          json['waterGlassSizeMl'] as int? ?? defaultWaterGlassSizeMl,
       autoPauseOnMediaEnabled:
           json['autoPauseOnMediaEnabled'] as bool? ??
           defaultAutoPauseOnMediaEnabled,

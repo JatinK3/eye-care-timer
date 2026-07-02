@@ -42,6 +42,7 @@ class NotificationService {
   static const int _blinkReminderId = 1004;
   static const int _wellnessReminderId = 1005;
   static const int _autoPostponeReminderId = 1006;
+  static const int _waterReminderId = 1007;
   static int? _linuxBlinkNotificationReplaceId;
   static DateTime? _lastBlinkReminderSentAt;
   static const String _wellnessChannelId = 'blinkkind_wellness_v1';
@@ -919,73 +920,163 @@ class NotificationService {
     }
   }
 
-  Future<void> cancelWellnessRemindersBackground() async {
-    if (kIsWeb || Platform.isLinux) return;
+  Future<void> _cancelIntervalRange(int idBase) async {
     for (int i = 0; i < 50; i++) {
       try {
-        await _notificationsPlugin.cancel(id: 3000 + i);
+        await _notificationsPlugin.cancel(id: idBase + i);
       } catch (_) {}
     }
   }
 
-  Future<void> scheduleWellnessRemindersBackground({
-    required int remainingSeconds,
+  /// Pre-schedules up to 50 repeating interval reminders (Android/iOS) via
+  /// zonedSchedule. The first lands [firstDelaySeconds] from now, then every
+  /// [cadenceSeconds] up to [horizonSeconds] from now. [messages] holds the
+  /// rotating `[title, body]` pairs. No-op on Linux (which drives reminders from
+  /// the foreground accumulator instead) and on web.
+  Future<void> _scheduleIntervalRemindersBackground({
+    required int idBase,
     required int cadenceSeconds,
-    required int currentAccumulator,
+    required int firstDelaySeconds,
+    required int horizonSeconds,
     required int startIndex,
+    required List<List<String>> messages,
   }) async {
-    if (kIsWeb || Platform.isLinux || cadenceSeconds <= 0) return;
-    
-    await cancelWellnessRemindersBackground();
+    if (kIsWeb || Platform.isLinux) return;
+    await _cancelIntervalRange(idBase);
+    if (cadenceSeconds <= 0 || horizonSeconds <= 0 || messages.isEmpty) return;
 
-    int nextDelaySeconds = cadenceSeconds - currentAccumulator;
-    if (nextDelaySeconds <= 0) nextDelaySeconds = cadenceSeconds;
+    int delay = firstDelaySeconds;
+    if (delay <= 0) delay = cadenceSeconds;
 
-    int scheduledCount = 0;
-    int index = startIndex;
-    
     final exactAlarmsAllowed =
         await exactAlarmStatus() == ExactAlarmStatus.allowed;
 
-    while (nextDelaySeconds < remainingSeconds && scheduledCount < 50) {
-      final type = WellnessType.values[index % WellnessType.values.length];
-      String title;
-      String body;
-      switch (type) {
-        case WellnessType.hydration:
-          title = 'Hydration check';
-          body = 'Take a sip of water and stay hydrated!';
-          break;
-        case WellnessType.posture:
-          title = 'Posture check';
-          body = 'Sit up straight, shoulders relaxed, screen at eye level.';
-          break;
-        case WellnessType.stretch:
-          title = 'Stretch reminder';
-          body = 'Stand up and stretch for 30 seconds. Your body will thank you!';
-          break;
-      }
-
+    int index = startIndex;
+    int scheduledCount = 0;
+    while (delay <= horizonSeconds && scheduledCount < 50) {
+      final message = messages[index % messages.length];
       try {
         await _notificationsPlugin.zonedSchedule(
-          id: 3000 + scheduledCount,
-          title: title,
-          body: body,
-          scheduledDate: tz.TZDateTime.now(tz.local).add(Duration(seconds: nextDelaySeconds)),
+          id: idBase + scheduledCount,
+          title: message[0],
+          body: message[1],
+          scheduledDate:
+              tz.TZDateTime.now(tz.local).add(Duration(seconds: delay)),
           notificationDetails: _wellnessNotificationDetails,
           androidScheduleMode: exactAlarmsAllowed
               ? AndroidScheduleMode.exactAllowWhileIdle
               : AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: 'wellness_reminder_background',
+          payload: 'interval_reminder_background',
         );
       } catch (e) {
-        debugPrint('Unable to schedule background wellness reminder: $e');
+        debugPrint('Unable to schedule background interval reminder: $e');
         break; // If one fails, stop scheduling more
       }
-
-      nextDelaySeconds += cadenceSeconds;
+      delay += cadenceSeconds;
       index++;
       scheduledCount++;
+    }
+  }
+
+  Future<void> cancelWellnessRemindersBackground() async {
+    if (kIsWeb || Platform.isLinux) return;
+    await _cancelIntervalRange(3000);
+  }
+
+  /// Anchor-based wellness scheduling: the caller derives [firstDelaySeconds]
+  /// from a session anchor so the cadence survives work/break phase reschedules
+  /// (a 30-min cadence no longer resets every 20-min work phase), and schedules
+  /// across [horizonSeconds] (e.g. until the active-hours end) rather than only
+  /// the current work phase.
+  Future<void> scheduleWellnessRemindersBackground({
+    required int cadenceSeconds,
+    required int firstDelaySeconds,
+    required int horizonSeconds,
+    required int startIndex,
+  }) async {
+    await _scheduleIntervalRemindersBackground(
+      idBase: 3000,
+      cadenceSeconds: cadenceSeconds,
+      firstDelaySeconds: firstDelaySeconds,
+      horizonSeconds: horizonSeconds,
+      startIndex: startIndex,
+      messages: const [
+        ['Hydration check', 'Take a sip of water and stay hydrated!'],
+        [
+          'Posture check',
+          'Sit up straight, shoulders relaxed, screen at eye level.'
+        ],
+        [
+          'Stretch reminder',
+          'Stand up and stretch for 30 seconds. Your body will thank you!'
+        ],
+      ],
+    );
+  }
+
+  Future<void> cancelWaterRemindersBackground() async {
+    if (kIsWeb || Platform.isLinux) return;
+    await _cancelIntervalRange(3100);
+  }
+
+  /// Anchor-based water scheduling (Android/iOS). Cadence is derived by the
+  /// caller from the daily goal spread across the active-hours window.
+  Future<void> scheduleWaterRemindersBackground({
+    required int cadenceSeconds,
+    required int firstDelaySeconds,
+    required int horizonSeconds,
+  }) async {
+    await _scheduleIntervalRemindersBackground(
+      idBase: 3100,
+      cadenceSeconds: cadenceSeconds,
+      firstDelaySeconds: firstDelaySeconds,
+      horizonSeconds: horizonSeconds,
+      startIndex: 0,
+      messages: const [
+        ['Hydration break 💧', 'Time to drink a glass of water.'],
+      ],
+    );
+  }
+
+  /// Shows an immediate water reminder (used by the desktop foreground path).
+  Future<void> showWaterReminder({int? glassNumber, int? goalGlasses}) async {
+    if (kIsWeb) return;
+    const title = 'Hydration break 💧';
+    final body = (glassNumber != null && goalGlasses != null)
+        ? 'Time to drink a glass of water — glass $glassNumber of $goalGlasses today.'
+        : 'Time to drink a glass of water.';
+
+    if (Platform.isLinux) {
+      try {
+        await Process.run('notify-send', [
+          '-a',
+          'BlinkKind',
+          '-i',
+          'blinkkind',
+          '-u',
+          'low',
+          '-t',
+          '5000',
+          title,
+          body,
+        ]);
+      } catch (e) {
+        debugPrint('Failed to send Linux water notification: $e');
+      }
+      return;
+    }
+
+    await initialize();
+    try {
+      await _notificationsPlugin.show(
+        id: _waterReminderId,
+        title: title,
+        body: body,
+        notificationDetails: _wellnessNotificationDetails,
+        payload: 'water_reminder',
+      );
+    } on PlatformException catch (e) {
+      debugPrint('Unable to show water reminder: $e');
     }
   }
 

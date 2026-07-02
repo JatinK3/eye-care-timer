@@ -82,6 +82,9 @@ class PreferencesService {
   static const String wellnessRemindersEnabledKey = 'wellnessRemindersEnabled';
   static const String wellnessReminderCadenceSecondsKey =
       'wellnessReminderCadenceSeconds';
+  static const String waterRemindersEnabledKey = 'waterRemindersEnabled';
+  static const String waterDailyGoalGlassesKey = 'waterDailyGoalGlasses';
+  static const String waterGlassSizeMlKey = 'waterGlassSizeMl';
   static const String blinkReminderInteractiveEnabledKey =
       'blinkReminderInteractiveEnabled';
   static const String maxConsecutiveSkipsKey = 'maxConsecutiveSkips';
@@ -238,6 +241,15 @@ class PreferencesService {
       wellnessReminderCadenceSeconds:
           prefs.getInt(wellnessReminderCadenceSecondsKey) ??
           TimerSettings.defaultWellnessReminderCadenceSeconds,
+      waterRemindersEnabled:
+          prefs.getBool(waterRemindersEnabledKey) ??
+          TimerSettings.defaultWaterRemindersEnabled,
+      waterDailyGoalGlasses:
+          prefs.getInt(waterDailyGoalGlassesKey) ??
+          TimerSettings.defaultWaterDailyGoalGlasses,
+      waterGlassSizeMl:
+          prefs.getInt(waterGlassSizeMlKey) ??
+          TimerSettings.defaultWaterGlassSizeMl,
       blinkReminderInteractiveEnabled:
           prefs.getBool(blinkReminderInteractiveEnabledKey) ??
           TimerSettings.defaultBlinkReminderInteractiveEnabled,
@@ -518,6 +530,18 @@ class PreferencesService {
       TimerSettings.defaultWellnessReminderCadenceSeconds,
     );
     await prefs.setBool(
+      waterRemindersEnabledKey,
+      TimerSettings.defaultWaterRemindersEnabled,
+    );
+    await prefs.setInt(
+      waterDailyGoalGlassesKey,
+      TimerSettings.defaultWaterDailyGoalGlasses,
+    );
+    await prefs.setInt(
+      waterGlassSizeMlKey,
+      TimerSettings.defaultWaterGlassSizeMl,
+    );
+    await prefs.setBool(
       blinkReminderInteractiveEnabledKey,
       TimerSettings.defaultBlinkReminderInteractiveEnabled,
     );
@@ -622,6 +646,18 @@ class PreferencesService {
     await prefs.setInt(
       wellnessReminderCadenceSecondsKey,
       settings.wellnessReminderCadenceSeconds,
+    );
+    await prefs.setBool(
+      waterRemindersEnabledKey,
+      settings.waterRemindersEnabled,
+    );
+    await prefs.setInt(
+      waterDailyGoalGlassesKey,
+      settings.waterDailyGoalGlasses,
+    );
+    await prefs.setInt(
+      waterGlassSizeMlKey,
+      settings.waterGlassSizeMl,
     );
     await prefs.setBool(
       blinkReminderInteractiveEnabledKey,
@@ -794,6 +830,21 @@ class PreferencesService {
   Future<void> saveWellnessReminderCadenceSeconds(int v) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(wellnessReminderCadenceSecondsKey, v);
+  }
+
+  Future<void> saveWaterRemindersEnabled(bool v) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(waterRemindersEnabledKey, v);
+  }
+
+  Future<void> saveWaterDailyGoalGlasses(int v) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(waterDailyGoalGlassesKey, v);
+  }
+
+  Future<void> saveWaterGlassSizeMl(int v) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(waterGlassSizeMlKey, v);
   }
 
   Future<void> saveBlinkReminderInteractiveEnabled(bool v) async {

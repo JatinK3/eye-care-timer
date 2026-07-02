@@ -239,6 +239,16 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - Reused the existing `_buildMiniModeWidget` compact UI for the Android PiP surface.
 - [ ] **On-device validation pending:** verify enter/exit PiP, over-fullscreen floating, aspect ratio, and expand/close via system PiP controls on a physical Android 8+ device.
 
+**Fixed wellness reminders not firing + added Water reminders (cross-platform):**
+
+- **Root cause (Android wellness) — confirmed bug.** `scheduleWellnessRemindersBackground` only scheduled reminders that fell *inside the current work phase* (`while nextDelay < remainingSeconds`) and reset from scratch every phase. With a 30-min cadence and ~20-min work phases, `nextDelay` was never `< remainingSeconds`, so **zero reminders were ever scheduled**. The frozen foreground accumulator (backgrounded app) couldn't carry across the per-phase reschedules either.
+- **Fix — anchor-based background scheduling.** New shared `_scheduleIntervalRemindersBackground` (NotificationService) schedules absolute reminder times from a wall-clock **session anchor** (`_reminderSessionAnchor`, set at the first phase of a session, cleared on full stop). Offsets are derived as `anchor + n·cadence`, scheduled across a **horizon** (until the active-hours end, capped 12h) that spans work *and* break phases — so the cadence survives phase reschedules. Cancelled on pause/stop.
+- **Desktop unchanged (works while running).** Linux/Windows/macOS keep the foreground active-time accumulator (animation tick when visible, 1-sec tray tick when hidden). Inherent platform difference: desktop counts *active* time (auto-pauses don't advance); Android counts *wall* time (can't track active-time while backgrounded). Per user decision, reminders stay gated to "only while the timer runs" (auto-pauses stop them).
+- **New feature — Water reminders (all platforms).** Toggle + daily goal in **glasses *and* volume** (enter glasses; ml shown via a configurable glass size, default 250 ml → 2000 ml). Pacing spreads the goal evenly across the configured active-hours window (8h fallback) to derive the interval, clamped 5 min–6 h. Delivery: `notify-send` on Linux / `zonedSchedule` on Android via the same anchor mechanism (id range 3100–3149; wellness uses 3000–3049). Foreground `_processWaterReminders` mirrors wellness; `showWaterReminder` shows "glass N of goal".
+  - Model/prefs: `waterRemindersEnabled`, `waterDailyGoalGlasses`, `waterGlassSizeMl` (TimerSettings + PreferencesService, incl. reset-to-defaults and backup/restore); Settings UI group "Water reminders" (English strings for now — localization pending like other new strings).
+- Verified: `flutter analyze` clean, `flutter test` 86/86, `flutter build apk --debug` succeeds.
+- [ ] **On-device validation pending:** confirm wellness + water reminders actually fire on a physical Android device across work/break phases and that desktop `notify-send` reminders appear over a long running session.
+
 ### 2026-07-01 (Session ongoing — IST)
 
 **Completed this session:**

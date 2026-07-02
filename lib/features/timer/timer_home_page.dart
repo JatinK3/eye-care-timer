@@ -100,6 +100,9 @@ class TimerHomePage extends StatefulWidget {
   final bool cameraMicAutoPostponeEnabled;
   final bool wellnessRemindersEnabled;
   final int wellnessReminderCadenceSeconds;
+  final bool waterRemindersEnabled;
+  final int waterDailyGoalGlasses;
+  final int waterGlassSizeMl;
   final bool blinkReminderInteractiveEnabled;
   final bool autoPauseOnMediaEnabled;
   final String autoPostponeApps;
@@ -167,6 +170,9 @@ class TimerHomePage extends StatefulWidget {
     required this.cameraMicAutoPostponeEnabled,
     required this.wellnessRemindersEnabled,
     required this.wellnessReminderCadenceSeconds,
+    required this.waterRemindersEnabled,
+    required this.waterDailyGoalGlasses,
+    required this.waterGlassSizeMl,
     required this.blinkReminderInteractiveEnabled,
     required this.autoPauseOnMediaEnabled,
     required this.autoPostponeApps,
@@ -366,6 +372,13 @@ class TimerHomePageState extends State<TimerHomePage>
   DateTime? _lastAnimationTickAt;
   int _wellnessTypeIndex = 0;
   int _wellnessAccumulator = 0;
+  // Wall-clock session anchor for interval reminders. Set when a fresh session
+  // starts and cleared on full stop/cancel; used to derive Android background
+  // schedule offsets that survive work/break phase reschedules. On desktop the
+  // foreground accumulators drive delivery instead.
+  DateTime? _reminderSessionAnchor;
+  int _waterAccumulator = 0;
+  int _waterGlassCount = 0;
   Timer? _phaseTransitionTimer;
   Timer? _phaseDeadlineTimer;
   // Wall-clock 1Hz ticker (desktop only) that keeps the tray/app-indicator
@@ -446,6 +459,7 @@ class TimerHomePageState extends State<TimerHomePage>
               }
               _processBlinkReminderCadences();
               _processWellnessReminders(delta);
+              _processWaterReminders(delta);
               _updateDesktopState();
             }
           })
@@ -643,6 +657,7 @@ class TimerHomePageState extends State<TimerHomePage>
         
         _processBlinkReminderCadences();
         _processWellnessReminders(delta);
+        _processWaterReminders(delta);
         _updateDesktopState();
       }
     }
@@ -779,6 +794,8 @@ class TimerHomePageState extends State<TimerHomePage>
         _phaseEndsAt = null;
         _saveActiveSession(isPaused: true);
         _cancelReminders();
+        unawaited(widget.notificationService.cancelWellnessRemindersBackground());
+        unawaited(widget.notificationService.cancelWaterRemindersBackground());
         unawaited(_backgroundService.stopPhase());
       });
       _updateDesktopState();
@@ -1534,6 +1551,15 @@ class TimerHomePageState extends State<TimerHomePage>
       _animationController.duration = Duration(seconds: duration);
     });
 
+    // Anchor interval reminders (wellness + water) at the first phase of a
+    // fresh session; it persists across work/break phases and is cleared on
+    // full stop so cadence isn't reset every phase.
+    if (_reminderSessionAnchor == null) {
+      _reminderSessionAnchor = DateTime.now();
+      _waterAccumulator = 0;
+      _waterGlassCount = 0;
+    }
+
     _animationController.forward(from: 0.0);
     _saveActiveSession(remainingSeconds: duration);
     _schedulePhaseDeadlineTimer(_phaseEndsAt!);
@@ -1590,6 +1616,8 @@ class TimerHomePageState extends State<TimerHomePage>
         _phaseEndsAt = null;
         _saveActiveSession(isPaused: true);
         _cancelReminders();
+        unawaited(widget.notificationService.cancelWellnessRemindersBackground());
+        unawaited(widget.notificationService.cancelWaterRemindersBackground());
         unawaited(_backgroundService.stopPhase());
       } else {
         _phaseStartedAt = DateTime.now();
@@ -1753,6 +1781,11 @@ class TimerHomePageState extends State<TimerHomePage>
     _phaseTransitionTimer = null;
     _stopTimerCleanup(resetPulse: true);
     _cancelReminders();
+    _reminderSessionAnchor = null;
+    _waterAccumulator = 0;
+    _waterGlassCount = 0;
+    unawaited(widget.notificationService.cancelWellnessRemindersBackground());
+    unawaited(widget.notificationService.cancelWaterRemindersBackground());
     unawaited(_backgroundService.stopPhase());
     unawaited(widget.breakOverlayService?.stopBreakOverlay());
     if (!_isBreak) {
@@ -2139,27 +2172,19 @@ class TimerHomePageState extends State<TimerHomePage>
   }) {
     if (!widget.notificationsEnabled) {
       unawaited(widget.notificationService.cancelWellnessRemindersBackground());
+      unawaited(widget.notificationService.cancelWaterRemindersBackground());
       return Future<bool>.value(false);
     }
 
+    // Pre-schedule wellness + water background reminders across the whole
+    // session (work and break phases) from the session anchor, so the cadence
+    // survives phase reschedules. No-op on desktop/web (foreground path there).
+    _scheduleBackgroundIntervalReminders();
+
     final delay = Duration(seconds: durationSeconds);
     if (isBreak) {
-      unawaited(widget.notificationService.cancelWellnessRemindersBackground());
       return widget.notificationService.scheduleBreakCompleteReminder(delay);
     } else {
-      if (widget.wellnessRemindersEnabled && widget.wellnessReminderCadenceSeconds > 0) {
-        unawaited(
-          widget.notificationService.scheduleWellnessRemindersBackground(
-            remainingSeconds: durationSeconds,
-            cadenceSeconds: widget.wellnessReminderCadenceSeconds,
-            currentAccumulator: _wellnessAccumulator,
-            startIndex: _wellnessTypeIndex,
-          ),
-        );
-      } else {
-        unawaited(widget.notificationService.cancelWellnessRemindersBackground());
-      }
-
       final nextIsLong = _isNextBreakLong();
       if (durationSeconds > 10) {
         unawaited(
@@ -2558,6 +2583,116 @@ class TimerHomePageState extends State<TimerHomePage>
         _wellnessTypeIndex++;
         unawaited(_triggerWellnessReminder(type));
       }
+    }
+  }
+
+  /// Desktop foreground water-reminder accumulator (Android/iOS use the
+  /// pre-scheduled background path instead). Advances only while the timer is
+  /// actively running and fires a "drink a glass" nudge every derived interval.
+  void _processWaterReminders(int delta) {
+    if (!widget.waterRemindersEnabled) return;
+    final cadence = _waterCadenceSeconds();
+    if (cadence <= 0) return;
+
+    final isTimerActive = _isRunning &&
+        !_isPaused &&
+        !_isSchedulePaused &&
+        !_isSystemIdlePaused &&
+        !_isSnoozed;
+
+    if (isTimerActive && delta > 0 && delta < 10) {
+      _waterAccumulator += delta;
+      if (_waterAccumulator >= cadence) {
+        _waterAccumulator = 0;
+        _waterGlassCount++;
+        unawaited(
+          widget.notificationService.showWaterReminder(
+            glassNumber: _waterGlassCount,
+            goalGlasses: widget.waterDailyGoalGlasses,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Seconds between water reminders: the daily goal spread evenly across the
+  /// configured active-hours window (falls back to an 8h day), clamped to a
+  /// sane 5-min..6-hour range.
+  int _waterCadenceSeconds() {
+    final goal = widget.waterDailyGoalGlasses;
+    if (goal <= 0) return 0;
+    int windowSeconds;
+    if (widget.workHoursEnabled) {
+      final startMin =
+          widget.workHoursStartHour * 60 + widget.workHoursStartMinute;
+      final endMin = widget.workHoursEndHour * 60 + widget.workHoursEndMinute;
+      final spanMin = endMin - startMin;
+      windowSeconds = spanMin > 0 ? spanMin * 60 : 8 * 3600;
+    } else {
+      windowSeconds = 8 * 3600;
+    }
+    return (windowSeconds / goal).floor().clamp(5 * 60, 6 * 3600);
+  }
+
+  /// Seconds from now until the active-hours end today, capped at 12h. Horizon
+  /// for the pre-scheduled Android/iOS background reminders.
+  int _remindersHorizonSeconds() {
+    const cap = 12 * 3600;
+    if (!widget.workHoursEnabled) return cap;
+    final now = DateTime.now();
+    final end = DateTime(now.year, now.month, now.day, widget.workHoursEndHour,
+        widget.workHoursEndMinute);
+    if (!end.isAfter(now)) return cap;
+    return end.difference(now).inSeconds.clamp(0, cap);
+  }
+
+  /// (Re)schedules Android/iOS background wellness + water reminders from the
+  /// current [_reminderSessionAnchor] so cadence survives work/break phase
+  /// reschedules. No-op on desktop/web (the notification service short-circuits
+  /// on Linux and the foreground accumulators drive delivery there).
+  void _scheduleBackgroundIntervalReminders() {
+    final anchor = _reminderSessionAnchor;
+    if (anchor == null) {
+      unawaited(widget.notificationService.cancelWellnessRemindersBackground());
+      unawaited(widget.notificationService.cancelWaterRemindersBackground());
+      return;
+    }
+    final now = DateTime.now();
+    final horizon = _remindersHorizonSeconds();
+
+    final wellnessCadence = widget.wellnessReminderCadenceSeconds;
+    if (widget.wellnessRemindersEnabled && wellnessCadence > 0) {
+      final since = now.difference(anchor).inSeconds;
+      final n = (since ~/ wellnessCadence) + 1;
+      final firstDelay = anchor
+          .add(Duration(seconds: n * wellnessCadence))
+          .difference(now)
+          .inSeconds;
+      unawaited(widget.notificationService.scheduleWellnessRemindersBackground(
+        cadenceSeconds: wellnessCadence,
+        firstDelaySeconds: firstDelay,
+        horizonSeconds: horizon,
+        startIndex: n - 1,
+      ));
+    } else {
+      unawaited(widget.notificationService.cancelWellnessRemindersBackground());
+    }
+
+    final waterCadence = _waterCadenceSeconds();
+    if (widget.waterRemindersEnabled && waterCadence > 0) {
+      final since = now.difference(anchor).inSeconds;
+      final n = (since ~/ waterCadence) + 1;
+      final firstDelay = anchor
+          .add(Duration(seconds: n * waterCadence))
+          .difference(now)
+          .inSeconds;
+      unawaited(widget.notificationService.scheduleWaterRemindersBackground(
+        cadenceSeconds: waterCadence,
+        firstDelaySeconds: firstDelay,
+        horizonSeconds: horizon,
+      ));
+    } else {
+      unawaited(widget.notificationService.cancelWaterRemindersBackground());
     }
   }
 

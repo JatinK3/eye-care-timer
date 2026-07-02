@@ -854,6 +854,27 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     unawaited(_preferencesService.saveWellnessReminderCadenceSeconds(seconds));
   }
 
+  void _setWaterRemindersEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(waterRemindersEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveWaterRemindersEnabled(enabled));
+  }
+
+  void _setWaterDailyGoalGlasses(int glasses) {
+    setState(() {
+      _settings = _settings.copyWith(waterDailyGoalGlasses: glasses);
+    });
+    unawaited(_preferencesService.saveWaterDailyGoalGlasses(glasses));
+  }
+
+  void _setWaterGlassSizeMl(int ml) {
+    setState(() {
+      _settings = _settings.copyWith(waterGlassSizeMl: ml);
+    });
+    unawaited(_preferencesService.saveWaterGlassSizeMl(ml));
+  }
+
   void _setNotificationsEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(notificationsEnabled: enabled);
@@ -1210,6 +1231,12 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           wellnessReminderCadenceSeconds:
               _settings.wellnessReminderCadenceSeconds,
           setWellnessReminderCadenceSeconds: _setWellnessReminderCadenceSeconds,
+          waterRemindersEnabled: _settings.waterRemindersEnabled,
+          setWaterRemindersEnabled: _setWaterRemindersEnabled,
+          waterDailyGoalGlasses: _settings.waterDailyGoalGlasses,
+          setWaterDailyGoalGlasses: _setWaterDailyGoalGlasses,
+          waterGlassSizeMl: _settings.waterGlassSizeMl,
+          setWaterGlassSizeMl: _setWaterGlassSizeMl,
           blinkReminderInteractiveEnabled:
               _settings.blinkReminderInteractiveEnabled,
           setBlinkReminderInteractiveEnabled:
@@ -1480,6 +1507,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   wellnessRemindersEnabled: _settings.wellnessRemindersEnabled,
                   wellnessReminderCadenceSeconds:
                       _settings.wellnessReminderCadenceSeconds,
+                  waterRemindersEnabled: _settings.waterRemindersEnabled,
+                  waterDailyGoalGlasses: _settings.waterDailyGoalGlasses,
+                  waterGlassSizeMl: _settings.waterGlassSizeMl,
                   blinkReminderInteractiveEnabled:
                       _settings.blinkReminderInteractiveEnabled,
                   openHistory: _openHistory,

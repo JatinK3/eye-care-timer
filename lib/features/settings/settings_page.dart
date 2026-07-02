@@ -73,12 +73,18 @@ class SettingsPage extends StatefulWidget {
   final bool autoPauseOnMediaEnabled;
   final bool wellnessRemindersEnabled;
   final int wellnessReminderCadenceSeconds;
+  final bool waterRemindersEnabled;
+  final int waterDailyGoalGlasses;
+  final int waterGlassSizeMl;
   final bool blinkReminderInteractiveEnabled;
   final void Function(bool) setBlinkReminderInteractiveEnabled;
   final void Function(bool) setCameraMicAutoPostponeEnabled;
   final void Function(bool) setAutoPauseOnMediaEnabled;
   final void Function(bool) setWellnessRemindersEnabled;
   final void Function(int) setWellnessReminderCadenceSeconds;
+  final void Function(bool) setWaterRemindersEnabled;
+  final void Function(int) setWaterDailyGoalGlasses;
+  final void Function(int) setWaterGlassSizeMl;
   final bool canChangeDurations;
   final BreakMode breakMode;
   final void Function(BreakMode breakMode) setBreakMode;
@@ -225,12 +231,18 @@ class SettingsPage extends StatefulWidget {
     required this.autoPauseOnMediaEnabled,
     required this.wellnessRemindersEnabled,
     required this.wellnessReminderCadenceSeconds,
+    required this.waterRemindersEnabled,
+    required this.waterDailyGoalGlasses,
+    required this.waterGlassSizeMl,
     required this.blinkReminderInteractiveEnabled,
     required this.setBlinkReminderInteractiveEnabled,
     required this.setCameraMicAutoPostponeEnabled,
     required this.setAutoPauseOnMediaEnabled,
     required this.setWellnessRemindersEnabled,
     required this.setWellnessReminderCadenceSeconds,
+    required this.setWaterRemindersEnabled,
+    required this.setWaterDailyGoalGlasses,
+    required this.setWaterGlassSizeMl,
     required this.canChangeDurations,
     required this.toggleTheme,
     required this.setNotificationsEnabled,
@@ -2467,6 +2479,87 @@ class _SettingsPageState extends State<SettingsPage>
           ],
         ),
       ),
+      SettingItem(
+        title: 'Water reminders',
+        subtitle: 'Hydration nudges spread across your active hours',
+        keywords: [
+          'water',
+          'hydration',
+          'drink',
+          'glasses',
+          'ml',
+          'liter',
+          'litre',
+        ],
+        category: 'Notifications & Sounds',
+        widget: Column(
+          children: [
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.local_drink_outlined),
+              title: const Text('Water reminders'),
+              subtitle: const Text(
+                'Hydration nudges spread evenly across your day',
+              ),
+              value: widget.waterRemindersEnabled,
+              onChanged: widget.setWaterRemindersEnabled,
+            ),
+            if (widget.waterRemindersEnabled) ...[
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.water_drop_outlined),
+                title: const Text('Daily goal'),
+                subtitle: Text(
+                  '${widget.waterDailyGoalGlasses} glasses · '
+                  '${widget.waterDailyGoalGlasses * widget.waterGlassSizeMl} ml',
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: widget.waterDailyGoalGlasses > 1
+                          ? () => widget.setWaterDailyGoalGlasses(
+                              widget.waterDailyGoalGlasses - 1)
+                          : null,
+                    ),
+                    Text(
+                      '${widget.waterDailyGoalGlasses}',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      onPressed: widget.waterDailyGoalGlasses < 20
+                          ? () => widget.setWaterDailyGoalGlasses(
+                              widget.waterDailyGoalGlasses + 1)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.straighten_outlined),
+                title: const Text('Glass size'),
+                subtitle: const Text('Used to convert your goal to a volume'),
+                trailing: DropdownButton<int>(
+                  value: widget.waterGlassSizeMl,
+                  items: const [200, 250, 300, 330, 500].map((value) {
+                    return DropdownMenuItem<int>(
+                      value: value,
+                      child: Text('$value ml'),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) widget.setWaterGlassSizeMl(val);
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
 
       // 5. Auto Run & Long Breaks
       SettingItem(
@@ -3254,6 +3347,9 @@ class _SettingsPageState extends State<SettingsPage>
       autoPauseOnMediaEnabled: widget.autoPauseOnMediaEnabled,
       wellnessRemindersEnabled: widget.wellnessRemindersEnabled,
       wellnessReminderCadenceSeconds: widget.wellnessReminderCadenceSeconds,
+      waterRemindersEnabled: widget.waterRemindersEnabled,
+      waterDailyGoalGlasses: widget.waterDailyGoalGlasses,
+      waterGlassSizeMl: widget.waterGlassSizeMl,
       blinkReminderInteractiveEnabled: widget.blinkReminderInteractiveEnabled,
       maxConsecutiveSkips: widget.maxConsecutiveSkips,
       activeProfile: widget.activeProfile,
