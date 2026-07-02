@@ -3660,7 +3660,7 @@ class _SettingsPageState extends State<SettingsPage>
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: accentColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: accentColor.withValues(alpha: 0.25),
                     width: 1.0,

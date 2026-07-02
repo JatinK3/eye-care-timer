@@ -317,6 +317,9 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 - Wired `AppLocalizations` translations into `settings_page.dart` (reminders switch, daily goal selector, glass size selector), `timer_home_page.dart` (water status card, log/undo icon button tooltips, undo SnackBar), and `history_page.dart` (hydration summary cards, insight rows, chart metric toggle, logs title).
 - Updated widget test expectations for "Water logged" metric cards to match localized strings and verified that the entire test suite (**93/93** tests) passes.
 
+**Polished settings category card design:**
+- Changed the settings page's category title highlight background container radius from `BorderRadius.circular(20)` (capsule shape) to `BorderRadius.circular(12)` to match the outer card's `BorderRadius.circular(16)` squarish-curved theme.
+
 ### 2026-07-01 (Session ongoing — IST)
 
 **Completed this session:**
