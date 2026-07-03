@@ -105,6 +105,13 @@ class DesktopIntegrationService extends WindowListener {
     });
 
     if (startMinimized) {
+      if (Platform.isLinux) {
+        try {
+          await _overlayChannel.invokeMethod<void>('setStartMinimized', true);
+        } catch (e) {
+          debugPrint('Failed to setStartMinimized: $e');
+        }
+      }
       await windowManager.hide();
       final notificationService = NotificationService();
       if (autoStartSchedule) {

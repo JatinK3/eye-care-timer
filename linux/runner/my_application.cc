@@ -27,6 +27,7 @@ static GtkWindow* g_main_window = nullptr;
 
 static FlMethodChannel* g_lock_channel = nullptr;
 static GDBusConnection* g_dbus_conn = nullptr;
+static bool g_start_minimized = false;
 
 // Latest state from "window-state-event"; used to detect whether the main
 // window was minimized/maximized at the moment a break begins.
@@ -379,7 +380,9 @@ static void setup_dbus_listeners() {
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView *view)
 {
-  gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
+  if (!g_start_minimized) {
+    gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
+  }
 }
 
 // Implements GApplication::activate.
@@ -484,6 +487,14 @@ static void my_application_activate(GApplication* application) {
           fl_method_call_respond_success(method_call, nullptr, nullptr);
         } else if (g_strcmp0(method, "exitBreak") == 0) {
           exit_break();
+          fl_method_call_respond_success(method_call, nullptr, nullptr);
+        } else if (g_strcmp0(method, "setStartMinimized") == 0) {
+          bool start_minimized = false;
+          FlValue* args = fl_method_call_get_args(method_call);
+          if (args != nullptr && fl_value_get_type(args) == FL_VALUE_TYPE_BOOL) {
+            start_minimized = fl_value_get_bool(args);
+          }
+          g_start_minimized = start_minimized;
           fl_method_call_respond_success(method_call, nullptr, nullptr);
         } else if (g_strcmp0(method, "setPiPMode") == 0) {
           bool is_pip = false;

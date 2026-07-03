@@ -236,6 +236,23 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 - [ ] **Desktop auto-update + store distribution**: an update channel for the `.deb`/`.rpm`, plus publishing to Flathub/Snap, Microsoft Store, and Play Store.
 - [ ] Build the packaged **v1.2.0** artifacts via `tool/release.sh` and attach them to a GitHub release for tag `v1.2.0`.
 
+### Future feature backlog
+- [ ] **Reminder Reliability Dashboard**: show notification permission, battery optimization, exact alarm status, background status, last reminder fired, and next reminder due so reminder failures can be diagnosed inside the app.
+- [ ] **Adaptive Break Scheduling**: adjust or recommend work/break cadence from real behavior, such as repeated skips/postpones or consistently completed breaks.
+- [ ] **Smart Hydration Forecast**: show whether the user is on pace, behind pace, or ahead of pace, plus how many glasses remain before the active day ends.
+- [ ] **Meeting / Media Aware Breaks**: expand the current camera/mic/media logic into a proper do-not-interrupt mode for calls, fullscreen video, presentations, and active media.
+- [ ] **Device Validation Mode**: add an in-app diagnostics screen to send wellness reminders, water reminders, notification actions, and background-action tests before release.
+- [ ] **Profiles**: support Coding, Gaming, Reading, Study, and Office profiles with independent durations, reminder cadence, notification style, strictness, and hydration defaults.
+- [ ] **Weekly Health Report**: summarize break compliance, hydration, skipped/postponed breaks, focus time, and best/worst days using History & Insights data.
+- [ ] **Break Debt**: track missed rest after skipped/postponed breaks and recommend a longer recovery break later.
+- [ ] **Backup / Restore Improvements**: export/import settings plus history as one portable backup file for reinstall or device migration.
+- [ ] **Release / Update System**: add desktop auto-update or update notifications for installed packages.
+- [ ] **Apple Health / Google Fit Hydration Sync**: sync water intake with platform health stores where available.
+- [ ] **Wearable / Watch Companion**: support quick break and hydration actions from watch devices.
+- [ ] **Cross-device Sync**: sync settings, history, streaks, hydration, and profiles across devices.
+- [ ] **Local AI Wellness Coach**: provide an offline/private assistant for ergonomic suggestions, break planning, and hydration guidance.
+- [ ] **Eye Strain Risk Score**: compute a risk score from break compliance, long focus stretches, skipped breaks, blink acknowledgements, and hydration.
+
 ---
 
 ## Session Log
@@ -1052,3 +1069,9 @@ Ideas captured from design review session. Prioritized by impact. None are sched
 
 - Completed core improvements (version 1.0.9):
   - **Background Scheduling for Wellness Micro-Breaks**: Enhanced `notification_service.dart` and `timer_home_page.dart` to fully support background OS scheduling of periodic wellness reminders. Now, when a work phase starts, up to 50 future wellness reminders are pre-scheduled using `zonedSchedule`, ensuring users receive hydration, posture, and stretch notifications even when the app is completely minimized or closed on mobile devices. Background reminders are perfectly synchronized with the active timer and properly cancelled during timer pauses or break phases.
+
+- Fixed Linux tray start minimized behavior:
+  - Added a new `setStartMinimized` method channel command in `linux/runner/my_application.cc` that toggles a native `g_start_minimized` flag.
+  - Modified `first_frame_cb` in the native C++ code to bypass calling `gtk_widget_show` on the top-level application window if `g_start_minimized` is true.
+  - Updated `DesktopIntegrationService.initialize` in `lib/services/desktop_integration_service.dart` to invoke the `setStartMinimized` method channel call on Linux prior to invoking `windowManager.hide()` when `startMinimized` is enabled.
+  - This prevents the GtkWindow from flashing or showing on startup, ensuring the app remains fully minimized to the tray as intended when the setting is active.
