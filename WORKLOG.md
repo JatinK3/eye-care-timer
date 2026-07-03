@@ -1075,3 +1075,8 @@ Ideas captured from design review session. Prioritized by impact. None are sched
   - Modified `first_frame_cb` in the native C++ code to bypass calling `gtk_widget_show` on the top-level application window if `g_start_minimized` is true.
   - Updated `DesktopIntegrationService.initialize` in `lib/services/desktop_integration_service.dart` to invoke the `setStartMinimized` method channel call on Linux prior to invoking `windowManager.hide()` when `startMinimized` is enabled.
   - This prevents the GtkWindow from flashing or showing on startup, ensuring the app remains fully minimized to the tray as intended when the setting is active.
+
+- Fixed empty history metrics and goals under History tab:
+  - Added a `_computeMergedHistory` helper in `lib/app.dart` to dynamically compute completed daily focus cycles from the list of all completed work session records (`_workSessionHistory`) and merge it with the loaded SharedPreferences history map.
+  - Used `_computeMergedHistory` in both `_loadSettings()` and `_refreshHistoryData()` to ensure the daily history map is always correctly populated and in sync with the actual work sessions.
+  - Updated `_saveCompletedWorkSession` in `lib/app.dart` to increment the daily count in `_history` in-memory whenever a new work session is logged, keeping the history page reactive and correct without needing app restart.

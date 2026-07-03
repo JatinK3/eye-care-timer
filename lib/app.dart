@@ -543,11 +543,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
       return;
     }
 
+    final mergedHistory = _computeMergedHistory(history, workSessionHistory);
+
     setState(() {
       _settings = settings;
       _waterGlassesToday = waterGlassesToday;
       _session = session;
-      _history = history;
+      _history = mergedHistory;
       _waterHistory = waterHistory;
       _workSessionHistory = workSessionHistory;
       _timerEventHistory = timerEventHistory;
@@ -1061,11 +1063,32 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
   }
 
   String _todayKey() {
-    final today = DateTime.now();
-    final year = today.year.toString().padLeft(4, '0');
-    final month = today.month.toString().padLeft(2, '0');
-    final day = today.day.toString().padLeft(2, '0');
+    return _dateKey(DateTime.now());
+  }
+
+  String _dateKey(DateTime date) {
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
     return '$year-$month-$day';
+  }
+
+  Map<String, int> _computeMergedHistory(
+    Map<String, int> storedHistory,
+    List<WorkSessionRecord> workSessions,
+  ) {
+    final merged = Map<String, int>.from(storedHistory);
+    final computed = <String, int>{};
+    for (final session in workSessions) {
+      final key = _dateKey(session.completedAt);
+      computed[key] = (computed[key] ?? 0) + 1;
+    }
+    computed.forEach((key, val) {
+      if ((merged[key] ?? 0) < val) {
+        merged[key] = val;
+      }
+    });
+    return merged;
   }
 
   void _saveCompletedWorkSession(DateTime completedAt, int durationSeconds) {
@@ -1080,6 +1103,11 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
       _workSessionHistory = updated.length > 500
           ? updated.sublist(0, 500)
           : updated;
+
+      final key = _dateKey(completedAt);
+      final updatedHistory = Map<String, int>.from(_history);
+      updatedHistory[key] = (updatedHistory[key] ?? 0) + 1;
+      _history = updatedHistory;
     });
     unawaited(_preferencesService.saveCompletedWorkSession(record));
   }
@@ -1156,9 +1184,11 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     final workSessions = await _preferencesService.loadWorkSessionHistory();
     final timerEvents = await _preferencesService.loadTimerEventHistory();
 
+    final mergedHistory = _computeMergedHistory(history, workSessions);
+
     if (mounted) {
       setState(() {
-        _history = history;
+        _history = mergedHistory;
         _waterHistory = waterHistory;
         _workSessionHistory = workSessions;
         _timerEventHistory = timerEvents;
@@ -1168,7 +1198,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     }
 
     return HistoryDataSnapshot(
-      history: history,
+      history: mergedHistory,
       waterHistory: waterHistory,
       workSessions: workSessions,
       timerEvents: timerEvents,
