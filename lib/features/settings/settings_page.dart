@@ -4119,6 +4119,7 @@ class _AnimatedThemeSwitchState extends State<_AnimatedThemeSwitch>
           );
         },
       ),
+      ),
     );
   }
 }
