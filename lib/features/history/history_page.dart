@@ -178,10 +178,13 @@ class _HistoryPageState extends State<HistoryPage> {
         : ((waterGoalDays / dates.length) * 100).round();
 
     // Calculate range-specific statistics
-    final goalDays = dates
-        .where((date) => (_history[_dateKey(date)] ?? 0) >= widget.dailyGoal)
-        .length;
-    final goalRate = dates.isEmpty
+    final goalDays = widget.dailyGoal <= 0
+        ? 0
+        : dates
+            .where((date) =>
+                (_history[_dateKey(date)] ?? 0) >= widget.dailyGoal)
+            .length;
+    final goalRate = dates.isEmpty || widget.dailyGoal <= 0
         ? 0
         : ((goalDays / dates.length) * 100).round();
 
@@ -843,7 +846,7 @@ class _HistoryPageState extends State<HistoryPage> {
     if (count > 0) {
       return List.generate(
         count,
-        (index) => today.subtract(Duration(days: index)),
+        (index) => DateTime(today.year, today.month, today.day - index),
       );
     }
     final allKeys = <String>{..._history.keys, ..._waterHistory.keys};
@@ -882,7 +885,7 @@ class _HistoryPageState extends State<HistoryPage> {
 
     final daysCount = end.difference(start).inDays + 1;
     for (int i = 0; i < daysCount; i++) {
-      final date = start.add(Duration(days: i));
+      final date = DateTime(start.year, start.month, start.day + i);
       final count = _history[_dateKey(date)] ?? 0;
       if (widget.dailyGoal > 0 && count >= widget.dailyGoal) {
         currentStreak++;

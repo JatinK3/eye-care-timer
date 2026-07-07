@@ -22,6 +22,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 5. [x] **Keyboard Dismissal & Shortcuts (Desktop Focus)**: Support key bindings (Esc to postpone, Space/Enter to skip, or hold Space to trigger Strict exit countdown) on the break overlay.
 6. [x] **Custom Gentle Audio Player (High UX Value)**: Bundle gentle chime assets (Tibetan bowl, chimes, birds chirps) and play them on break start/end instead of the default OS system beep.
 7. [x] **Habit Reports & CSV Data Exporter**: Add a button on the History screen to export timer event history to a CSV file.
+8. [x] **Fix History & Insights Metrics**: Fixed bugs preventing the Goal Rate and Longest Streak from reporting correctly. Fixed a DST transition bug in `DateTime` math, handled `dailyGoal <= 0`, and clarified that metrics correctly require completing the daily goal (default: 6 breaks) to increment.
 9. [x] **Linux Window Restore after Break Bug** — DONE (verified on-device; **do not modify this implementation**). The main window now returns silently to its original tray-hidden, minimized, or floating state and size after a break ends — no UI flash, no stuck-fullscreen. Fixed by making the native GTK runner the single owner of the main-window break transform/restore, so Dart no longer touches the window during a break. See the Completed section for the full rationale and the exact enter/exit sequence.
 
 ### Detailed Tasks
