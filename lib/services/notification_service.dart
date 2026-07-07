@@ -52,12 +52,14 @@ class NotificationReliabilityStatus {
   final ExactAlarmStatus exactAlarms;
   final BatteryOptimizationStatus batteryOptimization;
   final bool hasPendingPhaseReminder;
+  final int pendingRemindersCount;
 
   const NotificationReliabilityStatus({
     this.permission = NotificationPermissionStatus.unknown,
     this.exactAlarms = ExactAlarmStatus.unknown,
     this.batteryOptimization = BatteryOptimizationStatus.unknown,
     this.hasPendingPhaseReminder = false,
+    this.pendingRemindersCount = 0,
   });
 }
 
@@ -464,7 +466,18 @@ class NotificationService {
       exactAlarms: await exactAlarmStatus(),
       batteryOptimization: await batteryOptimizationStatus(),
       hasPendingPhaseReminder: await hasPendingPhaseReminder(),
+      pendingRemindersCount: await _getPendingRemindersCount(),
     );
+  }
+
+  Future<int> _getPendingRemindersCount() async {
+    if (kIsWeb || Platform.isLinux) return 0;
+    try {
+      final pending = await _notificationsPlugin.pendingNotificationRequests();
+      return pending.length;
+    } on PlatformException {
+      return 0;
+    }
   }
 
   Future<ExactAlarmStatus> exactAlarmStatus() async {

@@ -185,7 +185,20 @@ class MainActivity : FlutterActivity() {
                 "showBreakOverlay" -> {
                     val duration = call.argument<Int>("durationSeconds") ?: 20
                     val mode = call.argument<String>("breakMode") ?: "gentle"
-                    result.success(BreakOverlayController.show(this, duration, mode, false))
+                    val allowSkip = call.argument<Boolean>("allowSkip") ?: true
+                    val allowPostpone = call.argument<Boolean>("allowPostpone") ?: true
+                    val postponeDuration = call.argument<Int>("postponeDurationSeconds") ?: 120
+                    result.success(
+                        BreakOverlayController.show(
+                            this,
+                            duration,
+                            mode,
+                            false,
+                            allowSkip,
+                            allowPostpone,
+                            postponeDuration,
+                        )
+                    )
                 }
                 "stopBreakOverlay" ->
                     result.success(BreakOverlayController.hide())
@@ -240,7 +253,9 @@ class MainActivity : FlutterActivity() {
                             postponedBreakDuration = call.argument<Int>("postponedBreakDuration"),
                             currentPhaseDurationSeconds = call.argument<Int>("currentPhaseDurationSeconds"),
                             maxConsecutiveSkips = call.argument<Int>("maxConsecutiveSkips") ?: 0,
+                            consecutiveSkips = call.argument<Int>("consecutiveSkips") ?: 0,
                             maxConsecutivePostpones = call.argument<Int>("maxConsecutivePostpones") ?: 0,
+                            consecutivePostpones = call.argument<Int>("consecutivePostpones") ?: 0,
                         )
                     } else {
                         TimerForegroundService.stop(this)

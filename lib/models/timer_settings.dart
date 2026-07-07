@@ -58,6 +58,7 @@ class TimerSettings {
   static const String defaultActiveProfile = 'standard';
   static const bool defaultReducedMotionEnabled = false;
   static const bool defaultAnalyticsEnabled = false;
+  static const bool defaultAdaptiveSchedulingEnabled = false;
 
   final int workDurationSeconds;
   final int breakDurationSeconds;
@@ -121,6 +122,7 @@ class TimerSettings {
   final String activeProfile;
   final bool reducedMotionEnabled;
   final bool analyticsEnabled;
+  final bool adaptiveSchedulingEnabled;
 
   const TimerSettings({
     required this.workDurationSeconds,
@@ -185,6 +187,7 @@ class TimerSettings {
     required this.activeProfile,
     required this.reducedMotionEnabled,
     required this.analyticsEnabled,
+    required this.adaptiveSchedulingEnabled,
   });
 
   const TimerSettings.defaults()
@@ -249,7 +252,8 @@ class TimerSettings {
       autoPauseOnMediaEnabled = defaultAutoPauseOnMediaEnabled,
       activeProfile = defaultActiveProfile,
       reducedMotionEnabled = defaultReducedMotionEnabled,
-      analyticsEnabled = defaultAnalyticsEnabled;
+      analyticsEnabled = defaultAnalyticsEnabled,
+      adaptiveSchedulingEnabled = defaultAdaptiveSchedulingEnabled;
 
   TimerSettings copyWith({
     int? workDurationSeconds,
@@ -314,6 +318,7 @@ class TimerSettings {
     String? activeProfile,
     bool? reducedMotionEnabled,
     bool? analyticsEnabled,
+    bool? adaptiveSchedulingEnabled,
   }) {
     return TimerSettings(
       workDurationSeconds: workDurationSeconds ?? this.workDurationSeconds,
@@ -396,6 +401,7 @@ class TimerSettings {
       activeProfile: activeProfile ?? this.activeProfile,
       reducedMotionEnabled: reducedMotionEnabled ?? this.reducedMotionEnabled,
       analyticsEnabled: analyticsEnabled ?? this.analyticsEnabled,
+      adaptiveSchedulingEnabled: adaptiveSchedulingEnabled ?? this.adaptiveSchedulingEnabled,
     );
   }
 
@@ -462,6 +468,7 @@ class TimerSettings {
       'activeProfile': activeProfile,
       'reducedMotionEnabled': reducedMotionEnabled,
       'analyticsEnabled': analyticsEnabled,
+      'adaptiveSchedulingEnabled': adaptiveSchedulingEnabled,
     };
   }
 
@@ -590,6 +597,7 @@ class TimerSettings {
           defaultAutoPauseOnMediaEnabled,
       activeProfile: json['activeProfile'] as String? ?? defaultActiveProfile,
       analyticsEnabled: json['analyticsEnabled'] as bool? ?? defaultAnalyticsEnabled,
+      adaptiveSchedulingEnabled: json['adaptiveSchedulingEnabled'] as bool? ?? defaultAdaptiveSchedulingEnabled,
     );
   }
 

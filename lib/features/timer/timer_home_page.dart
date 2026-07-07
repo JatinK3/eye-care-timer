@@ -112,6 +112,7 @@ class TimerHomePage extends StatefulWidget {
   final int waterGlassSizeMl;
   final bool blinkReminderInteractiveEnabled;
   final bool autoPauseOnMediaEnabled;
+  final bool adaptiveSchedulingEnabled;
   final bool reducedMotionEnabled;
   final Future<bool> Function()? isCameraInUseOverride;
   final Future<bool> Function()? isMicInUseOverride;
@@ -148,6 +149,7 @@ class TimerHomePage extends StatefulWidget {
     required this.allowSkip,
     required this.allowPostpone,
     required this.postponeDurationSeconds,
+    required this.adaptiveSchedulingEnabled,
     required this.reducedMotionEnabled,
     required this.smartIdleEnabled,
     required this.breakVisualizerStyle,
@@ -467,7 +469,7 @@ class TimerHomePageState extends State<TimerHomePage>
               final delta = _remainingSeconds - nextRemaining;
               _remainingSeconds = nextRemaining;
               setState(() {});
-              
+
               if (_remainingSeconds <= 5 &&
                   !_pulseController.isAnimating &&
                   _isRunning) {
@@ -516,13 +518,17 @@ class TimerHomePageState extends State<TimerHomePage>
     } else {
       _flashAnimation = TweenSequence<double>([
         TweenSequenceItem(
-          tween: Tween<double>(begin: 0.0, end: 0.55)
-              .chain(CurveTween(curve: Curves.easeIn)),
+          tween: Tween<double>(
+            begin: 0.0,
+            end: 0.55,
+          ).chain(CurveTween(curve: Curves.easeIn)),
           weight: 35,
         ),
         TweenSequenceItem(
-          tween: Tween<double>(begin: 0.55, end: 0.0)
-              .chain(CurveTween(curve: Curves.easeOut)),
+          tween: Tween<double>(
+            begin: 0.55,
+            end: 0.0,
+          ).chain(CurveTween(curve: Curves.easeOut)),
           weight: 65,
         ),
       ]).animate(_flashController);
@@ -668,13 +674,14 @@ class TimerHomePageState extends State<TimerHomePage>
     final clamped = (remainingMs / 1000).ceil().clamp(0, _initialDuration);
     if (clamped != _remainingSeconds) {
       final lastTick = _lastAnimationTickAt;
-      final isAnimationTicking = lastTick != null &&
+      final isAnimationTicking =
+          lastTick != null &&
           DateTime.now().difference(lastTick).inMilliseconds < 200;
       if (!isAnimationTicking || (clamped - _remainingSeconds).abs() > 1) {
         final delta = _remainingSeconds - clamped;
         _remainingSeconds = clamped;
         setState(() {});
-        
+
         _processBlinkReminderCadences();
         _processIntervalReminders(delta);
         _updateDesktopState();
@@ -720,7 +727,10 @@ class TimerHomePageState extends State<TimerHomePage>
               );
               _animationController.forward();
               _schedulePhaseDeadlineTimer(_phaseEndsAt!);
-              _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
+              _startBackgroundPhase(
+                phaseEndsAt: _phaseEndsAt!,
+                isBreak: _isBreak,
+              );
             }
           });
           _updateDesktopState();
@@ -813,7 +823,9 @@ class TimerHomePageState extends State<TimerHomePage>
         _phaseEndsAt = null;
         _saveActiveSession(isPaused: true);
         _cancelReminders();
-        unawaited(widget.notificationService.cancelWellnessRemindersBackground());
+        unawaited(
+          widget.notificationService.cancelWellnessRemindersBackground(),
+        );
         unawaited(widget.notificationService.cancelWaterRemindersBackground());
         unawaited(_backgroundService.stopPhase());
       });
@@ -889,6 +901,9 @@ class TimerHomePageState extends State<TimerHomePage>
             showTips: widget.breakShowTips,
             showProgress: widget.breakShowProgress,
             customMessage: widget.breakCustomMessage,
+            allowSkip: _canSkipBreak,
+            allowPostpone: _canPostponeBreak,
+            postponeDurationSeconds: widget.postponeDurationSeconds,
           ),
         );
       }
@@ -994,7 +1009,7 @@ class TimerHomePageState extends State<TimerHomePage>
       if (widget.autoStartSchedule) {
         scheduleMicrotask(() {
           if (mounted && !_isRunning) {
-            _startTimer(_workDurationSeconds);
+            _startTimer(_getEffectiveWorkDuration());
             _checkSchedule();
           }
         });
@@ -1007,7 +1022,8 @@ class TimerHomePageState extends State<TimerHomePage>
     final sessionTime = phaseStartedAt ?? phaseEndsAt;
     if (sessionTime != null) {
       final now = DateTime.now();
-      final isSameDay = sessionTime.year == now.year &&
+      final isSameDay =
+          sessionTime.year == now.year &&
           sessionTime.month == now.month &&
           sessionTime.day == now.day;
       if (!isSameDay) {
@@ -1019,7 +1035,7 @@ class TimerHomePageState extends State<TimerHomePage>
         if (widget.autoStartSchedule) {
           scheduleMicrotask(() {
             if (mounted && !_isRunning) {
-              _startTimer(_workDurationSeconds);
+              _startTimer(_getEffectiveWorkDuration());
               _checkSchedule();
             }
           });
@@ -1158,7 +1174,9 @@ class TimerHomePageState extends State<TimerHomePage>
     final progress = goal > 0 ? '$count/$goal' : '$count';
     _showTimerSnackBar(
       SnackBar(
-        content: Text(AppLocalizations.of(context)!.waterLoggedMessage(progress)),
+        content: Text(
+          AppLocalizations.of(context)!.waterLoggedMessage(progress),
+        ),
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
           label: AppLocalizations.of(context)!.waterUndo,
@@ -1233,7 +1251,9 @@ class TimerHomePageState extends State<TimerHomePage>
     _autoRunCompletedCycles = projection.autoRunCompletedCycles;
 
     if (playChime && projection.boundariesCrossed > 0) {
-      _playChime(hapticEvent: projection.isBreak ? 'work_complete' : 'break_complete');
+      _playChime(
+        hapticEvent: projection.isBreak ? 'work_complete' : 'break_complete',
+      );
     }
 
     if (projection.isIdle) {
@@ -1355,7 +1375,9 @@ class TimerHomePageState extends State<TimerHomePage>
         postponedBreakDuration: _postponedBreakDuration,
         currentPhaseDurationSeconds: _initialDuration,
         maxConsecutiveSkips: widget.maxConsecutiveSkips,
+        consecutiveSkips: _consecutiveSkips,
         maxConsecutivePostpones: widget.maxConsecutivePostpones,
+        consecutivePostpones: _consecutivePostpones,
       ),
     );
   }
@@ -1557,20 +1579,21 @@ class TimerHomePageState extends State<TimerHomePage>
       _isPaused = false;
       _isRunning = true;
       _phaseOpacity = 1.0;
-      _initialDuration = _workDurationSeconds;
-      _remainingSeconds = _workDurationSeconds;
-      _animationController.duration = Duration(seconds: _workDurationSeconds);
+      final effWork = _getEffectiveWorkDuration();
+      _initialDuration = effWork;
+      _remainingSeconds = effWork;
+      _animationController.duration = Duration(seconds: effWork);
       _animationController.reset();
       _phaseStartedAt = DateTime.now();
       _phaseEndsAt = _phaseStartedAt!.add(
-        Duration(seconds: _workDurationSeconds),
+        Duration(seconds: effWork),
       );
     });
 
     _animationController.forward(from: 0.0);
-    _saveActiveSession(remainingSeconds: _workDurationSeconds);
+    _saveActiveSession(remainingSeconds: _initialDuration);
     _schedulePhaseDeadlineTimer(_phaseEndsAt!);
-    unawaited(_schedulePhaseReminder(_workDurationSeconds, isBreak: false));
+    unawaited(_schedulePhaseReminder(_initialDuration, isBreak: false));
     _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: false);
     _updateDesktopState();
 
@@ -1599,7 +1622,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _cancelPhaseDeadlineTimer();
     _stopTimerCleanup(resetPulse: true);
     _cancelReminders();
-    
+
     // Trigger transition flash
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     final accentColor = widget.useSystemAccent
@@ -1612,7 +1635,8 @@ class TimerHomePageState extends State<TimerHomePage>
     _flashColor = isBreak ? accentColor : Colors.white;
     _flashController.forward(from: 0.0);
 
-    final breakStartedFromMiniMode = isBreak &&
+    final breakStartedFromMiniMode =
+        isBreak &&
         widget.breakMode != BreakMode.off &&
         _isMiniMode &&
         _isDesktopMiniModePlatform;
@@ -1679,7 +1703,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
   void _startWorkTimer() {
     _autoRunCompletedCycles = 0;
-    _startTimer(_workDurationSeconds);
+    _startTimer(_getEffectiveWorkDuration());
     _updateDesktopState();
   }
 
@@ -1710,7 +1734,9 @@ class TimerHomePageState extends State<TimerHomePage>
         _phaseEndsAt = null;
         _saveActiveSession(isPaused: true);
         _cancelReminders();
-        unawaited(widget.notificationService.cancelWellnessRemindersBackground());
+        unawaited(
+          widget.notificationService.cancelWellnessRemindersBackground(),
+        );
         unawaited(widget.notificationService.cancelWaterRemindersBackground());
         unawaited(_backgroundService.stopPhase());
       } else {
@@ -1734,8 +1760,9 @@ class TimerHomePageState extends State<TimerHomePage>
       _snoozeEndsAt = DateTime.now().add(duration);
       _isRunning = true;
       _isBreak = false;
-      _remainingSeconds = _workDurationSeconds;
-      _initialDuration = _workDurationSeconds;
+      final effWork = _getEffectiveWorkDuration();
+      _remainingSeconds = effWork;
+      _initialDuration = effWork;
 
       _isPaused = true;
       _isSystemIdlePaused = false;
@@ -1790,11 +1817,37 @@ class TimerHomePageState extends State<TimerHomePage>
     unawaited(widget.notificationService.cancelBlinkReminder());
   }
 
+  bool get _hasSkipAllowanceRemaining =>
+      widget.maxConsecutiveSkips <= 0 ||
+      _consecutiveSkips < widget.maxConsecutiveSkips;
+
+  int _getEffectiveWorkDuration() {
+    if (!widget.adaptiveSchedulingEnabled) return _workDurationSeconds;
+    
+    // Add 5 minutes for each skip/postpone
+    final additions = (_consecutiveSkips + _consecutivePostpones) * 300;
+    if (additions == 0) return _workDurationSeconds;
+    
+    // Cap addition to +15m max to prevent extreme schedules
+    final cappedAdditions = additions > 900 ? 900 : additions;
+    
+    return _workDurationSeconds + cappedAdditions;
+  }
+
+  bool get _hasPostponeAllowanceRemaining =>
+      widget.maxConsecutivePostpones <= 0 ||
+      _consecutivePostpones < widget.maxConsecutivePostpones;
+
+  bool get _canSkipBreak => widget.allowSkip && _hasSkipAllowanceRemaining;
+
+  bool get _canPostponeBreak =>
+      widget.allowPostpone && _hasPostponeAllowanceRemaining;
+
   void _skipBreak() {
     if (!_isBreak || !_isRunning) return;
-    // Enforce skip limit
+    if (!widget.allowSkip) return;
     final limit = widget.maxConsecutiveSkips;
-    if (limit > 0 && _consecutiveSkips >= limit) {
+    if (!_hasSkipAllowanceRemaining) {
       _showTimerSnackBar(
         SnackBar(
           content: Text(
@@ -1827,10 +1880,10 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   void _postponeBreak() {
-    if (!_isRunning) return;
-    // Enforce postpone limit
+    if (!_isBreak || !_isRunning) return;
+    if (!widget.allowPostpone) return;
     final limit = widget.maxConsecutivePostpones;
-    if (limit > 0 && _consecutivePostpones >= limit) {
+    if (!_hasPostponeAllowanceRemaining) {
       _showTimerSnackBar(
         SnackBar(
           content: Text(
@@ -1930,8 +1983,9 @@ class TimerHomePageState extends State<TimerHomePage>
       _phaseStartedAt = null;
       _phaseEndsAt = null;
       _autoRunCompletedCycles = 0;
-      _initialDuration = _workDurationSeconds;
-      _remainingSeconds = _initialDuration;
+      final effWork = _getEffectiveWorkDuration();
+      _initialDuration = effWork;
+      _remainingSeconds = effWork;
       _animationController.reset();
     });
     widget.clearSession();
@@ -1953,7 +2007,8 @@ class TimerHomePageState extends State<TimerHomePage>
     }
 
     final now = DateTime.now();
-    final isSameDay = _phaseEndsAt!.year == now.year &&
+    final isSameDay =
+        _phaseEndsAt!.year == now.year &&
         _phaseEndsAt!.month == now.month &&
         _phaseEndsAt!.day == now.day;
     if (!isSameDay) {
@@ -1975,7 +2030,8 @@ class TimerHomePageState extends State<TimerHomePage>
       final bgEndsAtMillis = bgSession['phaseEndsAtMillis'] as int;
       final bgEndsAt = DateTime.fromMillisecondsSinceEpoch(bgEndsAtMillis);
       final now = DateTime.now();
-      final isSameDay = bgEndsAt.year == now.year &&
+      final isSameDay =
+          bgEndsAt.year == now.year &&
           bgEndsAt.month == now.month &&
           bgEndsAt.day == now.day;
       if (!isSameDay) {
@@ -2048,8 +2104,10 @@ class TimerHomePageState extends State<TimerHomePage>
         _autoRunCompletedCycles = bgCompletedAutoRunCycles;
         _phaseEndsAt = DateTime.fromMillisecondsSinceEpoch(bgEndsAtMillis);
         _postponedBreakDuration = bgPostponedBreakDuration;
-        _consecutiveSkips = bgSession['consecutiveSkips'] as int? ?? _consecutiveSkips;
-        _consecutivePostpones = bgSession['consecutivePostpones'] as int? ?? _consecutivePostpones;
+        _consecutiveSkips =
+            bgSession['consecutiveSkips'] as int? ?? _consecutiveSkips;
+        _consecutivePostpones =
+            bgSession['consecutivePostpones'] as int? ?? _consecutivePostpones;
 
         _workDurationSeconds = bgSession['workDurationSeconds'] as int;
         _breakDurationSeconds = bgSession['breakDurationSeconds'] as int;
@@ -2096,7 +2154,9 @@ class TimerHomePageState extends State<TimerHomePage>
     _phaseStartedAt = null;
     _phaseEndsAt = null;
     _cancelReminders();
-    _playChime(hapticEvent: completedBreakPhase ? 'break_complete' : 'work_complete');
+    _playChime(
+      hapticEvent: completedBreakPhase ? 'break_complete' : 'work_complete',
+    );
     _pulseController.stop();
 
     setState(() => _phaseOpacity = 0.0);
@@ -2114,7 +2174,8 @@ class TimerHomePageState extends State<TimerHomePage>
         }
       }
       if (shouldAutoPostpone) {
-        upcomingBreakDuration = _postponedBreakDuration ??
+        upcomingBreakDuration =
+            _postponedBreakDuration ??
             _breakDurationForCompletedCycle(_streakCount + 1);
         wasPostponedWork = _postponedBreakDuration != null;
       }
@@ -2125,7 +2186,11 @@ class TimerHomePageState extends State<TimerHomePage>
     }
 
     if (shouldAutoPostpone) {
-      _autoPostponeBreak(completedPhaseAt, upcomingBreakDuration, wasPostponedWork);
+      _autoPostponeBreak(
+        completedPhaseAt,
+        upcomingBreakDuration,
+        wasPostponedWork,
+      );
       return;
     }
 
@@ -2141,7 +2206,7 @@ class TimerHomePageState extends State<TimerHomePage>
         _consecutiveSkips = 0;
         _consecutivePostpones = 0;
         if (_shouldContinueAutoRun()) {
-          _startTimer(_workDurationSeconds);
+          _startTimer(_getEffectiveWorkDuration());
           return;
         }
 
@@ -2154,8 +2219,9 @@ class TimerHomePageState extends State<TimerHomePage>
           _phaseStartedAt = null;
           _phaseEndsAt = null;
           _autoRunCompletedCycles = 0;
-          _initialDuration = _workDurationSeconds;
-          _remainingSeconds = _initialDuration;
+          final effWork = _getEffectiveWorkDuration();
+          _initialDuration = effWork;
+          _remainingSeconds = effWork;
           _animationController.reset();
           _pulseController.reset();
         });
@@ -2197,11 +2263,12 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   void _onStreakIncremented(int newStreak) {
-    final isMilestone = newStreak == widget.dailyGoal || 
-                        newStreak == 5 || 
-                        newStreak == 10 || 
-                        newStreak == 25 || 
-                        newStreak == 50;
+    final isMilestone =
+        newStreak == widget.dailyGoal ||
+        newStreak == 5 ||
+        newStreak == 10 ||
+        newStreak == 25 ||
+        newStreak == 50;
     if (isMilestone && newStreak > 0) {
       _triggerMilestoneCelebration();
     }
@@ -2237,7 +2304,6 @@ class TimerHomePageState extends State<TimerHomePage>
       ),
     );
   }
-
 
   bool _isNextBreakLong() {
     if (_postponedBreakDuration != null) {
@@ -2321,12 +2387,19 @@ class TimerHomePageState extends State<TimerHomePage>
             _activeChimeProcess?.kill();
             _activeChimeProcess = null;
 
-            final byteData = await rootBundle.load('assets/sounds/${widget.chimeStyle}.wav');
+            final byteData = await rootBundle.load(
+              'assets/sounds/${widget.chimeStyle}.wav',
+            );
             final tempDir = Directory.systemTemp;
-            final file = File('${tempDir.path}/blinkkind_sounds/${widget.chimeStyle}.wav');
+            final file = File(
+              '${tempDir.path}/blinkkind_sounds/${widget.chimeStyle}.wav',
+            );
             if (!await file.exists()) {
               await file.create(recursive: true);
-              await file.writeAsBytes(byteData.buffer.asUint8List(), flush: true);
+              await file.writeAsBytes(
+                byteData.buffer.asUint8List(),
+                flush: true,
+              );
             }
 
             bool played = false;
@@ -2336,11 +2409,13 @@ class TimerHomePageState extends State<TimerHomePage>
                 final process = await Process.start(util, [file.path]);
                 _activeChimeProcess = process;
                 played = true;
-                unawaited(process.exitCode.then((code) {
-                  if (_activeChimeProcess == process) {
-                    _activeChimeProcess = null;
-                  }
-                }));
+                unawaited(
+                  process.exitCode.then((code) {
+                    if (_activeChimeProcess == process) {
+                      _activeChimeProcess = null;
+                    }
+                  }),
+                );
                 break;
               } catch (_) {}
             }
@@ -2431,7 +2506,8 @@ class TimerHomePageState extends State<TimerHomePage>
 
     // On Linux/desktop the notification carries no sound channel, so play
     // the chime in-app immediately.  On Android the channel handles it.
-    if (!kIsWeb && (Platform.isLinux || Platform.isMacOS || Platform.isWindows)) {
+    if (!kIsWeb &&
+        (Platform.isLinux || Platform.isMacOS || Platform.isWindows)) {
       unawaited(_playChime(hapticEvent: 'blink_reminder'));
     }
 
@@ -2458,7 +2534,9 @@ class TimerHomePageState extends State<TimerHomePage>
       }
       unawaited(
         widget.notificationService.showBlinkReminder(
-          customMessage: (message != null && message.isNotEmpty) ? message : null,
+          customMessage: (message != null && message.isNotEmpty)
+              ? message
+              : null,
           interactive: widget.blinkReminderInteractiveEnabled,
           chimeStyle: widget.chimeStyle,
         ),
@@ -2511,12 +2589,9 @@ class TimerHomePageState extends State<TimerHomePage>
   LinearGradient _backgroundGradientFromPreset(String preset, bool isDark) {
     if (widget.useSystemAccent) {
       final primaryColor = Theme.of(context).colorScheme.primary;
-      final hex = '#${primaryColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
-      return ColorPresets.backgroundGradient(
-        'Custom',
-        isDark,
-        customHex: hex,
-      );
+      final hex =
+          '#${primaryColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
+      return ColorPresets.backgroundGradient('Custom', isDark, customHex: hex);
     }
     return ColorPresets.backgroundGradient(
       preset,
@@ -2545,8 +2620,9 @@ class TimerHomePageState extends State<TimerHomePage>
       }
     } else if (Platform.isAndroid) {
       try {
-        final bool inUse = await const MethodChannel('blinkkind/break_overlay')
-            .invokeMethod('isCameraInUse');
+        final bool inUse = await const MethodChannel(
+          'blinkkind/break_overlay',
+        ).invokeMethod('isCameraInUse');
         return inUse;
       } catch (_) {
         return false;
@@ -2572,8 +2648,9 @@ class TimerHomePageState extends State<TimerHomePage>
       }
     } else if (Platform.isAndroid) {
       try {
-        final bool inUse = await const MethodChannel('blinkkind/break_overlay')
-            .invokeMethod('isMicInUse');
+        final bool inUse = await const MethodChannel(
+          'blinkkind/break_overlay',
+        ).invokeMethod('isMicInUse');
         return inUse;
       } catch (_) {
         return false;
@@ -2794,8 +2871,13 @@ class TimerHomePageState extends State<TimerHomePage>
     const cap = 12 * 3600;
     if (!widget.workHoursEnabled) return cap;
     final now = DateTime.now();
-    final end = DateTime(now.year, now.month, now.day, widget.workHoursEndHour,
-        widget.workHoursEndMinute);
+    final end = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      widget.workHoursEndHour,
+      widget.workHoursEndMinute,
+    );
     if (!end.isAfter(now)) return cap;
     return end.difference(now).inSeconds.clamp(0, cap);
   }
@@ -2822,12 +2904,14 @@ class TimerHomePageState extends State<TimerHomePage>
           .add(Duration(seconds: n * wellnessCadence))
           .difference(now)
           .inSeconds;
-      unawaited(widget.notificationService.scheduleWellnessRemindersBackground(
-        cadenceSeconds: wellnessCadence,
-        firstDelaySeconds: firstDelay,
-        horizonSeconds: horizon,
-        startIndex: n - 1,
-      ));
+      unawaited(
+        widget.notificationService.scheduleWellnessRemindersBackground(
+          cadenceSeconds: wellnessCadence,
+          firstDelaySeconds: firstDelay,
+          horizonSeconds: horizon,
+          startIndex: n - 1,
+        ),
+      );
     } else {
       unawaited(widget.notificationService.cancelWellnessRemindersBackground());
     }
@@ -2840,13 +2924,16 @@ class TimerHomePageState extends State<TimerHomePage>
           .add(Duration(seconds: n * waterCadence))
           .difference(now)
           .inSeconds;
-      unawaited(widget.notificationService.scheduleWaterRemindersBackground(
-        cadenceSeconds: waterCadence,
-        firstDelaySeconds: firstDelay,
-        horizonSeconds: horizon,
-        shouldScheduleDelay: (delaySeconds) =>
-            _shouldSendWaterReminderAt(now.add(Duration(seconds: delaySeconds))),
-      ));
+      unawaited(
+        widget.notificationService.scheduleWaterRemindersBackground(
+          cadenceSeconds: waterCadence,
+          firstDelaySeconds: firstDelay,
+          horizonSeconds: horizon,
+          shouldScheduleDelay: (delaySeconds) => _shouldSendWaterReminderAt(
+            now.add(Duration(seconds: delaySeconds)),
+          ),
+        ),
+      );
     } else {
       unawaited(widget.notificationService.cancelWaterRemindersBackground());
     }
@@ -2868,7 +2955,12 @@ class TimerHomePageState extends State<TimerHomePage>
         debugPrint('Failed to generate AI wellness reminder: $e');
       }
     }
-    unawaited(widget.notificationService.showWellnessReminder(type, aiMessage: aiMessage));
+    unawaited(
+      widget.notificationService.showWellnessReminder(
+        type,
+        aiMessage: aiMessage,
+      ),
+    );
   }
 
   String _getWellnessPrompt(WellnessType type) {
@@ -2989,7 +3081,8 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   String get _timerModeSummary {
-    final workMinutes = (_workDurationSeconds / 60).round();
+    final effWork = _getEffectiveWorkDuration();
+    final workMinutes = (effWork / 60).round();
     final breakLabel = _durationLabel(_breakDurationSeconds);
     final autoRunLabel = _autoRunEnabled
         ? _autoRunCycleLimit <= 0
@@ -3075,6 +3168,21 @@ class TimerHomePageState extends State<TimerHomePage>
     final consumed = _waterGlassesToday;
     final goalReached = goal > 0 && consumed >= goal;
     final ml = consumed * widget.waterGlassSizeMl;
+    
+    final expected = _expectedWaterGlassesBy(DateTime.now());
+    String forecastText = '';
+    if (goalReached) {
+      forecastText = AppLocalizations.of(context)!.waterGoalMet;
+    } else {
+      if (consumed >= expected) {
+        final remaining = goal - consumed;
+        forecastText = 'On pace ($remaining remaining)';
+      } else {
+        final behind = expected - consumed;
+        forecastText = 'Behind pace ($behind behind)';
+      }
+    }
+
     const waterColor = Color(0xFF3BA7E6);
     return Container(
       width: double.infinity,
@@ -3099,16 +3207,16 @@ class TimerHomePageState extends State<TimerHomePage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  goalReached
-                      ? AppLocalizations.of(context)!.waterGoalMet
-                      : AppLocalizations.of(context)!.waterToday,
+                  forecastText,
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  AppLocalizations.of(context)!.waterGlassesAndVolume(consumed, ml),
+                  AppLocalizations.of(
+                    context,
+                  )!.waterGlassesAndVolume(consumed, ml),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -3498,9 +3606,7 @@ class TimerHomePageState extends State<TimerHomePage>
           appBar: _isFocusMode
               ? null
               : AppBar(
-                  title: const DragToMoveArea(
-                    child: Text('BlinkKind'),
-                  ),
+                  title: const DragToMoveArea(child: Text('BlinkKind')),
                   backgroundColor: Colors.transparent,
                   elevation: 0,
                   systemOverlayStyle: systemOverlayStyle,
@@ -3512,8 +3618,14 @@ class TimerHomePageState extends State<TimerHomePage>
                           onTap: _pauseOrResume,
                           borderRadius: BorderRadius.circular(20),
                           child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 8,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
@@ -3529,7 +3641,9 @@ class TimerHomePageState extends State<TimerHomePage>
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  _isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                                  _isPaused
+                                      ? Icons.play_arrow_rounded
+                                      : Icons.pause_rounded,
                                   size: 18,
                                   color: (_isPaused || _isMediaPaused)
                                       ? Colors.orangeAccent
@@ -3540,7 +3654,9 @@ class TimerHomePageState extends State<TimerHomePage>
                                   Icon(
                                     Icons.music_note_rounded,
                                     size: 14,
-                                    color: Colors.orangeAccent.withValues(alpha: 0.9),
+                                    color: Colors.orangeAccent.withValues(
+                                      alpha: 0.9,
+                                    ),
                                   ),
                                 ],
                               ],
@@ -3602,533 +3718,559 @@ class TimerHomePageState extends State<TimerHomePage>
                           ),
                         ),
                       SafeArea(
-                    child: Center(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final isLandscape =
-                              MediaQuery.of(context).orientation ==
-                              Orientation.landscape;
-                          final double multiplier = _isFocusMode ? 1.25 : 1.0;
-                          final double size = isLandscape
-                              ? ((constraints.maxHeight - 48) * multiplier).clamp(160.0, 340.0)
-                              : ((constraints.maxWidth - 48) * multiplier).clamp(220.0, 420.0);
+                        child: Center(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isLandscape =
+                                  MediaQuery.of(context).orientation ==
+                                  Orientation.landscape;
+                              final double multiplier = _isFocusMode
+                                  ? 1.25
+                                  : 1.0;
+                              final double size = isLandscape
+                                  ? ((constraints.maxHeight - 48) * multiplier)
+                                        .clamp(160.0, 340.0)
+                                  : ((constraints.maxWidth - 48) * multiplier)
+                                        .clamp(220.0, 420.0);
 
-                          final timerDial = _AnimatedTimerDial(
-                            size: size,
-                            progressAnimation: _progressAnimation,
-                            pulseAnimation: _pulseAnimation,
-                            initialDuration: _initialDuration,
-                            statusLabel: _statusLabel(context),
-                            textColor: textColor,
-                            ringBackgroundColor: ringBgColor,
-                            progressColor: progressColor,
-                            strokeWidth: _ringStrokeWidth,
-                            isLandscape: isLandscape,
-                            onTap: _toggleFocusMode,
-                            blinkRemindersEnabled:
-                                widget.blinkRemindersEnabled ||
-                                widget.trayBlinkNudgesEnabled,
-                            isBlinkNudging: _isBlinkNudging,
-                            isFocusMode: _isFocusMode,
-                            isBreak: _isBreak,
-                          );
+                              final timerDial = _AnimatedTimerDial(
+                                size: size,
+                                progressAnimation: _progressAnimation,
+                                pulseAnimation: _pulseAnimation,
+                                initialDuration: _initialDuration,
+                                statusLabel: _statusLabel(context),
+                                textColor: textColor,
+                                ringBackgroundColor: ringBgColor,
+                                progressColor: progressColor,
+                                strokeWidth: _ringStrokeWidth,
+                                isLandscape: isLandscape,
+                                onTap: _toggleFocusMode,
+                                blinkRemindersEnabled:
+                                    widget.blinkRemindersEnabled ||
+                                    widget.trayBlinkNudgesEnabled,
+                                isBlinkNudging: _isBlinkNudging,
+                                isFocusMode: _isFocusMode,
+                                isBreak: _isBreak,
+                              );
 
-                          final actionButtons = Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 12,
-                            runSpacing: 8,
-                            children: [
-                              if (!_isRunning)
-                                ElevatedButton.icon(
-                                  onPressed: _startWorkTimer,
-                                  icon: const Icon(Icons.play_arrow),
-                                  label: Text(
-                                    AppLocalizations.of(context)!.start,
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: progressColor,
-                                    foregroundColor: primaryButtonForeground,
-                                    elevation: isDark ? 3 : 1,
-                                    shadowColor: Colors.black54,
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: isLandscape ? 16 : 22,
-                                      vertical: isLandscape ? 8 : 12,
-                                    ),
-                                    shape: const StadiumBorder(),
-                                  ),
-                                )
-                              else if (_isSchedulePaused) ...[
-                                // Schedule-paused: no Pause/Resume (already effectively
-                                // paused). Only allow cancelling the session entirely.
-                                OutlinedButton.icon(
-                                  onPressed: _cancelTimer,
-                                  icon: const Icon(Icons.stop),
-                                  label: Text(
-                                    AppLocalizations.of(context)!.stopTimer,
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: isDark
-                                        ? Colors.red.shade200
-                                        : Colors.red.shade700,
-                                    side: BorderSide(
-                                      color: Colors.red.shade300,
-                                    ),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: isLandscape ? 14 : 18,
-                                      vertical: isLandscape ? 8 : 12,
-                                    ),
-                                    shape: const StadiumBorder(),
-                                  ),
-                                ),
-                              ] else ...[
-                                ElevatedButton.icon(
-                                  onPressed: _pauseOrResume,
-                                  icon: Icon(
-                                    _isPaused ? Icons.play_arrow : Icons.pause,
-                                  ),
-                                  label: Text(
-                                    _isPaused
-                                        ? AppLocalizations.of(context)!.resume
-                                        : AppLocalizations.of(context)!.pause,
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: isDark
-                                        ? Colors.white24
-                                        : Colors.black87,
-                                    foregroundColor: Colors.white,
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: isLandscape ? 16 : 20,
-                                      vertical: isLandscape ? 8 : 12,
-                                    ),
-                                    shape: const StadiumBorder(),
-                                  ),
-                                ),
-                                if (_isBreak && !_isPaused) ...[
-                                  if (widget.allowSkip && (widget.maxConsecutiveSkips == 0 || _consecutiveSkips < widget.maxConsecutiveSkips))
-                                    ElevatedButton.icon(
-                                      onPressed: _skipBreak,
-                                      icon: const Icon(Icons.skip_next),
-                                      label: Text(
-                                        AppLocalizations.of(context)!.skip,
-                                      ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green.shade600,
-                                        foregroundColor: Colors.white,
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: isLandscape ? 16 : 20,
-                                          vertical: isLandscape ? 8 : 12,
-                                        ),
-                                        shape: const StadiumBorder(),
-                                      ),
-                                    ),
-                                  if (widget.allowPostpone && (widget.maxConsecutivePostpones == 0 || _consecutivePostpones < widget.maxConsecutivePostpones))
-                                    ElevatedButton.icon(
-                                      onPressed: _postponeBreak,
-                                      icon: const Icon(Icons.snooze),
-                                      label: Text(
-                                        AppLocalizations.of(context)!.postpone,
-                                      ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.orange.shade700,
-                                        foregroundColor: Colors.white,
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: isLandscape ? 16 : 20,
-                                          vertical: isLandscape ? 8 : 12,
-                                        ),
-                                        shape: const StadiumBorder(),
-                                      ),
-                                    ),
-                                ],
-                                OutlinedButton.icon(
-                                  onPressed: _cancelTimer,
-                                  icon: const Icon(Icons.stop),
-                                  label: Text(
-                                    AppLocalizations.of(context)!.cancel,
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: isDark
-                                        ? Colors.red.shade200
-                                        : Colors.red.shade700,
-                                    side: BorderSide(
-                                      color: Colors.red.shade300,
-                                    ),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: isLandscape ? 14 : 18,
-                                      vertical: isLandscape ? 8 : 12,
-                                    ),
-                                    shape: const StadiumBorder(),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          );
-
-                          if (isLandscape) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
+                              final actionButtons = Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 12,
+                                runSpacing: 8,
                                 children: [
-                                  timerDial,
-                                  const SizedBox(width: 32),
-                                  Expanded(
-                                    child: SingleChildScrollView(
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          if (!_isFocusMode) ...[
-                                            AnimatedOpacity(
-                                              opacity: _phaseOpacity,
-                                              duration: const Duration(
-                                                milliseconds: 400,
+                                  if (!_isRunning)
+                                    ElevatedButton.icon(
+                                      onPressed: _startWorkTimer,
+                                      icon: const Icon(Icons.play_arrow),
+                                      label: Text(
+                                        AppLocalizations.of(context)!.start,
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: progressColor,
+                                        foregroundColor:
+                                            primaryButtonForeground,
+                                        elevation: isDark ? 3 : 1,
+                                        shadowColor: Colors.black54,
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: isLandscape ? 16 : 22,
+                                          vertical: isLandscape ? 8 : 12,
+                                        ),
+                                        shape: const StadiumBorder(),
+                                      ),
+                                    )
+                                  else if (_isSchedulePaused) ...[
+                                    // Schedule-paused: no Pause/Resume (already effectively
+                                    // paused). Only allow cancelling the session entirely.
+                                    OutlinedButton.icon(
+                                      onPressed: _cancelTimer,
+                                      icon: const Icon(Icons.stop),
+                                      label: Text(
+                                        AppLocalizations.of(context)!.stopTimer,
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: isDark
+                                            ? Colors.red.shade200
+                                            : Colors.red.shade700,
+                                        side: BorderSide(
+                                          color: Colors.red.shade300,
+                                        ),
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: isLandscape ? 14 : 18,
+                                          vertical: isLandscape ? 8 : 12,
+                                        ),
+                                        shape: const StadiumBorder(),
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    ElevatedButton.icon(
+                                      onPressed: _pauseOrResume,
+                                      icon: Icon(
+                                        _isPaused
+                                            ? Icons.play_arrow
+                                            : Icons.pause,
+                                      ),
+                                      label: Text(
+                                        _isPaused
+                                            ? AppLocalizations.of(
+                                                context,
+                                              )!.resume
+                                            : AppLocalizations.of(
+                                                context,
+                                              )!.pause,
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: isDark
+                                            ? Colors.white24
+                                            : Colors.black87,
+                                        foregroundColor: Colors.white,
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: isLandscape ? 16 : 20,
+                                          vertical: isLandscape ? 8 : 12,
+                                        ),
+                                        shape: const StadiumBorder(),
+                                      ),
+                                    ),
+                                    if (_isBreak && !_isPaused) ...[
+                                      if (_canSkipBreak)
+                                        ElevatedButton.icon(
+                                          onPressed: _skipBreak,
+                                          icon: const Icon(Icons.skip_next),
+                                          label: Text(
+                                            AppLocalizations.of(context)!.skip,
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                Colors.green.shade600,
+                                            foregroundColor: Colors.white,
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: isLandscape ? 16 : 20,
+                                              vertical: isLandscape ? 8 : 12,
+                                            ),
+                                            shape: const StadiumBorder(),
+                                          ),
+                                        ),
+                                      if (_canPostponeBreak)
+                                        ElevatedButton.icon(
+                                          onPressed: _postponeBreak,
+                                          icon: const Icon(Icons.snooze),
+                                          label: Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.postpone,
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                Colors.orange.shade700,
+                                            foregroundColor: Colors.white,
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: isLandscape ? 16 : 20,
+                                              vertical: isLandscape ? 8 : 12,
+                                            ),
+                                            shape: const StadiumBorder(),
+                                          ),
+                                        ),
+                                    ],
+                                    OutlinedButton.icon(
+                                      onPressed: _cancelTimer,
+                                      icon: const Icon(Icons.stop),
+                                      label: Text(
+                                        AppLocalizations.of(context)!.cancel,
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: isDark
+                                            ? Colors.red.shade200
+                                            : Colors.red.shade700,
+                                        side: BorderSide(
+                                          color: Colors.red.shade300,
+                                        ),
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: isLandscape ? 14 : 18,
+                                          vertical: isLandscape ? 8 : 12,
+                                        ),
+                                        shape: const StadiumBorder(),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              );
+
+                              if (isLandscape) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      timerDial,
+                                      const SizedBox(width: 32),
+                                      Expanded(
+                                        child: SingleChildScrollView(
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              if (!_isFocusMode) ...[
+                                                AnimatedOpacity(
+                                                  opacity: _phaseOpacity,
+                                                  duration: const Duration(
+                                                    milliseconds: 400,
+                                                  ),
+                                                  child: Column(
+                                                    children: [
+                                                      Text(
+                                                        _phaseTitle(context),
+                                                        style: Theme.of(
+                                                          context,
+                                                        ).textTheme.titleLarge,
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                      const SizedBox(height: 2),
+                                                      Text(
+                                                        _phaseSubtitle,
+                                                        style: Theme.of(
+                                                          context,
+                                                        ).textTheme.bodyMedium,
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                      if (_isBreak &&
+                                                          _isRunning &&
+                                                          !_isPaused &&
+                                                          (widget.breakShowTips ||
+                                                              widget
+                                                                  .breakCustomMessage
+                                                                  .trim()
+                                                                  .isNotEmpty)) ...[
+                                                        const SizedBox(
+                                                          height: 10,
+                                                        ),
+                                                        _buildBreakTipPanel(
+                                                          Theme.of(context),
+                                                          isDark,
+                                                          progressColor,
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 12),
+                                              ],
+                                              actionButtons,
+                                              const SizedBox(height: 12),
+                                              if (!_isFocusMode) ...[
+                                                Text(
+                                                  _timerModeSummary,
+                                                  textAlign: TextAlign.center,
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.bodyMedium,
+                                                ),
+                                                const SizedBox(height: 12),
+                                                _buildTodayBreakSummary(
+                                                  Theme.of(context),
+                                                  progressColor,
+                                                ),
+                                                if (widget
+                                                    .waterRemindersEnabled) ...[
+                                                  const SizedBox(height: 12),
+                                                  _buildWaterSummary(
+                                                    Theme.of(context),
+                                                  ),
+                                                ],
+                                                const SizedBox(height: 12),
+                                                _buildHomeQuickActions(
+                                                  Theme.of(context),
+                                                  isDark,
+                                                  progressColor,
+                                                ),
+                                                const SizedBox(height: 12),
+                                                _buildLearnCard(
+                                                  Theme.of(context),
+                                                  isDark,
+                                                  progressColor,
+                                                ),
+                                                if (widget
+                                                    .aiMotivationEnabled) ...[
+                                                  const SizedBox(height: 12),
+                                                  _buildAiInsightCard(
+                                                    Theme.of(context),
+                                                    isDark,
+                                                    progressColor,
+                                                  ),
+                                                ],
+                                              ] else ...[
+                                                Opacity(
+                                                  opacity: 0.35,
+                                                  child: Text(
+                                                    'Tap dial to exit focus mode',
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodySmall
+                                                        ?.copyWith(
+                                                          color: textColor,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              // Portrait Layout
+                              return SingleChildScrollView(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 20,
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (!_isFocusMode) ...[
+                                      AnimatedOpacity(
+                                        opacity: _phaseOpacity,
+                                        duration: const Duration(
+                                          milliseconds: 400,
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 6,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: progressColor.withValues(
+                                                  alpha: 0.14,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
+                                                border: Border.all(
+                                                  color: progressColor
+                                                      .withValues(alpha: 0.35),
+                                                ),
                                               ),
-                                              child: Column(
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Text(
-                                                    _phaseTitle(context),
-                                                    style: Theme.of(
-                                                      context,
-                                                    ).textTheme.titleLarge,
-                                                    textAlign: TextAlign.center,
+                                                  Icon(
+                                                    _statusIcon,
+                                                    size: 16,
+                                                    color: progressColor,
                                                   ),
-                                                  const SizedBox(height: 2),
+                                                  const SizedBox(width: 6),
                                                   Text(
-                                                    _phaseSubtitle,
-                                                    style: Theme.of(
-                                                      context,
-                                                    ).textTheme.bodyMedium,
-                                                    textAlign: TextAlign.center,
+                                                    _statusLabel(context),
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .labelLarge
+                                                        ?.copyWith(
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: progressColor,
+                                                        ),
                                                   ),
-                                                  if (_isBreak &&
-                                                      _isRunning &&
-                                                      !_isPaused &&
-                                                      (widget.breakShowTips ||
-                                                          widget
-                                                              .breakCustomMessage
-                                                              .trim()
-                                                              .isNotEmpty)) ...[
-                                                    const SizedBox(height: 10),
-                                                    _buildBreakTipPanel(
-                                                      Theme.of(context),
-                                                      isDark,
-                                                      progressColor,
-                                                    ),
-                                                  ],
                                                 ],
                                               ),
                                             ),
-                                            const SizedBox(height: 12),
-                                          ],
-                                          actionButtons,
-                                          const SizedBox(height: 12),
-                                          if (!_isFocusMode) ...[
+                                            const SizedBox(height: 10),
                                             Text(
-                                              _timerModeSummary,
+                                              _phaseTitle(context),
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.titleLarge,
                                               textAlign: TextAlign.center,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              _phaseSubtitle,
                                               style: Theme.of(
                                                 context,
                                               ).textTheme.bodyMedium,
+                                              textAlign: TextAlign.center,
                                             ),
-                                            const SizedBox(height: 12),
-                                            _buildTodayBreakSummary(
-                                              Theme.of(context),
-                                              progressColor,
-                                            ),
-                                            if (widget
-                                                .waterRemindersEnabled) ...[
-                                              const SizedBox(height: 12),
-                                              _buildWaterSummary(
-                                                Theme.of(context),
-                                              ),
-                                            ],
-                                            const SizedBox(height: 12),
-                                            _buildHomeQuickActions(
-                                              Theme.of(context),
-                                              isDark,
-                                              progressColor,
-                                            ),
-                                            const SizedBox(height: 12),
-                                            _buildLearnCard(
-                                              Theme.of(context),
-                                              isDark,
-                                              progressColor,
-                                            ),
-                                            if (widget.aiMotivationEnabled) ...[
-                                              const SizedBox(height: 12),
-                                              _buildAiInsightCard(
+                                            if (_isBreak &&
+                                                _isRunning &&
+                                                !_isPaused &&
+                                                (widget.breakShowTips ||
+                                                    widget.breakCustomMessage
+                                                        .trim()
+                                                        .isNotEmpty)) ...[
+                                              const SizedBox(height: 10),
+                                              _buildBreakTipPanel(
                                                 Theme.of(context),
                                                 isDark,
                                                 progressColor,
                                               ),
                                             ],
-                                          ] else ...[
-                                            Opacity(
-                                              opacity: 0.35,
-                                              child: Text(
-                                                'Tap dial to exit focus mode',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodySmall
-                                                    ?.copyWith(
-                                                      color: textColor,
-                                                    ),
-                                              ),
-                                            ),
                                           ],
-                                        ],
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          // Portrait Layout
-                          return SingleChildScrollView(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 20,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (!_isFocusMode) ...[
-                                  AnimatedOpacity(
-                                    opacity: _phaseOpacity,
-                                    duration: const Duration(milliseconds: 400),
-                                    child: Column(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
+                                      const SizedBox(height: 16),
+                                    ],
+                                    timerDial,
+                                    // Guided break modes: show the interactive guide
+                                    // below the dial when on break.
+                                    if (_isBreak &&
+                                        _isRunning &&
+                                        !_isPaused) ...[
+                                      if (_activeBreakVisualizerStyle ==
+                                              'EyeExercise' ||
+                                          _activeBreakVisualizerStyle ==
+                                              'BoxBreathing' ||
+                                          _activeBreakVisualizerStyle ==
+                                              'BlinkTraining') ...[
+                                        const SizedBox(height: 16),
+                                        ConstrainedBox(
+                                          constraints: const BoxConstraints(
+                                            maxWidth: 280,
+                                            maxHeight: 280,
                                           ),
-                                          decoration: BoxDecoration(
-                                            color: progressColor.withValues(
-                                              alpha: 0.14,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              999,
-                                            ),
-                                            border: Border.all(
-                                              color: progressColor.withValues(
-                                                alpha: 0.35,
-                                              ),
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                _statusIcon,
-                                                size: 16,
-                                                color: progressColor,
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                _statusLabel(context),
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .labelLarge
-                                                    ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: progressColor,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
+                                          child:
+                                              _activeBreakVisualizerStyle ==
+                                                  'EyeExercise'
+                                              ? EyeExerciseDotGuide(
+                                                  remainingSeconds:
+                                                      _remainingSeconds,
+                                                  totalDurationSeconds:
+                                                      _initialDuration,
+                                                )
+                                              : _activeBreakVisualizerStyle ==
+                                                    'BoxBreathing'
+                                              ? BoxBreathingGuide(
+                                                  remainingSeconds:
+                                                      _remainingSeconds,
+                                                  totalDurationSeconds:
+                                                      _initialDuration,
+                                                )
+                                              : BlinkTrainingGuide(
+                                                  remainingSeconds:
+                                                      _remainingSeconds,
+                                                  totalDurationSeconds:
+                                                      _initialDuration,
+                                                ),
                                         ),
-                                        const SizedBox(height: 10),
-                                        Text(
-                                          _phaseTitle(context),
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.titleLarge,
+                                      ],
+                                    ],
+                                    const SizedBox(height: 20),
+                                    actionButtons,
+                                    const SizedBox(height: 16),
+                                    if (!_isFocusMode) ...[
+                                      Opacity(
+                                        opacity: 0.95,
+                                        child: Text(
+                                          _timerModeSummary,
                                           textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          _phaseSubtitle,
                                           style: Theme.of(
                                             context,
                                           ).textTheme.bodyMedium,
-                                          textAlign: TextAlign.center,
                                         ),
-                                        if (_isBreak &&
-                                            _isRunning &&
-                                            !_isPaused &&
-                                            (widget.breakShowTips ||
-                                                widget.breakCustomMessage
-                                                    .trim()
-                                                    .isNotEmpty)) ...[
-                                          const SizedBox(height: 10),
-                                          _buildBreakTipPanel(
-                                            Theme.of(context),
-                                            isDark,
-                                            progressColor,
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                ],
-                                timerDial,
-                                // Guided break modes: show the interactive guide
-                                // below the dial when on break.
-                                if (_isBreak && _isRunning && !_isPaused) ...[
-                                  if (_activeBreakVisualizerStyle ==
-                                          'EyeExercise' ||
-                                      _activeBreakVisualizerStyle ==
-                                          'BoxBreathing' ||
-                                      _activeBreakVisualizerStyle ==
-                                          'BlinkTraining') ...[
-                                    const SizedBox(height: 16),
-                                    ConstrainedBox(
-                                      constraints: const BoxConstraints(
-                                        maxWidth: 280,
-                                        maxHeight: 280,
                                       ),
-                                      child:
-                                          _activeBreakVisualizerStyle ==
-                                              'EyeExercise'
-                                          ? EyeExerciseDotGuide(
-                                              remainingSeconds:
-                                                  _remainingSeconds,
-                                              totalDurationSeconds:
-                                                  _initialDuration,
-                                            )
-                                          : _activeBreakVisualizerStyle ==
-                                                'BoxBreathing'
-                                          ? BoxBreathingGuide(
-                                              remainingSeconds:
-                                                  _remainingSeconds,
-                                              totalDurationSeconds:
-                                                  _initialDuration,
-                                            )
-                                          : BlinkTrainingGuide(
-                                              remainingSeconds:
-                                                  _remainingSeconds,
-                                              totalDurationSeconds:
-                                                  _initialDuration,
-                                            ),
-                                    ),
+                                      const SizedBox(height: 12),
+                                      _buildTodayBreakSummary(
+                                        Theme.of(context),
+                                        progressColor,
+                                      ),
+                                      if (widget.waterRemindersEnabled) ...[
+                                        const SizedBox(height: 12),
+                                        _buildWaterSummary(Theme.of(context)),
+                                      ],
+                                      const SizedBox(height: 12),
+                                      _buildHomeQuickActions(
+                                        Theme.of(context),
+                                        isDark,
+                                        progressColor,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      _buildLearnCard(
+                                        Theme.of(context),
+                                        isDark,
+                                        progressColor,
+                                      ),
+                                      if (widget.aiMotivationEnabled) ...[
+                                        const SizedBox(height: 12),
+                                        _buildAiInsightCard(
+                                          Theme.of(context),
+                                          isDark,
+                                          progressColor,
+                                        ),
+                                      ],
+                                    ] else ...[
+                                      Opacity(
+                                        opacity: 0.35,
+                                        child: Text(
+                                          'Tap dial to exit focus mode',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(color: textColor),
+                                        ),
+                                      ),
+                                    ],
                                   ],
-                                ],
-                                const SizedBox(height: 20),
-                                actionButtons,
-                                const SizedBox(height: 16),
-                                if (!_isFocusMode) ...[
-                                  Opacity(
-                                    opacity: 0.95,
-                                    child: Text(
-                                      _timerModeSummary,
-                                      textAlign: TextAlign.center,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodyMedium,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  _buildTodayBreakSummary(
-                                    Theme.of(context),
-                                    progressColor,
-                                  ),
-                                  if (widget.waterRemindersEnabled) ...[
-                                    const SizedBox(height: 12),
-                                    _buildWaterSummary(Theme.of(context)),
-                                  ],
-                                  const SizedBox(height: 12),
-                                  _buildHomeQuickActions(
-                                    Theme.of(context),
-                                    isDark,
-                                    progressColor,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  _buildLearnCard(
-                                    Theme.of(context),
-                                    isDark,
-                                    progressColor,
-                                  ),
-                                  if (widget.aiMotivationEnabled) ...[
-                                    const SizedBox(height: 12),
-                                    _buildAiInsightCard(
-                                      Theme.of(context),
-                                      isDark,
-                                      progressColor,
-                                    ),
-                                  ],
-                                ] else ...[
-                                  Opacity(
-                                    opacity: 0.35,
-                                    child: Text(
-                                      'Tap dial to exit focus mode',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(color: textColor),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          );
-                        },
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                  ],
                 ),
               ),
-            ),
-            if (widget.showNotificationWarning && !_isFocusMode)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: _NotificationWarningBanner(
-                  onFix: widget.onFixNotificationPermission,
+              if (widget.showNotificationWarning && !_isFocusMode)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: _NotificationWarningBanner(
+                    onFix: widget.onFixNotificationPermission,
+                  ),
+                )
+              else if (widget.showBatteryWarning && !_isFocusMode)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: _BatteryWarningBanner(
+                    oemManufacturer: widget.oemManufacturer,
+                    onFix: widget.onFixBatteryRestriction,
+                    onDismiss: widget.onDismissBatteryWarning,
+                  ),
                 ),
-              )
-            else if (widget.showBatteryWarning && !_isFocusMode)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: _BatteryWarningBanner(
-                  oemManufacturer: widget.oemManufacturer,
-                  onFix: widget.onFixBatteryRestriction,
-                  onDismiss: widget.onDismissBatteryWarning,
+              if (_showConfetti)
+                const Positioned.fill(
+                  child: IgnorePointer(child: _ConfettiWidget()),
+                ),
+              IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: _flashAnimation,
+                  builder: (context, child) {
+                    if (_flashAnimation.value <= 0.0) {
+                      return const SizedBox.shrink();
+                    }
+                    return Container(
+                      color: _flashColor.withValues(
+                        alpha: _flashAnimation.value,
+                      ),
+                    );
+                  },
                 ),
               ),
-            if (_showConfetti)
-              const Positioned.fill(
-                child: IgnorePointer(
-                  child: _ConfettiWidget(),
-                ),
-              ),
-            IgnorePointer(
-              child: AnimatedBuilder(
-                animation: _flashAnimation,
-                builder: (context, child) {
-                  if (_flashAnimation.value <= 0.0) return const SizedBox.shrink();
-                  return Container(
-                    color: _flashColor.withValues(alpha: _flashAnimation.value),
-                  );
-                },
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   void _updateOsFocusDnd() {
@@ -4205,6 +4347,9 @@ class TimerHomePageState extends State<TimerHomePage>
       showTips: widget.breakShowTips,
       showProgress: widget.breakShowProgress,
       customMessage: widget.breakCustomMessage,
+      allowSkip: _canSkipBreak,
+      allowPostpone: _canPostponeBreak,
+      postponeDurationSeconds: widget.postponeDurationSeconds,
     );
 
     if (!_isActiveBreakOverlayRequest(requestId)) {
@@ -4412,8 +4557,9 @@ class TimerHomePageState extends State<TimerHomePage>
                                 value: progress,
                                 strokeWidth: 5,
                                 strokeCap: StrokeCap.round,
-                                backgroundColor:
-                                    progressColor.withValues(alpha: 0.16),
+                                backgroundColor: progressColor.withValues(
+                                  alpha: 0.16,
+                                ),
                                 color: progressColor,
                               ),
                             ),
@@ -4516,7 +4662,8 @@ class TimerHomePageState extends State<TimerHomePage>
           isPaused: _isPaused || _isSystemIdlePaused,
           isBreak: _isBreak,
           remainingSeconds: _remainingSeconds,
-          allowPostpone: widget.allowPostpone && (widget.maxConsecutivePostpones == 0 || _consecutivePostpones < widget.maxConsecutivePostpones),
+          allowSkip: _canSkipBreak,
+          allowPostpone: _canPostponeBreak,
           postponeDurationMinutes: widget.postponeDurationSeconds ~/ 60,
           initialDurationSeconds: _initialDuration,
           isBlinkNudging: _isBlinkNudging,
@@ -4645,8 +4792,13 @@ class _AnimatedTimerDial extends StatelessWidget {
             builder: (context, _) {
               final remainingSeconds =
                   (initialDuration * progressAnimation.value).ceil();
-              final currentProgressColor = _getCurrentProgressColor(progressAnimation.value);
-              final ringColors = _getRingColors(progressAnimation.value, progressColor);
+              final currentProgressColor = _getCurrentProgressColor(
+                progressAnimation.value,
+              );
+              final ringColors = _getRingColors(
+                progressAnimation.value,
+                progressColor,
+              );
 
               return Stack(
                 alignment: Alignment.center,
@@ -4699,13 +4851,17 @@ class _AnimatedTimerDial extends StatelessWidget {
                         _formattedTime(remainingSeconds),
                         style: Theme.of(context).textTheme.displaySmall
                             ?.copyWith(
-                              fontSize: isLandscape ? 28 : (isFocusMode ? 54 : null),
+                              fontSize: isLandscape
+                                  ? 28
+                                  : (isFocusMode ? 54 : null),
                               fontWeight: FontWeight.w200,
                               color: textColor,
                               shadows: isFocusMode
                                   ? [
                                       Shadow(
-                                        color: currentProgressColor.withValues(alpha: 0.25),
+                                        color: currentProgressColor.withValues(
+                                          alpha: 0.25,
+                                        ),
                                         blurRadius: 16,
                                       ),
                                     ]
@@ -4790,7 +4946,8 @@ class _FocusModeBackgroundState extends State<_FocusModeBackground>
       return AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
-          final scale = 0.85 + _controller.value * 0.3; // pulsing scale 0.85 to 1.15
+          final scale =
+              0.85 + _controller.value * 0.3; // pulsing scale 0.85 to 1.15
           final opacity = 0.04 + _controller.value * 0.08; // soft opacity
           return Container(
             decoration: BoxDecoration(
@@ -4957,7 +5114,8 @@ class _GlassmorphicBackground extends StatefulWidget {
   });
 
   @override
-  State<_GlassmorphicBackground> createState() => _GlassmorphicBackgroundState();
+  State<_GlassmorphicBackground> createState() =>
+      _GlassmorphicBackgroundState();
 }
 
 class _GlassmorphicBackgroundState extends State<_GlassmorphicBackground>
@@ -4989,7 +5147,8 @@ class _GlassmorphicBackgroundState extends State<_GlassmorphicBackground>
     if (widget.useSystemAccent) {
       effectivePreset = 'Custom';
       final primaryColor = Theme.of(context).colorScheme.primary;
-      effectiveHex = '#${primaryColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
+      effectiveHex =
+          '#${primaryColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
     } else {
       effectivePreset = widget.colorPreset;
       effectiveHex = widget.customAccentColorHex;
@@ -5033,7 +5192,9 @@ class _GlassmorphicBackgroundState extends State<_GlassmorphicBackground>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      primaryOrbColor.withValues(alpha: widget.isDark ? 0.80 : 0.50),
+                      primaryOrbColor.withValues(
+                        alpha: widget.isDark ? 0.80 : 0.50,
+                      ),
                       primaryOrbColor.withValues(alpha: 0.0),
                     ],
                   ),
@@ -5050,7 +5211,9 @@ class _GlassmorphicBackgroundState extends State<_GlassmorphicBackground>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      secondaryOrbColor.withValues(alpha: widget.isDark ? 0.65 : 0.40),
+                      secondaryOrbColor.withValues(
+                        alpha: widget.isDark ? 0.65 : 0.40,
+                      ),
                       secondaryOrbColor.withValues(alpha: 0.0),
                     ],
                   ),
@@ -5067,7 +5230,9 @@ class _GlassmorphicBackgroundState extends State<_GlassmorphicBackground>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      primaryOrbColor.withValues(alpha: widget.isDark ? 0.45 : 0.25),
+                      primaryOrbColor.withValues(
+                        alpha: widget.isDark ? 0.45 : 0.25,
+                      ),
                       primaryOrbColor.withValues(alpha: 0.0),
                     ],
                   ),
@@ -5123,9 +5288,10 @@ class _BlinkKindAnimatedEyeState extends State<_BlinkKindAnimatedEye>
       vsync: this,
       duration: const Duration(milliseconds: 150),
     );
-    _openAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _openAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _nudgeScaleController = AnimationController(
       vsync: this,
@@ -5133,15 +5299,24 @@ class _BlinkKindAnimatedEyeState extends State<_BlinkKindAnimatedEye>
     );
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.25).chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.25,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 40,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.25, end: 0.95).chain(CurveTween(curve: Curves.easeInOut)),
+        tween: Tween<double>(
+          begin: 1.25,
+          end: 0.95,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
         weight: 30,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.95, end: 1.0).chain(CurveTween(curve: Curves.easeInCubic)),
+        tween: Tween<double>(
+          begin: 0.95,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInCubic)),
         weight: 30,
       ),
     ]).animate(_nudgeScaleController);
@@ -5338,11 +5513,11 @@ class _EyeVectorPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round;
-    
+
     final upperPath = Path()
       ..moveTo(startX, h / 2)
       ..quadraticBezierTo(w / 2, topOffset, endX, h / 2);
-    
+
     final lowerPath = Path()
       ..moveTo(startX, h / 2)
       ..quadraticBezierTo(w / 2, bottomOffset, endX, h / 2);
@@ -5386,14 +5561,17 @@ class _ConfettiWidgetState extends State<_ConfettiWidget>
       for (int i = 0; i < 75; i++) {
         final angle = _random.nextDouble() * 2 * math.pi;
         final speed = 4.0 + _random.nextDouble() * 8.0;
-        final velocity = Offset(math.cos(angle) * speed, math.sin(angle) * speed - 3.0);
+        final velocity = Offset(
+          math.cos(angle) * speed,
+          math.sin(angle) * speed - 3.0,
+        );
         final color = HSVColor.fromAHSV(
           1.0,
           _random.nextDouble() * 360.0,
           0.85,
           0.95,
         ).toColor();
-        
+
         _particles.add(
           _ConfettiParticle(
             position: center,
@@ -5422,7 +5600,10 @@ class _ConfettiWidgetState extends State<_ConfettiWidget>
       builder: (context, child) {
         for (final p in _particles) {
           p.position += p.velocity;
-          p.velocity = Offset(p.velocity.dx * 0.98, (p.velocity.dy + 0.22) * 0.98);
+          p.velocity = Offset(
+            p.velocity.dx * 0.98,
+            (p.velocity.dy + 0.22) * 0.98,
+          );
           p.rotation += p.rotationSpeed;
         }
         return CustomPaint(
@@ -5462,7 +5643,9 @@ class _ConfettiPainter extends CustomPainter {
     final paint = Paint()..style = PaintingStyle.fill;
 
     for (final p in particles) {
-      if (p.position.dx < 0 || p.position.dx > size.width || p.position.dy > size.height) {
+      if (p.position.dx < 0 ||
+          p.position.dx > size.width ||
+          p.position.dy > size.height) {
         continue;
       }
       canvas.save();
@@ -5470,7 +5653,11 @@ class _ConfettiPainter extends CustomPainter {
       canvas.rotate(p.rotation);
       paint.color = p.color;
       canvas.drawRect(
-        Rect.fromCenter(center: Offset.zero, width: p.radius * 2, height: p.radius * 1.2),
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: p.radius * 2,
+          height: p.radius * 1.2,
+        ),
         paint,
       );
       canvas.restore();
@@ -5511,11 +5698,15 @@ class _BatteryWarningBannerState extends State<_BatteryWarningBanner> {
     final m = widget.oemManufacturer.toLowerCase();
     if (m.contains('samsung')) {
       return 'Samsung One UI may stop break reminders in the background. Tap Fix to open Power Saving settings.';
-    } else if (m.contains('xiaomi') || m.contains('redmi') || m.contains('miui')) {
+    } else if (m.contains('xiaomi') ||
+        m.contains('redmi') ||
+        m.contains('miui')) {
       return 'MIUI battery manager may block break reminders. Tap Fix to allow BlinkKind in background.';
     } else if (m.contains('huawei') || m.contains('honor')) {
       return 'Huawei Protected Apps list may stop break reminders. Tap Fix to add BlinkKind.';
-    } else if (m.contains('oppo') || m.contains('realme') || m.contains('coloros')) {
+    } else if (m.contains('oppo') ||
+        m.contains('realme') ||
+        m.contains('coloros')) {
       return 'ColorOS may restrict BlinkKind in background. Tap Fix to enable unrestricted access.';
     } else if (m.contains('oneplus') || m.contains('oxygen')) {
       return 'OnePlus battery optimization may stop break reminders. Tap Fix to set BlinkKind to unrestricted.';
@@ -5599,7 +5790,9 @@ class _BatteryWarningBannerState extends State<_BatteryWarningBanner> {
                         backgroundColor: Colors.white,
                         foregroundColor: const Color(0xFFB35900),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(
@@ -5620,7 +5813,9 @@ class _BatteryWarningBannerState extends State<_BatteryWarningBanner> {
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.white70,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -5643,15 +5838,15 @@ class _BatteryWarningBannerState extends State<_BatteryWarningBanner> {
 class _NotificationWarningBanner extends StatefulWidget {
   final VoidCallback onFix;
 
-  const _NotificationWarningBanner({
-    required this.onFix,
-  });
+  const _NotificationWarningBanner({required this.onFix});
 
   @override
-  State<_NotificationWarningBanner> createState() => _NotificationWarningBannerState();
+  State<_NotificationWarningBanner> createState() =>
+      _NotificationWarningBannerState();
 }
 
-class _NotificationWarningBannerState extends State<_NotificationWarningBanner> {
+class _NotificationWarningBannerState
+    extends State<_NotificationWarningBanner> {
   bool _visible = false;
 
   @override
@@ -5736,7 +5931,9 @@ class _NotificationWarningBannerState extends State<_NotificationWarningBanner> 
                         backgroundColor: Colors.white,
                         foregroundColor: const Color(0xFFC62828),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(

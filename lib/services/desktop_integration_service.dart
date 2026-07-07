@@ -33,6 +33,7 @@ class DesktopIntegrationService extends WindowListener {
   bool? _lastIsBreak;
   bool? _lastIsRunning;
   bool? _lastIsPaused;
+  bool? _lastAllowSkip;
   bool? _lastAllowPostpone;
   int? _lastPostponeDurationMinutes;
   bool? _lastIsSnoozed;
@@ -115,15 +116,21 @@ class DesktopIntegrationService extends WindowListener {
       await windowManager.hide();
       final notificationService = NotificationService();
       if (autoStartSchedule) {
-        unawaited(notificationService.showStartupNotification(
-          title: 'BlinkKind is running',
-          body: 'BlinkKind has started minimized in the system tray. The eye-care schedule has started.',
-        ));
+        unawaited(
+          notificationService.showStartupNotification(
+            title: 'BlinkKind is running',
+            body:
+                'BlinkKind has started minimized in the system tray. The eye-care schedule has started.',
+          ),
+        );
       } else {
-        unawaited(notificationService.showStartupNotification(
-          title: 'BlinkKind is running',
-          body: 'BlinkKind has started minimized in the system tray. Tap the tray icon to start.',
-        ));
+        unawaited(
+          notificationService.showStartupNotification(
+            title: 'BlinkKind is running',
+            body:
+                'BlinkKind has started minimized in the system tray. Tap the tray icon to start.',
+          ),
+        );
       }
     }
 
@@ -272,6 +279,7 @@ class DesktopIntegrationService extends WindowListener {
       if (_lastIsBreak == state.isBreak &&
           _lastIsRunning == state.isRunning &&
           _lastIsPaused == state.isPaused &&
+          _lastAllowSkip == state.allowSkip &&
           _lastAllowPostpone == state.allowPostpone &&
           _lastPostponeDurationMinutes == state.postponeDurationMinutes &&
           _lastIsSnoozed == state.isSnoozed) {
@@ -281,6 +289,7 @@ class DesktopIntegrationService extends WindowListener {
       _lastIsBreak = state.isBreak;
       _lastIsRunning = state.isRunning;
       _lastIsPaused = state.isPaused;
+      _lastAllowSkip = state.allowSkip;
       _lastAllowPostpone = state.allowPostpone;
       _lastPostponeDurationMinutes = state.postponeDurationMinutes;
       _lastIsSnoozed = state.isSnoozed;
@@ -328,16 +337,18 @@ class DesktopIntegrationService extends WindowListener {
       ]);
 
       if (state.isBreak) {
-        items.addAll([
-          MenuItemLabel(
-            label: 'Skip Break',
-            onClicked: (_) {
-              DesktopControlsController.instance.triggerCommand(
-                DesktopCommand.skipBreak,
-              );
-            },
-          ),
-        ]);
+        if (state.allowSkip) {
+          items.addAll([
+            MenuItemLabel(
+              label: 'Skip Break',
+              onClicked: (_) {
+                DesktopControlsController.instance.triggerCommand(
+                  DesktopCommand.skipBreak,
+                );
+              },
+            ),
+          ]);
+        }
         if (state.allowPostpone) {
           items.addAll([
             MenuItemLabel(
@@ -514,7 +525,6 @@ class DesktopIntegrationService extends WindowListener {
     }
   }
 
-
   static const MethodChannel _overlayChannel = MethodChannel(
     "blinkkind/break_overlay",
   );
@@ -595,11 +605,7 @@ class DesktopIntegrationService extends WindowListener {
       final bgPaint = Paint()
         ..color = const ui.Color(0xDD1E1E1E)
         ..style = ui.PaintingStyle.fill;
-      canvas.drawCircle(
-        Offset(width / 2, height / 2),
-        (width / 2),
-        bgPaint,
-      );
+      canvas.drawCircle(Offset(width / 2, height / 2), (width / 2), bgPaint);
 
       // 2. State specific colors and text
       ui.Color ringColor;
@@ -643,7 +649,7 @@ class DesktopIntegrationService extends WindowListener {
       }
 
       // Throttle PNG rendering: only redraw if the visual state changes significantly.
-      // Progress is rounded to 100 steps (1%) to avoid redrawing every single second 
+      // Progress is rounded to 100 steps (1%) to avoid redrawing every single second
       // on long work phases where the text hasn't changed.
       final roundedProgress = (progress * 100).roundToDouble() / 100.0;
       if (_lastIconPath != null &&
@@ -665,11 +671,7 @@ class DesktopIntegrationService extends WindowListener {
         ..strokeWidth = strokeWidth
         ..strokeCap = ui.StrokeCap.round
         ..color = ringColor.withValues(alpha: 0.25);
-      canvas.drawCircle(
-        Offset(width / 2, height / 2),
-        ringRadius,
-        ringPaint,
-      );
+      canvas.drawCircle(Offset(width / 2, height / 2), ringRadius, ringPaint);
 
       if (progress > 0) {
         final activeRingPaint = Paint()

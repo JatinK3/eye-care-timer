@@ -638,6 +638,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     }
   }
 
+  void _setAdaptiveSchedulingEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(adaptiveSchedulingEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveAdaptiveSchedulingEnabled(enabled));
+  }
+
   void _setCustomAccentColorHex(String hex) {
     setState(() {
       _settings = _settings.copyWith(customAccentColorHex: hex);
@@ -1337,12 +1344,14 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           startMinimized: _settings.startMinimized,
           reducedMotionEnabled: _settings.reducedMotionEnabled,
           analyticsEnabled: _settings.analyticsEnabled,
+          adaptiveSchedulingEnabled: _settings.adaptiveSchedulingEnabled,
           setAmoledDarkEnabled: _setAmoledDarkEnabled,
           setCustomAccentColorHex: _setCustomAccentColorHex,
           setUseSystemAccent: _setUseSystemAccent,
           setStartMinimized: _setStartMinimized,
           setReducedMotionEnabled: _setReducedMotionEnabled,
           setAnalyticsEnabled: _setAnalyticsEnabled,
+          setAdaptiveSchedulingEnabled: _setAdaptiveSchedulingEnabled,
           activeProfile: _settings.activeProfile,
           setActiveProfile: _setActiveProfile,
           setNotificationsEnabled: _setNotificationsEnabled,
@@ -1540,6 +1549,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   allowPostpone: _settings.allowPostpone,
                   maxConsecutivePostpones: _settings.maxConsecutivePostpones,
                   postponeDurationSeconds: _settings.postponeDurationSeconds,
+                  adaptiveSchedulingEnabled: _settings.adaptiveSchedulingEnabled,
                   reducedMotionEnabled: _settings.reducedMotionEnabled,
                   smartIdleEnabled: _settings.smartIdleEnabled,
                   breakVisualizerStyle: _settings.breakVisualizerStyle,

@@ -59,7 +59,8 @@ class BreakOverlayService {
     bool showProgress = true,
     String customMessage = '',
   }) async {
-    final bool isAppInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    final bool isAppInForeground =
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
 
     if (_isSupportedOnDesktop) {
       return showBreakOverlay(
@@ -91,7 +92,8 @@ class BreakOverlayService {
   }
 
   Future<bool> stopPreview() async {
-    final bool isAppInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    final bool isAppInForeground =
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
 
     if (_isSupportedOnDesktop || isAppInForeground) {
       return stopBreakOverlay();
@@ -109,8 +111,12 @@ class BreakOverlayService {
     bool showProgress = true,
     String customMessage = '',
     bool isPreview = false,
+    bool allowSkip = true,
+    bool allowPostpone = true,
+    int postponeDurationSeconds = 120,
   }) async {
-    final bool isAppInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    final bool isAppInForeground =
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
 
     if (_isSupportedOnDesktop) {
       await DesktopIntegrationService.instance.showBreakOverlay(true);
@@ -124,6 +130,8 @@ class BreakOverlayService {
         showProgress: showProgress,
         customMessage: customMessage,
         isPreview: isPreview,
+        allowSkip: allowSkip,
+        allowPostpone: allowPostpone,
       );
       return true;
     }
@@ -142,6 +150,9 @@ class BreakOverlayService {
             "showTips": showTips,
             "showProgress": showProgress,
             "customMessage": customMessage,
+            "allowSkip": allowSkip,
+            "allowPostpone": allowPostpone,
+            "postponeDurationSeconds": postponeDurationSeconds,
           }) ??
           false;
     } on PlatformException {
@@ -171,6 +182,8 @@ class BreakOverlayService {
     bool showProgress = true,
     String customMessage = '',
     bool isPreview = false,
+    bool allowSkip = true,
+    bool allowPostpone = true,
   }) {
     final navigator = navigatorKey.currentState;
     if (navigator == null) return;
@@ -197,12 +210,15 @@ class BreakOverlayService {
           showProgress: showProgress,
           customMessage: customMessage,
           isPreview: isPreview,
+          allowSkip: allowSkip,
+          allowPostpone: allowPostpone,
           onDismiss: () {
             unawaited(stopBreakOverlay());
           },
         );
       },
-      transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+          child,
     );
 
     navigator.push(_activeRoute!);
@@ -215,6 +231,7 @@ class BreakOverlayService {
       _activeRoute = null;
     }
   }
+
   Future<bool> isMediaPlaying() async {
     if (kIsWeb) return false;
     if (defaultTargetPlatform == TargetPlatform.android) {
@@ -233,14 +250,15 @@ class BreakOverlayService {
           final inputs = output.split(RegExp(r'Sink Input #\d+'));
           for (final input in inputs) {
             if (input.trim().isEmpty) continue;
-            
+
             // Check if this stream is active (uncorked)
             final isUncorked = input.toLowerCase().contains('corked: no');
             if (isUncorked) {
               // Check if this stream belongs to our own app (BlinkKind / eye_care_timer)
-              final isOurApp = input.contains('eye_care_timer') || 
-                               input.contains('blinkkind') ||
-                               input.contains('com.jatin.eyecaretimer');
+              final isOurApp =
+                  input.contains('eye_care_timer') ||
+                  input.contains('blinkkind') ||
+                  input.contains('com.jatin.eyecaretimer');
               if (!isOurApp) {
                 // Found an active media stream from another application (e.g. Chrome, Spotify)
                 return true;
@@ -254,7 +272,6 @@ class BreakOverlayService {
     }
     return false;
   }
-
 
   Future<bool> _invokeBoolean(String method) async {
     if (!_isSupported) return false;

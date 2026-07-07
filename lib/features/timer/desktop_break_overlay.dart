@@ -22,6 +22,8 @@ class DesktopBreakOverlay extends StatefulWidget {
   final bool showProgress;
   final String customMessage;
   final bool isPreview;
+  final bool allowSkip;
+  final bool allowPostpone;
 
   const DesktopBreakOverlay({
     super.key,
@@ -36,6 +38,8 @@ class DesktopBreakOverlay extends StatefulWidget {
     this.showProgress = true,
     this.customMessage = '',
     this.isPreview = false,
+    this.allowSkip = true,
+    this.allowPostpone = true,
   });
 
   @override
@@ -51,7 +55,9 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   double _holdProgress = 0.0;
   Timer? _holdTimer;
   bool _hasDismissed = false;
-  final FocusNode _focusNode = FocusNode(debugLabel: 'DesktopBreakOverlayFocus');
+  final FocusNode _focusNode = FocusNode(
+    debugLabel: 'DesktopBreakOverlayFocus',
+  );
   bool _isSpacePressed = false;
   bool _wasRunningBeforePreview = false;
 
@@ -174,21 +180,21 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   void _handleKeyEvent(KeyEvent event) {
     if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.escape) {
-        if (widget.breakMode == BreakMode.gentle) {
+        if (widget.breakMode == BreakMode.gentle && widget.allowPostpone) {
           DesktopControlsController.instance.triggerCommand(
             DesktopCommand.postponeBreak,
           );
           _dismiss();
         }
       } else if (event.logicalKey == LogicalKeyboardKey.space ||
-                 event.logicalKey == LogicalKeyboardKey.enter) {
-        if (widget.breakMode == BreakMode.gentle) {
+          event.logicalKey == LogicalKeyboardKey.enter) {
+        if (widget.breakMode == BreakMode.gentle && widget.allowSkip) {
           DesktopControlsController.instance.triggerCommand(
             DesktopCommand.skipBreak,
           );
           _dismiss();
         } else if (widget.breakMode == BreakMode.strict &&
-                   event.logicalKey == LogicalKeyboardKey.space) {
+            event.logicalKey == LogicalKeyboardKey.space) {
           if (!_isSpacePressed) {
             _isSpacePressed = true;
             _startHoldingExit();
@@ -208,7 +214,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   @override
   Widget build(BuildContext context) {
     final rects = widget.monitorRects;
-    
+
     Widget content;
     // Spanning multiple monitors: paint backdrop across the whole window
     // and center an identical break card within each physical screen.
@@ -250,10 +256,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
         body: content,
       );
     } else {
-      overlayScaffold = Scaffold(
-        backgroundColor: Colors.black,
-        body: content,
-      );
+      overlayScaffold = Scaffold(backgroundColor: Colors.black, body: content);
     }
 
     return KeyboardListener(
@@ -268,7 +271,9 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     final style = widget.breakVisualizerStyle;
 
     // Full-screen guided modes — no card, just the guide + controls
-    if (style == 'EyeExercise' || style == 'BoxBreathing' || style == 'BlinkTraining') {
+    if (style == 'EyeExercise' ||
+        style == 'BoxBreathing' ||
+        style == 'BlinkTraining') {
       return Column(
         children: [
           Expanded(
@@ -284,14 +289,14 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
                         totalDurationSeconds: widget.initialDurationSeconds,
                       )
                     : style == 'BoxBreathing'
-                        ? BoxBreathingGuide(
-                            remainingSeconds: _remainingSeconds,
-                            totalDurationSeconds: widget.initialDurationSeconds,
-                          )
-                        : BlinkTrainingGuide(
-                            remainingSeconds: _remainingSeconds,
-                            totalDurationSeconds: widget.initialDurationSeconds,
-                          ),
+                    ? BoxBreathingGuide(
+                        remainingSeconds: _remainingSeconds,
+                        totalDurationSeconds: widget.initialDurationSeconds,
+                      )
+                    : BlinkTrainingGuide(
+                        remainingSeconds: _remainingSeconds,
+                        totalDurationSeconds: widget.initialDurationSeconds,
+                      ),
               ),
             ),
           ),
@@ -300,11 +305,11 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
             style == 'EyeExercise'
                 ? 'Eye Exercise Break'
                 : style == 'BoxBreathing'
-                    ? 'Box Breathing Break'
-                    : 'Blink Pacing Break',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Colors.white38,
-                ),
+                ? 'Box Breathing Break'
+                : 'Blink Pacing Break',
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(color: Colors.white38),
           ),
           Padding(
             padding: const EdgeInsets.only(bottom: 40.0, top: 16.0),
@@ -359,7 +364,9 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               ),
             ),
           ),
-          if (widget.showTips && widget.aiQuote == null && widget.customMessage.trim().isEmpty) ...[
+          if (widget.showTips &&
+              widget.aiQuote == null &&
+              widget.customMessage.trim().isEmpty) ...[
             const SizedBox(height: 12),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 560),
@@ -394,8 +401,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                if (!showBreathingGuide)
-                  const _BreathingGlowCircle(),
+                if (!showBreathingGuide) const _BreathingGlowCircle(),
                 cardContent,
               ],
             ),
@@ -412,48 +418,54 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   /// Shared action buttons used by both the classic card and guided-mode layouts.
   Widget _buildBreakActions(BuildContext context) {
     if (widget.breakMode == BreakMode.gentle) {
+      if (!widget.allowPostpone && !widget.allowSkip) {
+        return const SizedBox.shrink();
+      }
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white70,
-              side: const BorderSide(color: Colors.white24),
-              shape: const StadiumBorder(),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 28,
-                vertical: 14,
+          if (widget.allowPostpone)
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white70,
+                side: const BorderSide(color: Colors.white24),
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 14,
+                ),
               ),
+              onPressed: () {
+                DesktopControlsController.instance.triggerCommand(
+                  DesktopCommand.postponeBreak,
+                );
+                _dismiss();
+              },
+              icon: const Icon(Icons.snooze),
+              label: Text(AppLocalizations.of(context)!.postpone),
             ),
-            onPressed: () {
-              DesktopControlsController.instance.triggerCommand(
-                DesktopCommand.postponeBreak,
-              );
-              _dismiss();
-            },
-            icon: const Icon(Icons.snooze),
-            label: Text(AppLocalizations.of(context)!.postpone),
-          ),
-          const SizedBox(width: 24),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.cyanAccent,
-              foregroundColor: Colors.black87,
-              shape: const StadiumBorder(),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 28,
-                vertical: 14,
+          if (widget.allowPostpone && widget.allowSkip)
+            const SizedBox(width: 24),
+          if (widget.allowSkip)
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.cyanAccent,
+                foregroundColor: Colors.black87,
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 14,
+                ),
               ),
+              onPressed: () {
+                DesktopControlsController.instance.triggerCommand(
+                  DesktopCommand.skipBreak,
+                );
+                _dismiss();
+              },
+              icon: const Icon(Icons.skip_next),
+              label: Text(AppLocalizations.of(context)!.skip),
             ),
-            onPressed: () {
-              DesktopControlsController.instance.triggerCommand(
-                DesktopCommand.skipBreak,
-              );
-              _dismiss();
-            },
-            icon: const Icon(Icons.skip_next),
-            label: Text(AppLocalizations.of(context)!.skip),
-          ),
         ],
       );
     } else if (widget.breakMode == BreakMode.strict) {
@@ -563,9 +575,7 @@ class _AmbientBackgroundState extends State<_AmbientBackground>
         );
 
         return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF020205),
-          ),
+          decoration: const BoxDecoration(color: Color(0xFF020205)),
           child: Stack(
             children: [
               Positioned.fill(
@@ -660,10 +670,7 @@ class _StarrySkyBackgroundState extends State<_StarrySkyBackground>
           }
         }
 
-        return CustomPaint(
-          painter: _StarPainter(_stars),
-          child: child,
-        );
+        return CustomPaint(painter: _StarPainter(_stars), child: child);
       },
       child: widget.child,
     );
@@ -809,10 +816,7 @@ class _BreathingGuideCircleState extends State<_BreathingGuideCircle>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: ringColor.withValues(alpha: 0.03),
-                    border: Border.all(
-                      color: ringColor,
-                      width: 3.5,
-                    ),
+                    border: Border.all(color: ringColor, width: 3.5),
                   ),
                 ),
               ),
@@ -865,12 +869,10 @@ class _BreathingGlowCircleState extends State<_BreathingGlowCircle>
       vsync: this,
       duration: const Duration(seconds: 4),
     );
-    _animation = Tween<double>(begin: 0.8, end: 1.3).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _animation = Tween<double>(
+      begin: 0.8,
+      end: 1.3,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _controller.repeat(reverse: true);
   }
 

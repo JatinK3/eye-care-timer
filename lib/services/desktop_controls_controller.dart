@@ -29,6 +29,7 @@ class DesktopTimerState {
   final bool isPaused;
   final bool isBreak;
   final int remainingSeconds;
+  final bool allowSkip;
   final bool allowPostpone;
   final int postponeDurationMinutes;
   final int initialDurationSeconds;
@@ -43,6 +44,7 @@ class DesktopTimerState {
     required this.isPaused,
     required this.isBreak,
     required this.remainingSeconds,
+    this.allowSkip = true,
     this.allowPostpone = true,
     this.postponeDurationMinutes = 2,
     this.initialDurationSeconds = 1200,

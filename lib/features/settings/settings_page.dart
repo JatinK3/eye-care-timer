@@ -17,6 +17,7 @@ import '../../services/notification_service.dart';
 import '../../services/permissions_service.dart';
 import '../../theme/color_presets.dart';
 import '../../generated/l10n/app_localizations.dart';
+import 'reminder_reliability_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool isDark;
@@ -151,6 +152,8 @@ class SettingsPage extends StatefulWidget {
   final void Function(bool) setStartMinimized;
   final void Function(bool) setReducedMotionEnabled;
   final void Function(bool) setAnalyticsEnabled;
+  final bool adaptiveSchedulingEnabled;
+  final void Function(bool) setAdaptiveSchedulingEnabled;
   final bool autoStartSchedule;
   final void Function(bool) setAutoStartSchedule;
 
@@ -245,6 +248,8 @@ class SettingsPage extends StatefulWidget {
     required this.setWaterRemindersEnabled,
     required this.setWaterDailyGoalGlasses,
     required this.setWaterGlassSizeMl,
+    required this.adaptiveSchedulingEnabled,
+    required this.setAdaptiveSchedulingEnabled,
     required this.canChangeDurations,
     required this.toggleTheme,
     required this.setNotificationsEnabled,
@@ -822,6 +827,22 @@ class _SettingsPageState extends State<SettingsPage>
               ),
             ),
           ],
+        ),
+      ),
+      SettingItem(
+        title: 'Adaptive Break Scheduling',
+        subtitle: 'Extend work duration by 5m if previous break was skipped/postponed',
+        keywords: ['adaptive', 'scheduling', 'skip', 'postpone', 'smart', 'dynamic'],
+        category: 'General Schedule',
+        widget: SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Adaptive Break Scheduling'),
+          subtitle: const Text(
+            'Dynamically adjusts next work duration if breaks are skipped',
+          ),
+          value: widget.adaptiveSchedulingEnabled,
+          onChanged: widget.setAdaptiveSchedulingEnabled,
+          secondary: const Icon(Icons.psychology_outlined),
         ),
       ),
       SettingItem(
@@ -2109,6 +2130,37 @@ class _SettingsPageState extends State<SettingsPage>
         ),
       ),
       SettingItem(
+        title: 'Reminder Reliability Dashboard',
+        subtitle: 'Diagnose and fix notification issues',
+        keywords: ['diagnostics', 'reliability', 'dashboard', 'fix', 'reminders'],
+        category: 'Notifications & Sounds',
+        widget: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.health_and_safety_outlined),
+          title: const Text('Reminder Reliability Dashboard'),
+          subtitle: const Text('Diagnose and fix notification issues'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => ReminderReliabilityPage(
+                initialStatus: NotificationReliabilityStatus(
+                  permission: _permissionStatus,
+                  exactAlarms: _exactAlarmStatus,
+                  batteryOptimization: _batteryOptimizationStatus,
+                  hasPendingPhaseReminder: false, // will be fetched
+                  pendingRemindersCount: 0,
+                ),
+                refreshStatus: widget.refreshNotificationReliabilityStatus,
+                openNotificationSettings: _openSystemNotificationSettings,
+                requestExactAlarmPermission: widget.requestExactAlarmPermission,
+                openBatteryOptimizationSettings: widget.openBatteryOptimizationSettings,
+                showTestReminder: _showTestReminder,
+              ),
+            ));
+          },
+        ),
+      ),
+      SettingItem(
         title: l10n.settingsPermissionStatus,
         subtitle: _notificationPermissionLabel(),
         keywords: ['permission', 'status', 'blocked', 'allowed', 'system'],
@@ -3345,6 +3397,7 @@ class _SettingsPageState extends State<SettingsPage>
       aiCustomSystemPrompt: widget.aiCustomSystemPrompt,
       blinkReminderAiEnabled: widget.blinkReminderAiEnabled,
       blinkReminderCustomMessage: widget.blinkReminderCustomMessage,
+      adaptiveSchedulingEnabled: widget.adaptiveSchedulingEnabled,
       cameraMicAutoPostponeEnabled: widget.cameraMicAutoPostponeEnabled,
       autoPauseOnMediaEnabled: widget.autoPauseOnMediaEnabled,
       wellnessRemindersEnabled: widget.wellnessRemindersEnabled,

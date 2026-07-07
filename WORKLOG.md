@@ -237,9 +237,9 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 - [ ] Build the packaged **v1.2.0** artifacts via `tool/release.sh` and attach them to a GitHub release for tag `v1.2.0`.
 
 ### Future feature backlog
-- [ ] **Reminder Reliability Dashboard**: show notification permission, battery optimization, exact alarm status, background status, last reminder fired, and next reminder due so reminder failures can be diagnosed inside the app.
-- [ ] **Adaptive Break Scheduling**: adjust or recommend work/break cadence from real behavior, such as repeated skips/postpones or consistently completed breaks.
-- [ ] **Smart Hydration Forecast**: show whether the user is on pace, behind pace, or ahead of pace, plus how many glasses remain before the active day ends.
+- [x] **Reminder Reliability Dashboard**: show notification permission, battery optimization, exact alarm status, background status, last reminder fired, and next reminder due so reminder failures can be diagnosed inside the app.
+- [x] **Adaptive Break Scheduling**: adjust or recommend work/break cadence from real behavior, such as repeated skips/postpones or consistently completed breaks.
+- [x] **Smart Hydration Forecast**: show whether the user is on pace, behind pace, or ahead of pace, plus how many glasses remain before the active day ends.
 - [ ] **Meeting / Media Aware Breaks**: expand the current camera/mic/media logic into a proper do-not-interrupt mode for calls, fullscreen video, presentations, and active media.
 - [ ] **Device Validation Mode**: add an in-app diagnostics screen to send wellness reminders, water reminders, notification actions, and background-action tests before release.
 - [ ] **Profiles**: support Coding, Gaming, Reading, Study, and Office profiles with independent durations, reminder cadence, notification style, strictness, and hydration defaults.
@@ -256,6 +256,18 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 ---
 
 ## Session Log
+
+### 2026-07-07 (Session ongoing — IST)
+
+**Completed this session:**
+- **Validated skip/postpone tests**: Verified that all widget tests regarding consecutive postpone limits and auto-postpone logic passed successfully.
+
+### 2026-07-03
+
+**Completed this session:**
+- **History Page Focus Cycles**: Fixed logic to dynamically compute and merge daily completed focus cycles from the work sessions list.
+- **Linux Startup Polish**: Prevented the application window from opening on startup on Linux when the minimized setting is enabled.
+- **Documentation**: Updated README and CHANGELOG for v1.2.0 follow-up features.
 
 ### 2026-07-02 (Session ongoing — IST)
 

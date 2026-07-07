@@ -224,7 +224,13 @@ class TimerForegroundService : Service() {
         postponedBreakDuration = intent.getIntExtra("postponedBreakDuration", -1)
         currentPhaseInitialDuration = intent.getIntExtra("currentPhaseInitialDuration", if (isBreak) breakDurationForCompletedCycle(streakCount) else workDurationSeconds)
         maxConsecutiveSkips = intent.getIntExtra("maxConsecutiveSkips", 0)
+        if (intent.hasExtra("consecutiveSkips")) {
+            consecutiveSkips = intent.getIntExtra("consecutiveSkips", 0)
+        }
         maxConsecutivePostpones = intent.getIntExtra("maxConsecutivePostpones", 0)
+        if (intent.hasExtra("consecutivePostpones")) {
+            consecutivePostpones = intent.getIntExtra("consecutivePostpones", 0)
+        }
         osFocusDndEnabled = intent.getBooleanExtra("osFocusDndEnabled", false)
 
         ensureChannel()
@@ -238,10 +244,18 @@ class TimerForegroundService : Service() {
         resumeCurrentPhase()
     }
 
+    private fun canSkipBreak(): Boolean {
+        return allowSkip && (maxConsecutiveSkips <= 0 || consecutiveSkips < maxConsecutiveSkips)
+    }
+
+    private fun canPostponeBreak(): Boolean {
+        return allowPostpone && (maxConsecutivePostpones <= 0 || consecutivePostpones < maxConsecutivePostpones)
+    }
+
     private fun handleSkipBreak() {
         if (isBreak) {
             // Enforce consecutive skip limit
-            if (maxConsecutiveSkips > 0 && consecutiveSkips >= maxConsecutiveSkips) {
+            if (!canSkipBreak()) {
                 return // silently block — UI will already hide the button
             }
             consecutiveSkips++
@@ -258,7 +272,7 @@ class TimerForegroundService : Service() {
 
     private fun handlePostponeBreak() {
         if (isBreak) {
-            if (maxConsecutivePostpones > 0 && consecutivePostpones >= maxConsecutivePostpones) {
+            if (!canPostponeBreak()) {
                 return
             }
             consecutivePostpones++
@@ -491,8 +505,8 @@ class TimerForegroundService : Service() {
                 durationSeconds = seconds.toInt(),
                 mode = breakMode,
                 preview = false,
-                allowSkip = allowSkip,
-                allowPostpone = allowPostpone,
+                allowSkip = canSkipBreak(),
+                allowPostpone = canPostponeBreak(),
                 postponeDurationSeconds = postponeDurationSeconds
             )
         } else {
@@ -891,7 +905,9 @@ class TimerForegroundService : Service() {
             postponedBreakDuration: Int? = null,
             currentPhaseDurationSeconds: Int? = null,
             maxConsecutiveSkips: Int = 0,
+            consecutiveSkips: Int = 0,
             maxConsecutivePostpones: Int = 0,
+            consecutivePostpones: Int = 0,
             osFocusDndEnabled: Boolean = false,
         ) {
             val intent = Intent(context, TimerForegroundService::class.java).apply {
@@ -915,7 +931,9 @@ class TimerForegroundService : Service() {
                 putExtra(EXTRA_NATURAL_BREAK_CREDIT, naturalBreakCreditEnabled)
                 putExtra("postponedBreakDuration", postponedBreakDuration ?: -1)
                 putExtra("maxConsecutiveSkips", maxConsecutiveSkips)
+                putExtra("consecutiveSkips", consecutiveSkips)
                 putExtra("maxConsecutivePostpones", maxConsecutivePostpones)
+                putExtra("consecutivePostpones", consecutivePostpones)
                 putExtra("osFocusDndEnabled", osFocusDndEnabled)
                 if (currentPhaseDurationSeconds != null) {
                     putExtra("currentPhaseInitialDuration", currentPhaseDurationSeconds)

@@ -58,6 +58,9 @@ class FakeBreakOverlayService extends BreakOverlayService {
     bool showProgress = true,
     String customMessage = '',
     bool isPreview = false,
+    bool allowSkip = true,
+    bool allowPostpone = true,
+    int postponeDurationSeconds = 120,
   }) async {
     breakOverlayCount++;
     lastCustomMessage = customMessage;
@@ -176,7 +179,10 @@ class FakeNotificationService extends NotificationService {
   }
 
   @override
-  Future<void> showWaterReminder({int? consumedGlasses, int? goalGlasses}) async {
+  Future<void> showWaterReminder({
+    int? consumedGlasses,
+    int? goalGlasses,
+  }) async {
     waterReminderCount++;
     lastWaterConsumedGlasses = consumedGlasses;
     lastWaterGoalGlasses = goalGlasses;
@@ -1614,7 +1620,42 @@ void main() {
     expect(records.any((r) => r.type == TimerEventType.breakPostponed), isTrue);
   });
 
-  testWidgets('consecutive postpones limit blocks postpone action', (tester) async {
+  testWidgets('consecutive skips limit hides skip action', (tester) async {
+    final now = DateTime.now();
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.sessionIsActiveKey: true,
+      PreferencesService.sessionIsBreakKey: true,
+      PreferencesService.sessionIsPausedKey: false,
+      PreferencesService.sessionInitialDurationSecondsKey: 20,
+      PreferencesService.sessionRemainingSecondsKey: 20,
+      PreferencesService.sessionPhaseStartedAtKey: now.millisecondsSinceEpoch,
+      PreferencesService.sessionPhaseEndsAtKey: now
+          .add(const Duration(seconds: 20))
+          .millisecondsSinceEpoch,
+      PreferencesService.allowSkipKey: true,
+      PreferencesService.maxConsecutiveSkipsKey: 1,
+    });
+
+    await pumpBlinkKindApp(tester);
+    expect(find.text('Skip'), findsOneWidget);
+
+    final state = tester.state<TimerHomePageState>(find.byType(TimerHomePage));
+    expect(state.consecutiveSkips, 0);
+
+    await tester.tap(find.text('Skip'));
+    await tester.pump();
+    expect(state.consecutiveSkips, 1);
+
+    state.setBreakPhaseForTesting(true);
+    await tester.pump();
+
+    expect(find.text('Skip'), findsNothing);
+  });
+
+  testWidgets('consecutive postpones limit blocks postpone action', (
+    tester,
+  ) async {
     final now = DateTime.now();
     SharedPreferences.setMockInitialValues({
       PreferencesService.onboardingCompletedKey: true,
@@ -1907,51 +1948,55 @@ void main() {
     expect(find.text('AI Health Insight'), findsAtLeastNWidgets(1));
   });
 
-  testWidgets('dashboard has history button that navigates directly to history page', (
-    WidgetTester tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({
-      PreferencesService.onboardingCompletedKey: true,
-    });
-    await pumpBlinkKindApp(tester);
-    await tester.pumpAndSettle();
+  testWidgets(
+    'dashboard has history button that navigates directly to history page',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        PreferencesService.onboardingCompletedKey: true,
+      });
+      await pumpBlinkKindApp(tester);
+      await tester.pumpAndSettle();
 
-    final historyIconBtn = find.byTooltip('Productivity Insights');
-    expect(historyIconBtn, findsOneWidget);
+      final historyIconBtn = find.byTooltip('Productivity Insights');
+      expect(historyIconBtn, findsOneWidget);
 
-    await tester.tap(historyIconBtn);
-    await tester.pumpAndSettle();
+      await tester.tap(historyIconBtn);
+      await tester.pumpAndSettle();
 
-    expect(find.text('History & Insights'), findsOneWidget);
-  });
+      expect(find.text('History & Insights'), findsOneWidget);
+    },
+  );
 
-  testWidgets('AI Wellness Report card displays disabled state when AI motivation is off', (
-    WidgetTester tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({
-      PreferencesService.onboardingCompletedKey: true,
-      'aiMotivationEnabled': false,
-    });
-    await pumpBlinkKindApp(tester);
-    await tester.pumpAndSettle();
-    
-    await tester.tap(find.byTooltip('Productivity Insights'));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'AI Wellness Report card displays disabled state when AI motivation is off',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        PreferencesService.onboardingCompletedKey: true,
+        'aiMotivationEnabled': false,
+      });
+      await pumpBlinkKindApp(tester);
+      await tester.pumpAndSettle();
 
-    final reportTitle = find.text('AI Wellness & Focus Report');
-    await tester.scrollUntilVisible(
-      reportTitle,
-      500,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Productivity Insights'));
+      await tester.pumpAndSettle();
 
-    expect(reportTitle, findsOneWidget);
-    expect(
-      find.text('To unlock AI Wellness Reports, please enable AI motivation and configure your API key in Settings.'),
-      findsOneWidget,
-    );
-  });
+      final reportTitle = find.text('AI Wellness & Focus Report');
+      await tester.scrollUntilVisible(
+        reportTitle,
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(reportTitle, findsOneWidget);
+      expect(
+        find.text(
+          'To unlock AI Wellness Reports, please enable AI motivation and configure your API key in Settings.',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('AI Wellness Report card displays error when API key is missing', (
     WidgetTester tester,
@@ -1963,7 +2008,7 @@ void main() {
     });
     await pumpBlinkKindApp(tester);
     await tester.pumpAndSettle();
-    
+
     await tester.tap(find.byTooltip('Productivity Insights'));
     await tester.pumpAndSettle();
 
@@ -1977,40 +2022,46 @@ void main() {
 
     expect(reportTitle, findsOneWidget);
     expect(
-      find.text('API key is missing. Please configure it in Settings to unlock AI Wellness Reports.'),
+      find.text(
+        'API key is missing. Please configure it in Settings to unlock AI Wellness Reports.',
+      ),
       findsOneWidget,
     );
   });
 
-  testWidgets('AI Wellness Report card displays generate button when AI is configured', (
-    WidgetTester tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({
-      PreferencesService.onboardingCompletedKey: true,
-      'aiMotivationEnabled': true,
-      'aiApiKey': 'valid_api_key',
-    });
-    await pumpBlinkKindApp(tester);
-    await tester.pumpAndSettle();
-    
-    await tester.tap(find.byTooltip('Productivity Insights'));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'AI Wellness Report card displays generate button when AI is configured',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        PreferencesService.onboardingCompletedKey: true,
+        'aiMotivationEnabled': true,
+        'aiApiKey': 'valid_api_key',
+      });
+      await pumpBlinkKindApp(tester);
+      await tester.pumpAndSettle();
 
-    final reportTitle = find.text('AI Wellness & Focus Report');
-    await tester.scrollUntilVisible(
-      reportTitle,
-      500,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Productivity Insights'));
+      await tester.pumpAndSettle();
 
-    expect(reportTitle, findsOneWidget);
-    expect(
-      find.textContaining('personalized occupational wellness analysis'),
-      findsOneWidget,
-    );
-    expect(find.widgetWithText(FilledButton, 'Generate 7-Day Report'), findsOneWidget);
-  });
+      final reportTitle = find.text('AI Wellness & Focus Report');
+      await tester.scrollUntilVisible(
+        reportTitle,
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(reportTitle, findsOneWidget);
+      expect(
+        find.textContaining('personalized occupational wellness analysis'),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(FilledButton, 'Generate 7-Day Report'),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('Auto-postpone break when camera is in use', (tester) async {
     SharedPreferences.setMockInitialValues({
@@ -2063,7 +2114,9 @@ void main() {
     expect(notificationService.autoPostponeNotificationCount, 1);
   });
 
-  testWidgets('No auto-postpone when camera and microphone are NOT in use', (tester) async {
+  testWidgets('No auto-postpone when camera and microphone are NOT in use', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({
       PreferencesService.onboardingCompletedKey: true,
       PreferencesService.workDurationSecondsKey: 1,
@@ -2084,7 +2137,9 @@ void main() {
     expect(notificationService.autoPostponeNotificationCount, 0);
   });
 
-  testWidgets('Wellness reminders trigger static tips when AI is disabled', (tester) async {
+  testWidgets('Wellness reminders trigger static tips when AI is disabled', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({
       PreferencesService.onboardingCompletedKey: true,
       PreferencesService.workDurationSecondsKey: 20,
@@ -2112,7 +2167,9 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('Wellness reminders trigger and attempt AI fetching when enabled', (tester) async {
+  testWidgets('Wellness reminders trigger and attempt AI fetching when enabled', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({
       PreferencesService.onboardingCompletedKey: true,
       PreferencesService.workDurationSecondsKey: 20,
@@ -2296,118 +2353,142 @@ void main() {
     await tester.pumpAndSettle();
 
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getBool(PreferencesService.cameraMicAutoPostponeEnabledKey), true);
+    expect(
+      prefs.getBool(PreferencesService.cameraMicAutoPostponeEnabledKey),
+      true,
+    );
 
     // Toggle off
     await tester.tap(finder);
     await tester.pumpAndSettle();
-    expect(prefs.getBool(PreferencesService.cameraMicAutoPostponeEnabledKey), false);
+    expect(
+      prefs.getBool(PreferencesService.cameraMicAutoPostponeEnabledKey),
+      false,
+    );
   });
 
-  testWidgets('settings screen toggles wellness reminders preference and interval', (
-    WidgetTester tester,
-  ) async {
-    await pumpBlinkKindApp(tester);
+  testWidgets(
+    'settings screen toggles wellness reminders preference and interval',
+    (WidgetTester tester) async {
+      await pumpBlinkKindApp(tester);
 
-    await tester.tap(find.byIcon(Icons.settings));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.settings));
+      await tester.pumpAndSettle();
 
-    final settingsScrollable = find
-        .descendant(
-          of: find.byType(SettingsPage),
-          matching: find.byType(Scrollable),
-        )
-        .first;
+      final settingsScrollable = find
+          .descendant(
+            of: find.byType(SettingsPage),
+            matching: find.byType(Scrollable),
+          )
+          .first;
 
-    final categoryHeader = find.text('Notifications & Sounds');
-    await tester.scrollUntilVisible(
-      categoryHeader,
-      200,
-      scrollable: settingsScrollable,
-    );
-    await tester.tap(categoryHeader);
-    await tester.pumpAndSettle();
+      final categoryHeader = find.text('Notifications & Sounds');
+      await tester.scrollUntilVisible(
+        categoryHeader,
+        200,
+        scrollable: settingsScrollable,
+      );
+      await tester.tap(categoryHeader);
+      await tester.pumpAndSettle();
 
-    final finder = find.text('Wellness reminders');
-    await tester.scrollUntilVisible(
-      finder,
-      200,
-      scrollable: settingsScrollable,
-    );
-    await tester.pumpAndSettle();
-    expect(finder, findsOneWidget);
+      final finder = find.text('Wellness reminders');
+      await tester.scrollUntilVisible(
+        finder,
+        200,
+        scrollable: settingsScrollable,
+      );
+      await tester.pumpAndSettle();
+      expect(finder, findsOneWidget);
 
-    // Toggle on (since default is off)
-    await tester.tap(finder);
-    await tester.pumpAndSettle();
+      // Toggle on (since default is off)
+      await tester.tap(finder);
+      await tester.pumpAndSettle();
 
-    final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getBool(PreferencesService.wellnessRemindersEnabledKey), true);
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+        prefs.getBool(PreferencesService.wellnessRemindersEnabledKey),
+        true,
+      );
 
-    // Check that dropdown is present and change interval
-    final intervalListTile = find.ancestor(
-      of: find.text('Reminder interval'),
-      matching: find.byType(ListTile),
-    );
-    final dropdownFinder = find.descendant(
-      of: intervalListTile,
-      matching: find.byType(DropdownButton<int>),
-    );
-    expect(dropdownFinder, findsOneWidget);
+      // Check that dropdown is present and change interval
+      final intervalListTile = find.ancestor(
+        of: find.text('Reminder interval'),
+        matching: find.byType(ListTile),
+      );
+      final dropdownFinder = find.descendant(
+        of: intervalListTile,
+        matching: find.byType(DropdownButton<int>),
+      );
+      expect(dropdownFinder, findsOneWidget);
 
-    await tester.tap(dropdownFinder);
-    await tester.pumpAndSettle();
+      await tester.tap(dropdownFinder);
+      await tester.pumpAndSettle();
 
-    // Select "Every 45 min" (2700 seconds)
-    await tester.tap(find.text('Every 45 min').last);
-    await tester.pumpAndSettle();
+      // Select "Every 45 min" (2700 seconds)
+      await tester.tap(find.text('Every 45 min').last);
+      await tester.pumpAndSettle();
 
-    expect(prefs.getInt(PreferencesService.wellnessReminderCadenceSecondsKey), 2700);
+      expect(
+        prefs.getInt(PreferencesService.wellnessReminderCadenceSecondsKey),
+        2700,
+      );
 
-    // Toggle off
-    await tester.tap(finder);
-    await tester.pumpAndSettle();
-    expect(prefs.getBool(PreferencesService.wellnessRemindersEnabledKey), false);
-  });
+      // Toggle off
+      await tester.tap(finder);
+      await tester.pumpAndSettle();
+      expect(
+        prefs.getBool(PreferencesService.wellnessRemindersEnabledKey),
+        false,
+      );
+    },
+  );
 
   group('water glass "Log a glass" action logging', () {
-    test('incrementWaterGlassesToday bumps and persists today\'s count', () async {
-      SharedPreferences.setMockInitialValues({
-        PreferencesService.waterGlassesDateKey: todayKey(),
-        PreferencesService.waterGlassesTodayKey: 2,
-      });
-      final service = PreferencesService();
+    test(
+      'incrementWaterGlassesToday bumps and persists today\'s count',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          PreferencesService.waterGlassesDateKey: todayKey(),
+          PreferencesService.waterGlassesTodayKey: 2,
+        });
+        final service = PreferencesService();
 
-      final next = await service.incrementWaterGlassesToday(1);
-      expect(next, 3);
+        final next = await service.incrementWaterGlassesToday(1);
+        expect(next, 3);
 
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getInt(PreferencesService.waterGlassesTodayKey), 3);
-      expect(await service.loadWaterHistory(), {todayKey(): 3});
-      // A fresh read reflects the same persisted value.
-      expect(await service.loadWaterGlassesToday(), 3);
-    });
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getInt(PreferencesService.waterGlassesTodayKey), 3);
+        expect(await service.loadWaterHistory(), {todayKey(): 3});
+        // A fresh read reflects the same persisted value.
+        expect(await service.loadWaterGlassesToday(), 3);
+      },
+    );
 
-    test('incrementWaterGlassesToday resets a stale day before counting',
-        () async {
-      SharedPreferences.setMockInitialValues({
-        PreferencesService.waterGlassesDateKey: '2000-01-01',
-        PreferencesService.waterGlassesTodayKey: 7,
-      });
-      final service = PreferencesService();
+    test(
+      'incrementWaterGlassesToday resets a stale day before counting',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          PreferencesService.waterGlassesDateKey: '2000-01-01',
+          PreferencesService.waterGlassesTodayKey: 7,
+        });
+        final service = PreferencesService();
 
-      // Yesterday's 7 glasses must not carry over; the tap counts as day 1.
-      final next = await service.incrementWaterGlassesToday(1);
-      expect(next, 1);
+        // Yesterday's 7 glasses must not carry over; the tap counts as day 1.
+        final next = await service.incrementWaterGlassesToday(1);
+        expect(next, 1);
 
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getInt(PreferencesService.waterGlassesTodayKey), 1);
-      expect(prefs.getString(PreferencesService.waterGlassesDateKey), todayKey());
-      expect(await service.loadWaterHistory(), {
-        '2000-01-01': 7,
-        todayKey(): 1,
-      });
-    });
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getInt(PreferencesService.waterGlassesTodayKey), 1);
+        expect(
+          prefs.getString(PreferencesService.waterGlassesDateKey),
+          todayKey(),
+        );
+        expect(await service.loadWaterHistory(), {
+          '2000-01-01': 7,
+          todayKey(): 1,
+        });
+      },
+    );
 
     test('incrementWaterGlassesToday clamps into 0..99', () async {
       SharedPreferences.setMockInitialValues({
