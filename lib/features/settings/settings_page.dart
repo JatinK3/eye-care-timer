@@ -4025,9 +4025,11 @@ class _AnimatedThemeSwitchState extends State<_AnimatedThemeSwitch>
     final theme = Theme.of(context);
     final isDark = widget.value;
 
-    return GestureDetector(
-      onTap: () => widget.onChanged(!isDark),
-      child: AnimatedBuilder(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => widget.onChanged(!isDark),
+        child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
           return Container(
