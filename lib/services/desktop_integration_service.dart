@@ -601,11 +601,28 @@ class DesktopIntegrationService extends WindowListener {
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, width, height));
 
-      // 1. Draw a dark circular background circle so it's readable on both dark/light panels.
+      final center = Offset(width / 2, height / 2);
+      final outerRadius = width / 2 - 2.0;
+
+      // 1. Draw a dark circular background circle with a subtle drop shadow
+      canvas.drawShadow(
+        Path()..addOval(Rect.fromCircle(center: center, radius: outerRadius)),
+        Colors.black.withValues(alpha: 0.6),
+        3.0,
+        true,
+      );
+
       final bgPaint = Paint()
-        ..color = const ui.Color(0xDD1E1E1E)
+        ..color = const ui.Color(0xE6151515) // Glassy dark
         ..style = ui.PaintingStyle.fill;
-      canvas.drawCircle(Offset(width / 2, height / 2), (width / 2), bgPaint);
+      canvas.drawCircle(center, outerRadius, bgPaint);
+
+      // Subtle inner rim highlight for 3D effect
+      final borderPaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.1)
+        ..style = ui.PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+      canvas.drawCircle(center, outerRadius, borderPaint);
 
       // 2. State specific colors and text
       ui.Color ringColor;
@@ -665,26 +682,52 @@ class DesktopIntegrationService extends WindowListener {
       _lastTrayProgress = roundedProgress;
       _lastTrayBlinkNudging = state.isBlinkNudging;
 
-      // 3. Draw progress ring (thicker stroke, maximized to edge)
+      // 3. Draw progress ring track
       final ringPaint = Paint()
         ..style = ui.PaintingStyle.stroke
         ..strokeWidth = strokeWidth
         ..strokeCap = ui.StrokeCap.round
-        ..color = ringColor.withValues(alpha: 0.25);
-      canvas.drawCircle(Offset(width / 2, height / 2), ringRadius, ringPaint);
+        ..color = ringColor.withValues(alpha: 0.2);
+      canvas.drawCircle(center, ringRadius, ringPaint);
 
       if (progress > 0) {
+        // Create a beautiful sweep gradient for the active ring
+        final hsl = HSLColor.fromColor(ringColor);
+        final lightColor = hsl.withLightness((hsl.lightness + 0.15).clamp(0.0, 1.0)).toColor();
+        final gradient = ui.Gradient.sweep(
+          center,
+          [ringColor, lightColor, ringColor],
+          [0.0, 0.5, 1.0],
+          ui.TileMode.clamp,
+          -math.pi / 2,
+          -math.pi / 2 + 2 * math.pi,
+        );
+
         final activeRingPaint = Paint()
           ..style = ui.PaintingStyle.stroke
           ..strokeWidth = strokeWidth
           ..strokeCap = ui.StrokeCap.round
-          ..color = ringColor;
+          ..shader = gradient;
 
+        final arcRect = Rect.fromCircle(center: center, radius: ringRadius);
+
+        // Draw a glowing shadow behind the progress arc
         canvas.drawArc(
-          Rect.fromCircle(
-            center: Offset(width / 2, height / 2),
-            radius: ringRadius,
-          ),
+          arcRect,
+          -math.pi / 2,
+          2 * math.pi * progress,
+          false,
+          Paint()
+            ..style = ui.PaintingStyle.stroke
+            ..strokeWidth = strokeWidth
+            ..strokeCap = ui.StrokeCap.round
+            ..color = ringColor.withValues(alpha: 0.5)
+            ..imageFilter = ui.ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0),
+        );
+
+        // Draw the actual gradient arc
+        canvas.drawArc(
+          arcRect,
           -math.pi / 2,
           2 * math.pi * progress,
           false,
@@ -736,6 +779,13 @@ class DesktopIntegrationService extends WindowListener {
               fontSize: text.length > 2 ? (14.5 * scale) : (19.5 * scale),
               fontWeight: ui.FontWeight.w900,
               height: 1.0,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  offset: const Offset(0, 1.5),
+                  blurRadius: 2.0,
+                ),
+              ],
             ),
           ),
           textDirection: ui.TextDirection.ltr,
