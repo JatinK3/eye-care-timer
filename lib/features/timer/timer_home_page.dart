@@ -5222,6 +5222,38 @@ class _GradientTimerPainter extends CustomPainter {
       strokeWidth * 0.65,
       Paint()..color = Colors.white.withValues(alpha: 0.95),
     );
+
+    // ── 7. Orbiting Particle Trail ──────────────────────────────────────
+    if (progress > 0.0 && progress < 1.0) {
+      // Use time-based seed so particles sparkle dynamically as progress changes
+      final seed = DateTime.now().millisecondsSinceEpoch ~/ 40;
+      final random = math.Random(seed);
+      for (int i = 0; i < 25; i++) {
+        // Particles trail behind the tip (up to 0.20 radians behind)
+        final trailAngleOffset = random.nextDouble() * 0.20;
+        final particleAngle = sweepAngle - trailAngleOffset;
+        if (particleAngle <= 0) continue;
+        
+        final angle = startAngle + particleAngle;
+        
+        // Randomly drift away from the center line of the stroke
+        final drift = (random.nextDouble() - 0.5) * strokeWidth * 3.5;
+        final particleRadius = radius + drift;
+        
+        final px = center.dx + particleRadius * math.cos(angle);
+        final py = center.dy + particleRadius * math.sin(angle);
+        
+        // Random size and opacity based on how far behind the tip they are
+        final size = random.nextDouble() * strokeWidth * 0.3;
+        final alpha = (1.0 - (trailAngleOffset / 0.20)) * 0.85;
+        
+        canvas.drawCircle(
+          Offset(px, py),
+          size,
+          Paint()..color = arcColor.withValues(alpha: alpha),
+        );
+      }
+    }
   }
 
   @override
