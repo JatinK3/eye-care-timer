@@ -244,8 +244,8 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 - [ ] **Meeting / Media Aware Breaks**: expand the current camera/mic/media logic into a proper do-not-interrupt mode for calls, fullscreen video, presentations, and active media.
 - [x] **Device Validation Mode**: add an in-app diagnostics screen to send wellness reminders, water reminders, notification actions, and background-action tests before release.
 - [ ] **Profiles**: support Coding, Gaming, Reading, Study, and Office profiles with independent durations, reminder cadence, notification style, strictness, and hydration defaults.
-- [ ] **Weekly Health Report**: summarize break compliance, hydration, skipped/postponed breaks, focus time, and best/worst days using History & Insights data.
-- [ ] **Break Debt**: track missed rest after skipped/postponed breaks and recommend a longer recovery break later.
+- [x] **Weekly Health Report**: summarize break compliance, hydration, skipped/postponed breaks, focus time, and best/worst days using History & Insights data.
+- [x] **Break Debt**: track missed rest after skipped/postponed breaks and recommend a longer recovery break later.
 - [ ] **Backup / Restore Improvements**: export/import settings plus history as one portable backup file for reinstall or device migration.
 - [ ] **Release / Update System**: add desktop auto-update or update notifications for installed packages.
 - [ ] **Apple Health / Google Fit Hydration Sync**: sync water intake with platform health stores where available.
