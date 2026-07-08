@@ -814,10 +814,14 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     });
   }
 
-  Future<void> _importSettings(TimerSettings settings) async {
-    await _preferencesService.saveAllSettings(settings);
+  Future<Map<String, dynamic>> _exportFullBackup() async {
+    return _preferencesService.exportFullBackup(_settings);
+  }
+
+  Future<void> _importFullBackup(Map<String, dynamic> data) async {
+    final newSettings = await _preferencesService.importFullBackup(data, _settings.streakCount);
     setState(() {
-      _settings = settings;
+      _settings = newSettings;
     });
   }
 
@@ -1464,7 +1468,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           osFocusDndEnabled: _settings.osFocusDndEnabled,
           setOsFocusDndEnabled: _setOsFocusDndEnabled,
           restoreDefaultSettings: _restoreDefaultSettings,
-          importSettings: _importSettings,
+          exportFullBackup: _exportFullBackup,
+          importFullBackup: _importFullBackup,
         ),
       ),
     );

@@ -175,7 +175,8 @@ class SettingsPage extends StatefulWidget {
   final bool osFocusDndEnabled;
   final void Function(bool) setOsFocusDndEnabled;
   final VoidCallback restoreDefaultSettings;
-  final Future<void> Function(TimerSettings) importSettings;
+  final Future<Map<String, dynamic>> Function() exportFullBackup;
+  final Future<void> Function(Map<String, dynamic>) importFullBackup;
   final String activeProfile;
   final void Function(String) setActiveProfile;
 
@@ -325,7 +326,8 @@ class SettingsPage extends StatefulWidget {
     required this.osFocusDndEnabled,
     required this.setOsFocusDndEnabled,
     required this.restoreDefaultSettings,
-    required this.importSettings,
+    required this.exportFullBackup,
+    required this.importFullBackup,
     required this.activeProfile,
     required this.setActiveProfile,
   });
@@ -3461,13 +3463,11 @@ class _SettingsPageState extends State<SettingsPage>
 
   Future<void> _exportSettingsToFile(BuildContext context) async {
     try {
-      final settings = _getCurrentSettings();
-      final jsonMap = {
-        'version': 1,
-        'exportedAt': DateTime.now().toIso8601String(),
-        'settings': settings.toJson(),
-      };
-      final content = const JsonEncoder.withIndent('  ').convert(jsonMap);
+      final backupData = await widget.exportFullBackup();
+      backupData['version'] = 2; // version 2 includes histories
+      backupData['exportedAt'] = DateTime.now().toIso8601String();
+      
+      final content = const JsonEncoder.withIndent('  ').convert(backupData);
 
       final timestamp = DateTime.now()
           .toIso8601String()
@@ -3572,13 +3572,7 @@ class _SettingsPageState extends State<SettingsPage>
         throw Exception("Invalid backup file: settings data not found.");
       }
 
-      final settingsMap = decoded['settings'] as Map<String, dynamic>;
-      final newSettings = TimerSettings.fromJson(
-        settingsMap,
-        currentStreak: widget.streakCount,
-      );
-
-      await widget.importSettings(newSettings);
+      await widget.importFullBackup(decoded);
 
       if (!context.mounted) return;
       final l10n = AppLocalizations.of(context)!;

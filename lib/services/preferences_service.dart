@@ -1172,6 +1172,51 @@ class PreferencesService {
     await prefs.setString(waterHistoryKey, jsonEncode(history));
   }
 
+  Future<Map<String, dynamic>> exportFullBackup(TimerSettings settings) async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'settings': settings.toJson(),
+      'dailyHistory': prefs.getString(dailyHistoryKey),
+      'workSessionHistory': prefs.getString(workSessionHistoryKey),
+      'timerEventsHistory': prefs.getString(timerEventsHistoryKey),
+      'waterHistory': prefs.getString(waterHistoryKey),
+      'waterGlassesToday': prefs.getInt(waterGlassesTodayKey),
+      'waterGlassesDate': prefs.getString(waterGlassesDateKey),
+    };
+  }
+
+  Future<TimerSettings> importFullBackup(Map<String, dynamic> data, int currentStreak) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Restore history maps if they exist
+    if (data['dailyHistory'] != null) {
+      await prefs.setString(dailyHistoryKey, data['dailyHistory'] as String);
+    }
+    if (data['workSessionHistory'] != null) {
+      await prefs.setString(workSessionHistoryKey, data['workSessionHistory'] as String);
+    }
+    if (data['timerEventsHistory'] != null) {
+      await prefs.setString(timerEventsHistoryKey, data['timerEventsHistory'] as String);
+    }
+    if (data['waterHistory'] != null) {
+      await prefs.setString(waterHistoryKey, data['waterHistory'] as String);
+    }
+    if (data['waterGlassesToday'] != null) {
+      await prefs.setInt(waterGlassesTodayKey, data['waterGlassesToday'] as int);
+    }
+    if (data['waterGlassesDate'] != null) {
+      await prefs.setString(waterGlassesDateKey, data['waterGlassesDate'] as String);
+    }
+
+    if (!data.containsKey('settings')) {
+      throw Exception("Invalid backup data: settings not found.");
+    }
+    final settingsMap = data['settings'] as Map<String, dynamic>;
+    final settings = TimerSettings.fromJson(settingsMap, currentStreak: currentStreak);
+    await saveAllSettings(settings);
+    return settings;
+  }
+
   ThemeMode _themeModeFromString(String? value) {
     return switch (value) {
       'dark' => ThemeMode.dark,
