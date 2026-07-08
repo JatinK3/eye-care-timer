@@ -3243,59 +3243,88 @@ class TimerHomePageState extends State<TimerHomePage>
     }
 
     const waterColor = Color(0xFF3BA7E6);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: waterColor.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: waterColor.withValues(alpha: 0.24)),
-      ),
-      child: Row(
+    final progressFraction = goal > 0 ? (consumed / goal).clamp(0.0, 1.0) : 0.0;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Stack(
         children: [
-          Icon(
-            goalReached
-                ? Icons.emoji_events_outlined
-                : Icons.local_drink_outlined,
-            color: waterColor,
-            size: 22,
+          // Base background
+          Positioned.fill(
+            child: Container(
+              color: waterColor.withValues(alpha: 0.05),
+            ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // Animated progress fill background
+          Positioned.fill(
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: progressFraction,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOutCubic,
+                decoration: BoxDecoration(
+                  color: waterColor.withValues(alpha: 0.15),
+                ),
+              ),
+            ),
+          ),
+          // Content overlay
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              border: Border.all(color: waterColor.withValues(alpha: 0.24)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
               children: [
-                Text(
-                  forecastText,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                Icon(
+                  goalReached
+                      ? Icons.emoji_events_outlined
+                      : Icons.local_drink_outlined,
+                  color: waterColor,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        forecastText,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        AppLocalizations.of(
+                          context,
+                        )!.waterGlassesAndVolume(consumed, ml),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  AppLocalizations.of(
-                    context,
-                  )!.waterGlassesAndVolume(consumed, ml),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+                IconButton(
+                  onPressed: consumed > 0 ? () => _logWaterGlass(-1) : null,
+                  icon: const Icon(Icons.remove_circle_outline),
+                  color: waterColor,
+                  tooltip: AppLocalizations.of(context)!.waterUndoTooltip,
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
+                  onPressed: () => _logWaterGlass(1),
+                  icon: const Icon(Icons.add_circle),
+                  color: waterColor,
+                  tooltip: AppLocalizations.of(context)!.waterLogTooltip,
+                  visualDensity: VisualDensity.compact,
                 ),
               ],
             ),
-          ),
-          IconButton(
-            onPressed: consumed > 0 ? () => _logWaterGlass(-1) : null,
-            icon: const Icon(Icons.remove_circle_outline),
-            color: waterColor,
-            tooltip: AppLocalizations.of(context)!.waterUndoTooltip,
-            visualDensity: VisualDensity.compact,
-          ),
-          IconButton(
-            onPressed: () => _logWaterGlass(1),
-            icon: const Icon(Icons.add_circle),
-            color: waterColor,
-            tooltip: AppLocalizations.of(context)!.waterLogTooltip,
-            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
