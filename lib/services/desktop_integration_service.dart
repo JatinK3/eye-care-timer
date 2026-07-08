@@ -595,7 +595,7 @@ class DesktopIntegrationService extends WindowListener {
       final width = 64.0;
       final height = 64.0;
       final scale = width / 32.0;
-      final strokeWidth = 7.0 * scale; // Increased for better visibility
+      final strokeWidth = 5.0 * scale; // Bold but leaves room for text
       final ringRadius = (width / 2) - (strokeWidth / 2) - 0.5;
 
       final recorder = ui.PictureRecorder();
@@ -774,7 +774,8 @@ class DesktopIntegrationService extends WindowListener {
             text: text,
             style: TextStyle(
               color: Colors.white,
-              fontSize: text.length > 2 ? (16.0 * scale) : (22.0 * scale), // Increased font size
+              fontSize: text.length > 2 ? (14.0 * scale) : (18.0 * scale), // Slightly smaller
+              letterSpacing: -0.5, // Tighter horizontal spacing
               fontWeight: ui.FontWeight.w900,
               height: 1.0,
               shadows: [
