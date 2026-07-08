@@ -983,11 +983,22 @@ class TimerHomePageState extends State<TimerHomePage>
       if (_isSystemIdlePaused) {
         final idleStart = _idleStartedAt;
         _idleStartedAt = null;
-        if (widget.naturalBreakCreditEnabled && idleStart != null) {
+        
+        if (idleStart != null) {
           final idleDuration = DateTime.now().difference(idleStart);
-          if (idleDuration.inSeconds >= _breakDurationSeconds) {
-            _creditNaturalBreak();
-            return;
+          
+          // Even if they didn't take a full natural break, time away from the screen
+          // allows the eyes to rest. We dynamically reduce their break debt (Eye Strain Risk)
+          // based on how long they were away!
+          if (idleDuration.inSeconds > 0) {
+            _breakDebtSeconds = math.max(0, _breakDebtSeconds - idleDuration.inSeconds);
+          }
+
+          if (widget.naturalBreakCreditEnabled) {
+            if (idleDuration.inSeconds >= _breakDurationSeconds) {
+              _creditNaturalBreak();
+              return;
+            }
           }
         }
 
