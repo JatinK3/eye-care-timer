@@ -8,6 +8,7 @@ class TimerSession {
   final DateTime? phaseEndsAt;
   final int completedAutoRunCycles;
   final int? postponedBreakDuration;
+  final int breakDebtSeconds;
 
   const TimerSession({
     required this.isActive,
@@ -19,6 +20,7 @@ class TimerSession {
     required this.phaseEndsAt,
     this.completedAutoRunCycles = 0,
     this.postponedBreakDuration,
+    this.breakDebtSeconds = 0,
   });
 
   const TimerSession.idle()
@@ -30,7 +32,8 @@ class TimerSession {
       phaseStartedAt = null,
       phaseEndsAt = null,
       completedAutoRunCycles = 0,
-      postponedBreakDuration = null;
+      postponedBreakDuration = null,
+      breakDebtSeconds = 0;
 
   /// Serializes the session to a plain JSON map. Timestamps are stored as epoch
   /// milliseconds so the same representation can be shared with the native
@@ -46,6 +49,7 @@ class TimerSession {
       'phaseEndsAt': phaseEndsAt?.millisecondsSinceEpoch,
       'completedAutoRunCycles': completedAutoRunCycles,
       'postponedBreakDuration': postponedBreakDuration,
+      'breakDebtSeconds': breakDebtSeconds,
     };
   }
 
@@ -62,6 +66,7 @@ class TimerSession {
       phaseEndsAt: _dateTimeFromMillis(json['phaseEndsAt']),
       completedAutoRunCycles: _asInt(json['completedAutoRunCycles']),
       postponedBreakDuration: json['postponedBreakDuration'] != null ? _asInt(json['postponedBreakDuration']) : null,
+      breakDebtSeconds: _asInt(json['breakDebtSeconds']),
     );
   }
 

@@ -405,6 +405,7 @@ class TimerSettings {
     );
   }
 
+
   Map<String, dynamic> toJson() {
     return {
       'workDurationSeconds': workDurationSeconds,
@@ -617,5 +618,24 @@ class TimerSettings {
       }
     }
     return BreakMode.gentle;
+  }
+}
+
+class SettingsProvider extends InheritedWidget {
+  final TimerSettings settings;
+
+  const SettingsProvider({
+    super.key,
+    required this.settings,
+    required super.child,
+  });
+
+  static TimerSettings of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<SettingsProvider>()!.settings;
+  }
+
+  @override
+  bool updateShouldNotify(SettingsProvider oldWidget) {
+    return settings != oldWidget.settings;
   }
 }

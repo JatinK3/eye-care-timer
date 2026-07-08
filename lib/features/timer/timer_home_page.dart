@@ -406,6 +406,7 @@ class TimerHomePageState extends State<TimerHomePage>
   int _educationTipIndex = 0;
   int _consecutiveSkips = 0;
   int _consecutivePostpones = 0;
+  int _breakDebtSeconds = 0;
   // Tip frozen at break start — stays the same for the whole break so the
   // message never changes mid-break and no extra LLM calls are triggered.
   EyeHealthTip? _frozenBreakTip;
@@ -436,6 +437,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _autoRunEnabled = widget.autoRunEnabled;
     _autoRunCycleLimit = widget.autoRunCycleLimit;
     _autoRunCompletedCycles = widget.initialSession.completedAutoRunCycles;
+    _breakDebtSeconds = widget.initialSession.breakDebtSeconds;
     _streakCount = widget.initialStreakCount;
     _waterGlassesToday = widget.initialWaterGlassesToday;
     _currentDateKey = _todayKey();
@@ -1866,6 +1868,9 @@ class TimerHomePageState extends State<TimerHomePage>
     }
     _consecutiveSkips++;
     _consecutivePostpones = 0;
+    if (_isBreak) {
+      _breakDebtSeconds += _remainingSeconds;
+    }
     _animationController.stop();
     widget.saveTimerEventRecord(
       TimerEventRecord(
@@ -1901,6 +1906,9 @@ class TimerHomePageState extends State<TimerHomePage>
       return;
     }
     _animationController.stop();
+    if (_isBreak) {
+      _breakDebtSeconds += _remainingSeconds;
+    }
     _playChime(hapticEvent: 'postpone');
     _pulseController.stop();
     // Cancel the pending "Break complete" reminder that was scheduled when the
@@ -2231,10 +2239,15 @@ class TimerHomePageState extends State<TimerHomePage>
         return;
       }
 
-      final upcomingBreakDuration =
+      int upcomingBreakDuration =
           _postponedBreakDuration ??
           _breakDurationForCompletedCycle(_streakCount + 1);
       final isPostponed = _postponedBreakDuration != null;
+
+      if (_breakDebtSeconds > 0) {
+        upcomingBreakDuration += _breakDebtSeconds;
+        _breakDebtSeconds = 0;
+      }
 
       setState(() {
         _postponedBreakDuration = null;
@@ -2301,6 +2314,7 @@ class TimerHomePageState extends State<TimerHomePage>
         phaseEndsAt: _phaseEndsAt,
         completedAutoRunCycles: _autoRunCompletedCycles,
         postponedBreakDuration: _postponedBreakDuration,
+        breakDebtSeconds: _breakDebtSeconds,
       ),
     );
   }
@@ -3164,10 +3178,11 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   Widget _buildWaterSummary(ThemeData theme) {
-    final goal = widget.waterDailyGoalGlasses;
+    final settings = SettingsProvider.of(context);
+    final goal = settings.waterDailyGoalGlasses;
     final consumed = _waterGlassesToday;
     final goalReached = goal > 0 && consumed >= goal;
-    final ml = consumed * widget.waterGlassSizeMl;
+    final ml = consumed * settings.waterGlassSizeMl;
     
     final expected = _expectedWaterGlassesBy(DateTime.now());
     String forecastText = '';

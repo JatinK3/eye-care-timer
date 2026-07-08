@@ -110,6 +110,8 @@ class SettingsPage extends StatefulWidget {
   final Future<void> Function() openNotificationSettings;
   final Future<void> Function() openReminderChannelSettings;
   final Future<bool> Function() showTestReminder;
+  final Future<bool> Function() showTestWellnessReminder;
+  final Future<bool> Function() showTestWaterReminder;
   final Future<NotificationReliabilityStatus> Function()
   refreshNotificationReliabilityStatus;
   final Future<void> Function() requestExactAlarmPermission;
@@ -263,6 +265,8 @@ class SettingsPage extends StatefulWidget {
     required this.openNotificationSettings,
     required this.openReminderChannelSettings,
     required this.showTestReminder,
+    required this.showTestWellnessReminder,
+    required this.showTestWaterReminder,
     required this.refreshNotificationReliabilityStatus,
     required this.requestExactAlarmPermission,
     required this.openBatteryOptimizationSettings,
@@ -389,6 +393,9 @@ class _SettingsPageState extends State<SettingsPage>
   Process? _activeChimeProcess;
   String? _playingChimeStyle;
 
+  late int _waterDailyGoalGlasses;
+  late int _waterGlassSizeMl;
+
   @override
   void initState() {
     super.initState();
@@ -409,6 +416,8 @@ class _SettingsPageState extends State<SettingsPage>
     _autoRunEnabled = widget.autoRunEnabled;
     _autoRunCycleLimit = widget.autoRunCycleLimit;
     _breakMode = widget.breakMode;
+    _waterDailyGoalGlasses = widget.waterDailyGoalGlasses;
+    _waterGlassSizeMl = widget.waterGlassSizeMl;
     _aiApiKeyController.text = widget.aiApiKey;
     _aiAvailableModels = AiService.instance.getDefaultModels(widget.aiProvider);
     _loadDesktopSettings();
@@ -451,6 +460,12 @@ class _SettingsPageState extends State<SettingsPage>
     }
     if (oldWidget.breakMode != widget.breakMode) {
       _breakMode = widget.breakMode;
+    }
+    if (oldWidget.waterDailyGoalGlasses != widget.waterDailyGoalGlasses) {
+      _waterDailyGoalGlasses = widget.waterDailyGoalGlasses;
+    }
+    if (oldWidget.waterGlassSizeMl != widget.waterGlassSizeMl) {
+      _waterGlassSizeMl = widget.waterGlassSizeMl;
     }
   }
 
@@ -2154,7 +2169,9 @@ class _SettingsPageState extends State<SettingsPage>
                 openNotificationSettings: _openSystemNotificationSettings,
                 requestExactAlarmPermission: widget.requestExactAlarmPermission,
                 openBatteryOptimizationSettings: widget.openBatteryOptimizationSettings,
-                showTestReminder: _showTestReminder,
+                showTestReminder: widget.showTestReminder,
+                showTestWellnessReminder: widget.showTestWellnessReminder,
+                showTestWaterReminder: widget.showTestWaterReminder,
               ),
             ));
           },
@@ -2562,8 +2579,8 @@ class _SettingsPageState extends State<SettingsPage>
                 title: Text(AppLocalizations.of(context)!.waterDailyGoal),
                 subtitle: Text(
                   AppLocalizations.of(context)!.waterGlassesAndVolume(
-                    widget.waterDailyGoalGlasses,
-                    widget.waterDailyGoalGlasses * widget.waterGlassSizeMl,
+                    _waterDailyGoalGlasses,
+                    _waterDailyGoalGlasses * _waterGlassSizeMl,
                   ),
                 ),
                 trailing: Row(
@@ -2571,20 +2588,28 @@ class _SettingsPageState extends State<SettingsPage>
                   children: [
                     IconButton(
                       icon: const Icon(Icons.remove_circle_outline),
-                      onPressed: widget.waterDailyGoalGlasses > 1
-                          ? () => widget.setWaterDailyGoalGlasses(
-                              widget.waterDailyGoalGlasses - 1)
+                      onPressed: _waterDailyGoalGlasses > 1
+                          ? () {
+                              setState(() {
+                                _waterDailyGoalGlasses -= 1;
+                              });
+                              widget.setWaterDailyGoalGlasses(_waterDailyGoalGlasses);
+                            }
                           : null,
                     ),
                     Text(
-                      '${widget.waterDailyGoalGlasses}',
+                      '$_waterDailyGoalGlasses',
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                     IconButton(
                       icon: const Icon(Icons.add_circle_outline),
-                      onPressed: widget.waterDailyGoalGlasses < 20
-                          ? () => widget.setWaterDailyGoalGlasses(
-                              widget.waterDailyGoalGlasses + 1)
+                      onPressed: _waterDailyGoalGlasses < 20
+                          ? () {
+                              setState(() {
+                                _waterDailyGoalGlasses += 1;
+                              });
+                              widget.setWaterDailyGoalGlasses(_waterDailyGoalGlasses);
+                            }
                           : null,
                     ),
                   ],
@@ -2598,7 +2623,7 @@ class _SettingsPageState extends State<SettingsPage>
                   AppLocalizations.of(context)!.waterGlassSizeSubtitle,
                 ),
                 trailing: DropdownButton<int>(
-                  value: widget.waterGlassSizeMl,
+                  value: _waterGlassSizeMl,
                   items: const [200, 250, 300, 330, 500].map((value) {
                     return DropdownMenuItem<int>(
                       value: value,
@@ -2606,7 +2631,12 @@ class _SettingsPageState extends State<SettingsPage>
                     );
                   }).toList(),
                   onChanged: (val) {
-                    if (val != null) widget.setWaterGlassSizeMl(val);
+                    if (val != null) {
+                      setState(() {
+                        _waterGlassSizeMl = val;
+                      });
+                      widget.setWaterGlassSizeMl(val);
+                    }
                   },
                 ),
               ),

@@ -11,6 +11,7 @@ import "../../models/timer_event_record.dart";
 import "../../services/ai_service.dart";
 import "../../models/work_session_record.dart";
 import "../../generated/l10n/app_localizations.dart";
+import "weekly_health_report_page.dart";
 
 enum HistoryRange { sevenDays, thirtyDays, all }
 
@@ -217,6 +218,25 @@ class _HistoryPageState extends State<HistoryPage> {
         title: Text(AppLocalizations.of(context)!.historyTitle),
         elevation: 0,
         actions: [
+          IconButton(
+            tooltip: 'Weekly Health Report',
+            icon: const Icon(Icons.assessment_outlined),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => WeeklyHealthReportPage(
+                    history: _history,
+                    waterHistory: _waterHistory,
+                    workSessions: _workSessions,
+                    timerEvents: _timerEvents,
+                    dailyGoal: widget.dailyGoal,
+                    waterDailyGoalGlasses: widget.waterDailyGoalGlasses,
+                    waterGlassSizeMl: widget.waterGlassSizeMl,
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Refresh',
             onPressed: _isRefreshing ? null : _refreshFromStorage,

@@ -520,6 +520,14 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     return _notificationService.showTestReminder();
   }
 
+  Future<bool> _showTestWellnessReminder() {
+    return _notificationService.showTestWellnessReminder();
+  }
+
+  Future<bool> _showTestWaterReminder() {
+    return _notificationService.showTestWaterReminder();
+  }
+
   Future<void> _requestExactAlarmPermission() async {
     await _notificationService.requestExactAlarmPermission();
   }
@@ -1364,6 +1372,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           openNotificationSettings: _openNotificationSettings,
           openReminderChannelSettings: _openReminderChannelSettings,
           showTestReminder: _showTestReminder,
+          showTestWellnessReminder: _showTestWellnessReminder,
+          showTestWaterReminder: _showTestWaterReminder,
           refreshNotificationReliabilityStatus:
               _refreshNotificationReliabilityStatus,
           requestExactAlarmPermission: _requestExactAlarmPermission,
@@ -1431,7 +1441,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
             _settings.themeMode == ThemeMode.dark ||
             (_settings.themeMode == ThemeMode.system && isPlatformDark);
 
-        return MaterialApp(
+        return SettingsProvider(
+          settings: _settings,
+          child: MaterialApp(
           navigatorKey: BreakOverlayService.navigatorKey,
           onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
           localizationsDelegates: const [
@@ -1601,8 +1613,9 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   showNotificationWarning: _showNotificationWarningCard,
                   onFixNotificationPermission: _fixNotificationPermission,
                 ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 }

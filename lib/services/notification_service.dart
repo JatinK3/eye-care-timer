@@ -615,6 +615,80 @@ class NotificationService {
     }
   }
 
+  Future<bool> showTestWellnessReminder() async {
+    if (kIsWeb) return false;
+    if (Platform.isLinux) {
+      try {
+        await Process.run('notify-send', [
+          '-a',
+          'BlinkKind',
+          '-i',
+          'blinkkind',
+          'Wellness test reminder',
+          'If you heard this, wellness reminder sound is ready.',
+        ]);
+        return true;
+      } catch (e) {
+        debugPrint('Failed to send Linux notification: $e');
+        return false;
+      }
+    }
+    await initialize();
+    if (await permissionStatus() != NotificationPermissionStatus.allowed) {
+      return false;
+    }
+    try {
+      await _notificationsPlugin.show(
+        id: _testReminderId + 1,
+        title: 'Wellness test reminder',
+        body: 'If you heard this, wellness reminder sound is ready.',
+        notificationDetails: _wellnessNotificationDetails,
+        payload: 'test_wellness',
+      );
+      return true;
+    } on PlatformException catch (error) {
+      debugPrint('Unable to show wellness test reminder: $error');
+      return false;
+    }
+  }
+
+  Future<bool> showTestWaterReminder() async {
+    if (kIsWeb) return false;
+    if (Platform.isLinux) {
+      try {
+        await Process.run('notify-send', [
+          '-a',
+          'BlinkKind',
+          '-i',
+          'blinkkind',
+          'Water test reminder',
+          'If you heard this, water reminder sound is ready.',
+        ]);
+        return true;
+      } catch (e) {
+        debugPrint('Failed to send Linux notification: $e');
+        return false;
+      }
+    }
+    await initialize();
+    if (await permissionStatus() != NotificationPermissionStatus.allowed) {
+      return false;
+    }
+    try {
+      await _notificationsPlugin.show(
+        id: _testReminderId + 2,
+        title: 'Water test reminder',
+        body: 'If you heard this, water reminder sound is ready.',
+        notificationDetails: _waterNotificationDetails,
+        payload: 'test_water',
+      );
+      return true;
+    } on PlatformException catch (error) {
+      debugPrint('Unable to show water test reminder: $error');
+      return false;
+    }
+  }
+
   Future<bool> scheduleWorkCompleteReminder(
     Duration delay, {
     bool isLongBreak = false,

@@ -9,6 +9,8 @@ class ReminderReliabilityPage extends StatefulWidget {
   final Future<void> Function() requestExactAlarmPermission;
   final Future<void> Function() openBatteryOptimizationSettings;
   final Future<void> Function() showTestReminder;
+  final Future<void> Function() showTestWellnessReminder;
+  final Future<void> Function() showTestWaterReminder;
 
   const ReminderReliabilityPage({
     super.key,
@@ -18,6 +20,8 @@ class ReminderReliabilityPage extends StatefulWidget {
     required this.requestExactAlarmPermission,
     required this.openBatteryOptimizationSettings,
     required this.showTestReminder,
+    required this.showTestWellnessReminder,
+    required this.showTestWaterReminder,
   });
 
   @override
@@ -92,7 +96,19 @@ class _ReminderReliabilityPageState extends State<ReminderReliabilityPage> {
           ElevatedButton.icon(
             onPressed: widget.showTestReminder,
             icon: const Icon(Icons.notifications_active),
-            label: const Text('Send Test Reminder'),
+            label: const Text('Test Phase Reminder'),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: widget.showTestWellnessReminder,
+            icon: const Icon(Icons.self_improvement),
+            label: const Text('Test Wellness Reminder'),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: widget.showTestWaterReminder,
+            icon: const Icon(Icons.water_drop),
+            label: const Text('Test Water Reminder'),
           ),
         ],
       ),
