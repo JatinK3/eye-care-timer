@@ -936,10 +936,81 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
   }
 
   void _setActiveProfile(String profile) {
+    TimerSettings newSettings = _settings;
+    switch (profile) {
+      case 'coding':
+        newSettings = newSettings.copyWith(
+          activeProfile: 'coding',
+          workDurationSeconds: 50 * 60,
+          breakDurationSeconds: 5 * 60,
+          breakMode: BreakMode.strict,
+          allowSkip: false,
+          allowPostpone: true,
+          waterDailyGoalGlasses: 10,
+        );
+        break;
+      case 'gaming':
+        newSettings = newSettings.copyWith(
+          activeProfile: 'gaming',
+          workDurationSeconds: 60 * 60,
+          breakDurationSeconds: 20,
+          breakMode: BreakMode.gentle,
+          allowSkip: true,
+          allowPostpone: true,
+          waterDailyGoalGlasses: 6,
+        );
+        break;
+      case 'reading':
+        newSettings = newSettings.copyWith(
+          activeProfile: 'reading',
+          workDurationSeconds: 25 * 60,
+          breakDurationSeconds: 5 * 60,
+          breakMode: BreakMode.strict,
+          allowSkip: false,
+          allowPostpone: true,
+          waterDailyGoalGlasses: 6,
+        );
+        break;
+      case 'study':
+        newSettings = newSettings.copyWith(
+          activeProfile: 'study',
+          workDurationSeconds: 45 * 60,
+          breakDurationSeconds: 10 * 60,
+          breakMode: BreakMode.strict,
+          allowSkip: false,
+          allowPostpone: false,
+          waterDailyGoalGlasses: 8,
+        );
+        break;
+      case 'office':
+        newSettings = newSettings.copyWith(
+          activeProfile: 'office',
+          workDurationSeconds: 30 * 60,
+          breakDurationSeconds: 2 * 60,
+          breakMode: BreakMode.gentle,
+          allowSkip: true,
+          allowPostpone: false,
+          waterDailyGoalGlasses: 8,
+        );
+        break;
+      case 'standard':
+        newSettings = newSettings.copyWith(
+          activeProfile: 'standard',
+          workDurationSeconds: 20 * 60,
+          breakDurationSeconds: 20,
+          breakMode: BreakMode.gentle,
+          allowSkip: true,
+          allowPostpone: true,
+          waterDailyGoalGlasses: 8,
+        );
+        break;
+      default:
+        newSettings = newSettings.copyWith(activeProfile: profile);
+    }
     setState(() {
-      _settings = _settings.copyWith(activeProfile: profile);
+      _settings = newSettings;
     });
-    unawaited(_preferencesService.saveActiveProfile(profile));
+    unawaited(_preferencesService.saveAllSettings(newSettings));
   }
 
 

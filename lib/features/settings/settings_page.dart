@@ -764,56 +764,51 @@ class _SettingsPageState extends State<SettingsPage>
               runSpacing: 8,
               children: [
                 _PresetChip(
-                  label: '20-20-20',
-                  selected: widget.activeProfile == 'standard' &&
-                      widget.workDurationSeconds == 20 * 60 &&
-                      widget.breakDurationSeconds == 20,
+                  label: 'Coding',
+                  selected: widget.activeProfile == 'coding',
                   enabled: widget.canChangeDurations,
                   onSelected: () {
-                    widget.setActiveProfile('standard');
-                    widget.saveDurations(20 * 60, 20);
+                    widget.setActiveProfile('coding');
                   },
                 ),
                 _PresetChip(
-                  label: '10s / 10s (Test)',
-                  selected: widget.activeProfile == 'test' &&
-                      widget.workDurationSeconds == 10 &&
-                      widget.breakDurationSeconds == 10,
-                  enabled: widget.canChangeDurations,
-                  onSelected: () {
-                    widget.setActiveProfile('test');
-                    widget.saveDurations(10, 10);
-                  },
-                ),
-                _PresetChip(
-                  label: '25 / 5',
-                  selected: widget.activeProfile == 'pomodoro' &&
-                      widget.workDurationSeconds == 25 * 60 &&
-                      widget.breakDurationSeconds == 5 * 60,
-                  enabled: widget.canChangeDurations,
-                  onSelected: () {
-                    widget.setActiveProfile('pomodoro');
-                    widget.saveDurations(25 * 60, 5 * 60);
-                  },
-                ),
-                _PresetChip(
-                  label: '45 / 5',
-                  selected: widget.activeProfile == 'longWork' &&
-                      widget.workDurationSeconds == 45 * 60 &&
-                      widget.breakDurationSeconds == 5 * 60,
-                  enabled: widget.canChangeDurations,
-                  onSelected: () {
-                    widget.setActiveProfile('longWork');
-                    widget.saveDurations(45 * 60, 5 * 60);
-                  },
-                ),
-                _PresetChip(
-                  label: 'Gaming Mode',
+                  label: 'Gaming',
                   selected: widget.activeProfile == 'gaming',
                   enabled: widget.canChangeDurations,
                   onSelected: () {
                     widget.setActiveProfile('gaming');
-                    widget.saveDurations(45 * 60, 5 * 60);
+                  },
+                ),
+                _PresetChip(
+                  label: 'Reading',
+                  selected: widget.activeProfile == 'reading',
+                  enabled: widget.canChangeDurations,
+                  onSelected: () {
+                    widget.setActiveProfile('reading');
+                  },
+                ),
+                _PresetChip(
+                  label: 'Study',
+                  selected: widget.activeProfile == 'study',
+                  enabled: widget.canChangeDurations,
+                  onSelected: () {
+                    widget.setActiveProfile('study');
+                  },
+                ),
+                _PresetChip(
+                  label: 'Office',
+                  selected: widget.activeProfile == 'office',
+                  enabled: widget.canChangeDurations,
+                  onSelected: () {
+                    widget.setActiveProfile('office');
+                  },
+                ),
+                _PresetChip(
+                  label: 'Standard',
+                  selected: widget.activeProfile == 'standard',
+                  enabled: widget.canChangeDurations,
+                  onSelected: () {
+                    widget.setActiveProfile('standard');
                   },
                 ),
                 _PresetChip(
