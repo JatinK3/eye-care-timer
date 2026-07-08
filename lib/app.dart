@@ -1441,7 +1441,14 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
             _settings.themeMode == ThemeMode.dark ||
             (_settings.themeMode == ThemeMode.system && isPlatformDark);
 
-        return SettingsProvider(
+        // 3) Filter today's timer events for risk score
+    final now = DateTime.now();
+    final todaysEvents = _timerEventHistory.where((e) =>
+        e.timestamp.year == now.year &&
+        e.timestamp.month == now.month &&
+        e.timestamp.day == now.day).toList();
+
+    return SettingsProvider(
           settings: _settings,
           child: MaterialApp(
           navigatorKey: BreakOverlayService.navigatorKey,
@@ -1577,6 +1584,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   saveStreakCount: _saveStreakCount,
                   saveCompletedWorkSession: _saveCompletedWorkSession,
                   saveTimerEventRecord: _saveTimerEventRecord,
+                  todaysEvents: todaysEvents,
                   setNotificationsEnabled: _setNotificationsEnabled,
                   saveSession: _saveSession,
                   clearSession: _clearSession,

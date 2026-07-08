@@ -28,6 +28,7 @@ import '../../generated/l10n/app_localizations.dart';
 import 'break_guides.dart';
 import 'eye_health_tips.dart';
 import 'phase_schedule.dart';
+import '../insights/eye_strain_calculator.dart';
 
 /// Home page with all timer logic and UI.
 class TimerHomePage extends StatefulWidget {
@@ -65,6 +66,7 @@ class TimerHomePage extends StatefulWidget {
   final void Function(DateTime completedAt, int durationSeconds)
   saveCompletedWorkSession;
   final void Function(TimerEventRecord record) saveTimerEventRecord;
+  final List<TimerEventRecord> todaysEvents;
   final void Function(bool enabled) setNotificationsEnabled;
   final void Function(TimerSession session) saveSession;
   final VoidCallback clearSession;
@@ -197,6 +199,7 @@ class TimerHomePage extends StatefulWidget {
     required this.saveStreakCount,
     required this.saveCompletedWorkSession,
     required this.saveTimerEventRecord,
+    required this.todaysEvents,
     required this.setNotificationsEnabled,
     required this.saveSession,
     required this.clearSession,
@@ -3286,6 +3289,85 @@ class TimerHomePageState extends State<TimerHomePage>
     );
   }
 
+  Widget _buildEyeStrainRiskCard(ThemeData theme) {
+    final settings = SettingsProvider.of(context);
+    final riskScore = EyeStrainCalculator.calculate(
+      todaysEvents: widget.todaysEvents,
+      breakDebtSeconds: _breakDebtSeconds,
+      waterGlassesToday: _waterGlassesToday,
+      dailyWaterGoal: settings.waterDailyGoalGlasses,
+    );
+
+    Color riskColor;
+    IconData riskIcon;
+    switch (riskScore.riskLevel) {
+      case 'Severe':
+        riskColor = Colors.red;
+        riskIcon = Icons.warning_amber_rounded;
+        break;
+      case 'High':
+        riskColor = Colors.orange;
+        riskIcon = Icons.trending_up;
+        break;
+      case 'Moderate':
+        riskColor = Colors.amber;
+        riskIcon = Icons.remove_red_eye;
+        break;
+      case 'Low':
+      default:
+        riskColor = Colors.green;
+        riskIcon = Icons.check_circle_outline;
+        break;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: riskColor.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: riskColor.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        children: [
+          Icon(riskIcon, color: riskColor, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Eye Strain Risk: ${riskScore.riskLevel}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (riskScore.contributingFactors.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    riskScore.contributingFactors.first,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Text(
+            '${riskScore.totalScore}/100',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: riskColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHomeQuickActions(
     ThemeData theme,
     bool isDark,
@@ -4025,6 +4107,10 @@ class TimerHomePageState extends State<TimerHomePage>
                                                   ),
                                                 ],
                                                 const SizedBox(height: 12),
+                                                _buildEyeStrainRiskCard(
+                                                  Theme.of(context),
+                                                ),
+                                                const SizedBox(height: 12),
                                                 _buildHomeQuickActions(
                                                   Theme.of(context),
                                                   isDark,
@@ -4227,6 +4313,8 @@ class TimerHomePageState extends State<TimerHomePage>
                                         const SizedBox(height: 12),
                                         _buildWaterSummary(Theme.of(context)),
                                       ],
+                                      const SizedBox(height: 12),
+                                      _buildEyeStrainRiskCard(Theme.of(context)),
                                       const SizedBox(height: 12),
                                       _buildHomeQuickActions(
                                         Theme.of(context),

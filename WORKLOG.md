@@ -252,7 +252,7 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 - [ ] **Wearable / Watch Companion**: support quick break and hydration actions from watch devices.
 - [ ] **Cross-device Sync**: sync settings, history, streaks, hydration, and profiles across devices.
 - [ ] **Local AI Wellness Coach**: provide an offline/private assistant for ergonomic suggestions, break planning, and hydration guidance.
-- [ ] **Eye Strain Risk Score**: compute a risk score from break compliance, long focus stretches, skipped breaks, blink acknowledgements, and hydration.
+- [x] **Eye Strain Risk Score**: compute a risk score from break compliance, long focus stretches, skipped breaks, blink acknowledgements, and hydration.
 
 ---
 
