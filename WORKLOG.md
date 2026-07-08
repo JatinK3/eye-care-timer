@@ -232,6 +232,9 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 - [x] **Notification-action UX**: a brief in-app confirmation ("Logged — 4/8 glasses") when a glass is logged from the notification, plus an "undo last glass" affordance.
 - [ ] **Windows PiP verification**: confirm `setAlwaysOnTop` / `HWND_TOPMOST` floats over borderless-fullscreen apps and surface the exclusive-fullscreen caveat in-app.
 - [x] **Smarter water pacing**: skip water reminders when the user is already at or ahead of the expected daily goal pace.
+- [ ] **Confetti & Celebrations**: Add a beautiful confetti burst across the screen when you hit 100% of your daily water goal or finish your final work block of the day.
+- [ ] **Hover Animations**: Add a subtle scale-up / floating effect when you hover over the large circular timer dial with your mouse.
+- [ ] **Empty States**: Add a nice illustration or dynamic prompt to the History screen if it's completely empty.
 
 ### P3 — Release & distribution (carried from roadmap)
 - [ ] **Desktop auto-update + store distribution**: an update channel for the `.deb`/`.rpm`, plus publishing to Flathub/Snap, Microsoft Store, and Play Store.
