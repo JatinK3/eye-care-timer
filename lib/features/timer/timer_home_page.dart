@@ -854,7 +854,9 @@ class TimerHomePageState extends State<TimerHomePage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      final dayChanged = _checkDayChange();
+      if (!dayChanged) {
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         // Android can fully suspend the Dart VM, so reconcile across every
         // elapsed work/break boundary on resume.
         _syncTimerWithClock();
@@ -868,6 +870,7 @@ class TimerHomePageState extends State<TimerHomePage>
         // desktop focus transitions previously spawned duplicate break overlays
         // and corrupted streak state (see WORKLOG).
         _realignAnimationToClock();
+      }
       }
       if (_isFocusMode) {
         unawaited(_systemUiService.setFocusModeEnabled(true));
@@ -1144,17 +1147,42 @@ class TimerHomePageState extends State<TimerHomePage>
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
-  void _checkDayChange() {
+  bool _checkDayChange() {
     final today = _todayKey();
     if (_currentDateKey != today) {
       _currentDateKey = today;
-      setState(() {
-        _streakCount = 0;
-        _waterGlassesToday = 0;
+      scheduleMicrotask(() {
+        if (!mounted) return;
+        _stopTimerCleanup(resetPulse: true);
+        unawaited(_backgroundService.stopPhase());
+        widget.clearSession();
+        widget.saveStreakCount(0);
+        widget.saveWaterGlassesToday(0);
+        setState(() {
+          _streakCount = 0;
+          _waterGlassesToday = 0;
+          _isRunning = false;
+          _isPaused = false;
+          _isBreak = false;
+          _isSystemIdlePaused = false;
+          _snoozeEndsAt = null;
+          _lastSnoozeRemaining = null;
+          _phaseOpacity = 1.0;
+          _phaseStartedAt = null;
+          _phaseEndsAt = null;
+          _autoRunCompletedCycles = 0;
+          _breakDebtSeconds = 0;
+          final effWork = _getEffectiveWorkDuration();
+          _initialDuration = effWork;
+          _remainingSeconds = effWork;
+          _animationController.reset();
+        });
+        _updateDesktopState();
+        _checkSchedule();
       });
-      widget.saveStreakCount(0);
-      widget.saveWaterGlassesToday(0);
+      return true;
     }
+    return false;
   }
 
   void _logWaterGlass(int delta, {bool showConfirmation = false}) {
