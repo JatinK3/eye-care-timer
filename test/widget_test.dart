@@ -23,6 +23,9 @@ class FakeBreakOverlayService extends BreakOverlayService {
   int breakOverlayCount = 0;
   String? lastCustomMessage;
 
+  @override
+  Future<bool> isMediaPlaying() async => false;
+
   FakeBreakOverlayService({this.status = OverlayPermissionStatus.allowed});
 
   @override
@@ -811,7 +814,7 @@ void main() {
     await tester.tap(categoryHeader);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('25 / 5'));
+    await tester.tap(find.text('Reading'));
     await tester.pumpAndSettle();
 
     await tester.pageBack();
@@ -837,15 +840,15 @@ void main() {
     await tester.tap(categoryHeader);
     await tester.pumpAndSettle();
 
-    // Tap the Gaming Mode profile chip — applies its relaxed 45/5 cadence.
-    await tester.tap(find.text('Gaming Mode'));
+    // Tap the Gaming Mode profile chip — applies its relaxed 60 minutes cadence.
+    await tester.tap(find.text('Gaming'));
     await tester.pumpAndSettle();
 
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    // Verify work timer is updated to 45:00
-    expect(find.text('45:00'), findsOneWidget);
+    // Verify work timer is updated to 60:00
+    expect(find.text('60:00'), findsOneWidget);
   });
 
   testWidgets('dark mode start button keeps readable contrast', (
@@ -2339,7 +2342,7 @@ void main() {
     await tester.tap(categoryHeader);
     await tester.pumpAndSettle();
 
-    final finder = find.text('Camera/mic auto-postpone');
+    final finder = find.text('Do Not Interrupt Mode');
     await tester.scrollUntilVisible(
       finder,
       200,
