@@ -1045,11 +1045,11 @@
   "@settingsReminderIntervalDesc": {
     "description": "Description of wellness reminder interval"
   },
-  "settingsCameraMicAutoPostpone": "Camera/mic auto-postpone",
+  "settingsCameraMicAutoPostpone": "Do Not Interrupt Mode",
   "@settingsCameraMicAutoPostpone": {
     "description": "Title for camera/mic auto-postpone setting"
   },
-  "settingsCameraMicAutoPostponeSubtitle": "Postpone breaks automatically when camera is in use (video calls)",
+  "settingsCameraMicAutoPostponeSubtitle": "Postpone breaks automatically during meetings, calls, and active media",
   "@settingsCameraMicAutoPostponeSubtitle": {
     "description": "Subtitle for camera/mic auto-postpone setting"
   },

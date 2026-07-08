@@ -1420,6 +1420,7 @@ class _SettingsPageState extends State<SettingsPage>
             'zoom',
             'teams',
             'postpone',
+            'media',
           ],
           category: 'Break Screen & Behavior',
           widget: Column(
@@ -1427,7 +1428,7 @@ class _SettingsPageState extends State<SettingsPage>
             children: [
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                secondary: const Icon(Icons.videocam_outlined),
+                secondary: const Icon(Icons.do_not_disturb_on_outlined),
                 title: Text(l10n.settingsCameraMicAutoPostpone),
                 subtitle: Text(l10n.settingsCameraMicAutoPostponeSubtitle),
                 value: widget.cameraMicAutoPostponeEnabled,

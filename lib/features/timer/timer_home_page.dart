@@ -2208,7 +2208,9 @@ class TimerHomePageState extends State<TimerHomePage>
       if (widget.cameraMicAutoPostponeEnabled) {
         final camInUse = await _isCameraInUse();
         final micInUse = await _isMicInUse();
-        if (camInUse || micInUse) {
+        final mediaPlaying = await widget.breakOverlayService?.isMediaPlaying() ?? false;
+        
+        if (camInUse || micInUse || mediaPlaying) {
           shouldAutoPostpone = true;
         }
       }

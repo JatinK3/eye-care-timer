@@ -1549,13 +1549,13 @@ abstract class AppLocalizations {
   /// Title for camera/mic auto-postpone setting
   ///
   /// In en, this message translates to:
-  /// **'Camera/mic auto-postpone'**
+  /// **'Do Not Interrupt Mode'**
   String get settingsCameraMicAutoPostpone;
 
   /// Subtitle for camera/mic auto-postpone setting
   ///
   /// In en, this message translates to:
-  /// **'Postpone breaks automatically when camera is in use (video calls)'**
+  /// **'Postpone breaks automatically during meetings, calls, and active media'**
   String get settingsCameraMicAutoPostponeSubtitle;
 
   /// Detailed description of camera/mic auto-postpone

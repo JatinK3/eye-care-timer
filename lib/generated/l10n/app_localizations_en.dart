@@ -811,11 +811,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'How often to send a wellness reminder';
 
   @override
-  String get settingsCameraMicAutoPostpone => 'Camera/mic auto-postpone';
+  String get settingsCameraMicAutoPostpone => 'Do Not Interrupt Mode';
 
   @override
   String get settingsCameraMicAutoPostponeSubtitle =>
-      'Postpone breaks automatically when camera is in use (video calls)';
+      'Postpone breaks automatically during meetings, calls, and active media';
 
   @override
   String get settingsCameraMicAutoPostponeDesc =>
