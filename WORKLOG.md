@@ -242,7 +242,7 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 - [x] **Adaptive Break Scheduling**: adjust or recommend work/break cadence from real behavior, such as repeated skips/postpones or consistently completed breaks.
 - [x] **Smart Hydration Forecast**: show whether the user is on pace, behind pace, or ahead of pace, plus how many glasses remain before the active day ends.
 - [ ] **Meeting / Media Aware Breaks**: expand the current camera/mic/media logic into a proper do-not-interrupt mode for calls, fullscreen video, presentations, and active media.
-- [ ] **Device Validation Mode**: add an in-app diagnostics screen to send wellness reminders, water reminders, notification actions, and background-action tests before release.
+- [x] **Device Validation Mode**: add an in-app diagnostics screen to send wellness reminders, water reminders, notification actions, and background-action tests before release.
 - [ ] **Profiles**: support Coding, Gaming, Reading, Study, and Office profiles with independent durations, reminder cadence, notification style, strictness, and hydration defaults.
 - [ ] **Weekly Health Report**: summarize break compliance, hydration, skipped/postponed breaks, focus time, and best/worst days using History & Insights data.
 - [ ] **Break Debt**: track missed rest after skipped/postponed breaks and recommend a longer recovery break later.

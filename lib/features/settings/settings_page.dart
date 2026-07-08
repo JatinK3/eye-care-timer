@@ -18,6 +18,7 @@ import '../../services/permissions_service.dart';
 import '../../theme/color_presets.dart';
 import '../../generated/l10n/app_localizations.dart';
 import 'reminder_reliability_page.dart';
+import '../diagnostics/device_validation_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool isDark;
@@ -2960,6 +2961,25 @@ class _SettingsPageState extends State<SettingsPage>
               ),
             ),
           ),
+        ),
+      ),
+      SettingItem(
+        title: 'Device Validation Mode',
+        subtitle: 'Test background reminders and permissions',
+        keywords: ['test', 'diagnostics', 'validation', 'background', 'reminders'],
+        category: 'Diagnostics & Validation',
+        widget: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.bug_report),
+          title: const Text('Device Validation Mode'),
+          subtitle: const Text('Test background reminders and permissions'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DeviceValidationPage()),
+            );
+          },
         ),
       ),
     ];
