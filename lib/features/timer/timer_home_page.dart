@@ -5225,27 +5225,38 @@ class _GradientTimerPainter extends CustomPainter {
 
     // ── 7. Orbiting Particle Trail ──────────────────────────────────────
     if (progress > 0.0 && progress < 1.0) {
-      // Use time-based seed so particles sparkle dynamically as progress changes
-      final seed = DateTime.now().millisecondsSinceEpoch ~/ 40;
-      final random = math.Random(seed);
-      for (int i = 0; i < 25; i++) {
-        // Particles trail behind the tip (up to 0.20 radians behind)
-        final trailAngleOffset = random.nextDouble() * 0.20;
+      final particleCount = 25;
+      final maxTrailAngle = 0.20;
+      
+      for (int i = 0; i < particleCount; i++) {
+        // Fixed distance behind the tip for this particle
+        final trailAngleOffset = (i / particleCount) * maxTrailAngle;
         final particleAngle = sweepAngle - trailAngleOffset;
         if (particleAngle <= 0) continue;
         
         final angle = startAngle + particleAngle;
         
-        // Randomly drift away from the center line of the stroke
-        final drift = (random.nextDouble() - 0.5) * strokeWidth * 3.5;
-        final particleRadius = radius + drift;
+        // Smooth sine-wave drift based on particle index and overall progress
+        // This makes them weave back and forth smoothly as they travel
+        final wavePhase = (i * 0.4) + (progress * 100); 
+        final drift = math.sin(wavePhase) * strokeWidth * 1.5;
+        
+        // Add a secondary harmonic for more organic movement
+        final drift2 = math.cos(wavePhase * 0.7) * strokeWidth * 0.5;
+        
+        final particleRadius = radius + drift + drift2;
         
         final px = center.dx + particleRadius * math.cos(angle);
         final py = center.dy + particleRadius * math.sin(angle);
         
-        // Random size and opacity based on how far behind the tip they are
-        final size = random.nextDouble() * strokeWidth * 0.3;
-        final alpha = (1.0 - (trailAngleOffset / 0.20)) * 0.85;
+        // Size tapers off the further back it is
+        final sizeProgress = 1.0 - (i / particleCount);
+        // Add slight pulsing to size
+        final sizePulse = math.sin(wavePhase * 2) * 0.2 + 0.8; 
+        final size = strokeWidth * 0.3 * sizeProgress * sizePulse;
+        
+        // Opacity fades out smoothly
+        final alpha = sizeProgress * 0.85;
         
         canvas.drawCircle(
           Offset(px, py),
