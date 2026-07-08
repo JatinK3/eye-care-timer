@@ -595,7 +595,7 @@ class DesktopIntegrationService extends WindowListener {
       final width = 64.0;
       final height = 64.0;
       final scale = width / 32.0;
-      final strokeWidth = 3.5 * scale;
+      final strokeWidth = 7.0 * scale; // Increased for better visibility
       final ringRadius = (width / 2) - (strokeWidth / 2) - 0.5;
 
       final recorder = ui.PictureRecorder();
@@ -604,24 +604,24 @@ class DesktopIntegrationService extends WindowListener {
       final center = Offset(width / 2, height / 2);
       final outerRadius = width / 2 - 2.0;
 
-      // 1. Draw a dark circular background circle with a subtle drop shadow
+      // 1. Draw a dark circular background circle with a stronger drop shadow
       canvas.drawShadow(
         Path()..addOval(Rect.fromCircle(center: center, radius: outerRadius)),
-        Colors.black.withValues(alpha: 0.6),
-        3.0,
+        Colors.black,
+        4.0,
         true,
       );
 
       final bgPaint = Paint()
-        ..color = const ui.Color(0xE6151515) // Glassy dark
+        ..color = const ui.Color(0xFF252525) // Brighter dark grey to contrast with black taskbars
         ..style = ui.PaintingStyle.fill;
       canvas.drawCircle(center, outerRadius, bgPaint);
 
       // Subtle inner rim highlight for 3D effect
       final borderPaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.1)
+        ..color = Colors.white.withValues(alpha: 0.2)
         ..style = ui.PaintingStyle.stroke
-        ..strokeWidth = 1.0;
+        ..strokeWidth = 1.5;
       canvas.drawCircle(center, outerRadius, borderPaint);
 
       // 2. State specific colors and text
@@ -687,17 +687,15 @@ class DesktopIntegrationService extends WindowListener {
         ..style = ui.PaintingStyle.stroke
         ..strokeWidth = strokeWidth
         ..strokeCap = ui.StrokeCap.round
-        ..color = ringColor.withValues(alpha: 0.2);
+        ..color = ringColor.withValues(alpha: 0.15);
       canvas.drawCircle(center, ringRadius, ringPaint);
 
       if (progress > 0) {
-        // Create a beautiful sweep gradient for the active ring
-        final hsl = HSLColor.fromColor(ringColor);
-        final lightColor = hsl.withLightness((hsl.lightness + 0.15).clamp(0.0, 1.0)).toColor();
+        // Create a high-contrast sweep gradient for the active ring
         final gradient = ui.Gradient.sweep(
           center,
-          [ringColor, lightColor, ringColor],
-          [0.0, 0.5, 1.0],
+          [ringColor, Colors.white, ringColor],
+          [0.0, 0.8, 1.0],
           ui.TileMode.clamp,
           -math.pi / 2,
           -math.pi / 2 + 2 * math.pi,
@@ -711,7 +709,7 @@ class DesktopIntegrationService extends WindowListener {
 
         final arcRect = Rect.fromCircle(center: center, radius: ringRadius);
 
-        // Draw a glowing shadow behind the progress arc
+        // Draw a strong glowing shadow behind the progress arc
         canvas.drawArc(
           arcRect,
           -math.pi / 2,
@@ -719,10 +717,10 @@ class DesktopIntegrationService extends WindowListener {
           false,
           Paint()
             ..style = ui.PaintingStyle.stroke
-            ..strokeWidth = strokeWidth
+            ..strokeWidth = strokeWidth + 2.0
             ..strokeCap = ui.StrokeCap.round
-            ..color = ringColor.withValues(alpha: 0.5)
-            ..imageFilter = ui.ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0),
+            ..color = ringColor.withValues(alpha: 0.8)
+            ..imageFilter = ui.ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
         );
 
         // Draw the actual gradient arc
@@ -776,14 +774,14 @@ class DesktopIntegrationService extends WindowListener {
             text: text,
             style: TextStyle(
               color: Colors.white,
-              fontSize: text.length > 2 ? (14.5 * scale) : (19.5 * scale),
+              fontSize: text.length > 2 ? (16.0 * scale) : (22.0 * scale), // Increased font size
               fontWeight: ui.FontWeight.w900,
               height: 1.0,
               shadows: [
                 Shadow(
-                  color: Colors.black.withValues(alpha: 0.5),
+                  color: Colors.black,
                   offset: const Offset(0, 1.5),
-                  blurRadius: 2.0,
+                  blurRadius: 3.0,
                 ),
               ],
             ),
