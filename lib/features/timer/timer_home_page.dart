@@ -3791,16 +3791,22 @@ class TimerHomePageState extends State<TimerHomePage>
                           ),
                         ),
                       ),
-                    IconButton(
-                      icon: const Icon(Icons.bar_chart),
-                      onPressed: () => widget.openHistory(context),
-                      tooltip: 'Productivity Insights',
+                    Hero(
+                      tag: 'history_icon',
+                      child: IconButton(
+                        icon: const Icon(Icons.bar_chart),
+                        onPressed: () => widget.openHistory(context),
+                        tooltip: 'Productivity Insights',
+                      ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.settings),
-                      onPressed: () =>
-                          widget.openSettings(context, _canChangeSettings),
-                      tooltip: 'Settings',
+                    Hero(
+                      tag: 'settings_icon',
+                      child: IconButton(
+                        icon: const Icon(Icons.settings),
+                        onPressed: () =>
+                            widget.openSettings(context, _canChangeSettings),
+                        tooltip: 'Settings',
+                      ),
                     ),
                     if (!kIsWeb &&
                         (defaultTargetPlatform == TargetPlatform.linux ||
@@ -4075,10 +4081,12 @@ class TimerHomePageState extends State<TimerHomePage>
                                                         const SizedBox(
                                                           height: 10,
                                                         ),
-                                                        _buildBreakTipPanel(
-                                                          Theme.of(context),
-                                                          isDark,
-                                                          progressColor,
+                                                        _ParallaxCard(
+                                                          child: _buildBreakTipPanel(
+                                                            Theme.of(context),
+                                                            isDark,
+                                                            progressColor,
+                                                          ),
                                                         ),
                                                       ],
                                                     ],
@@ -4097,40 +4105,52 @@ class TimerHomePageState extends State<TimerHomePage>
                                                   ).textTheme.bodyMedium,
                                                 ),
                                                 const SizedBox(height: 12),
-                                                _buildTodayBreakSummary(
-                                                  Theme.of(context),
-                                                  progressColor,
+                                                _ParallaxCard(
+                                                  child: _buildTodayBreakSummary(
+                                                    Theme.of(context),
+                                                    progressColor,
+                                                  ),
                                                 ),
                                                 if (widget
                                                     .waterRemindersEnabled) ...[
                                                   const SizedBox(height: 12),
-                                                  _buildWaterSummary(
-                                                    Theme.of(context),
+                                                  _ParallaxCard(
+                                                    child: _buildWaterSummary(
+                                                      Theme.of(context),
+                                                    ),
                                                   ),
                                                 ],
                                                 const SizedBox(height: 12),
-                                                _buildEyeStrainRiskCard(
-                                                  Theme.of(context),
+                                                _ParallaxCard(
+                                                  child: _buildEyeStrainRiskCard(
+                                                    Theme.of(context),
+                                                  ),
                                                 ),
                                                 const SizedBox(height: 12),
-                                                _buildHomeQuickActions(
-                                                  Theme.of(context),
-                                                  isDark,
-                                                  progressColor,
+                                                _ParallaxCard(
+                                                  child: _buildHomeQuickActions(
+                                                    Theme.of(context),
+                                                    isDark,
+                                                    progressColor,
+                                                  ),
                                                 ),
                                                 const SizedBox(height: 12),
-                                                _buildLearnCard(
-                                                  Theme.of(context),
-                                                  isDark,
-                                                  progressColor,
+                                                _ParallaxCard(
+                                                  child: _buildLearnCard(
+                                                    Theme.of(context),
+                                                    isDark,
+                                                    progressColor,
+                                                  ),
                                                 ),
                                                 if (widget
                                                     .aiMotivationEnabled) ...[
                                                   const SizedBox(height: 12),
-                                                  _buildAiInsightCard(
-                                                    Theme.of(context),
-                                                    isDark,
-                                                    progressColor,
+                                                  _ParallaxCard(
+                                                    child: _buildAiInsightCard(
+                                                      Theme.of(context),
+                                                      isDark,
+                                                      progressColor,
+                                                    ),
                                                   ),
                                                 ],
                                               ] else ...[
@@ -4237,10 +4257,12 @@ class TimerHomePageState extends State<TimerHomePage>
                                                         .trim()
                                                         .isNotEmpty)) ...[
                                               const SizedBox(height: 10),
-                                              _buildBreakTipPanel(
-                                                Theme.of(context),
-                                                isDark,
-                                                progressColor,
+                                              _ParallaxCard(
+                                                child: _buildBreakTipPanel(
+                                                  Theme.of(context),
+                                                  isDark,
+                                                  progressColor,
+                                                ),
                                               ),
                                             ],
                                           ],
@@ -4307,34 +4329,46 @@ class TimerHomePageState extends State<TimerHomePage>
                                         ),
                                       ),
                                       const SizedBox(height: 12),
-                                      _buildTodayBreakSummary(
-                                        Theme.of(context),
-                                        progressColor,
+                                      _ParallaxCard(
+                                        child: _buildTodayBreakSummary(
+                                          Theme.of(context),
+                                          progressColor,
+                                        ),
                                       ),
                                       if (widget.waterRemindersEnabled) ...[
                                         const SizedBox(height: 12),
-                                        _buildWaterSummary(Theme.of(context)),
+                                        _ParallaxCard(
+                                          child: _buildWaterSummary(Theme.of(context)),
+                                        ),
                                       ],
                                       const SizedBox(height: 12),
-                                      _buildEyeStrainRiskCard(Theme.of(context)),
-                                      const SizedBox(height: 12),
-                                      _buildHomeQuickActions(
-                                        Theme.of(context),
-                                        isDark,
-                                        progressColor,
+                                      _ParallaxCard(
+                                        child: _buildEyeStrainRiskCard(Theme.of(context)),
                                       ),
                                       const SizedBox(height: 12),
-                                      _buildLearnCard(
-                                        Theme.of(context),
-                                        isDark,
-                                        progressColor,
-                                      ),
-                                      if (widget.aiMotivationEnabled) ...[
-                                        const SizedBox(height: 12),
-                                        _buildAiInsightCard(
+                                      _ParallaxCard(
+                                        child: _buildHomeQuickActions(
                                           Theme.of(context),
                                           isDark,
                                           progressColor,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      _ParallaxCard(
+                                        child: _buildLearnCard(
+                                          Theme.of(context),
+                                          isDark,
+                                          progressColor,
+                                        ),
+                                      ),
+                                      if (widget.aiMotivationEnabled) ...[
+                                        const SizedBox(height: 12),
+                                        _ParallaxCard(
+                                          child: _buildAiInsightCard(
+                                            Theme.of(context),
+                                            isDark,
+                                            progressColor,
+                                          ),
                                         ),
                                       ],
                                     ] else ...[
@@ -6130,6 +6164,72 @@ class _NotificationWarningBannerState
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ParallaxCard extends StatefulWidget {
+  final Widget child;
+  const _ParallaxCard({required this.child});
+
+  @override
+  State<_ParallaxCard> createState() => _ParallaxCardState();
+}
+
+class _ParallaxCardState extends State<_ParallaxCard> {
+  double _tiltX = 0;
+  double _tiltY = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    // Only apply hover parallax on desktop/web
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      return widget.child;
+    }
+    return MouseRegion(
+      onHover: (event) {
+        if (!mounted) return;
+        final RenderBox? box = context.findRenderObject() as RenderBox?;
+        if (box == null) return;
+        final position = box.globalToLocal(event.position);
+        final width = box.size.width;
+        final height = box.size.height;
+        // Normalize to -1 to 1 and scale the tilt factor
+        setState(() {
+          _tiltX = ((position.dy / height) - 0.5) * -0.05;
+          _tiltY = ((position.dx / width) - 0.5) * 0.05;
+        });
+      },
+      onExit: (_) {
+        if (!mounted) return;
+        setState(() {
+          _tiltX = 0;
+          _tiltY = 0;
+        });
+      },
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(end: _tiltX),
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        builder: (context, x, child) {
+          return TweenAnimationBuilder<double>(
+            tween: Tween<double>(end: _tiltY),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            builder: (context, y, child) {
+              return Transform(
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.001) // perspective
+                  ..rotateX(x)
+                  ..rotateY(y),
+                alignment: Alignment.center,
+                child: child,
+              );
+            },
+            child: widget.child,
+          );
+        },
       ),
     );
   }

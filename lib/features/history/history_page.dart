@@ -215,7 +215,17 @@ class _HistoryPageState extends State<HistoryPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.historyTitle),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Hero(
+              tag: 'history_icon',
+              child: Icon(Icons.bar_chart),
+            ),
+            const SizedBox(width: 12),
+            Text(AppLocalizations.of(context)!.historyTitle),
+          ],
+        ),
         elevation: 0,
         actions: [
           IconButton(

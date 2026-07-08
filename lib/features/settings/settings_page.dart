@@ -3883,7 +3883,19 @@ class _SettingsPageState extends State<SettingsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)!.settingsTitle)),
+      appBar: AppBar(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Hero(
+              tag: 'settings_icon',
+              child: Icon(Icons.settings),
+            ),
+            const SizedBox(width: 12),
+            Text(AppLocalizations.of(context)!.settingsTitle),
+          ],
+        ),
+      ),
       body: Column(
         children: [
           Padding(
