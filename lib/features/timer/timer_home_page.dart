@@ -3793,6 +3793,16 @@ class TimerHomePageState extends State<TimerHomePage>
         data: effectiveTheme,
         child: Scaffold(
           extendBodyBehindAppBar: true,
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          floatingActionButton: _isFocusMode
+              ? null
+              : _GlassmorphicNavBar(
+                  onTimerTap: () {}, // Already on Timer
+                  onHistoryTap: () => widget.openHistory(context),
+                  onSettingsTap: () => widget.openSettings(context, _canChangeSettings),
+                  canChangeSettings: _canChangeSettings,
+                  isDark: isDark,
+                ),
           appBar: _isFocusMode
               ? null
               : AppBar(
@@ -3854,23 +3864,7 @@ class TimerHomePageState extends State<TimerHomePage>
                           ),
                         ),
                       ),
-                    Hero(
-                      tag: 'history_icon',
-                      child: IconButton(
-                        icon: const Icon(Icons.bar_chart),
-                        onPressed: () => widget.openHistory(context),
-                        tooltip: 'Productivity Insights',
-                      ),
-                    ),
-                    Hero(
-                      tag: 'settings_icon',
-                      child: IconButton(
-                        icon: const Icon(Icons.settings),
-                        onPressed: () =>
-                            widget.openSettings(context, _canChangeSettings),
-                        tooltip: 'Settings',
-                      ),
-                    ),
+
                     if (!kIsWeb &&
                         (defaultTargetPlatform == TargetPlatform.linux ||
                             defaultTargetPlatform == TargetPlatform.macOS ||
@@ -3898,11 +3892,9 @@ class TimerHomePageState extends State<TimerHomePage>
                     children: [
                       if (!_isFocusMode)
                         Positioned.fill(
-                          child: _GlassmorphicBackground(
-                            colorPreset: widget.colorPreset,
+                          child: _FluidMeshBackground(
+                            baseColor: Theme.of(context).colorScheme.primary,
                             isDark: isDark,
-                            customAccentColorHex: widget.customAccentColorHex,
-                            useSystemAccent: widget.useSystemAccent,
                           ),
                         ),
                       if (_isFocusMode)
@@ -4986,7 +4978,7 @@ class _AnimatedTimerDialState extends State<_AnimatedTimerDial> {
   }
 
   List<Color> _getRingColors(double progress, Color baseColor) {
-    if (isBreak) {
+    if (widget.isBreak) {
       final hsl = HSLColor.fromColor(baseColor);
       final lighterColor = hsl
           .withLightness((hsl.lightness + 0.15).clamp(0.0, 1.0))
@@ -5050,8 +5042,8 @@ class _AnimatedTimerDialState extends State<_AnimatedTimerDial> {
                 children: [
                   // Frosted glass inner circle
                   Container(
-                    width: dialSize - strokeWidth * 2,
-                    height: dialSize - strokeWidth * 2,
+                    width: dialSize - widget.strokeWidth * 2,
+                    height: dialSize - widget.strokeWidth * 2,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white.withValues(alpha: 0.04),
@@ -5133,6 +5125,7 @@ class _AnimatedTimerDialState extends State<_AnimatedTimerDial> {
             },
           ),
         ),
+      ),
       ),
       ),
     );
@@ -5389,158 +5382,7 @@ class _GradientTimerPainter extends CustomPainter {
   }
 }
 
-class _GlassmorphicBackground extends StatefulWidget {
-  final String colorPreset;
-  final bool isDark;
-  final String? customAccentColorHex;
-  final bool useSystemAccent;
 
-  const _GlassmorphicBackground({
-    required this.colorPreset,
-    required this.isDark,
-    this.customAccentColorHex,
-    required this.useSystemAccent,
-  });
-
-  @override
-  State<_GlassmorphicBackground> createState() =>
-      _GlassmorphicBackgroundState();
-}
-
-class _GlassmorphicBackgroundState extends State<_GlassmorphicBackground>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 25),
-    );
-    if (kIsWeb || !Platform.environment.containsKey('FLUTTER_TEST')) {
-      _controller.repeat();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final String effectivePreset;
-    final String? effectiveHex;
-    if (widget.useSystemAccent) {
-      effectivePreset = 'Custom';
-      final primaryColor = Theme.of(context).colorScheme.primary;
-      effectiveHex =
-          '#${primaryColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
-    } else {
-      effectivePreset = widget.colorPreset;
-      effectiveHex = widget.customAccentColorHex;
-    }
-
-    final colors = ColorPresets.glassOrbColors(
-      effectivePreset,
-      widget.isDark,
-      customHex: effectiveHex,
-    );
-    final primaryOrbColor = colors[0];
-    final secondaryOrbColor = colors[1];
-
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final value = _controller.value * 2 * math.pi;
-
-        // Slow fluid drift — primary orb near top-left, drifts toward center
-        final dx1 = math.sin(value) * 0.12;
-        final dy1 = math.cos(value) * 0.10;
-
-        // Secondary orb near bottom-right
-        final dx2 = math.cos(value + math.pi / 3) * 0.14;
-        final dy2 = math.sin(value + math.pi / 3) * 0.10;
-
-        // Accent orb — small, sits near center-right, opposite phase
-        final dx3 = math.sin(value + math.pi) * 0.20;
-        final dy3 = math.cos(value + math.pi) * 0.15;
-
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // Primary orb — top-left quadrant, drifts toward ring edge
-            Align(
-              alignment: Alignment(-0.55 + dx1, -0.50 + dy1),
-              child: Container(
-                width: 420,
-                height: 420,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      primaryOrbColor.withValues(
-                        alpha: widget.isDark ? 0.80 : 0.50,
-                      ),
-                      primaryOrbColor.withValues(alpha: 0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Secondary orb — bottom-right quadrant
-            Align(
-              alignment: Alignment(0.60 + dx2, 0.55 + dy2),
-              child: Container(
-                width: 400,
-                height: 400,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      secondaryOrbColor.withValues(
-                        alpha: widget.isDark ? 0.65 : 0.40,
-                      ),
-                      secondaryOrbColor.withValues(alpha: 0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Accent orb — small, near center-right, adds depth behind the ring
-            Align(
-              alignment: Alignment(0.30 + dx3, 0.10 + dy3),
-              child: Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      primaryOrbColor.withValues(
-                        alpha: widget.isDark ? 0.45 : 0.25,
-                      ),
-                      primaryOrbColor.withValues(alpha: 0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Light blur to smooth edges — kept low so orbs stay vivid
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-                child: const SizedBox.shrink(),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
 
 class _BlinkKindAnimatedEye extends StatefulWidget {
   final double size;
@@ -6309,6 +6151,232 @@ class _ParallaxCardState extends State<_ParallaxCard> {
             child: widget.child,
           );
         },
+      ),
+    );
+  }
+}
+
+class _FluidMeshBackground extends StatefulWidget {
+  final Color baseColor;
+  final bool isDark;
+
+  const _FluidMeshBackground({required this.baseColor, required this.isDark});
+
+  @override
+  State<_FluidMeshBackground> createState() => _FluidMeshBackgroundState();
+}
+
+class _FluidMeshBackgroundState extends State<_FluidMeshBackground> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 15))..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value * 2 * math.pi;
+        final size = MediaQuery.of(context).size;
+        
+        final color1 = widget.baseColor.withValues(alpha: widget.isDark ? 0.25 : 0.4);
+        final color2 = HSLColor.fromColor(widget.baseColor).withHue((HSLColor.fromColor(widget.baseColor).hue + 40) % 360).toColor().withValues(alpha: widget.isDark ? 0.2 : 0.35);
+        final color3 = HSLColor.fromColor(widget.baseColor).withHue((HSLColor.fromColor(widget.baseColor).hue - 40) % 360).toColor().withValues(alpha: widget.isDark ? 0.2 : 0.35);
+
+        return Stack(
+          children: [
+            Container(color: Theme.of(context).scaffoldBackgroundColor),
+            Positioned(
+              left: size.width * 0.2 + math.cos(t) * 100,
+              top: size.height * 0.2 + math.sin(t) * 100,
+              child: _Blob(color: color1, size: size.width * 0.8),
+            ),
+            Positioned(
+              right: size.width * 0.1 + math.sin(t) * 120,
+              bottom: size.height * 0.1 + math.cos(t) * 120,
+              child: _Blob(color: color2, size: size.width * 0.7),
+            ),
+            Positioned(
+              left: size.width * 0.4 + math.cos(t + math.pi) * 80,
+              top: size.height * 0.5 + math.sin(t + math.pi) * 80,
+              child: _Blob(color: color3, size: size.width * 0.6),
+            ),
+            BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+              child: Container(color: Colors.transparent),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _Blob extends StatelessWidget {
+  final Color color;
+  final double size;
+
+  const _Blob({required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+      ),
+    );
+  }
+}
+
+class _GlassmorphicNavBar extends StatelessWidget {
+  final VoidCallback onTimerTap;
+  final VoidCallback onHistoryTap;
+  final VoidCallback onSettingsTap;
+  final bool canChangeSettings;
+  final bool isDark;
+
+  const _GlassmorphicNavBar({
+    required this.onTimerTap,
+    required this.onHistoryTap,
+    required this.onSettingsTap,
+    required this.canChangeSettings,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(32),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              decoration: BoxDecoration(
+                color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 16,
+                    spreadRadius: -4,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _NavBarItem(
+                    icon: Icons.timer,
+                    label: 'Timer',
+                    onTap: onTimerTap,
+                    isActive: true,
+                  ),
+                  const SizedBox(width: 8),
+                  _NavBarItem(
+                    icon: Icons.bar_chart,
+                    label: 'History',
+                    onTap: onHistoryTap,
+                    isActive: false,
+                  ),
+                  const SizedBox(width: 8),
+                  _NavBarItem(
+                    icon: Icons.settings,
+                    label: 'Settings',
+                    onTap: canChangeSettings ? onSettingsTap : () {},
+                    isActive: false,
+                    opacity: canChangeSettings ? 1.0 : 0.5,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavBarItem extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isActive;
+  final double opacity;
+
+  const _NavBarItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isActive = false,
+    this.opacity = 1.0,
+  });
+
+  @override
+  State<_NavBarItem> createState() => _NavBarItemState();
+}
+
+class _NavBarItemState extends State<_NavBarItem> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeColor = Theme.of(context).colorScheme.primary;
+    final color = widget.isActive ? activeColor : Theme.of(context).colorScheme.onSurface;
+
+    return MouseRegion(
+      cursor: widget.opacity < 1.0 ? SystemMouseCursors.basic : SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+          decoration: BoxDecoration(
+            color: widget.isActive 
+                ? activeColor.withValues(alpha: 0.15) 
+                : (_isHovering ? color.withValues(alpha: 0.1) : Colors.transparent),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.icon, color: color.withValues(alpha: widget.opacity), size: 22),
+              if (widget.isActive || _isHovering) ...[
+                const SizedBox(width: 8),
+                Text(
+                  widget.label,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: color.withValues(alpha: widget.opacity),
+                    fontWeight: widget.isActive ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
