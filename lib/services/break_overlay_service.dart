@@ -254,12 +254,17 @@ class BreakOverlayService {
             // Check if this stream is active (uncorked)
             final isUncorked = input.toLowerCase().contains('corked: no');
             if (isUncorked) {
-              // Check if this stream belongs to our own app (BlinkKind / eye_care_timer)
-              final isOurApp =
-                  input.contains('eye_care_timer') ||
-                  input.contains('blinkkind') ||
-                  input.contains('com.jatin.eyecaretimer');
-              if (!isOurApp) {
+              // Check if this stream belongs to our own app or a known persistent comms app
+              final lowerInput = input.toLowerCase();
+              final shouldIgnore =
+                  lowerInput.contains('eye_care_timer') ||
+                  lowerInput.contains('blinkkind') ||
+                  lowerInput.contains('com.jatin.eyecaretimer') ||
+                  lowerInput.contains('telegram') ||
+                  lowerInput.contains('discord') ||
+                  lowerInput.contains('skype') ||
+                  lowerInput.contains('teams');
+              if (!shouldIgnore) {
                 // Found an active media stream from another application (e.g. Chrome, Spotify)
                 return true;
               }

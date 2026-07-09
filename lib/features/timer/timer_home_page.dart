@@ -1627,6 +1627,8 @@ class TimerHomePageState extends State<TimerHomePage>
     setState(() {
       _isBreak = false;
       _isSystemIdlePaused = false;
+      _isMediaPaused = false;
+      _isSchedulePaused = false;
       _isPaused = false;
       _isRunning = true;
       _phaseOpacity = 1.0;
@@ -1708,9 +1710,11 @@ class TimerHomePageState extends State<TimerHomePage>
       } else {
         _frozenBreakTip = null; // clear for next break
       }
-      _isRunning = true;
       _isPaused = false;
       _isSystemIdlePaused = false;
+      _isMediaPaused = false;
+      _isSchedulePaused = false;
+      _isRunning = true;
       _isCancelled = false;
       _phaseOpacity = 1.0;
       _phaseStartedAt = DateTime.now();
