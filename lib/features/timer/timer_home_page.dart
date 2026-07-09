@@ -6211,9 +6211,11 @@ class _FluidMeshBackgroundState extends State<_FluidMeshBackground> with SingleT
               top: size.height * 0.5 + math.sin(t + math.pi) * 80,
               child: _Blob(color: color3, size: size.width * 0.6),
             ),
-            BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-              child: Container(color: Colors.transparent),
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+                child: Container(color: Colors.transparent),
+              ),
             ),
           ],
         );
@@ -6303,7 +6305,7 @@ class _GlassmorphicNavBar extends StatelessWidget {
                   _NavBarItem(
                     icon: Icons.settings,
                     label: 'Settings',
-                    onTap: canChangeSettings ? onSettingsTap : () {},
+                    onTap: onSettingsTap,
                     isActive: false,
                     opacity: canChangeSettings ? 1.0 : 0.5,
                   ),
