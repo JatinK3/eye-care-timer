@@ -1625,6 +1625,8 @@ class TimerHomePageState extends State<TimerHomePage>
     }
 
     setState(() {
+      _streakCount = _streakCount + 1;
+      _autoRunCompletedCycles++;
       _isBreak = false;
       _isSystemIdlePaused = false;
       _isMediaPaused = false;
@@ -1642,6 +1644,9 @@ class TimerHomePageState extends State<TimerHomePage>
         Duration(seconds: effWork),
       );
     });
+
+    _onStreakIncremented(_streakCount);
+    widget.saveStreakCount(_streakCount);
 
     _animationController.forward(from: 0.0);
     _saveActiveSession(remainingSeconds: _initialDuration);
@@ -2304,6 +2309,11 @@ class TimerHomePageState extends State<TimerHomePage>
       if (_breakDebtSeconds > 0) {
         upcomingBreakDuration += _breakDebtSeconds;
         _breakDebtSeconds = 0;
+      }
+      
+      // Cap the break duration to 7 minutes (420 seconds) maximum to prevent excessively long breaks
+      if (upcomingBreakDuration > 420) {
+        upcomingBreakDuration = 420;
       }
 
       setState(() {
