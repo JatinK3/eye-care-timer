@@ -197,10 +197,11 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] **Accessibility & performance audit** — screen-reader pass, reduced-motion option, colorblind-safe palettes; revisit the once-per-second tray PNG render cadence on desktop.
 
 ### P4 — Future AI-Driven Wellness Features
-- [ ] **AI Fatigue & Blink Detection** — local, privacy-first computer vision model using front camera (e.g. MediaPipe) to detect blink rate and eye fatigue to trigger breaks dynamically.
-- [ ] **Interactive AI Wellness & Ergonomics Coach** — chat/companion interface to consult on ergonomic posture, stretching, and wellness tips based on productivity metrics.
-- [ ] **AI-Driven Smart-Break Schedule** — adaptive timer schedule based on user focus patterns, daily compliance, and fatigue feedback.
-- [ ] **AI Voice-Guided Eye Exercises** — audio guidance and instructions for dynamic eye exercises during break phases.
+- [ ] **Interactive AI Wellness & Ergonomics Coach:** A chat/companion interface during breaks. Uses the existing `AiService` to generate personalized 2-minute guided neck stretch routines or posture advice based on user prompts (e.g. "My neck hurts").
+- [ ] **AI-Driven Smart-Break Schedule:** The app learns from user habits via `TimerEventRecord` history. It can dynamically adjust timer phases (e.g. suggesting a 45/5 Pomodoro schedule instead of 20-20-20) based on focus patterns, daily compliance, and fatigue feedback.
+- [ ] **AI Fatigue & Blink Detection (Local Privacy):** Since camera usage detection is already built, add an opt-in, privacy-first computer vision model (e.g. MediaPipe) using the front camera to detect blink rate and eye fatigue, triggering a "Micro-Blink Break" dynamically when needed.
+- [ ] **AI Voice-Guided Eye Exercises:** Generate soothing TTS (Text-to-Speech) audio guiding the user through eye-rolling exercises or a 4-7-8 breathing technique, much like a premium meditation app.
+- [ ] **AI Task Breakdown & Context:** The user types "I need to write a presentation", and the AI breaks it into optimal 20-minute chunks based on the Pomodoro technique, auto-scheduling the timer phases.
 
 ### Quick wins (low effort, near-term)
 - [x] Promote "Take a break now" and a "Snooze for…" action to the main home screen (currently tray-only).
@@ -232,9 +233,9 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 - [x] **Notification-action UX**: a brief in-app confirmation ("Logged — 4/8 glasses") when a glass is logged from the notification, plus an "undo last glass" affordance.
 - [ ] **Windows PiP verification**: confirm `setAlwaysOnTop` / `HWND_TOPMOST` floats over borderless-fullscreen apps and surface the exclusive-fullscreen caveat in-app.
 - [x] **Smarter water pacing**: skip water reminders when the user is already at or ahead of the expected daily goal pace.
-- [ ] **Confetti & Celebrations**: Add a beautiful confetti burst across the screen when you hit 100% of your daily water goal or finish your final work block of the day.
-- [ ] **Hover Animations**: Add a subtle scale-up / floating effect when you hover over the large circular timer dial with your mouse.
-- [ ] **Empty States**: Add a nice illustration or dynamic prompt to the History screen if it's completely empty.
+- [x] **Confetti & Celebrations**: Add a beautiful confetti burst across the screen when you hit 100% of your daily water goal or finish your final work block of the day.
+- [x] **Hover Animations**: Add a subtle scale-up / floating effect when you hover over the large circular timer dial with your mouse.
+- [x] **Empty States**: Add a nice illustration or dynamic prompt to the History screen if it's completely empty.
 
 ### P3 — Release & distribution (carried from roadmap)
 - [ ] **Desktop auto-update + store distribution**: an update channel for the `.deb`/`.rpm`, plus publishing to Flathub/Snap, Microsoft Store, and Play Store.

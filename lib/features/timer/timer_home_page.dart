@@ -4923,7 +4923,7 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 }
 
-class _AnimatedTimerDial extends StatelessWidget {
+class _AnimatedTimerDial extends StatefulWidget {
   final double size;
   final Animation<double> progressAnimation;
   final Animation<double> pulseAnimation;
@@ -4958,6 +4958,13 @@ class _AnimatedTimerDial extends StatelessWidget {
     required this.isBreak,
   });
 
+  @override
+  State<_AnimatedTimerDial> createState() => _AnimatedTimerDialState();
+}
+
+class _AnimatedTimerDialState extends State<_AnimatedTimerDial> {
+  bool _isHovering = false;
+
   String _formattedTime(int seconds) {
     if (seconds < 60) return seconds.toString();
     final minutes = seconds ~/ 60;
@@ -4966,8 +4973,8 @@ class _AnimatedTimerDial extends StatelessWidget {
   }
 
   Color _getCurrentProgressColor(double progress) {
-    if (isBreak) {
-      return progressColor;
+    if (widget.isBreak) {
+      return widget.progressColor;
     }
     if (progress > 0.25) {
       return const Color(0xFF10B981); // Emerald green
@@ -5007,28 +5014,36 @@ class _AnimatedTimerDial extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dialSize = size * 0.92;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: ScaleTransition(
-        scale: pulseAnimation,
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: AnimatedBuilder(
-            animation: progressAnimation,
-            child: null,
-            builder: (context, _) {
-              final remainingSeconds =
-                  (initialDuration * progressAnimation.value).ceil();
-              final currentProgressColor = _getCurrentProgressColor(
-                progressAnimation.value,
-              );
-              final ringColors = _getRingColors(
-                progressAnimation.value,
-                progressColor,
-              );
+    final dialSize = widget.size * 0.92;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedScale(
+          scale: _isHovering ? 1.03 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          child: ScaleTransition(
+            scale: widget.pulseAnimation,
+            child: SizedBox(
+              width: widget.size,
+              height: widget.size,
+              child: AnimatedBuilder(
+                animation: widget.progressAnimation,
+                child: null,
+                builder: (context, _) {
+                  final remainingSeconds =
+                      (widget.initialDuration * widget.progressAnimation.value).ceil();
+                  final currentProgressColor = _getCurrentProgressColor(
+                    widget.progressAnimation.value,
+                  );
+                  final ringColors = _getRingColors(
+                    widget.progressAnimation.value,
+                    widget.progressColor,
+                  );
 
               return Stack(
                 alignment: Alignment.center,
@@ -5059,10 +5074,10 @@ class _AnimatedTimerDial extends StatelessWidget {
                     height: dialSize,
                     child: CustomPaint(
                       painter: _GradientTimerPainter(
-                        progress: progressAnimation.value,
-                        strokeWidth: strokeWidth,
+                        progress: widget.progressAnimation.value,
+                        strokeWidth: widget.strokeWidth,
                         colors: ringColors,
-                        trackColor: ringBackgroundColor,
+                        trackColor: widget.ringBackgroundColor,
                       ),
                     ),
                   ),
@@ -5070,23 +5085,23 @@ class _AnimatedTimerDial extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _BlinkKindAnimatedEye(
-                        size: isFocusMode ? 36 : 26,
-                        color: textColor.withValues(alpha: 0.8),
+                        size: widget.isFocusMode ? 36 : 26,
+                        color: widget.textColor.withValues(alpha: 0.8),
                         irisColor: currentProgressColor,
-                        isBlinkNudging: isBlinkNudging,
-                        isBreak: isBreak,
+                        isBlinkNudging: widget.isBlinkNudging,
+                        isBreak: widget.isBreak,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         _formattedTime(remainingSeconds),
                         style: Theme.of(context).textTheme.displaySmall
                             ?.copyWith(
-                              fontSize: isLandscape
+                              fontSize: widget.isLandscape
                                   ? 28
-                                  : (isFocusMode ? 54 : null),
+                                  : (widget.isFocusMode ? 54 : null),
                               fontWeight: FontWeight.w200,
-                              color: textColor,
-                              shadows: isFocusMode
+                              color: widget.textColor,
+                              shadows: widget.isFocusMode
                                   ? [
                                       Shadow(
                                         color: currentProgressColor.withValues(
@@ -5100,15 +5115,15 @@ class _AnimatedTimerDial extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        statusLabel,
+                        widget.statusLabel,
                         style: Theme.of(context).textTheme.labelMedium
                             ?.copyWith(
-                              fontSize: isFocusMode ? 14 : null,
-                              fontWeight: isFocusMode ? FontWeight.w300 : null,
-                              color: textColor.withValues(
-                                alpha: isFocusMode ? 0.45 : 0.65,
+                              fontSize: widget.isFocusMode ? 14 : null,
+                              fontWeight: widget.isFocusMode ? FontWeight.w300 : null,
+                              color: widget.textColor.withValues(
+                                alpha: widget.isFocusMode ? 0.45 : 0.65,
                               ),
-                              letterSpacing: isFocusMode ? 1.5 : null,
+                              letterSpacing: widget.isFocusMode ? 1.5 : null,
                             ),
                       ),
                     ],
@@ -5118,6 +5133,7 @@ class _AnimatedTimerDial extends StatelessWidget {
             },
           ),
         ),
+      ),
       ),
     );
   }

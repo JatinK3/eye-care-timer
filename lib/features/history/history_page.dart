@@ -1498,14 +1498,32 @@ class _EmptyMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 30),
+    padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
     child: Center(
-      child: Text(
-        message,
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.auto_graph_rounded,
+              size: 32,
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     ),
   );
