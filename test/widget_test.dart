@@ -1364,16 +1364,14 @@ void main() {
       expect(find.text('Breaks taken today'), findsOneWidget);
 
       await tester.tap(find.text('20:00'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.settings), findsNothing);
       expect(find.text('Breaks taken today'), findsNothing);
       expect(find.text('Tap dial to exit focus mode'), findsOneWidget);
 
       await tester.tap(find.text('20:00'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.settings), findsOneWidget);
       expect(find.text('Breaks taken today'), findsOneWidget);

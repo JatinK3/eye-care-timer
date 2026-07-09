@@ -627,7 +627,11 @@ class TimerHomePageState extends State<TimerHomePage>
     _scheduleCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _checkSchedule();
     });
-    _checkSchedule();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _checkSchedule();
+      }
+    });
 
     // Media playback auto-pause poll (every 5 seconds, Android & Linux only)
     if (widget.autoPauseOnMediaEnabled) {
@@ -6172,7 +6176,10 @@ class _FluidMeshBackgroundState extends State<_FluidMeshBackground> with SingleT
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 15))..repeat();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 15));
+    if (kIsWeb || !Platform.environment.containsKey('FLUTTER_TEST')) {
+      _controller.repeat();
+    }
   }
 
   @override
@@ -6291,6 +6298,7 @@ class _GlassmorphicNavBar extends StatelessWidget {
                   _NavBarItem(
                     icon: Icons.timer,
                     label: 'Timer',
+                    tooltip: 'Timer',
                     onTap: onTimerTap,
                     isActive: true,
                   ),
@@ -6298,6 +6306,7 @@ class _GlassmorphicNavBar extends StatelessWidget {
                   _NavBarItem(
                     icon: Icons.bar_chart,
                     label: 'History',
+                    tooltip: 'Productivity Insights',
                     onTap: onHistoryTap,
                     isActive: false,
                   ),
@@ -6305,6 +6314,7 @@ class _GlassmorphicNavBar extends StatelessWidget {
                   _NavBarItem(
                     icon: Icons.settings,
                     label: 'Settings',
+                    tooltip: 'Settings',
                     onTap: onSettingsTap,
                     isActive: false,
                     opacity: canChangeSettings ? 1.0 : 0.5,
@@ -6322,6 +6332,7 @@ class _GlassmorphicNavBar extends StatelessWidget {
 class _NavBarItem extends StatefulWidget {
   final IconData icon;
   final String label;
+  final String? tooltip;
   final VoidCallback onTap;
   final bool isActive;
   final double opacity;
@@ -6329,6 +6340,7 @@ class _NavBarItem extends StatefulWidget {
   const _NavBarItem({
     required this.icon,
     required this.label,
+    this.tooltip,
     required this.onTap,
     this.isActive = false,
     this.opacity = 1.0,
@@ -6346,11 +6358,13 @@ class _NavBarItemState extends State<_NavBarItem> {
     final activeColor = Theme.of(context).colorScheme.primary;
     final color = widget.isActive ? activeColor : Theme.of(context).colorScheme.onSurface;
 
-    return MouseRegion(
-      cursor: widget.opacity < 1.0 ? SystemMouseCursors.basic : SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: GestureDetector(
+    return Tooltip(
+      message: widget.tooltip ?? widget.label,
+      child: MouseRegion(
+        cursor: widget.opacity < 1.0 ? SystemMouseCursors.basic : SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isHovering = true),
+        onExit: (_) => setState(() => _isHovering = false),
+        child: GestureDetector(
         onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
@@ -6378,6 +6392,7 @@ class _NavBarItemState extends State<_NavBarItem> {
               ],
             ],
           ),
+        ),
         ),
       ),
     );
