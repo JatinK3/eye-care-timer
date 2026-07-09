@@ -814,10 +814,13 @@ class TimerHomePageState extends State<TimerHomePage>
     if (overlayService == null) return;
 
     final isPlaying = await overlayService.isMediaPlaying();
+    final isMicActive = await _isMicInUse();
+    final isCamActive = await _isCameraInUse();
+    final isMediaActive = isPlaying || isMicActive || isCamActive;
 
     if (!mounted) return;
 
-    if (isPlaying && !_isPaused && !_isMediaPaused && !_isSystemIdlePaused) {
+    if (isMediaActive && !_isPaused && !_isMediaPaused && !_isSystemIdlePaused && !_isSchedulePaused) {
       // Media just started → auto-pause
       setState(() {
         _isMediaPaused = true;
@@ -835,7 +838,7 @@ class TimerHomePageState extends State<TimerHomePage>
         unawaited(_backgroundService.stopPhase());
       });
       _updateDesktopState();
-    } else if (!isPlaying && _isMediaPaused) {
+    } else if (!isMediaActive && _isMediaPaused) {
       // Media stopped → auto-resume
       setState(() {
         _isMediaPaused = false;
@@ -843,12 +846,14 @@ class TimerHomePageState extends State<TimerHomePage>
         _phaseEndsAt = _phaseStartedAt!.add(
           Duration(seconds: _remainingSeconds),
         );
-        _animationController.forward();
+        if (!_isPaused && !_isSystemIdlePaused && !_isSchedulePaused) {
+          _animationController.forward();
+          _schedulePhaseDeadlineTimer(_phaseEndsAt!);
+          unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
+          _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
+          if (_remainingSeconds <= 5) _pulseController.forward();
+        }
         _saveActiveSession();
-        _schedulePhaseDeadlineTimer(_phaseEndsAt!);
-        unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
-        _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
-        if (_remainingSeconds <= 5) _pulseController.forward();
       });
       _updateDesktopState();
     }
@@ -1008,14 +1013,16 @@ class TimerHomePageState extends State<TimerHomePage>
           _phaseEndsAt = _phaseStartedAt!.add(
             Duration(seconds: _remainingSeconds),
           );
-          _animationController.forward();
+          if (!_isPaused && !_isMediaPaused && !_isSchedulePaused) {
+            _animationController.forward();
+            _schedulePhaseDeadlineTimer(_phaseEndsAt!);
+            unawaited(
+              _schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak),
+            );
+            _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
+            if (_remainingSeconds <= 5) _pulseController.forward();
+          }
           _saveActiveSession();
-          _schedulePhaseDeadlineTimer(_phaseEndsAt!);
-          unawaited(
-            _schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak),
-          );
-          _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
-          if (_remainingSeconds <= 5) _pulseController.forward();
         });
         _updateDesktopState();
       }
@@ -1535,7 +1542,7 @@ class TimerHomePageState extends State<TimerHomePage>
       if (_isSchedulePaused) {
         setState(() {
           _isSchedulePaused = false;
-          if (_isRunning && !_isPaused && !_isSystemIdlePaused) {
+          if (_isRunning && !_isPaused && !_isSystemIdlePaused && !_isMediaPaused) {
             _phaseStartedAt = DateTime.now();
             _phaseEndsAt = _phaseStartedAt!.add(
               Duration(seconds: _remainingSeconds),
@@ -1577,7 +1584,7 @@ class TimerHomePageState extends State<TimerHomePage>
       if (_isRunning && _isSchedulePaused) {
         setState(() {
           _isSchedulePaused = false;
-          if (!_isPaused && !_isSystemIdlePaused) {
+          if (!_isPaused && !_isSystemIdlePaused && !_isMediaPaused) {
             _phaseStartedAt = DateTime.now();
             _phaseEndsAt = _phaseStartedAt!.add(
               Duration(seconds: _remainingSeconds),
@@ -1770,6 +1777,8 @@ class TimerHomePageState extends State<TimerHomePage>
     setState(() {
       _isPaused = !_isPaused;
       _isSystemIdlePaused = false;
+      _isMediaPaused = false;
+      _isSchedulePaused = false;
       if (_isPaused) {
         _animationController.stop();
         _pulseController.stop();
