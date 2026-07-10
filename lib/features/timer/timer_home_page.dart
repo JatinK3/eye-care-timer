@@ -797,6 +797,16 @@ class TimerHomePageState extends State<TimerHomePage>
   @override
   void didUpdateWidget(covariant TimerHomePage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialWorkDurationSeconds != widget.initialWorkDurationSeconds ||
+        oldWidget.initialBreakDurationSeconds != widget.initialBreakDurationSeconds) {
+      _applyNewDurations(
+        oldWork: oldWidget.initialWorkDurationSeconds,
+        newWork: widget.initialWorkDurationSeconds,
+        oldBreak: oldWidget.initialBreakDurationSeconds,
+        newBreak: widget.initialBreakDurationSeconds,
+      );
+    }
+    
     if (widget.aiMotivationEnabled &&
         (!oldWidget.aiMotivationEnabled ||
             oldWidget.aiApiKey != widget.aiApiKey ||
@@ -1601,6 +1611,66 @@ class TimerHomePageState extends State<TimerHomePage>
     _animationController.forward();
     _updateDesktopState();
   }
+  void _applyNewDurations({
+    required int oldWork,
+    required int newWork,
+    required int oldBreak,
+    required int newBreak,
+  }) {
+    final bool isWork = !_isBreak;
+    final int oldDuration = isWork ? oldWork : oldBreak;
+    final int newDuration = isWork ? newWork : newBreak;
+
+    if (oldDuration == newDuration) return;
+
+    if (!_isRunning) {
+      setState(() {
+        _initialDuration = newDuration;
+        _remainingSeconds = newDuration;
+        _animationController.duration = Duration(seconds: newDuration);
+        _animationController.value = 0.0;
+      });
+      return;
+    }
+
+    // Preserve elapsed time and scale the remaining time
+    final int elapsedSeconds = oldDuration - _remainingSeconds;
+    int newRemaining = newDuration - elapsedSeconds;
+    if (newRemaining < 1) newRemaining = 1;
+
+    setState(() {
+      _initialDuration = newDuration;
+      _remainingSeconds = newRemaining;
+      _animationController.duration = Duration(seconds: newDuration);
+
+      if (_phaseStartedAt != null) {
+        _phaseEndsAt = _phaseStartedAt!.add(Duration(seconds: newDuration));
+        
+        final bool isActivelyTicking = !_isPaused && !_isSystemIdlePaused && !_isMediaPaused && !_isSchedulePaused;
+        if (isActivelyTicking) {
+          _cancelReminders();
+          _schedulePhaseDeadlineTimer(_phaseEndsAt!);
+          unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
+          _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
+        }
+      }
+
+      double progress = elapsedSeconds / newDuration;
+      if (progress > 1.0) progress = 1.0;
+      if (progress < 0.0) progress = 0.0;
+
+      if (_isPaused || _isSystemIdlePaused || _isMediaPaused || _isSchedulePaused) {
+        _animationController.value = progress;
+        _saveActiveSession(isPaused: true);
+      } else {
+        _animationController.forward(from: progress);
+        _saveActiveSession(isPaused: false);
+      }
+
+      _updateDesktopState();
+    });
+  }
+
 
   bool _isWithinWorkHours() {
     if (!widget.workHoursEnabled) return true;
