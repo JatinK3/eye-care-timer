@@ -221,11 +221,18 @@ class AiService {
     required String historySummary,
     required int currentWorkMinutes,
     required int currentBreakMinutes,
+    String? userTaskContext,
   }) async {
+    String contextStr = '';
+    if (userTaskContext != null && userTaskContext.trim().isNotEmpty) {
+      contextStr = 'The user is currently working on: "$userTaskContext". Break this task into optimal Pomodoro chunks.\n';
+    }
+
     final prompt = 'You are a wellness assistant for developers. Based on the user\'s recent timer history summary: $historySummary\n'
         'Their current schedule is ${currentWorkMinutes}m work / ${currentBreakMinutes}m break.\n'
+        '$contextStr'
         'Suggest an optimal work and break duration to improve focus and reduce fatigue (e.g. 45/5 or 20/1 or 50/10). '
-        'Output MUST be valid JSON with exactly three keys: "work_minutes" (integer), "break_minutes" (integer), and "reasoning" (string, max 30 words explaining why). '
+        'Output MUST be valid JSON with exactly three keys: "work_minutes" (integer), "break_minutes" (integer), and "reasoning" (string, max 50 words explaining why and how it fits their task). '
         'Do NOT include markdown formatting, backticks, or any other text. Output only the raw JSON object.';
     final result = await generateMotivation(
       provider: provider,

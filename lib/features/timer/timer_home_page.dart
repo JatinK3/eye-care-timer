@@ -277,6 +277,7 @@ class TimerHomePageState extends State<TimerHomePage>
   Map<String, dynamic>? _aiScheduleSuggestion;
   bool _isAiScheduleLoading = false;
   String? _aiScheduleError;
+  final TextEditingController _taskContextController = TextEditingController();
 
   bool _lastDndState = false;
 
@@ -385,7 +386,8 @@ class TimerHomePageState extends State<TimerHomePage>
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (!forceRefresh) {
+      final hasContext = _taskContextController.text.trim().isNotEmpty;
+      if (!forceRefresh && !hasContext) {
         final lastFetch = prefs.getInt('last_ai_schedule_fetch') ?? 0;
         final now = DateTime.now().millisecondsSinceEpoch;
         // If fetched within the last 2 hours (7200000 ms), use cached suggestion if it exists.
@@ -426,6 +428,7 @@ class TimerHomePageState extends State<TimerHomePage>
         historySummary: historySummary,
         currentWorkMinutes: widget.initialWorkDurationSeconds ~/ 60,
         currentBreakMinutes: widget.initialBreakDurationSeconds ~/ 60,
+        userTaskContext: _taskContextController.text,
       );
       
       try {
@@ -871,6 +874,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
   @override
   void dispose() {
+    _taskContextController.dispose();
     _activeChimeProcess?.kill();
     _audioPlayer?.dispose();
     if (_isFocusMode) {
@@ -3902,6 +3906,7 @@ class TimerHomePageState extends State<TimerHomePage>
               );
               setState(() {
                 _aiScheduleSuggestion = null;
+                _taskContextController.clear();
               });
             },
             icon: const Icon(Icons.check, size: 16),
@@ -3955,7 +3960,36 @@ class TimerHomePageState extends State<TimerHomePage>
                         ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
+                  // Text input for context
+                  TextField(
+                    controller: _taskContextController,
+                    style: theme.textTheme.bodySmall?.copyWith(color: isDark ? Colors.white : Colors.black87),
+                    decoration: InputDecoration(
+                      hintText: 'What are you working on? (e.g. "Writing a presentation for 2 hours")',
+                      hintStyle: theme.textTheme.bodySmall?.copyWith(color: isDark ? Colors.white54 : Colors.black38),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: borderColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: borderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: accentColor),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(Icons.send, size: 16, color: accentColor),
+                        onPressed: () => _fetchAiSmartSchedule(true),
+                      ),
+                    ),
+                    onSubmitted: (_) => _fetchAiSmartSchedule(true),
+                  ),
+                  const SizedBox(height: 12),
                   content,
                 ],
               ),
