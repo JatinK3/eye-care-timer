@@ -1962,7 +1962,7 @@ void main() {
       await pumpBlinkKindApp(tester);
       await tester.pumpAndSettle();
 
-      final historyIconBtn = find.byTooltip('Productivity Insights');
+      final historyIconBtn = find.byIcon(Icons.bar_chart);
       expect(historyIconBtn, findsOneWidget);
 
       await tester.tap(historyIconBtn);
@@ -1982,7 +1982,7 @@ void main() {
       await pumpBlinkKindApp(tester);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Productivity Insights'));
+      await tester.tap(find.byIcon(Icons.bar_chart));
       await tester.pumpAndSettle();
 
       final reportTitle = find.text('AI Wellness & Focus Report');
@@ -2014,7 +2014,7 @@ void main() {
     await pumpBlinkKindApp(tester);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Productivity Insights'));
+    await tester.tap(find.byIcon(Icons.bar_chart));
     await tester.pumpAndSettle();
 
     final reportTitle = find.text('AI Wellness & Focus Report');
@@ -2045,7 +2045,7 @@ void main() {
       await pumpBlinkKindApp(tester);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Productivity Insights'));
+      await tester.tap(find.byIcon(Icons.bar_chart));
       await tester.pumpAndSettle();
 
       final reportTitle = find.text('AI Wellness & Focus Report');
