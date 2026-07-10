@@ -4328,6 +4328,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                       const SizedBox(width: 32),
                                       Expanded(
                                         child: SingleChildScrollView(
+                                          padding: const EdgeInsets.only(bottom: 120),
                                           child: Column(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
@@ -4475,9 +4476,11 @@ class TimerHomePageState extends State<TimerHomePage>
 
                               // Portrait Layout
                               return SingleChildScrollView(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 20,
+                                padding: const EdgeInsets.only(
+                                  left: 24,
+                                  right: 24,
+                                  top: 20,
+                                  bottom: 120,
                                 ),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
