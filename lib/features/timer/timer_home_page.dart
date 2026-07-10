@@ -267,6 +267,11 @@ class TimerHomePageState extends State<TimerHomePage>
   bool _isAiInsightLoading = false;
   String? _aiInsightError;
 
+  // AI Smart Schedule fields
+  Map<String, dynamic>? _aiScheduleSuggestion;
+  bool _isAiScheduleLoading = false;
+  String? _aiScheduleError;
+
   bool _lastDndState = false;
 
   int? _postponedBreakDuration;
@@ -358,6 +363,53 @@ class TimerHomePageState extends State<TimerHomePage>
         _aiInsightError =
             'Failed to fetch AI tip. Make sure your API key and connection are valid.';
         _isAiInsightLoading = false;
+      });
+    }
+  }
+
+  Future<void> _fetchAiSmartSchedule() async {
+    if (!widget.adaptiveSchedulingEnabled) return;
+    if (widget.aiApiKey.isEmpty) {
+      setState(() {
+        _aiScheduleError = 'API key is missing. Please configure it in Settings.';
+        _isAiScheduleLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isAiScheduleLoading = true;
+      _aiScheduleError = null;
+    });
+
+    try {
+      int completed = 0;
+      int skipped = 0;
+      int postponed = 0;
+      for (final event in widget.todaysEvents) {
+        if (event.type == TimerEventType.workCompleted) completed++;
+        if (event.type == TimerEventType.breakSkipped) skipped++;
+        if (event.type == TimerEventType.breakPostponed) postponed++;
+      }
+      final historySummary = 'Today: $completed work sessions completed, $skipped breaks skipped, $postponed breaks postponed.';
+
+      final suggestion = await AiService.instance.generateSmartSchedule(
+        provider: widget.aiProvider,
+        apiKey: widget.aiApiKey,
+        model: widget.aiModel,
+        historySummary: historySummary,
+        currentWorkMinutes: widget.initialWorkDurationSeconds ~/ 60,
+        currentBreakMinutes: widget.initialBreakDurationSeconds ~/ 60,
+      );
+      setState(() {
+        _aiScheduleSuggestion = suggestion;
+        _isAiScheduleLoading = false;
+      });
+    } catch (e, stackTrace) {
+      unawaited(Sentry.captureException(e, stackTrace: stackTrace));
+      setState(() {
+        _aiScheduleError = 'Failed to analyze schedule. Make sure your API key and connection are valid.';
+        _isAiScheduleLoading = false;
       });
     }
   }
@@ -645,6 +697,12 @@ class TimerHomePageState extends State<TimerHomePage>
     if (widget.aiMotivationEnabled) {
       scheduleMicrotask(() {
         _fetchAiHealthInsight();
+      });
+    }
+
+    if (widget.adaptiveSchedulingEnabled) {
+      scheduleMicrotask(() {
+        _fetchAiSmartSchedule();
       });
     }
   }
@@ -3707,6 +3765,144 @@ class TimerHomePageState extends State<TimerHomePage>
     );
   }
 
+  Widget _buildAiSmartScheduleCard(ThemeData theme, bool isDark, Color accentColor) {
+    if (!widget.adaptiveSchedulingEnabled) return const SizedBox.shrink();
+
+    final surfaceColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.white.withValues(alpha: 0.72);
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.black.withValues(alpha: 0.08);
+
+    Widget content;
+    if (_isAiScheduleLoading) {
+      content = Row(
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Analyzing habits & preparing schedule...',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isDark ? Colors.white60 : Colors.black54,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      );
+    } else if (_aiScheduleError != null) {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _aiScheduleError!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+        ],
+      );
+    } else if (_aiScheduleSuggestion != null) {
+      final workM = _aiScheduleSuggestion!['work_minutes'];
+      final breakM = _aiScheduleSuggestion!['break_minutes'];
+      final reasoning = _aiScheduleSuggestion!['reasoning'];
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Suggestion: $workM min focus / $breakM min break',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            reasoning,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isDark ? Colors.white70 : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton.icon(
+            onPressed: () {
+              widget.saveDurations(workM * 60, breakM * 60);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Applied AI Schedule: $workM/$breakM')),
+              );
+              setState(() {
+                _aiScheduleSuggestion = null;
+              });
+            },
+            icon: const Icon(Icons.check, size: 16),
+            label: const Text('Adopt Schedule'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: accentColor,
+              foregroundColor: isDark ? Colors.black : Colors.white,
+              minimumSize: const Size(0, 32),
+            ),
+          ),
+        ],
+      );
+    } else {
+      content = Text('No schedule suggestion available.', style: theme.textTheme.bodySmall);
+    }
+
+    return Card(
+      elevation: 0,
+      color: surfaceColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: borderColor),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.auto_awesome, color: accentColor, size: 24),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Smart Schedule',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (!_isAiScheduleLoading && _aiScheduleSuggestion != null)
+                        IconButton(
+                          icon: const Icon(Icons.refresh, size: 16),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: _fetchAiSmartSchedule,
+                          tooltip: 'Regenerate Schedule',
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  content,
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBreakTipPanel(ThemeData theme, bool isDark, Color accentColor) {
     return AnimatedBuilder(
       animation: _progressAnimation,
@@ -4215,6 +4411,16 @@ class TimerHomePageState extends State<TimerHomePage>
                                                     ),
                                                   ),
                                                 ],
+                                                if (widget.adaptiveSchedulingEnabled) ...[
+                                                  const SizedBox(height: 12),
+                                                  _ParallaxCard(
+                                                    child: _buildAiSmartScheduleCard(
+                                                      Theme.of(context),
+                                                      isDark,
+                                                      progressColor,
+                                                    ),
+                                                  ),
+                                                ],
                                               ] else ...[
                                                 Opacity(
                                                   opacity: 0.35,
@@ -4427,6 +4633,16 @@ class TimerHomePageState extends State<TimerHomePage>
                                         const SizedBox(height: 12),
                                         _ParallaxCard(
                                           child: _buildAiInsightCard(
+                                            Theme.of(context),
+                                            isDark,
+                                            progressColor,
+                                          ),
+                                        ),
+                                      ],
+                                      if (widget.adaptiveSchedulingEnabled) ...[
+                                        const SizedBox(height: 12),
+                                        _ParallaxCard(
+                                          child: _buildAiSmartScheduleCard(
                                             Theme.of(context),
                                             isDark,
                                             progressColor,

@@ -213,4 +213,37 @@ class AiService {
       temperature: 0.15,
     );
   }
+
+  Future<Map<String, dynamic>> generateSmartSchedule({
+    required String provider,
+    required String apiKey,
+    required String model,
+    required String historySummary,
+    required int currentWorkMinutes,
+    required int currentBreakMinutes,
+  }) async {
+    final prompt = 'You are a wellness assistant for developers. Based on the user\'s recent timer history summary: $historySummary\n'
+        'Their current schedule is ${currentWorkMinutes}m work / ${currentBreakMinutes}m break.\n'
+        'Suggest an optimal work and break duration to improve focus and reduce fatigue (e.g. 45/5 or 20/1 or 50/10). '
+        'Output MUST be valid JSON with exactly three keys: "work_minutes" (integer), "break_minutes" (integer), and "reasoning" (string, max 30 words explaining why). '
+        'Do NOT include markdown formatting, backticks, or any other text. Output only the raw JSON object.';
+    final result = await generateMotivation(
+      provider: provider,
+      apiKey: apiKey,
+      model: model,
+      prompt: prompt,
+      temperature: 0.2,
+    );
+    try {
+      final cleanJson = result.replaceAll('```json', '').replaceAll('```', '').trim();
+      final data = jsonDecode(cleanJson);
+      return {
+        'work_minutes': data['work_minutes'] as int? ?? currentWorkMinutes,
+        'break_minutes': data['break_minutes'] as int? ?? currentBreakMinutes,
+        'reasoning': data['reasoning'] as String? ?? 'Based on your recent history.',
+      };
+    } catch (e) {
+      throw Exception('Failed to parse AI schedule JSON: $e');
+    }
+  }
 }

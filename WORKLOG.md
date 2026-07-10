@@ -198,7 +198,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ### P4 — Future AI-Driven Wellness Features
 - [ ] **Interactive AI Wellness & Ergonomics Coach:** A chat/companion interface during breaks. Uses the existing `AiService` to generate personalized 2-minute guided neck stretch routines or posture advice based on user prompts (e.g. "My neck hurts").
-- [ ] **AI-Driven Smart-Break Schedule:** The app learns from user habits via `TimerEventRecord` history. It can dynamically adjust timer phases (e.g. suggesting a 45/5 Pomodoro schedule instead of 20-20-20) based on focus patterns, daily compliance, and fatigue feedback.
+- [x] **AI-Driven Smart-Break Schedule:** The app learns from user habits via `TimerEventRecord` history. It can dynamically adjust timer phases (e.g. suggesting a 45/5 Pomodoro schedule instead of 20-20-20) based on focus patterns, daily compliance, and fatigue feedback.
 - [ ] **AI Fatigue & Blink Detection (Local Privacy):** Since camera usage detection is already built, add an opt-in, privacy-first computer vision model (e.g. MediaPipe) using the front camera to detect blink rate and eye fatigue, triggering a "Micro-Blink Break" dynamically when needed.
 - [ ] **AI Voice-Guided Eye Exercises:** Generate soothing TTS (Text-to-Speech) audio guiding the user through eye-rolling exercises or a 4-7-8 breathing technique, much like a premium meditation app.
 - [ ] **AI Task Breakdown & Context:** The user types "I need to write a presentation", and the AI breaks it into optimal 20-minute chunks based on the Pomodoro technique, auto-scheduling the timer phases.
@@ -261,6 +261,11 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 ---
 
 ## Session Log
+
+### 2026-07-10 (Session ongoing — IST)
+
+**Completed this session:**
+- **AI-Driven Smart-Break Schedule**: Implemented dynamic AI schedule suggestions using Gemini. When Adaptive Scheduling is enabled, the app analyzes today's completed, skipped, and postponed break history and renders an "AI Smart Schedule" suggestion card on the Home screen. Users can instantly adopt the tailored work/break ratio with a single tap.
 
 ### 2026-07-07 (Session ongoing — IST)
 
