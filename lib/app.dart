@@ -1671,6 +1671,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   setPreset: _setPreset,
                   toggleTheme: _toggleTheme,
                   saveDurations: _saveDurations,
+                  saveAutoRunSettings: _saveAutoRunSettings,
                   saveStreakCount: _saveStreakCount,
                   saveCompletedWorkSession: _saveCompletedWorkSession,
                   saveTimerEventRecord: _saveTimerEventRecord,

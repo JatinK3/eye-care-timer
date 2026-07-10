@@ -64,6 +64,7 @@ class TimerHomePage extends StatefulWidget {
   final VoidCallback toggleTheme;
   final void Function(int workDurationSeconds, int breakDurationSeconds)
   saveDurations;
+  final void Function({required bool enabled, required int cycleLimit}) saveAutoRunSettings;
   final void Function(int streakCount) saveStreakCount;
   final void Function(DateTime completedAt, int durationSeconds)
   saveCompletedWorkSession;
@@ -200,6 +201,7 @@ class TimerHomePage extends StatefulWidget {
     required this.setPreset,
     required this.toggleTheme,
     required this.saveDurations,
+    required this.saveAutoRunSettings,
     required this.saveStreakCount,
     required this.saveCompletedWorkSession,
     required this.saveTimerEventRecord,
@@ -3862,7 +3864,25 @@ class TimerHomePageState extends State<TimerHomePage>
           const SizedBox(height: 8),
           ElevatedButton.icon(
             onPressed: () {
-              widget.saveDurations(workM * 60, breakM * 60);
+              final int oldWorkSeconds = _workDurationSeconds;
+              final int newWorkSeconds = workM * 60;
+              final int currentLimit = _autoRunCycleLimit;
+
+              widget.saveDurations(newWorkSeconds, breakM * 60);
+
+              // Automatically scale the auto-run cycle limit so the total target
+              // focus time remains roughly the same when the AI changes durations.
+              if (currentLimit > 0 && oldWorkSeconds > 0) {
+                final int totalWorkSeconds = oldWorkSeconds * currentLimit;
+                int newLimit = (totalWorkSeconds / newWorkSeconds).round();
+                if (newLimit < 1) newLimit = 1;
+                if (newLimit > 99) newLimit = 99;
+                
+                if (newLimit != currentLimit) {
+                  widget.saveAutoRunSettings(enabled: _autoRunEnabled, cycleLimit: newLimit);
+                }
+              }
+
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Applied AI Schedule: $workM/$breakM')),
               );
