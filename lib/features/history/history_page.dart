@@ -44,6 +44,7 @@ class HistoryPage extends StatefulWidget {
   final String aiApiKey;
   final String aiModel;
   final bool aiMotivationEnabled;
+  final int currentWorkDurationSeconds;
 
   const HistoryPage({
     super.key,
@@ -61,6 +62,7 @@ class HistoryPage extends StatefulWidget {
     required this.aiApiKey,
     required this.aiModel,
     required this.aiMotivationEnabled,
+    required this.currentWorkDurationSeconds,
   });
 
   @override
@@ -300,6 +302,7 @@ class _HistoryPageState extends State<HistoryPage> {
                     timerEvents: _timerEvents,
                     dailyGoal: widget.dailyGoal,
                     waterDailyGoal: widget.waterDailyGoalGlasses,
+                    currentWorkDurationSeconds: widget.currentWorkDurationSeconds,
                   ),
           ),
           const SizedBox(height: 16),
@@ -1595,6 +1598,7 @@ class _ActivityBarChart extends StatefulWidget {
   final List<TimerEventRecord> timerEvents;
   final int dailyGoal;
   final int waterDailyGoal;
+  final int currentWorkDurationSeconds;
 
   const _ActivityBarChart({
     required this.dates,
@@ -1604,6 +1608,7 @@ class _ActivityBarChart extends StatefulWidget {
     required this.timerEvents,
     required this.dailyGoal,
     required this.waterDailyGoal,
+    required this.currentWorkDurationSeconds,
   });
 
   @override
@@ -1660,11 +1665,7 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
         maxValue = values.fold<double>(goalValue, (prev, val) => val > prev ? val : prev);
         break;
       case ChartMetric.focusTime:
-        // Assume default 20 minutes session length for target calculation if history empty
-        final avgSessionSecs = widget.workSessions.isNotEmpty
-            ? widget.workSessions.map((s) => s.durationSeconds).reduce((a, b) => a + b) / widget.workSessions.length
-            : 1200.0;
-        goalValue = (widget.dailyGoal * avgSessionSecs) / 60.0;
+        goalValue = (widget.dailyGoal * widget.currentWorkDurationSeconds) / 60.0;
         maxValue = values.fold<double>(goalValue, (prev, val) => val > prev ? val : prev);
         break;
       case ChartMetric.compliance:

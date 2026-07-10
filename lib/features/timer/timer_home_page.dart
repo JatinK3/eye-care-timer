@@ -65,6 +65,7 @@ class TimerHomePage extends StatefulWidget {
   final void Function(int workDurationSeconds, int breakDurationSeconds)
   saveDurations;
   final void Function({required bool enabled, required int cycleLimit}) saveAutoRunSettings;
+  final void Function(int) setDailyGoal;
   final void Function(int streakCount) saveStreakCount;
   final void Function(DateTime completedAt, int durationSeconds)
   saveCompletedWorkSession;
@@ -202,6 +203,7 @@ class TimerHomePage extends StatefulWidget {
     required this.toggleTheme,
     required this.saveDurations,
     required this.saveAutoRunSettings,
+    required this.setDailyGoal,
     required this.saveStreakCount,
     required this.saveCompletedWorkSession,
     required this.saveTimerEventRecord,
@@ -3880,6 +3882,18 @@ class TimerHomePageState extends State<TimerHomePage>
                 
                 if (newLimit != currentLimit) {
                   widget.saveAutoRunSettings(enabled: _autoRunEnabled, cycleLimit: newLimit);
+                }
+              }
+
+              // Also mathematically scale the global daily goal to maintain target focus time
+              if (widget.dailyGoal > 0 && oldWorkSeconds > 0) {
+                final int totalDailySeconds = oldWorkSeconds * widget.dailyGoal;
+                int newDailyGoal = (totalDailySeconds / newWorkSeconds).round();
+                if (newDailyGoal < 1) newDailyGoal = 1;
+                if (newDailyGoal > 99) newDailyGoal = 99;
+                
+                if (newDailyGoal != widget.dailyGoal) {
+                  widget.setDailyGoal(newDailyGoal);
                 }
               }
 

@@ -1320,6 +1320,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           aiApiKey: _settings.aiApiKey,
           aiModel: _settings.aiModel,
           aiMotivationEnabled: _settings.aiMotivationEnabled,
+          currentWorkDurationSeconds: _settings.workDurationSeconds,
         ),
       ),
     );
@@ -1672,6 +1673,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   toggleTheme: _toggleTheme,
                   saveDurations: _saveDurations,
                   saveAutoRunSettings: _saveAutoRunSettings,
+                  setDailyGoal: _setDailyGoal,
                   saveStreakCount: _saveStreakCount,
                   saveCompletedWorkSession: _saveCompletedWorkSession,
                   saveTimerEventRecord: _saveTimerEventRecord,
