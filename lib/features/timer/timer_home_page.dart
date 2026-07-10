@@ -3873,6 +3873,8 @@ class TimerHomePageState extends State<TimerHomePage>
               final int oldWorkSeconds = _workDurationSeconds;
               final int newWorkSeconds = workM * 60;
               final int currentLimit = _autoRunCycleLimit;
+              int newLimit = currentLimit;
+              int newDailyGoal = widget.dailyGoal;
 
               widget.saveDurations(newWorkSeconds, breakM * 60);
 
@@ -3880,7 +3882,7 @@ class TimerHomePageState extends State<TimerHomePage>
               // focus time remains roughly the same when the AI changes durations.
               if (currentLimit > 0 && oldWorkSeconds > 0) {
                 final int totalWorkSeconds = oldWorkSeconds * currentLimit;
-                int newLimit = (totalWorkSeconds / newWorkSeconds).round();
+                newLimit = (totalWorkSeconds / newWorkSeconds).round();
                 if (newLimit < 1) newLimit = 1;
                 if (newLimit > 99) newLimit = 99;
                 
@@ -3892,7 +3894,7 @@ class TimerHomePageState extends State<TimerHomePage>
               // Also mathematically scale the global daily goal to maintain target focus time
               if (widget.dailyGoal > 0 && oldWorkSeconds > 0) {
                 final int totalDailySeconds = oldWorkSeconds * widget.dailyGoal;
-                int newDailyGoal = (totalDailySeconds / newWorkSeconds).round();
+                newDailyGoal = (totalDailySeconds / newWorkSeconds).round();
                 if (newDailyGoal < 1) newDailyGoal = 1;
                 if (newDailyGoal > 99) newDailyGoal = 99;
                 
@@ -3901,8 +3903,13 @@ class TimerHomePageState extends State<TimerHomePage>
                 }
               }
 
+              String msg = 'Applied AI Schedule: $workM/$breakM';
+              if (newDailyGoal != widget.dailyGoal) {
+                msg += ' (Daily Goal: $newDailyGoal)';
+              }
+
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Applied AI Schedule: $workM/$breakM')),
+                SnackBar(content: Text(msg)),
               );
               setState(() {
                 _aiScheduleSuggestion = null;
@@ -3964,12 +3971,15 @@ class TimerHomePageState extends State<TimerHomePage>
                   // Text input for context
                   TextField(
                     controller: _taskContextController,
+                    enabled: !_isAiScheduleLoading,
+                    minLines: 1,
+                    maxLines: 3,
                     style: theme.textTheme.bodySmall?.copyWith(color: isDark ? Colors.white : Colors.black87),
                     decoration: InputDecoration(
                       hintText: 'What are you working on? (e.g. "Writing a presentation for 2 hours")',
                       hintStyle: theme.textTheme.bodySmall?.copyWith(color: isDark ? Colors.white54 : Colors.black38),
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: borderColor),
@@ -3982,12 +3992,18 @@ class TimerHomePageState extends State<TimerHomePage>
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: accentColor),
                       ),
-                      suffixIcon: IconButton(
-                        icon: Icon(Icons.send, size: 16, color: accentColor),
-                        onPressed: () => _fetchAiSmartSchedule(true),
+                      disabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: borderColor.withValues(alpha: 0.05)),
                       ),
+                      suffixIcon: _isAiScheduleLoading
+                          ? null
+                          : IconButton(
+                              icon: Icon(Icons.send, size: 16, color: accentColor),
+                              onPressed: () => _fetchAiSmartSchedule(true),
+                            ),
                     ),
-                    onSubmitted: (_) => _fetchAiSmartSchedule(true),
+                    onSubmitted: _isAiScheduleLoading ? null : (_) => _fetchAiSmartSchedule(true),
                   ),
                   const SizedBox(height: 12),
                   content,
