@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -367,7 +369,7 @@ class TimerHomePageState extends State<TimerHomePage>
     }
   }
 
-  Future<void> _fetchAiSmartSchedule() async {
+  Future<void> _fetchAiSmartSchedule([bool forceRefresh = false]) async {
     if (!widget.adaptiveSchedulingEnabled) return;
     if (widget.aiApiKey.isEmpty) {
       setState(() {
@@ -375,6 +377,26 @@ class TimerHomePageState extends State<TimerHomePage>
         _isAiScheduleLoading = false;
       });
       return;
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!forceRefresh) {
+        final lastFetch = prefs.getInt('last_ai_schedule_fetch') ?? 0;
+        final now = DateTime.now().millisecondsSinceEpoch;
+        // If fetched within the last 2 hours (7200000 ms), use cached suggestion if it exists.
+        if (now - lastFetch < 7200000) {
+          final cached = prefs.getString('cached_ai_schedule');
+          if (cached != null) {
+            setState(() {
+              _aiScheduleSuggestion = jsonDecode(cached);
+            });
+            return;
+          }
+        }
+      }
+    } catch (_) {
+      // Ignore prefs error, just proceed to fetch
     }
 
     setState(() {
@@ -401,6 +423,13 @@ class TimerHomePageState extends State<TimerHomePage>
         currentWorkMinutes: widget.initialWorkDurationSeconds ~/ 60,
         currentBreakMinutes: widget.initialBreakDurationSeconds ~/ 60,
       );
+      
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('last_ai_schedule_fetch', DateTime.now().millisecondsSinceEpoch);
+        await prefs.setString('cached_ai_schedule', jsonEncode(suggestion));
+      } catch (_) {}
+
       setState(() {
         _aiScheduleSuggestion = suggestion;
         _isAiScheduleLoading = false;
@@ -3887,7 +3916,7 @@ class TimerHomePageState extends State<TimerHomePage>
                           icon: const Icon(Icons.refresh, size: 16),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
-                          onPressed: _fetchAiSmartSchedule,
+                          onPressed: () => _fetchAiSmartSchedule(true),
                           tooltip: 'Regenerate Schedule',
                         ),
                     ],
