@@ -621,6 +621,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     unawaited(_preferencesService.saveAmoledDarkEnabled(enabled));
   }
 
+  void _setAnimationSpeed(AnimationSpeed speed) {
+    setState(() {
+      _settings = _settings.copyWith(animationSpeed: speed);
+    });
+    unawaited(_preferencesService.saveAnimationSpeed(speed));
+  }
+
   void _setReducedMotionEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(reducedMotionEnabled: enabled);
@@ -1425,6 +1432,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           customAccentColorHex: _settings.customAccentColorHex,
           useSystemAccent: _settings.useSystemAccent,
           startMinimized: _settings.startMinimized,
+                  animationSpeed: _settings.animationSpeed,
           reducedMotionEnabled: _settings.reducedMotionEnabled,
           analyticsEnabled: _settings.analyticsEnabled,
           adaptiveSchedulingEnabled: _settings.adaptiveSchedulingEnabled,
@@ -1432,7 +1440,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           setCustomAccentColorHex: _setCustomAccentColorHex,
           setUseSystemAccent: _setUseSystemAccent,
           setStartMinimized: _setStartMinimized,
-          setReducedMotionEnabled: _setReducedMotionEnabled,
+                  setAnimationSpeed: _setAnimationSpeed,
+                  setReducedMotionEnabled: _setReducedMotionEnabled,
           setAnalyticsEnabled: _setAnalyticsEnabled,
           setAdaptiveSchedulingEnabled: _setAdaptiveSchedulingEnabled,
           activeProfile: _settings.activeProfile,
@@ -1582,7 +1591,11 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
             ),
           ),
           themeMode: _settings.themeMode,
-          themeAnimationDuration: const Duration(milliseconds: 200),
+          themeAnimationDuration: _settings.animationSpeed == AnimationSpeed.fast
+              ? const Duration(milliseconds: 100)
+              : _settings.animationSpeed == AnimationSpeed.smooth
+                  ? const Duration(milliseconds: 400)
+                  : const Duration(milliseconds: 200),
           themeAnimationCurve: Curves.easeInOut,
           home: _isLoadingSettings
               ? const Scaffold(body: Center(child: CircularProgressIndicator()))
@@ -1645,6 +1658,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   maxConsecutivePostpones: _settings.maxConsecutivePostpones,
                   postponeDurationSeconds: _settings.postponeDurationSeconds,
                   adaptiveSchedulingEnabled: _settings.adaptiveSchedulingEnabled,
+                  animationSpeed: _settings.animationSpeed,
                   reducedMotionEnabled: _settings.reducedMotionEnabled,
                   smartIdleEnabled: _settings.smartIdleEnabled,
                   breakVisualizerStyle: _settings.breakVisualizerStyle,

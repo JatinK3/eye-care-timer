@@ -115,6 +115,7 @@ class TimerHomePage extends StatefulWidget {
   final bool blinkReminderInteractiveEnabled;
   final bool autoPauseOnMediaEnabled;
   final bool adaptiveSchedulingEnabled;
+  final AnimationSpeed animationSpeed;
   final bool reducedMotionEnabled;
   final Future<bool> Function()? isCameraInUseOverride;
   final Future<bool> Function()? isMicInUseOverride;
@@ -152,6 +153,7 @@ class TimerHomePage extends StatefulWidget {
     required this.allowPostpone,
     required this.postponeDurationSeconds,
     required this.adaptiveSchedulingEnabled,
+    required this.animationSpeed,
     required this.reducedMotionEnabled,
     required this.smartIdleEnabled,
     required this.breakVisualizerStyle,
@@ -3899,6 +3901,7 @@ class TimerHomePageState extends State<TimerHomePage>
                           child: _FluidMeshBackground(
                             baseColor: Theme.of(context).colorScheme.primary,
                             isDark: isDark,
+                            animationSpeed: widget.animationSpeed,
                           ),
                         ),
                       if (_isFocusMode)
@@ -6163,8 +6166,13 @@ class _ParallaxCardState extends State<_ParallaxCard> {
 class _FluidMeshBackground extends StatefulWidget {
   final Color baseColor;
   final bool isDark;
+  final AnimationSpeed animationSpeed;
 
-  const _FluidMeshBackground({required this.baseColor, required this.isDark});
+  const _FluidMeshBackground({
+    required this.baseColor,
+    required this.isDark,
+    this.animationSpeed = AnimationSpeed.normal,
+  });
 
   @override
   State<_FluidMeshBackground> createState() => _FluidMeshBackgroundState();
@@ -6173,12 +6181,34 @@ class _FluidMeshBackground extends StatefulWidget {
 class _FluidMeshBackgroundState extends State<_FluidMeshBackground> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
+  Duration get _animationDuration {
+    switch (widget.animationSpeed) {
+      case AnimationSpeed.fast:
+        return const Duration(seconds: 8);
+      case AnimationSpeed.smooth:
+        return const Duration(seconds: 30);
+      case AnimationSpeed.normal:
+        return const Duration(seconds: 15);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 15));
+    _controller = AnimationController(vsync: this, duration: _animationDuration);
     if (kIsWeb || !Platform.environment.containsKey('FLUTTER_TEST')) {
       _controller.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_FluidMeshBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.animationSpeed != widget.animationSpeed) {
+      _controller.duration = _animationDuration;
+      if (kIsWeb || !Platform.environment.containsKey('FLUTTER_TEST')) {
+        _controller.repeat();
+      }
     }
   }
 
@@ -6358,17 +6388,16 @@ class _NavBarItemState extends State<_NavBarItem> {
     final activeColor = Theme.of(context).colorScheme.primary;
     final color = widget.isActive ? activeColor : Theme.of(context).colorScheme.onSurface;
 
-    return Tooltip(
-      message: widget.tooltip ?? widget.label,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.onTap,
-          onHover: (hovering) => setState(() => _isHovering = hovering),
-          borderRadius: BorderRadius.circular(24),
-          splashColor: activeColor.withValues(alpha: 0.1),
-          highlightColor: activeColor.withValues(alpha: 0.05),
-          child: AnimatedContainer(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: widget.onTap,
+        onHover: (hovering) => setState(() => _isHovering = hovering),
+        mouseCursor: widget.opacity < 1.0 ? SystemMouseCursors.basic : SystemMouseCursors.click,
+        borderRadius: BorderRadius.circular(24),
+        splashColor: activeColor.withValues(alpha: 0.1),
+        highlightColor: activeColor.withValues(alpha: 0.05),
+        child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOutCubic,
             padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
@@ -6397,7 +6426,6 @@ class _NavBarItemState extends State<_NavBarItem> {
                   ],
                 ],
               ),
-            ),
           ),
         ),
       ),

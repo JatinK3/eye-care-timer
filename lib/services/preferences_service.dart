@@ -95,6 +95,7 @@ class PreferencesService {
   static const String autoPauseOnMediaEnabledKey = 'autoPauseOnMediaEnabled';
   static const String activeProfileKey = 'activeProfile';
   static const String reducedMotionEnabledKey = 'reducedMotionEnabled';
+  static const String animationSpeedKey = 'animationSpeed';
   static const String analyticsEnabledKey = 'analyticsEnabled';
   static const String adaptiveSchedulingEnabledKey = 'adaptiveSchedulingEnabled';
 
@@ -272,6 +273,9 @@ class PreferencesService {
       reducedMotionEnabled:
           prefs.getBool(reducedMotionEnabledKey) ??
           TimerSettings.defaultReducedMotionEnabled,
+      animationSpeed: AnimationSpeed.values.firstWhere(
+          (e) => e.name == prefs.getString(animationSpeedKey),
+          orElse: () => TimerSettings.defaultAnimationSpeed),
       analyticsEnabled:
           prefs.getBool(analyticsEnabledKey) ??
           TimerSettings.defaultAnalyticsEnabled,
@@ -690,6 +694,7 @@ class PreferencesService {
     );
     await prefs.setString(activeProfileKey, settings.activeProfile);
     await prefs.setBool(reducedMotionEnabledKey, settings.reducedMotionEnabled);
+    await prefs.setString(animationSpeedKey, settings.animationSpeed.name);
   }
 
   Future<bool> loadOnboardingCompleted() async {
@@ -785,6 +790,11 @@ class PreferencesService {
   Future<void> saveAmoledDarkEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(amoledDarkEnabledKey, enabled);
+  }
+
+  Future<void> saveAnimationSpeed(AnimationSpeed speed) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(animationSpeedKey, speed.name);
   }
 
   Future<void> saveReducedMotionEnabled(bool enabled) async {

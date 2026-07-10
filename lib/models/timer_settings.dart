@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 enum BreakMode { off, gentle, strict }
 
+enum AnimationSpeed { fast, normal, smooth }
+
 class TimerSettings {
   static const int defaultWorkDurationSeconds = 20 * 60;
   static const int defaultBreakDurationSeconds = 20;
@@ -57,6 +59,7 @@ class TimerSettings {
   static const int defaultMaxConsecutivePostpones = 0; // 0 means no limit
   static const String defaultActiveProfile = 'standard';
   static const bool defaultReducedMotionEnabled = false;
+  static const AnimationSpeed defaultAnimationSpeed = AnimationSpeed.normal;
   static const bool defaultAnalyticsEnabled = false;
   static const bool defaultAdaptiveSchedulingEnabled = false;
 
@@ -121,6 +124,7 @@ class TimerSettings {
   final bool autoPauseOnMediaEnabled;
   final String activeProfile;
   final bool reducedMotionEnabled;
+  final AnimationSpeed animationSpeed;
   final bool analyticsEnabled;
   final bool adaptiveSchedulingEnabled;
 
@@ -186,6 +190,7 @@ class TimerSettings {
     required this.autoPauseOnMediaEnabled,
     required this.activeProfile,
     required this.reducedMotionEnabled,
+    required this.animationSpeed,
     required this.analyticsEnabled,
     required this.adaptiveSchedulingEnabled,
   });
@@ -252,6 +257,7 @@ class TimerSettings {
       autoPauseOnMediaEnabled = defaultAutoPauseOnMediaEnabled,
       activeProfile = defaultActiveProfile,
       reducedMotionEnabled = defaultReducedMotionEnabled,
+      animationSpeed = defaultAnimationSpeed,
       analyticsEnabled = defaultAnalyticsEnabled,
       adaptiveSchedulingEnabled = defaultAdaptiveSchedulingEnabled;
 
@@ -317,6 +323,7 @@ class TimerSettings {
     bool? autoPauseOnMediaEnabled,
     String? activeProfile,
     bool? reducedMotionEnabled,
+    AnimationSpeed? animationSpeed,
     bool? analyticsEnabled,
     bool? adaptiveSchedulingEnabled,
   }) {
@@ -400,6 +407,7 @@ class TimerSettings {
           autoPauseOnMediaEnabled ?? this.autoPauseOnMediaEnabled,
       activeProfile: activeProfile ?? this.activeProfile,
       reducedMotionEnabled: reducedMotionEnabled ?? this.reducedMotionEnabled,
+      animationSpeed: animationSpeed ?? this.animationSpeed,
       analyticsEnabled: analyticsEnabled ?? this.analyticsEnabled,
       adaptiveSchedulingEnabled: adaptiveSchedulingEnabled ?? this.adaptiveSchedulingEnabled,
     );
@@ -468,6 +476,7 @@ class TimerSettings {
       'autoPauseOnMediaEnabled': autoPauseOnMediaEnabled,
       'activeProfile': activeProfile,
       'reducedMotionEnabled': reducedMotionEnabled,
+      'animationSpeed': animationSpeed.name,
       'analyticsEnabled': analyticsEnabled,
       'adaptiveSchedulingEnabled': adaptiveSchedulingEnabled,
     };
@@ -597,6 +606,10 @@ class TimerSettings {
           json['autoPauseOnMediaEnabled'] as bool? ??
           defaultAutoPauseOnMediaEnabled,
       activeProfile: json['activeProfile'] as String? ?? defaultActiveProfile,
+      animationSpeed: AnimationSpeed.values.firstWhere(
+        (e) => e.name == (json['animationSpeed'] as String?),
+        orElse: () => defaultAnimationSpeed,
+      ),
       analyticsEnabled: json['analyticsEnabled'] as bool? ?? defaultAnalyticsEnabled,
       adaptiveSchedulingEnabled: json['adaptiveSchedulingEnabled'] as bool? ?? defaultAdaptiveSchedulingEnabled,
     );

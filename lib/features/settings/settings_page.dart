@@ -151,6 +151,8 @@ class SettingsPage extends StatefulWidget {
   final void Function(bool) setUseSystemAccent;
   final bool startMinimized;
   final bool reducedMotionEnabled;
+  final AnimationSpeed animationSpeed;
+  final void Function(AnimationSpeed) setAnimationSpeed;
   final bool analyticsEnabled;
   final void Function(bool) setStartMinimized;
   final void Function(bool) setReducedMotionEnabled;
@@ -307,6 +309,8 @@ class SettingsPage extends StatefulWidget {
     required this.setUseSystemAccent,
     required this.startMinimized,
     required this.reducedMotionEnabled,
+    required this.animationSpeed,
+    required this.setAnimationSpeed,
     required this.setStartMinimized,
     required this.setReducedMotionEnabled,
     required this.autoStartSchedule,
@@ -1825,6 +1829,30 @@ class _SettingsPageState extends State<SettingsPage>
           subtitle: Text(l10n.settingsReducedMotionSubtitle),
           value: widget.reducedMotionEnabled,
           onChanged: widget.setReducedMotionEnabled,
+        ),
+      ),
+      SettingItem(
+        title: 'Animation Speed',
+        subtitle: 'Customize the speed of app animations',
+        keywords: ['animation', 'speed', 'fast', 'smooth', 'normal'],
+        category: 'Theme & Appearance',
+        widget: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.speed),
+          title: const Text('Animation Speed'),
+          subtitle: const Text('Customize the speed of app animations'),
+          trailing: DropdownButton<AnimationSpeed>(
+            value: widget.animationSpeed,
+            onChanged: (val) {
+              if (val != null) widget.setAnimationSpeed(val);
+            },
+            items: AnimationSpeed.values.map((s) {
+              return DropdownMenuItem(
+                value: s,
+                child: Text(s.name.substring(0, 1).toUpperCase() + s.name.substring(1)),
+              );
+            }).toList(),
+          ),
         ),
       ),
       if (!widget.useSystemAccent) ...[
@@ -3434,6 +3462,7 @@ class _SettingsPageState extends State<SettingsPage>
       amoledDarkEnabled: widget.amoledDarkEnabled,
       customAccentColorHex: widget.customAccentColorHex,
       useSystemAccent: widget.useSystemAccent,
+      animationSpeed: widget.animationSpeed,
       reducedMotionEnabled: widget.reducedMotionEnabled,
       startMinimized: widget.startMinimized,
       autoStartSchedule: widget.autoStartSchedule,
