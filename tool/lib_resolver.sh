@@ -326,6 +326,59 @@ patch_plugin_sources() {
         _lr_info "system_tray symlink not yet generated — pub-cache patch is sufficient."
     fi
 
+    # ── sentry_flutter (sentry-native.cmake) ──────────────────────────────
+    # Fix: Space in path build error on Fedora when building sentry-native.
+    # We patch sentry-native.cmake to extract the dependency, check if we are on Fedora,
+    # and if so quote the exports.map path flag so clang/ld doesn't split it on spaces.
+    local pub_cache_sentry
+    pub_cache_sentry="$(find "${PUB_CACHE:-$HOME/.pub-cache}" \
+        -path "*/sentry_flutter*/sentry-native/sentry-native.cmake" \
+        2>/dev/null | head -1)"
+    
+    if [ -n "$pub_cache_sentry" ]; then
+        # Check if already patched to avoid redundant warnings or prints
+        if grep -q "sentry-native_POPULATED" "$pub_cache_sentry"; then
+            _lr_ok "Already patched: sentry-native.cmake (pub cache) — exports.map space issue"
+        else
+            # We patch FetchContent_MakeAvailable(sentry-native) with our custom populated hook
+            # that will modify the CMakeLists.txt when it is fetched, but only if on Fedora.
+            cat << 'EOF' > /tmp/sentry_patch.txt
+FetchContent_GetProperties(sentry-native)
+if(NOT sentry-native_POPULATED)
+    FetchContent_Populate(sentry-native)
+    if(EXISTS "/etc/os-release")
+        file(READ "/etc/os-release" OS_RELEASE_CONTENT)
+        if(OS_RELEASE_CONTENT MATCHES "ID=fedora")
+            message(STATUS "[sentry_flutter-patch] Detected Fedora. Patching exports.map path to handle spaces in target directory.")
+            file(READ "${sentry-native_SOURCE_DIR}/CMakeLists.txt" SENTRY_CMAKE)
+            string(REPLACE "--version-script=\${PROJECT_SOURCE_DIR}/src/exports.map" "--version-script=\\\"\${PROJECT_SOURCE_DIR}/src/exports.map\\\"" SENTRY_CMAKE "${SENTRY_CMAKE}")
+            file(WRITE "${sentry-native_SOURCE_DIR}/CMakeLists.txt" "${SENTRY_CMAKE}")
+        endif()
+    endif()
+    add_subdirectory(${sentry-native_SOURCE_DIR} ${sentry-native_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+EOF
+            if [ "${LIB_RESOLVER_DRY_RUN:-0}" = "1" ]; then
+                _lr_info "DRY-RUN: would patch $pub_cache_sentry"
+            else
+                python3 -c "
+import sys
+with open('$pub_cache_sentry', 'r') as f:
+    content = f.read()
+with open('/tmp/sentry_patch.txt', 'r') as f:
+    patch = f.read()
+if 'FetchContent_MakeAvailable(sentry-native)' in content:
+    content = content.replace('FetchContent_MakeAvailable(sentry-native)', patch)
+    with open('$pub_cache_sentry', 'w') as f:
+        f.write(content)
+" && _lr_ok "Patched: sentry-native.cmake (pub cache) — exports.map space issue" || _lr_warn "Could not patch: $pub_cache_sentry"
+            fi
+            rm -f /tmp/sentry_patch.txt
+        fi
+    else
+        _lr_warn "sentry_flutter not found in pub cache — skipping sentry-native patch."
+    fi
+
     echo "========================================="
     echo ""
 }
