@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-07-11
+
+### Added
+- **AI-Driven Smart-Break Schedule:** Dynamically generates a customized focus/break schedule using AI (Gemini/OpenAI/Groq) based on your current task context and fatigue levels.
+- **Auto-Scaling Cycle Limits:** Automatically adjusts auto-run cycle limits when adopting an AI schedule to match the planned workflow.
+- **Dynamic Fluid Mesh Background:** Added a stunning, animated, full-screen fluid mesh background to the dashboard.
+- **Glassmorphic Floating Navigation Bar:** Upgraded the main navigation bar to a sleek, frosted glassmorphic design with snappy `AnimatedSize` transitions.
+- **Live Eye Strain Risk Score:** Real-time calculation and dashboard display of your eye strain risk based on historical break compliance and active session length.
+- **Weekly Health Report & Break Debt:** Track and visualize your weekly eye health metrics, break debt (capped at 7 minutes), and long-term focus trends.
+- **Device Validation Mode:** Added a dedicated screen in Settings to test and validate local notification, background execution, and overlay permissions.
+- **Full Data Backup & Restore:** Export and import all settings, histories, and session logs in a single unified backup file.
+- **Activity Profiles:** Robust activity profile selection for different working environments (e.g., deep focus, meetings, reading).
+- **Orbiting Particle Trail:** Added a weaving comet/particle trail effect that orbits the active timer ring for a premium visual feel.
+
+### Changed
+- **Adaptive Break Scheduling:** Renamed existing adaptive scheduling toggles and integrated them directly with the new AI Smart Schedule logic.
+- **History Chart Scaling:** The history chart now accurately scales the focus time target to correctly track current work duration settings instead of historical averages.
+- **Natural Break Credit:** Natural breaks are now credited towards daily focus and break counts, optimizing the accuracy of break debt calculations.
+- **Page Transitions:** Upgraded full app navigation to use smooth `FadeUpwards` page transitions.
+
+### Fixed
+- **Fedora Sentry-Native Build:** Fixed `sentry-native` compilation failures on Fedora caused by spaces in the build path by completely removing `--version-script` and ensuring the patch runs before `flutter pub get`.
+- **Timer Media Pause Bug:** Prevented Telegram/Discord false positives on Linux from pausing the timer, and resolved UI state desync when manually skipping phases.
+- **Startup Crash:** Resolved a startup crash caused by `initState` attempting to check schedules outside configured work hours.
+- **Glassmorphic Navbar Constraints:** Fixed the settings button block size and `BackdropFilter` constraints within the floating nav bar.
+
 ## [1.2.0] - 2026-07-02
 
 ### Added
