@@ -372,6 +372,10 @@ class NotificationService {
       android: const AndroidInitializationSettings('ic_stat_eye'),
       iOS: darwinSettings,
       macOS: darwinSettings,
+      linux: LinuxInitializationSettings(
+        defaultActionName: 'Open',
+        defaultIcon: AssetsLinuxIcon('assets/app_icon.png'),
+      ),
     );
 
     await _notificationsPlugin.initialize(
