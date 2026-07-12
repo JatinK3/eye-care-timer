@@ -252,12 +252,15 @@ if [ "$DEV_MODE" = "true" ]; then
     # Clean up the old launcher name to prevent duplicate icons
     rm -f "$HOME/.local/share/applications/blinkkind.desktop"
 
+    mkdir -p "$HOME/.local/share/icons/hicolor/128x128/apps"
+    cp "$PROJECT_DIR/assets/app_icon.png" "$HOME/.local/share/icons/hicolor/128x128/apps/com.jatin.eyecaretimer.png"
+
     cat << EOF > "$HOME/.local/share/applications/com.jatin.eyecaretimer.desktop"
 [Desktop Entry]
 Name=BlinkKind
 Comment=A focused eye break timer for healthier screen sessions
 Exec=$PROJECT_DIR/build/linux/x64/release/bundle/eye_care_timer %u
-Icon=$PROJECT_DIR/assets/app_icon.png
+Icon=com.jatin.eyecaretimer
 Terminal=false
 Type=Application
 Categories=Utility;
@@ -265,6 +268,11 @@ StartupNotify=true
 StartupWMClass=com.jatin.eyecaretimer
 EOF
     chmod +x "$HOME/.local/share/applications/com.jatin.eyecaretimer.desktop"
+    
+    # Refresh local icon cache so it picks up the copied PNG immediately
+    if command -v gtk-update-icon-cache &> /dev/null; then
+        gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" &>/dev/null || true
+    fi
     
     if command -v update-desktop-database &> /dev/null; then
         update-desktop-database "$HOME/.local/share/applications"
@@ -373,8 +381,8 @@ else
     cp -r "$BUILD_DIR"/* "$DEB_STAGE/opt/blinkkind/"
 
     # Copy application icon to both locations for maximum compatibility
-    cp "$PROJECT_DIR/assets/app_icon.png" "$DEB_STAGE/usr/share/pixmaps/blinkkind.png"
-    cp "$PROJECT_DIR/assets/app_icon.png" "$DEB_STAGE/usr/share/icons/hicolor/128x128/apps/blinkkind.png"
+    cp "$PROJECT_DIR/assets/app_icon.png" "$DEB_STAGE/usr/share/pixmaps/com.jatin.eyecaretimer.png"
+    cp "$PROJECT_DIR/assets/app_icon.png" "$DEB_STAGE/usr/share/icons/hicolor/128x128/apps/com.jatin.eyecaretimer.png"
 
     # Create /usr/bin launcher wrapper
     cat << 'EOF' > "$DEB_STAGE/usr/bin/blinkkind"
@@ -398,7 +406,7 @@ EOF
 Name=BlinkKind
 Comment=A focused eye break timer for healthier screen sessions
 Exec=/opt/blinkkind/eye_care_timer %u
-Icon=blinkkind
+Icon=com.jatin.eyecaretimer
 Terminal=false
 Type=Application
 Categories=Utility;
@@ -446,7 +454,7 @@ else
     
     # Bundle compile outputs into source package
     tar -czf "$RPM_BUILD_ROOT/SOURCES/blinkkind-${VERSION}.tar.gz" -C "$BUILD_DIR" .
-    cp "$PROJECT_DIR/assets/app_icon.png" "$RPM_BUILD_ROOT/SOURCES/blinkkind.png"
+    cp "$PROJECT_DIR/assets/app_icon.png" "$RPM_BUILD_ROOT/SOURCES/com.jatin.eyecaretimer.png"
     
     # Create desktop launcher file in SOURCES.
     # IMPORTANT: On GNOME Wayland the desktop filename MUST match the GTK
@@ -457,7 +465,7 @@ else
 Name=BlinkKind
 Comment=A focused eye break timer for healthier screen sessions
 Exec=/opt/blinkkind/eye_care_timer %u
-Icon=blinkkind
+Icon=com.jatin.eyecaretimer
 Terminal=false
 Type=Application
 Categories=Utility;
@@ -488,7 +496,7 @@ License:        MIT
 URL:            https://github.com/JatinK3/eye-care-timer
 Source0:        blinkkind-%{version}.tar.gz
 Source1:        com.jatin.eyecaretimer.desktop
-Source2:        blinkkind.png
+Source2:        com.jatin.eyecaretimer.png
 Source3:        blinkkind-launcher
 Requires:       gtk3, libX11, pulseaudio-utils
 
@@ -513,7 +521,7 @@ cp %{SOURCE2} %{buildroot}/usr/share/pixmaps/
 # hicolor is the standard fallback theme; custom themes (e.g. WhiteSur)
 # do NOT search /usr/share/pixmaps — install here for universal compatibility.
 mkdir -p %{buildroot}/usr/share/icons/hicolor/128x128/apps
-cp %{SOURCE2} %{buildroot}/usr/share/icons/hicolor/128x128/apps/blinkkind.png
+cp %{SOURCE2} %{buildroot}/usr/share/icons/hicolor/128x128/apps/com.jatin.eyecaretimer.png
 
 %post
 # Refresh icon cache so the app icon appears immediately in all GTK themes
@@ -531,8 +539,8 @@ fi
 /opt/blinkkind/
 /usr/bin/blinkkind
 /usr/share/applications/com.jatin.eyecaretimer.desktop
-/usr/share/pixmaps/blinkkind.png
-/usr/share/icons/hicolor/128x128/apps/blinkkind.png
+/usr/share/pixmaps/com.jatin.eyecaretimer.png
+/usr/share/icons/hicolor/128x128/apps/com.jatin.eyecaretimer.png
 
 %changelog
 * Sat Jul 12 2026 Jatin Khattar <khattarjatin374@gmail.com> - $VERSION-1
@@ -645,7 +653,7 @@ if [ -n "$_INSTALL_PKG" ]; then
                 sudo update-desktop-database /usr/share/applications 2>/dev/null || true
                 # Fix SELinux file contexts if restorecon is available (Fedora/RHEL)
                 if command -v restorecon &>/dev/null; then
-                    sudo restorecon -Rv /opt/blinkkind/ /usr/share/applications/com.jatin.eyecaretimer.desktop /usr/share/pixmaps/blinkkind.png 2>/dev/null || true
+                    sudo restorecon -Rv /opt/blinkkind/ /usr/share/applications/com.jatin.eyecaretimer.desktop /usr/share/pixmaps/com.jatin.eyecaretimer.png 2>/dev/null || true
                 fi
                 # Reset GNOME app-picker layout cache so new entry is visible immediately
                 if command -v gsettings &>/dev/null; then
@@ -665,7 +673,7 @@ if [ -n "$_INSTALL_PKG" ]; then
                 sudo update-desktop-database /usr/share/applications 2>/dev/null || true
                 # Fix SELinux file contexts if restorecon is available (Fedora/RHEL)
                 if command -v restorecon &>/dev/null; then
-                    sudo restorecon -Rv /opt/blinkkind/ /usr/share/applications/com.jatin.eyecaretimer.desktop /usr/share/pixmaps/blinkkind.png 2>/dev/null || true
+                    sudo restorecon -Rv /opt/blinkkind/ /usr/share/applications/com.jatin.eyecaretimer.desktop /usr/share/pixmaps/com.jatin.eyecaretimer.png 2>/dev/null || true
                 fi
                 # Reset GNOME app-picker layout cache so new entry is visible immediately
                 if command -v gsettings &>/dev/null; then
