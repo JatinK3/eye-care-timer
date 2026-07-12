@@ -82,6 +82,16 @@ declare -a BUILD_DEPS=(
     "pkgcfg:ayatana-appindicator3-0.1|libayatana-appindicator3-1|libayatana-appindicator-gtk3|ayatana-appindicator3 runtime"
 )
 
+# ── optional runtime tools ────────────────────────────────────────────────────
+# These are NOT required for the build to succeed, but enhance runtime features.
+# Format: "check|apt_pkg|dnf_pkg|pacman_pkg|description|why_useful"
+declare -a OPTIONAL_RUNTIME_DEPS=(
+    # playerctl: MPRIS media player controller — used by the auto-pause media
+    # filter to reliably classify browser audio streams (YouTube Music vs YouTube
+    # video) via xesam:url when pactl media.role metadata is not available.
+    "playerctl|playerctl|playerctl|playerctl|playerctl (MPRIS media controller)|Improves 'Music only' / 'Video only' auto-pause accuracy for browser streams (e.g. YouTube Music vs YouTube)"
+)
+
 # ── check helpers ─────────────────────────────────────────────────────────────
 
 check_dep() {
@@ -225,6 +235,52 @@ resolve_build_deps() {
     echo ""
 }
 
+# ── optional runtime deps check ───────────────────────────────────────────────
+
+check_optional_deps() {
+    local pkg_manager
+    pkg_manager="$(detect_pkg_manager)"
+
+    echo ""
+    echo "========================================="
+    echo "Checking optional runtime tools..."
+    echo "========================================="
+
+    local any_missing=false
+    for entry in "${OPTIONAL_RUNTIME_DEPS[@]}"; do
+        IFS='|' read -r check apt_pkg dnf_pkg pacman_pkg desc why <<< "$entry"
+
+        local target_pkg
+        case "$pkg_manager" in
+            apt)    target_pkg="$apt_pkg" ;;
+            dnf|yum) target_pkg="$dnf_pkg" ;;
+            pacman) target_pkg="$pacman_pkg" ;;
+            *)      target_pkg="$apt_pkg" ;;
+        esac
+
+        if check_dep "$check"; then
+            _lr_ok "$desc"
+        else
+            any_missing=true
+            _lr_warn "OPTIONAL missing → $desc"
+            _lr_warn "  Why: $why"
+            case "$pkg_manager" in
+                apt)    _lr_warn "  Install: sudo apt-get install $apt_pkg" ;;
+                dnf)    _lr_warn "  Install: sudo dnf install $dnf_pkg" ;;
+                yum)    _lr_warn "  Install: sudo yum install $dnf_pkg" ;;
+                pacman) _lr_warn "  Install: sudo pacman -S $pacman_pkg" ;;
+                *)      _lr_warn "  Install: $apt_pkg  (apt) / $dnf_pkg  (dnf/rpm) / $pacman_pkg  (pacman)" ;;
+            esac
+        fi
+    done
+
+    if ! $any_missing; then
+        _lr_ok "All optional runtime tools are present."
+    fi
+    echo "========================================="
+    echo ""
+}
+
 # ── plugin source patches ─────────────────────────────────────────────────────
 # Applies known C/C++ source-level fixes to Flutter plugin files that fail to
 # compile on Clang (Fedora/Arch) due to -Werror flags that GCC (Ubuntu) ignores.
@@ -337,43 +393,66 @@ patch_plugin_sources() {
     
     if [ -n "$pub_cache_sentry" ]; then
         # Check if already patched to avoid redundant warnings or prints
-        if grep -q "sentry-native_POPULATED" "$pub_cache_sentry"; then
+        if grep -q "sentry-native_POPULATED" "$pub_cache_sentry" || grep -q "SENTRY_PATCH_CMD" "$pub_cache_sentry"; then
             _lr_ok "Already patched: sentry-native.cmake (pub cache) — exports.map space issue"
         else
-            # We patch FetchContent_MakeAvailable(sentry-native) with our custom populated hook
-            # that will modify the CMakeLists.txt when it is fetched, but only if on Fedora.
-            cat << 'EOF' > /tmp/sentry_patch.txt
-FetchContent_GetProperties(sentry-native)
-if(NOT sentry-native_POPULATED)
-    FetchContent_Populate(sentry-native)
-    if(EXISTS "/etc/os-release")
-        file(READ "/etc/os-release" OS_RELEASE_CONTENT)
-        if(OS_RELEASE_CONTENT MATCHES "ID=fedora")
-            message(STATUS "[sentry_flutter-patch] Detected Fedora. Patching exports.map path to handle spaces in target directory.")
-            file(READ "${sentry-native_SOURCE_DIR}/CMakeLists.txt" SENTRY_CMAKE)
-            string(REPLACE "--version-script=\${PROJECT_SOURCE_DIR}/src/exports.map" "--version-script=\\\"\${PROJECT_SOURCE_DIR}/src/exports.map\\\"" SENTRY_CMAKE "${SENTRY_CMAKE}")
-            file(WRITE "${sentry-native_SOURCE_DIR}/CMakeLists.txt" "${SENTRY_CMAKE}")
-        endif()
+            # We add a PATCH_COMMAND to FetchContent_Declare to modify CMakeLists.txt when it is fetched,
+            # but only if on Fedora. This avoids the deprecated FetchContent_Populate direct calls.
+            cat << 'EOF' > /tmp/sentry_patch.py
+import sys
+import re
+
+with open(sys.argv[1], 'r') as f:
+    content = f.read()
+
+pattern = r'FetchContent_Declare\(\s*sentry-native.*?EXCLUDE_FROM_ALL\s*\)\s*FetchContent_MakeAvailable\(sentry-native\)'
+replacement = """
+set(SENTRY_PATCH_CMD "")
+if(EXISTS "/etc/os-release")
+    file(READ "/etc/os-release" OS_RELEASE_CONTENT)
+    if(OS_RELEASE_CONTENT MATCHES "ID=fedora")
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/patch_sentry.py" [=[
+import os
+content = open('CMakeLists.txt').read()
+old_str = '-Wl,--build-id=sha1,--version-script=${PROJECT_SOURCE_DIR}/src/exports.map'
+new_str = '-Wl,--build-id=sha1'
+if old_str in content:
+    open('CMakeLists.txt', 'w').write(content.replace(old_str, new_str))
+    print("[sentry_flutter-patch] Successfully patched CMakeLists.txt to remove version-script (fixes space in path issue).")
+]=])
+        set(SENTRY_PATCH_CMD python3 "${CMAKE_CURRENT_BINARY_DIR}/patch_sentry.py")
     endif()
-    add_subdirectory(${sentry-native_SOURCE_DIR} ${sentry-native_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
+
+if(SENTRY_PATCH_CMD)
+    FetchContent_Declare(
+        sentry-native
+        GIT_REPOSITORY ${SENTRY_NATIVE_repo}
+        GIT_TAG ${SENTRY_NATIVE_version}
+        EXCLUDE_FROM_ALL
+        PATCH_COMMAND ${SENTRY_PATCH_CMD}
+    )
+else()
+    FetchContent_Declare(
+        sentry-native
+        GIT_REPOSITORY ${SENTRY_NATIVE_repo}
+        GIT_TAG ${SENTRY_NATIVE_version}
+        EXCLUDE_FROM_ALL
+    )
+endif()
+FetchContent_MakeAvailable(sentry-native)
+"""
+if re.search(pattern, content, re.DOTALL):
+    content = re.sub(pattern, replacement, content, flags=re.DOTALL)
+    with open(sys.argv[1], 'w') as f:
+        f.write(content)
 EOF
             if [ "${LIB_RESOLVER_DRY_RUN:-0}" = "1" ]; then
                 _lr_info "DRY-RUN: would patch $pub_cache_sentry"
             else
-                python3 -c "
-import sys
-with open('$pub_cache_sentry', 'r') as f:
-    content = f.read()
-with open('/tmp/sentry_patch.txt', 'r') as f:
-    patch = f.read()
-if 'FetchContent_MakeAvailable(sentry-native)' in content:
-    content = content.replace('FetchContent_MakeAvailable(sentry-native)', patch)
-    with open('$pub_cache_sentry', 'w') as f:
-        f.write(content)
-" && _lr_ok "Patched: sentry-native.cmake (pub cache) — exports.map space issue" || _lr_warn "Could not patch: $pub_cache_sentry"
+                python3 /tmp/sentry_patch.py "$pub_cache_sentry" && _lr_ok "Patched: sentry-native.cmake (pub cache) — exports.map space issue" || _lr_warn "Could not patch: $pub_cache_sentry"
             fi
-            rm -f /tmp/sentry_patch.txt
+            rm -f /tmp/sentry_patch.py
         fi
     else
         _lr_warn "sentry_flutter not found in pub cache — skipping sentry-native patch."
@@ -387,4 +466,5 @@ if 'FetchContent_MakeAvailable(sentry-native)' in content:
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     resolve_build_deps
     patch_plugin_sources
+    check_optional_deps
 fi
