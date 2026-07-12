@@ -1524,18 +1524,21 @@ class _SettingsPageState extends State<SettingsPage>
                       ChoiceChip(
                         label: const Text('All media'),
                         selected: widget.autoPauseMediaFilter == 'all',
+                        showCheckmark: false,
                         onSelected: (_) => widget.setAutoPauseMediaFilter('all'),
                         avatar: const Icon(Icons.library_music_outlined, size: 16),
                       ),
                       ChoiceChip(
                         label: const Text('Music only'),
                         selected: widget.autoPauseMediaFilter == 'music_only',
+                        showCheckmark: false,
                         onSelected: (_) => widget.setAutoPauseMediaFilter('music_only'),
                         avatar: const Icon(Icons.music_note_outlined, size: 16),
                       ),
                       ChoiceChip(
                         label: const Text('Video only'),
                         selected: widget.autoPauseMediaFilter == 'video_only',
+                        showCheckmark: false,
                         onSelected: (_) => widget.setAutoPauseMediaFilter('video_only'),
                         avatar: const Icon(Icons.videocam_outlined, size: 16),
                       ),
