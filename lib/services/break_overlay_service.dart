@@ -232,9 +232,21 @@ class BreakOverlayService {
     }
   }
 
-  Future<bool> isMediaPlaying() async {
+  /// Returns whether relevant media is currently playing.
+  ///
+  /// [filter] controls which stream types trigger an auto-pause:
+  ///   - `'all'`        → any audio stream (default)
+  ///   - `'music_only'` → only streams whose media.role is 'music' or whose
+  ///                       app is a known music player (Spotify, Rhythmbox, …)
+  ///   - `'video_only'` → only streams whose media.role is 'video' or whose
+  ///                       app is a known video player / browser playing video
+  Future<bool> isMediaPlaying({String filter = 'all'}) async {
     if (kIsWeb) return false;
     if (defaultTargetPlatform == TargetPlatform.android) {
+      // Android AudioManager.isMusicActive() covers all audio; we can't
+      // reliably distinguish video-only streams there, so treat music_only
+      // and all the same, and return false for video_only.
+      if (filter == 'video_only') return false;
       try {
         final playing = await _channel.invokeMethod<bool>("isMusicActive");
         return playing ?? false;
@@ -246,33 +258,77 @@ class BreakOverlayService {
         final result = await Process.run('pactl', ['list', 'sink-inputs']);
         if (result.exitCode == 0) {
           final output = result.stdout as String;
-          // Split by "Sink Input #" to analyze each stream independently
+          // Split by "Sink Input #" to analyse each stream independently
           final inputs = output.split(RegExp(r'Sink Input #\d+'));
           for (final input in inputs) {
             if (input.trim().isEmpty) continue;
 
-            // Check if this stream is active (uncorked)
+            // Only consider active (uncorked) streams
             final isUncorked = input.toLowerCase().contains('corked: no');
-            if (isUncorked) {
-              // Check if this stream belongs to our own app or a known persistent comms app
-              final lowerInput = input.toLowerCase();
-              final shouldIgnore =
-                  lowerInput.contains('eye_care_timer') ||
-                  lowerInput.contains('blinkkind') ||
-                  lowerInput.contains('com.jatin.eyecaretimer') ||
-                  lowerInput.contains('telegram') ||
-                  lowerInput.contains('discord') ||
-                  lowerInput.contains('skype') ||
-                  lowerInput.contains('teams');
-              if (!shouldIgnore) {
-                // Found an active media stream from another application (e.g. Chrome, Spotify)
-                return true;
-              }
+            if (!isUncorked) continue;
+
+            final lowerInput = input.toLowerCase();
+
+            // Ignore our own app and persistent comms tools
+            final shouldIgnore =
+                lowerInput.contains('eye_care_timer') ||
+                lowerInput.contains('blinkkind') ||
+                lowerInput.contains('com.jatin.eyecaretimer') ||
+                lowerInput.contains('telegram') ||
+                lowerInput.contains('discord') ||
+                lowerInput.contains('skype') ||
+                lowerInput.contains('teams');
+            if (shouldIgnore) continue;
+
+            // If 'all', any non-ignored active stream counts.
+            if (filter == 'all') return true;
+
+            // --- Classify the stream ----------------------------------------
+            // Extract media.role if present  (e.g.  media.role = "music")
+            final roleMatch = RegExp(
+              r'media\.role\s*=\s*"([^"]+)"',
+              caseSensitive: false,
+            ).firstMatch(input);
+            final role = roleMatch?.group(1)?.toLowerCase() ?? '';
+
+            // Known video-player app-name keywords
+            const videoApps = [
+              'vlc', 'mpv', 'totem', 'kodi', 'mplayer', 'gnome-video',
+              'celluloid', 'dragon', 'smplayer',
+            ];
+            // Known music-player app-name keywords
+            const musicApps = [
+              'spotify', 'rhythmbox', 'clementine', 'amarok', 'quodlibet',
+              'audacious', 'lollypop', 'cantata', 'elisa', 'strawberry',
+            ];
+
+            final isVideoRole = role == 'video' || role == 'movie';
+            final isMusicRole = role == 'music' || role == 'a11y';
+            final isVideoApp = videoApps.any((a) => lowerInput.contains(a));
+            final isMusicApp = musicApps.any((a) => lowerInput.contains(a));
+
+            // Browser streams (chrome, firefox, …) carrying video will often
+            // report media.role = "video"; music streams report "music" or nothing.
+            if (filter == 'video_only') {
+              if (isVideoRole || isVideoApp) return true;
+              // Browsers without a role tag are treated as video by default
+              // because they most commonly play video content.
+              final isBrowser = lowerInput.contains('chrome') ||
+                  lowerInput.contains('chromium') ||
+                  lowerInput.contains('firefox') ||
+                  lowerInput.contains('brave') ||
+                  lowerInput.contains('opera') ||
+                  lowerInput.contains('vivaldi') ||
+                  lowerInput.contains('edge');
+              if (isBrowser && !isMusicRole) return true;
+            } else if (filter == 'music_only') {
+              if (isMusicRole || isMusicApp) return true;
             }
+            // ----------------------------------------------------------------
           }
         }
       } catch (e) {
-        // pactl not found
+        // pactl not available on this system
       }
     }
     return false;

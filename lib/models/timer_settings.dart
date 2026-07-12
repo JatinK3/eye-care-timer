@@ -45,6 +45,8 @@ class TimerSettings {
   static const bool defaultCameraMicAutoPostponeEnabled = false;
   static const bool defaultWellnessRemindersEnabled = false;
   static const bool defaultAutoPauseOnMediaEnabled = false;
+  /// Values: 'all' | 'music_only' | 'video_only'
+  static const String defaultAutoPauseMediaFilter = 'all';
   static const int defaultWellnessReminderCadenceSeconds = 3600;
   static const bool defaultWaterRemindersEnabled = false;
   static const int defaultWaterDailyGoalGlasses = 8;
@@ -122,6 +124,7 @@ class TimerSettings {
   final int maxConsecutiveSkips;
   final int maxConsecutivePostpones;
   final bool autoPauseOnMediaEnabled;
+  final String autoPauseMediaFilter;
   final String activeProfile;
   final bool reducedMotionEnabled;
   final AnimationSpeed animationSpeed;
@@ -188,6 +191,7 @@ class TimerSettings {
     required this.waterGlassSizeMl,
     required this.blinkReminderInteractiveEnabled,
     required this.autoPauseOnMediaEnabled,
+    required this.autoPauseMediaFilter,
     required this.activeProfile,
     required this.reducedMotionEnabled,
     required this.animationSpeed,
@@ -255,6 +259,7 @@ class TimerSettings {
       maxConsecutiveSkips = defaultMaxConsecutiveSkips,
       maxConsecutivePostpones = defaultMaxConsecutivePostpones,
       autoPauseOnMediaEnabled = defaultAutoPauseOnMediaEnabled,
+      autoPauseMediaFilter = defaultAutoPauseMediaFilter,
       activeProfile = defaultActiveProfile,
       reducedMotionEnabled = defaultReducedMotionEnabled,
       animationSpeed = defaultAnimationSpeed,
@@ -321,6 +326,7 @@ class TimerSettings {
     int? maxConsecutiveSkips,
     int? maxConsecutivePostpones,
     bool? autoPauseOnMediaEnabled,
+    String? autoPauseMediaFilter,
     String? activeProfile,
     bool? reducedMotionEnabled,
     AnimationSpeed? animationSpeed,
@@ -405,6 +411,8 @@ class TimerSettings {
           maxConsecutivePostpones ?? this.maxConsecutivePostpones,
       autoPauseOnMediaEnabled:
           autoPauseOnMediaEnabled ?? this.autoPauseOnMediaEnabled,
+      autoPauseMediaFilter:
+          autoPauseMediaFilter ?? this.autoPauseMediaFilter,
       activeProfile: activeProfile ?? this.activeProfile,
       reducedMotionEnabled: reducedMotionEnabled ?? this.reducedMotionEnabled,
       animationSpeed: animationSpeed ?? this.animationSpeed,
@@ -474,6 +482,7 @@ class TimerSettings {
       'maxConsecutiveSkips': maxConsecutiveSkips,
       'maxConsecutivePostpones': maxConsecutivePostpones,
       'autoPauseOnMediaEnabled': autoPauseOnMediaEnabled,
+      'autoPauseMediaFilter': autoPauseMediaFilter,
       'activeProfile': activeProfile,
       'reducedMotionEnabled': reducedMotionEnabled,
       'animationSpeed': animationSpeed.name,
@@ -605,6 +614,9 @@ class TimerSettings {
       autoPauseOnMediaEnabled:
           json['autoPauseOnMediaEnabled'] as bool? ??
           defaultAutoPauseOnMediaEnabled,
+      autoPauseMediaFilter:
+          json['autoPauseMediaFilter'] as String? ??
+          defaultAutoPauseMediaFilter,
       activeProfile: json['activeProfile'] as String? ?? defaultActiveProfile,
       animationSpeed: AnimationSpeed.values.firstWhere(
         (e) => e.name == (json['animationSpeed'] as String?),

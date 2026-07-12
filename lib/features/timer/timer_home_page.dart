@@ -118,6 +118,7 @@ class TimerHomePage extends StatefulWidget {
   final int waterGlassSizeMl;
   final bool blinkReminderInteractiveEnabled;
   final bool autoPauseOnMediaEnabled;
+  final String autoPauseMediaFilter;
   final bool adaptiveSchedulingEnabled;
   final AnimationSpeed animationSpeed;
   final bool reducedMotionEnabled;
@@ -194,6 +195,7 @@ class TimerHomePage extends StatefulWidget {
     required this.waterGlassSizeMl,
     required this.blinkReminderInteractiveEnabled,
     required this.autoPauseOnMediaEnabled,
+    required this.autoPauseMediaFilter,
     this.isCameraInUseOverride,
     this.isMicInUseOverride,
     this.breakOverlayService,
@@ -924,7 +926,7 @@ class TimerHomePageState extends State<TimerHomePage>
     final overlayService = widget.breakOverlayService;
     if (overlayService == null) return;
 
-    final isPlaying = await overlayService.isMediaPlaying();
+    final isPlaying = await overlayService.isMediaPlaying(filter: widget.autoPauseMediaFilter);
     final isMicActive = await _isMicInUse();
     final isCamActive = await _isCameraInUse();
     final isMediaActive = isPlaying || isMicActive || isCamActive;

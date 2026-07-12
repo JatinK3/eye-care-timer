@@ -84,6 +84,8 @@ class SettingsPage extends StatefulWidget {
   final void Function(bool) setBlinkReminderInteractiveEnabled;
   final void Function(bool) setCameraMicAutoPostponeEnabled;
   final void Function(bool) setAutoPauseOnMediaEnabled;
+  final String autoPauseMediaFilter;
+  final void Function(String) setAutoPauseMediaFilter;
   final void Function(bool) setWellnessRemindersEnabled;
   final void Function(int) setWellnessReminderCadenceSeconds;
   final void Function(bool) setWaterRemindersEnabled;
@@ -249,6 +251,8 @@ class SettingsPage extends StatefulWidget {
     required this.setBlinkReminderInteractiveEnabled,
     required this.setCameraMicAutoPostponeEnabled,
     required this.setAutoPauseOnMediaEnabled,
+    required this.autoPauseMediaFilter,
+    required this.setAutoPauseMediaFilter,
     required this.setWellnessRemindersEnabled,
     required this.setWellnessReminderCadenceSeconds,
     required this.setWaterRemindersEnabled,
@@ -1470,9 +1474,9 @@ class _SettingsPageState extends State<SettingsPage>
                 value: widget.autoPauseOnMediaEnabled,
                 onChanged: widget.setAutoPauseOnMediaEnabled,
               ),
-              if (widget.autoPauseOnMediaEnabled)
+              if (widget.autoPauseOnMediaEnabled) ...[
                 Padding(
-                  padding: const EdgeInsets.only(left: 48.0, top: 4.0, bottom: 8.0),
+                  padding: const EdgeInsets.only(left: 48.0, top: 4.0, bottom: 4.0),
                   child: Text(
                     l10n.settingsAutoPauseOnMediaDesc,
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -1481,6 +1485,33 @@ class _SettingsPageState extends State<SettingsPage>
                     ),
                   ),
                 ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 48.0, bottom: 8.0),
+                  child: Wrap(
+                    spacing: 8.0,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('All media'),
+                        selected: widget.autoPauseMediaFilter == 'all',
+                        onSelected: (_) => widget.setAutoPauseMediaFilter('all'),
+                        avatar: const Icon(Icons.library_music_outlined, size: 16),
+                      ),
+                      ChoiceChip(
+                        label: const Text('Music only'),
+                        selected: widget.autoPauseMediaFilter == 'music_only',
+                        onSelected: (_) => widget.setAutoPauseMediaFilter('music_only'),
+                        avatar: const Icon(Icons.music_note_outlined, size: 16),
+                      ),
+                      ChoiceChip(
+                        label: const Text('Video only'),
+                        selected: widget.autoPauseMediaFilter == 'video_only',
+                        onSelected: (_) => widget.setAutoPauseMediaFilter('video_only'),
+                        avatar: const Icon(Icons.videocam_outlined, size: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),

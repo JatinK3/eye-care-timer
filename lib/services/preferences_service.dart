@@ -93,6 +93,7 @@ class PreferencesService {
   static const String maxConsecutiveSkipsKey = 'maxConsecutiveSkips';
   static const String maxConsecutivePostponesKey = 'maxConsecutivePostpones';
   static const String autoPauseOnMediaEnabledKey = 'autoPauseOnMediaEnabled';
+  static const String autoPauseMediaFilterKey = 'autoPauseMediaFilter';
   static const String activeProfileKey = 'activeProfile';
   static const String reducedMotionEnabledKey = 'reducedMotionEnabled';
   static const String animationSpeedKey = 'animationSpeed';
@@ -261,6 +262,9 @@ class PreferencesService {
       autoPauseOnMediaEnabled:
           prefs.getBool(autoPauseOnMediaEnabledKey) ??
           TimerSettings.defaultAutoPauseOnMediaEnabled,
+      autoPauseMediaFilter:
+          prefs.getString(autoPauseMediaFilterKey) ??
+          TimerSettings.defaultAutoPauseMediaFilter,
       maxConsecutiveSkips:
           prefs.getInt(maxConsecutiveSkipsKey) ??
           TimerSettings.defaultMaxConsecutiveSkips,
@@ -691,6 +695,10 @@ class PreferencesService {
     await prefs.setBool(
       autoPauseOnMediaEnabledKey,
       settings.autoPauseOnMediaEnabled,
+    );
+    await prefs.setString(
+      autoPauseMediaFilterKey,
+      settings.autoPauseMediaFilter,
     );
     await prefs.setString(activeProfileKey, settings.activeProfile);
     await prefs.setBool(reducedMotionEnabledKey, settings.reducedMotionEnabled);
