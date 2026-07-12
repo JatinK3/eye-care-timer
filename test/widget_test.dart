@@ -24,7 +24,7 @@ class FakeBreakOverlayService extends BreakOverlayService {
   String? lastCustomMessage;
 
   @override
-  Future<bool> isMediaPlaying() async => false;
+  Future<bool> isMediaPlaying({String filter = 'all'}) async => false;
 
   FakeBreakOverlayService({this.status = OverlayPermissionStatus.allowed});
 

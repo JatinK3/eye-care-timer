@@ -1394,19 +1394,50 @@ class _SettingsPageState extends State<SettingsPage>
             ],
           ),
         ),
-        SettingItem(
-          title: l10n.settingsSmartPausePostpone,
-          subtitle: l10n.settingsSmartPausePostponeSubtitle,
-          keywords: [
-            'smart',
-            'pause',
-            'postpone',
-            'idle',
-            'game',
-            'video',
-            'cast',
-            'dnd',
-          ],
+        if (widget.allowPostpone)
+          SettingItem(
+            title: l10n.settingsPostponeDuration,
+            subtitle: l10n.settingsPostponeDurationSubtitle,
+            keywords: ['postpone', 'duration', 'minutes', 'delay'],
+            category: 'Break Screen & Behavior',
+            widget: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.timer_outlined),
+              title: Text(l10n.settingsPostponeDuration),
+              subtitle: Text(l10n.settingsPostponeDurationSubtitle),
+              trailing: DropdownButton<int>(
+                value: widget.postponeDurationSeconds,
+                underline: const SizedBox(),
+                items: _postponeDurations
+                    .map(
+                      (seconds) => DropdownMenuItem<int>(
+                        value: seconds,
+                        child: Text(
+                          l10n.settingsDurationMinutes(seconds ~/ 60),
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) widget.setPostponeDurationSeconds(value);
+                },
+              ),
+            ),
+          ),
+      ],
+      SettingItem(
+        title: l10n.settingsSmartPausePostpone,
+        subtitle: l10n.settingsSmartPausePostponeSubtitle,
+        keywords: [
+          'smart',
+          'pause',
+          'postpone',
+          'idle',
+          'game',
+          'video',
+          'cast',
+          'dnd',
+        ],
           category: 'Break Screen & Behavior',
           widget: SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -1648,37 +1679,6 @@ class _SettingsPageState extends State<SettingsPage>
             onChanged: widget.setBreakCustomMessage,
           ),
         ),
-        if (widget.allowPostpone)
-          SettingItem(
-            title: l10n.settingsPostponeDuration,
-            subtitle: l10n.settingsPostponeDurationSubtitle,
-            keywords: ['postpone', 'duration', 'minutes', 'delay'],
-            category: 'Break Screen & Behavior',
-            widget: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.timer_outlined),
-              title: Text(l10n.settingsPostponeDuration),
-              subtitle: Text(l10n.settingsPostponeDurationSubtitle),
-              trailing: DropdownButton<int>(
-                value: widget.postponeDurationSeconds,
-                underline: const SizedBox(),
-                items: _postponeDurations
-                    .map(
-                      (seconds) => DropdownMenuItem<int>(
-                        value: seconds,
-                        child: Text(
-                          l10n.settingsDurationMinutes(seconds ~/ 60),
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) widget.setPostponeDurationSeconds(value);
-                },
-              ),
-            ),
-          ),
-      ],
       if (_overlayPermissionStatus != OverlayPermissionStatus.unsupported) ...[
         SettingItem(
           title: l10n.settingsDisplayOverApps,
