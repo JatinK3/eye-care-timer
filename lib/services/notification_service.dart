@@ -374,7 +374,7 @@ class NotificationService {
       macOS: darwinSettings,
       linux: LinuxInitializationSettings(
         defaultActionName: 'Open',
-        defaultIcon: AssetsLinuxIcon('assets/app_icon.png'),
+        defaultIcon: ThemeLinuxIcon('com.jatin.eyecaretimer'),
       ),
     );
 
