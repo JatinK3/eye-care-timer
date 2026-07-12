@@ -51,6 +51,93 @@ if [ -z "$FLUTTER" ]; then
 fi
 echo "Using Flutter: $FLUTTER"
 
+# ---------------------------------------------------------------------------
+# Help / usage
+# ---------------------------------------------------------------------------
+usage() {
+    cat <<'EOF'
+
+Usage:
+  bash tool/package_linux.sh [OPTIONS]
+
+  Builds a release bundle with 'flutter build linux', then packages it
+  as a DEB (Debian/Ubuntu) and/or RPM (Fedora/RHEL/Rocky) in dist/.
+  Optionally installs the generated package on the current machine.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FLAG                   ALIASES              WHAT IT DOES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ -h, --help                                  Show this help and exit.
+
+ -y, --yes                                   Auto-answer YES to every
+                                             interactive prompt (build
+                                             deps, optional tools, and
+                                             package install). Useful
+                                             for CI / scripted builds.
+
+ -n, --no                                    Auto-answer NO to every
+                                             interactive prompt. Builds
+                                             and packages but installs
+                                             nothing.
+
+ -i, --install                               Force-install the generated
+                                             package after building,
+                                             without asking. On apt
+                                             systems installs the DEB;
+                                             on dnf/yum installs the RPM.
+                                             Does NOT imply -y for other
+                                             prompts (deps, optional tools).
+
+ -ni, --no-install                           Skip the install step
+                                             entirely — only build and
+                                             package. Overrides -i if
+                                             both are passed.
+
+ -c, --clear, --clear-state                  Delete local app state
+                                             files before building
+                                             (~/.local/share/com.jatin.
+                                             eyecaretimer). Useful when
+                                             testing a fresh-install flow.
+
+ -nc, --no-clear, --no-clear-state           Never delete state files,
+                                             even if prompted. Default
+                                             behaviour.
+
+ -d, --dev, --local                          Developer / local mode.
+                                             Builds the app and installs
+                                             a user-scoped .desktop
+                                             launcher (~/.local/share/
+                                             applications/) instead of
+                                             packaging a DEB/RPM. Also
+                                             relaunches the app after
+                                             the build completes.
+                                             Use this for rapid iteration
+                                             during development.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Examples:
+  # Standard release build + interactive install prompt
+  bash tool/package_linux.sh
+
+  # Build and immediately install without any prompts (CI)
+  bash tool/package_linux.sh -y -i
+
+  # Build packages only — no install, no state wipe
+  bash tool/package_linux.sh -n
+
+  # Wipe local state and do a clean install (regression testing)
+  bash tool/package_linux.sh -c -y -i
+
+  # Fast dev iteration — build and relaunch the app locally
+  bash tool/package_linux.sh --dev
+
+  # Build packages but skip the install step
+  bash tool/package_linux.sh --no-install
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EOF
+}
+
 # Parse command line arguments
 AUTO_YES=false
 AUTO_NO=false
@@ -60,6 +147,10 @@ DEV_MODE=false
 
 for arg in "$@"; do
     case "$arg" in
+        -h|--help|-H|--HELP)
+            usage
+            exit 0
+            ;;
         -y|--yes|-Y|--YES)
             AUTO_YES=true
             ;;
@@ -80,6 +171,9 @@ for arg in "$@"; do
             ;;
         -d|--dev|--local)
             DEV_MODE=true
+            ;;
+        -*)
+            echo "Warning: unknown flag '$arg' — ignored. Run with -h for help."
             ;;
     esac
 done
