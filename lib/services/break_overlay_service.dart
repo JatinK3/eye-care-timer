@@ -264,7 +264,34 @@ class BreakOverlayService {
       if (filter != 'all') {
         if (await _checkPlayerctl(filter)) return true;
       }
+    } else if (defaultTargetPlatform == TargetPlatform.windows) {
+      return await _checkWindowsMedia(filter);
     }
+    return false;
+  }
+
+  /// Checks Windows 10/11 Global System Media Transport Controls via PowerShell
+  Future<bool> _checkWindowsMedia(String filter) async {
+    try {
+      const script = '''
+[Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media, ContentType = WindowsRuntime] | Out-Null
+\$manager = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync().GetAwaiter().GetResult()
+\$session = \$manager.GetCurrentSession()
+if (\$session -eq \$null) { Write-Output "false" } else {
+  \$info = \$session.GetPlaybackInfo()
+  if (\$info.PlaybackStatus -eq 'Playing') { Write-Output "true" } else { Write-Output "false" }
+}
+''';
+      final result = await Process.run(
+        'powershell',
+        ['-NoProfile', '-NonInteractive', '-Command', script],
+      );
+      if (result.exitCode == 0 && result.stdout.toString().trim() == 'true') {
+        // Note: SMTC on Windows doesn't expose 'video vs music' natively without
+        // complex app-name lookups (e.g., Spotify vs Chrome), so we treat it generally.
+        return true;
+      }
+    } catch (_) {}
     return false;
   }
 
