@@ -10,6 +10,8 @@ import 'desktop_integration_service.dart';
 
 enum OverlayPermissionStatus { unknown, allowed, disabled, unsupported }
 
+enum _MediaType { music, video, unknown }
+
 class BreakOverlayService {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
@@ -234,18 +236,18 @@ class BreakOverlayService {
 
   /// Returns whether relevant media is currently playing.
   ///
-  /// [filter] controls which stream types trigger an auto-pause:
-  ///   - `'all'`        → any audio stream (default)
-  ///   - `'music_only'` → only streams whose media.role is 'music' or whose
-  ///                       app is a known music player (Spotify, Rhythmbox, …)
-  ///   - `'video_only'` → only streams whose media.role is 'video' or whose
-  ///                       app is a known video player / browser playing video
+  /// Detection uses three layered signals on Linux:
+  ///   1. `media.role` in pactl — set by the browser via the MediaSession API
+  ///      (YouTube Music → "music", regular YouTube → "video")
+  ///   2. `media.name` in pactl — page/track title from the browser
+  ///      (e.g. "YouTube Music", "Netflix", "SoundCloud")
+  ///   3. `playerctl` MPRIS — reads `xesam:url` + title from all registered
+  ///      MPRIS players (reliable fallback when pactl metadata is sparse)
+  ///
+  /// [filter] values: `'all'` | `'music_only'` | `'video_only'`
   Future<bool> isMediaPlaying({String filter = 'all'}) async {
     if (kIsWeb) return false;
     if (defaultTargetPlatform == TargetPlatform.android) {
-      // Android AudioManager.isMusicActive() covers all audio; we can't
-      // reliably distinguish video-only streams there, so treat music_only
-      // and all the same, and return false for video_only.
       if (filter == 'video_only') return false;
       try {
         final playing = await _channel.invokeMethod<bool>("isMusicActive");
@@ -254,84 +256,193 @@ class BreakOverlayService {
         return false;
       }
     } else if (defaultTargetPlatform == TargetPlatform.linux) {
-      try {
-        final result = await Process.run('pactl', ['list', 'sink-inputs']);
-        if (result.exitCode == 0) {
-          final output = result.stdout as String;
-          // Split by "Sink Input #" to analyse each stream independently
-          final inputs = output.split(RegExp(r'Sink Input #\d+'));
-          for (final input in inputs) {
-            if (input.trim().isEmpty) continue;
+      // Layer 1 + 2: pactl sink-inputs
+      final pactlHit = await _checkPactlStreams(filter);
+      if (pactlHit == true) return true;
 
-            // Only consider active (uncorked) streams
-            final isUncorked = input.toLowerCase().contains('corked: no');
-            if (!isUncorked) continue;
-
-            final lowerInput = input.toLowerCase();
-
-            // Ignore our own app and persistent comms tools
-            final shouldIgnore =
-                lowerInput.contains('eye_care_timer') ||
-                lowerInput.contains('blinkkind') ||
-                lowerInput.contains('com.jatin.eyecaretimer') ||
-                lowerInput.contains('telegram') ||
-                lowerInput.contains('discord') ||
-                lowerInput.contains('skype') ||
-                lowerInput.contains('teams');
-            if (shouldIgnore) continue;
-
-            // If 'all', any non-ignored active stream counts.
-            if (filter == 'all') return true;
-
-            // --- Classify the stream ----------------------------------------
-            // Extract media.role if present  (e.g.  media.role = "music")
-            final roleMatch = RegExp(
-              r'media\.role\s*=\s*"([^"]+)"',
-              caseSensitive: false,
-            ).firstMatch(input);
-            final role = roleMatch?.group(1)?.toLowerCase() ?? '';
-
-            // Known video-player app-name keywords
-            const videoApps = [
-              'vlc', 'mpv', 'totem', 'kodi', 'mplayer', 'gnome-video',
-              'celluloid', 'dragon', 'smplayer',
-            ];
-            // Known music-player app-name keywords
-            const musicApps = [
-              'spotify', 'rhythmbox', 'clementine', 'amarok', 'quodlibet',
-              'audacious', 'lollypop', 'cantata', 'elisa', 'strawberry',
-            ];
-
-            final isVideoRole = role == 'video' || role == 'movie';
-            final isMusicRole = role == 'music' || role == 'a11y';
-            final isVideoApp = videoApps.any((a) => lowerInput.contains(a));
-            final isMusicApp = musicApps.any((a) => lowerInput.contains(a));
-
-            // Browser streams (chrome, firefox, …) carrying video will often
-            // report media.role = "video"; music streams report "music" or nothing.
-            if (filter == 'video_only') {
-              if (isVideoRole || isVideoApp) return true;
-              // Browsers without a role tag are treated as video by default
-              // because they most commonly play video content.
-              final isBrowser = lowerInput.contains('chrome') ||
-                  lowerInput.contains('chromium') ||
-                  lowerInput.contains('firefox') ||
-                  lowerInput.contains('brave') ||
-                  lowerInput.contains('opera') ||
-                  lowerInput.contains('vivaldi') ||
-                  lowerInput.contains('edge');
-              if (isBrowser && !isMusicRole) return true;
-            } else if (filter == 'music_only') {
-              if (isMusicRole || isMusicApp) return true;
-            }
-            // ----------------------------------------------------------------
-          }
-        }
-      } catch (e) {
-        // pactl not available on this system
+      // Layer 3: playerctl MPRIS (only needed for filtered modes)
+      if (filter != 'all') {
+        if (await _checkPlayerctl(filter)) return true;
       }
     }
     return false;
+  }
+
+  /// Layers 1 & 2 — inspect pactl sink-inputs.
+  /// Returns `true`  if a matching stream is found,
+  ///         `false` if streams exist but none match the filter,
+  ///         `null`  if pactl failed or no streams were present.
+  Future<bool?> _checkPactlStreams(String filter) async {
+    try {
+      final result = await Process.run('pactl', ['list', 'sink-inputs']);
+      if (result.exitCode != 0) return null;
+
+      final inputs = (result.stdout as String).split(RegExp(r'Sink Input #\d+'));
+      for (final input in inputs) {
+        if (input.trim().isEmpty) continue;
+        if (!input.toLowerCase().contains('corked: no')) continue;
+
+        final lower = input.toLowerCase();
+        if (_shouldIgnoreStream(lower)) continue;
+
+        if (filter == 'all') return true;
+
+        final role = _extractProp(input, 'media.role');
+        final mediaName = _extractProp(input, 'media.name');
+        final appName = _extractProp(input, 'application.name');
+
+        final type = _classifyPactl(
+          role: role, mediaName: mediaName, appName: appName, lower: lower,
+        );
+        if (filter == 'music_only' && type == _MediaType.music) return true;
+        if (filter == 'video_only' && type == _MediaType.video) return true;
+      }
+      return false;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Layer 3 — query MPRIS via `playerctl` for accurate browser stream info.
+  Future<bool> _checkPlayerctl(String filter) async {
+    try {
+      final listResult = await Process.run(
+        'playerctl',
+        ['-a', 'status', '--format', '{{playerName}}|{{status}}'],
+      );
+      if (listResult.exitCode != 0) return false;
+
+      for (final line in (listResult.stdout as String).trim().split('\n')) {
+        final parts = line.split('|');
+        if (parts.length < 2) continue;
+        final playerName = parts[0].trim().toLowerCase();
+        final status = parts[1].trim().toLowerCase();
+        if (status != 'playing') continue;
+        if (_shouldIgnoreStream(playerName)) continue;
+
+        // Fetch URL + title for this player
+        final metaResult = await Process.run(
+          'playerctl',
+          [
+            '--player=$playerName', 'metadata', '--format',
+            '{{xesam:url}}|{{xesam:title}}|{{mpris:artUrl}}',
+          ],
+        );
+        if (metaResult.exitCode != 0) continue;
+
+        final meta = (metaResult.stdout as String).trim().toLowerCase();
+        final type = _classifyMpris(meta, playerName);
+        if (filter == 'music_only' && type == _MediaType.music) return true;
+        if (filter == 'video_only' && type == _MediaType.video) return true;
+      }
+    } catch (_) {
+      // playerctl not installed — silently skip
+    }
+    return false;
+  }
+
+  // ── helpers ──────────────────────────────────────────────────────────
+
+  String _extractProp(String block, String key) {
+    final m = RegExp(
+      '${RegExp.escape(key)}\\s*=\\s*"([^"]*)"',
+      caseSensitive: false,
+    ).firstMatch(block);
+    return m?.group(1)?.toLowerCase().trim() ?? '';
+  }
+
+  bool _shouldIgnoreStream(String lower) =>
+      lower.contains('eye_care_timer') ||
+      lower.contains('blinkkind') ||
+      lower.contains('com.jatin.eyecaretimer') ||
+      lower.contains('telegram') ||
+      lower.contains('discord') ||
+      lower.contains('skype') ||
+      lower.contains('teams');
+
+  _MediaType _classifyPactl({
+    required String role,
+    required String mediaName,
+    required String appName,
+    required String lower,
+  }) {
+    // ── Layer 1: media.role (set by browser MediaSession API) ────────
+    // Chrome/Firefox propagate the page's MediaSession type here:
+    //   YouTube Music → "music"   |   YouTube (video) → "video"
+    if (role == 'music' || role == 'a11y') return _MediaType.music;
+    if (role == 'video' || role == 'movie') return _MediaType.video;
+
+    // ── Layer 2a: media.name / lowerInput keyword matching ───────────
+    // Music streaming services (checked first so "youtube music" wins
+    // before the plain "youtube" video check below)
+    const musicKeywords = [
+      'youtube music', 'soundcloud', 'spotify', 'apple music',
+      'tidal', 'deezer', 'pandora', 'amazon music',
+      'jiosaavn', 'gaana', 'wynk', 'hungama',
+    ];
+    const videoKeywords = [
+      'netflix', 'amazon prime', 'prime video', 'disney+',
+      'hotstar', 'hulu', 'hbo max', 'twitch',
+      'youtube',   // plain YouTube — comes after "youtube music" so no clash
+      'zee5', 'sonyliv', 'voot', 'mxplayer', 'jiocinema',
+    ];
+    for (final kw in musicKeywords) {
+      if (mediaName.contains(kw) || lower.contains(kw)) return _MediaType.music;
+    }
+    for (final kw in videoKeywords) {
+      if (mediaName.contains(kw) || lower.contains(kw)) return _MediaType.video;
+    }
+
+    // ── Layer 2b: known standalone app names ─────────────────────────
+    const musicApps = [
+      'rhythmbox', 'clementine', 'amarok', 'quodlibet',
+      'audacious', 'lollypop', 'cantata', 'elisa', 'strawberry',
+    ];
+    const videoApps = [
+      'vlc', 'mpv', 'totem', 'kodi', 'mplayer',
+      'celluloid', 'dragon', 'smplayer', 'parole',
+    ];
+    if (musicApps.any((a) => lower.contains(a))) return _MediaType.music;
+    if (videoApps.any((a) => lower.contains(a))) return _MediaType.video;
+
+    return _MediaType.unknown;
+  }
+
+  _MediaType _classifyMpris(String meta, String playerName) {
+    // Music signals: xesam:url domain or player name
+    const musicSignals = [
+      'music.youtube.com',   // YouTube Music URL domain
+      'soundcloud.com',
+      'open.spotify.com',
+      'music.apple.com',
+      'tidal.com',
+      'deezer.com',
+      'pandora.com',
+      'music.amazon',
+      'jiosaavn.com',
+      'gaana.com',
+      'spotify',
+      'rhythmbox', 'clementine', 'amarok', 'audacious', 'elisa', 'strawberry',
+    ];
+    // Video signals
+    const videoSignals = [
+      'youtube.com/watch',   // Regular YouTube — after music.youtube.com check
+      'netflix.com',
+      'primevideo.com',
+      'disneyplus.com',
+      'hotstar.com',
+      'hulu.com',
+      'hbo.com',
+      'twitch.tv',
+      'vlc', 'mpv', 'totem', 'celluloid',
+    ];
+    for (final s in musicSignals) {
+      if (meta.contains(s) || playerName.contains(s)) return _MediaType.music;
+    }
+    for (final s in videoSignals) {
+      if (meta.contains(s) || playerName.contains(s)) return _MediaType.video;
+    }
+    return _MediaType.unknown;
   }
 
   Future<bool> _invokeBoolean(String method) async {
