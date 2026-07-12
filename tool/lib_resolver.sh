@@ -235,7 +235,10 @@ resolve_build_deps() {
     echo ""
 }
 
-# ── optional runtime deps check ───────────────────────────────────────────────
+# ── optional runtime deps check + install ─────────────────────────────────────
+# Same prompt/install flow as resolve_build_deps, but for optional tools that
+# enhance runtime features without being required for the build.
+# Respects AUTO_YES / AUTO_NO env vars inherited from package_linux.sh.
 
 check_optional_deps() {
     local pkg_manager
@@ -246,37 +249,104 @@ check_optional_deps() {
     echo "Checking optional runtime tools..."
     echo "========================================="
 
-    local any_missing=false
+    local missing_tools=()   # array of "check|target_pkg|desc|why" for missing ones
+
     for entry in "${OPTIONAL_RUNTIME_DEPS[@]}"; do
         IFS='|' read -r check apt_pkg dnf_pkg pacman_pkg desc why <<< "$entry"
 
         local target_pkg
         case "$pkg_manager" in
-            apt)    target_pkg="$apt_pkg" ;;
+            apt)     target_pkg="$apt_pkg" ;;
             dnf|yum) target_pkg="$dnf_pkg" ;;
-            pacman) target_pkg="$pacman_pkg" ;;
-            *)      target_pkg="$apt_pkg" ;;
+            pacman)  target_pkg="$pacman_pkg" ;;
+            *)       target_pkg="$apt_pkg" ;;
         esac
 
         if check_dep "$check"; then
             _lr_ok "$desc"
         else
-            any_missing=true
             _lr_warn "OPTIONAL missing → $desc"
-            _lr_warn "  Why: $why"
-            case "$pkg_manager" in
-                apt)    _lr_warn "  Install: sudo apt-get install $apt_pkg" ;;
-                dnf)    _lr_warn "  Install: sudo dnf install $dnf_pkg" ;;
-                yum)    _lr_warn "  Install: sudo yum install $dnf_pkg" ;;
-                pacman) _lr_warn "  Install: sudo pacman -S $pacman_pkg" ;;
-                *)      _lr_warn "  Install: $apt_pkg  (apt) / $dnf_pkg  (dnf/rpm) / $pacman_pkg  (pacman)" ;;
-            esac
+            _lr_info "  Why: $why"
+            missing_tools+=("$check|$target_pkg|$desc|$why")
         fi
     done
 
-    if ! $any_missing; then
+    if [ ${#missing_tools[@]} -eq 0 ]; then
         _lr_ok "All optional runtime tools are present."
+        echo "========================================="
+        echo ""
+        return 0
     fi
+
+    echo ""
+    echo "  Optional tools to install:"
+    for entry in "${missing_tools[@]}"; do
+        IFS='|' read -r _ pkg desc _ <<< "$entry"
+        echo "    • $pkg  ($desc)"
+    done
+    echo ""
+
+    # ── install prompt (same logic as resolve_build_deps) ─────────────────
+    local do_install="n"
+    if [ "${AUTO_YES:-false}" = "true" ]; then
+        do_install="y"
+    elif [ "${AUTO_NO:-false}" = "true" ]; then
+        do_install="n"
+    elif [ -t 0 ]; then
+        read -rp "  Install optional tools now? (Y/n): " do_install
+        do_install="${do_install:-y}"
+    fi
+
+    if [[ "$do_install" =~ ^[Yy]$ ]]; then
+        # apt: update index once before installing
+        if [ "$pkg_manager" = "apt" ]; then
+            _lr_info "Running: sudo apt-get update"
+            [ "${LIB_RESOLVER_DRY_RUN:-0}" = "1" ] || sudo apt-get update -qq
+        fi
+
+        local failed=()
+        for entry in "${missing_tools[@]}"; do
+            IFS='|' read -r _ pkg desc _ <<< "$entry"
+            _lr_info "Installing: $pkg"
+            if _do_install "$pkg_manager" "$pkg"; then
+                _lr_ok "Installed $pkg"
+            else
+                _lr_error "Failed to install $pkg"
+                failed+=("$pkg")
+            fi
+        done
+
+        echo ""
+        if [ ${#failed[@]} -gt 0 ]; then
+            _lr_warn "Some optional tools could not be installed automatically:"
+            for pkg in "${failed[@]}"; do
+                _lr_warn "  • $pkg"
+                case "$pkg_manager" in
+                    apt)    _lr_warn "    Try: sudo apt-get install $pkg" ;;
+                    dnf)    _lr_warn "    Try: sudo dnf install $pkg" ;;
+                    yum)    _lr_warn "    Try: sudo yum install $pkg" ;;
+                    pacman) _lr_warn "    Try: sudo pacman -S $pkg" ;;
+                esac
+            done
+        else
+            _lr_ok "All optional tools installed successfully."
+        fi
+    else
+        echo ""
+        _lr_warn "Skipped optional tools. Some features may be limited."
+        _lr_warn "  To install manually:"
+        for entry in "${missing_tools[@]}"; do
+            IFS='|' read -r _ pkg _ _ <<< "$entry"
+            case "$pkg_manager" in
+                apt)    _lr_warn "    sudo apt-get install $pkg" ;;
+                dnf)    _lr_warn "    sudo dnf install $pkg" ;;
+                yum)    _lr_warn "    sudo yum install $pkg" ;;
+                pacman) _lr_warn "    sudo pacman -S $pkg" ;;
+                *)      _lr_warn "    $pkg  (use your distro's package manager)" ;;
+            esac
+        done
+    fi
+
     echo "========================================="
     echo ""
 }

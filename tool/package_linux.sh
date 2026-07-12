@@ -581,6 +581,16 @@ if [ -n "$_INSTALL_PKG" ]; then
                 ;;
         esac
 
+        # ── optional runtime tools (e.g. playerctl for media-type detection) ──
+        # Offered right after BlinkKind is installed so everything lands in one
+        # session. AUTO_YES / AUTO_NO flags are already exported and will be
+        # respected by check_optional_deps().
+        echo ""
+        echo "  Checking optional runtime tools for BlinkKind features..."
+        if declare -f check_optional_deps &>/dev/null; then
+            check_optional_deps
+        fi
+
         # Restart running desktop application processes if detected
         restarted=false
         for svc in blinkkind; do
