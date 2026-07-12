@@ -398,7 +398,7 @@ EOF
 Name=BlinkKind
 Comment=A focused eye break timer for healthier screen sessions
 Exec=/opt/blinkkind/eye_care_timer %u
-Icon=/usr/share/icons/hicolor/128x128/apps/blinkkind.png
+Icon=blinkkind
 Terminal=false
 Type=Application
 Categories=Utility;
@@ -457,7 +457,7 @@ else
 Name=BlinkKind
 Comment=A focused eye break timer for healthier screen sessions
 Exec=/opt/blinkkind/eye_care_timer %u
-Icon=/usr/share/icons/hicolor/128x128/apps/blinkkind.png
+Icon=blinkkind
 Terminal=false
 Type=Application
 Categories=Utility;
