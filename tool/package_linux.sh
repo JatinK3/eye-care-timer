@@ -139,10 +139,18 @@ if [ "$DEV_MODE" = "true" ]; then
     # Check & install missing native libs before building
     if declare -f resolve_build_deps &>/dev/null; then
         resolve_build_deps
-        patch_plugin_sources
+    fi
+    if declare -f check_optional_deps &>/dev/null; then
+        check_optional_deps
     fi
     cd "$PROJECT_DIR"
     "$FLUTTER" clean
+    "$FLUTTER" pub get
+    
+    if declare -f patch_plugin_sources &>/dev/null; then
+        patch_plugin_sources
+    fi
+    
     "$FLUTTER" build linux
     
     mkdir -p "$HOME/.local/share/applications"
@@ -205,10 +213,18 @@ fi
 # Check & install missing native libs before building
 if declare -f resolve_build_deps &>/dev/null; then
     resolve_build_deps
-    patch_plugin_sources
+fi
+if declare -f check_optional_deps &>/dev/null; then
+    check_optional_deps
 fi
 
 "$FLUTTER" clean
+"$FLUTTER" pub get
+
+if declare -f patch_plugin_sources &>/dev/null; then
+    patch_plugin_sources
+fi
+
 "$FLUTTER" build linux
 
 # Verify build output
@@ -305,7 +321,7 @@ Section: utils
 Priority: optional
 Architecture: amd64
 Maintainer: Jatin Khattar <khattarjatin374@gmail.com>
-Depends: libgtk-3-0, libayatana-appindicator3-1 | libappindicator3-1, libx11-6
+Depends: libgtk-3-0, libayatana-appindicator3-1 | libappindicator3-1, libx11-6, pulseaudio-utils
 Description: BlinkKind: Eye Break Timer
  A focused eye break timer for healthier screen sessions.
 EOF
@@ -380,7 +396,7 @@ Source0:        blinkkind-%{version}.tar.gz
 Source1:        com.jatin.eyecaretimer.desktop
 Source2:        blinkkind.png
 Source3:        blinkkind-launcher
-Requires:       gtk3, libX11
+Requires:       gtk3, libX11, pulseaudio-utils
 
 %description
 A focused eye break timer for healthier screen sessions.
@@ -425,8 +441,8 @@ fi
 /usr/share/icons/hicolor/128x128/apps/blinkkind.png
 
 %changelog
-* Tue Jun 23 2026 Jatin Khattar <khattarjatin374@gmail.com> - 1.0.0-1
-- Initial release
+* Sat Jul 12 2026 Jatin Khattar <khattarjatin374@gmail.com> - $VERSION-1
+- See CHANGELOG.md for full release notes
 EOF
 
     # ---------------------------------------------------------------------------
@@ -567,7 +583,7 @@ if [ -n "$_INSTALL_PKG" ]; then
 
         # Restart running desktop application processes if detected
         restarted=false
-        for svc in blinkkind blinkind; do
+        for svc in blinkkind; do
             if systemctl is-active --quiet "$svc" 2>/dev/null; then
                 echo "Restarting system service: $svc..."
                 sudo systemctl restart "$svc"
