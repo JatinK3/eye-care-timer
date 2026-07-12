@@ -6792,47 +6792,55 @@ class _NavBarItemState extends State<_NavBarItem> {
   Widget build(BuildContext context) {
     final activeColor = Theme.of(context).colorScheme.primary;
     final color = widget.isActive ? activeColor : Theme.of(context).colorScheme.onSurface;
+    final effectiveCursor = widget.opacity < 1.0 ? SystemMouseCursors.basic : SystemMouseCursors.click;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: widget.onTap,
-        onHover: _handleHover,
-        mouseCursor: widget.opacity < 1.0 ? SystemMouseCursors.basic : SystemMouseCursors.click,
-        borderRadius: BorderRadius.circular(24),
-        splashColor: activeColor.withValues(alpha: 0.1),
-        highlightColor: activeColor.withValues(alpha: 0.05),
-        child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOutQuart,
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-            decoration: BoxDecoration(
-              color: widget.isActive 
-                  ? activeColor.withValues(alpha: 0.15) 
-                  : (_isHovering ? color.withValues(alpha: 0.1) : Colors.transparent),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: AnimatedSize(
-              duration: const Duration(milliseconds: 150),
-                  curve: Curves.easeOutQuart,
-                  alignment: Alignment.centerLeft,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(widget.icon, color: color.withValues(alpha: widget.opacity), size: 22),
-                      if (widget.isActive || _isHovering) ...[
-                        const SizedBox(width: 8),
-                        Text(
-                          widget.label,
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: color.withValues(alpha: widget.opacity),
-                            fontWeight: widget.isActive ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+    return MouseRegion(
+      cursor: effectiveCursor,
+      onEnter: (_) => _handleHover(true),
+      onExit: (_) => _handleHover(false),
+      child: Tooltip(
+        message: widget.tooltip ?? widget.label,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onTap,
+            mouseCursor: effectiveCursor,
+            borderRadius: BorderRadius.circular(24),
+            splashColor: activeColor.withValues(alpha: 0.1),
+            highlightColor: activeColor.withValues(alpha: 0.05),
+            child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutQuart,
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                decoration: BoxDecoration(
+                  color: widget.isActive 
+                      ? activeColor.withValues(alpha: 0.15) 
+                      : (_isHovering ? color.withValues(alpha: 0.1) : Colors.transparent),
+                  borderRadius: BorderRadius.circular(24),
                 ),
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 150),
+                      curve: Curves.easeOutQuart,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(widget.icon, color: color.withValues(alpha: widget.opacity), size: 22),
+                          if (widget.isActive || _isHovering) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              widget.label,
+                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: color.withValues(alpha: widget.opacity),
+                                fontWeight: widget.isActive ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+            ),
+          ),
         ),
       ),
     );
