@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-07-12
+
+### Added
+- **Media Auto-Pause Filter:** Added explicit settings to allow the user to select what type of media should auto-pause the timer (All media, Music only, or Video only).
+- **RPM & DEB Packaging Automation:** Enhanced `package_linux.sh` to properly install optional runtime dependencies (`playerctl`, `pulseaudio-utils`) via `lib_resolver.sh`, and added a new `-h` (help) menu and `-i` flag explanation.
+
+### Changed
+- **Linux Media Detection Layering:** Integrated `playerctl` as a secondary fallback to `pactl` to robustly detect active media (like web browser YouTube playback) that might not be correctly exposed as un-corked sinks.
+
+### Fixed
+- **Strict Mode Settings UI Bug:** Fixed an issue in `settings_page.dart` where choosing "Strict Mode" unintentionally hid all global background and cosmetic settings (like media pausing and visualizer styles).
+- **RPM Changelog Formatting:** Resolved strict date/version formatting errors in the auto-generated `.spec` file that caused `rpmbuild` to fail on Fedora.
+
 ## [1.3.0] - 2026-07-11
 
 ### Added
