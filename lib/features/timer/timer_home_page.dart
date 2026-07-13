@@ -56,6 +56,7 @@ class TimerHomePage extends StatefulWidget {
   final bool hapticsEnabled;
   final bool soundEnabled;
   final bool soundscapeEnabled;
+  final void Function(bool) setSoundscapeEnabled;
   final String soundscapeStyle;
   final BreakMode breakMode;
   final BreakOverlayService? breakOverlayService;
@@ -156,6 +157,7 @@ class TimerHomePage extends StatefulWidget {
     required this.hapticsEnabled,
     required this.soundEnabled,
     required this.soundscapeEnabled,
+    required this.setSoundscapeEnabled,
     required this.soundscapeStyle,
     required this.breakMode,
     required this.allowSkip,
@@ -720,6 +722,9 @@ class TimerHomePageState extends State<TimerHomePage>
               // User tapped "Log a glass" on the water reminder while the app
               // was alive. Record it and show an undoable confirmation.
               _logWaterGlass(1, showConfirmation: true);
+              break;
+            case DesktopCommand.toggleSoundscape:
+              widget.setSoundscapeEnabled(!widget.soundscapeEnabled);
               break;
           }
         });
@@ -4279,6 +4284,20 @@ class TimerHomePageState extends State<TimerHomePage>
                         onPressed: _toggleMiniMode,
                         tooltip: 'Enter Mini Mode (PiP)',
                       ),
+                      
+                    IconButton(
+                      icon: Icon(
+                        widget.soundscapeEnabled
+                            ? Icons.headphones_outlined
+                            : Icons.headset_off_outlined,
+                      ),
+                      onPressed: () {
+                        widget.setSoundscapeEnabled(!widget.soundscapeEnabled);
+                      },
+                      tooltip: widget.soundscapeEnabled
+                          ? 'Mute Focus Soundscape'
+                          : 'Unmute Focus Soundscape',
+                    ),
                   ],
                 ),
           body: Stack(
@@ -5352,6 +5371,7 @@ class TimerHomePageState extends State<TimerHomePage>
               _isBreak &&
               _longBreakEnabled &&
               _initialDuration == _longBreakDurationSeconds,
+          soundscapeEnabled: widget.soundscapeEnabled,
         ),
       );
     }

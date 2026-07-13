@@ -1665,6 +1665,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   hapticsEnabled: _settings.hapticsEnabled,
                   soundEnabled: _settings.soundEnabled,
                   soundscapeEnabled: _settings.soundscapeEnabled,
+                  setSoundscapeEnabled: _setSoundscapeEnabled,
                   soundscapeStyle: _settings.soundscapeStyle,
                   chimeStyle: _settings.chimeStyle,
                   blinkRemindersEnabled: _settings.blinkRemindersEnabled,

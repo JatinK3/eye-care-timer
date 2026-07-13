@@ -22,6 +22,7 @@ enum DesktopCommand {
   // Emitted when the user taps the "Log a glass" water-reminder notification
   // action while the app is alive, so TimerHomePage records a glass of water.
   logWaterGlass,
+  toggleSoundscape,
 }
 
 class DesktopTimerState {
@@ -38,6 +39,7 @@ class DesktopTimerState {
   final int snoozeRemainingMinutes;
   final DateTime? nextBreakAt;
   final bool isLongBreak;
+  final bool soundscapeEnabled;
 
   DesktopTimerState({
     required this.isRunning,
@@ -53,6 +55,7 @@ class DesktopTimerState {
     this.snoozeRemainingMinutes = 0,
     this.nextBreakAt,
     this.isLongBreak = false,
+    this.soundscapeEnabled = false,
   });
 }
 

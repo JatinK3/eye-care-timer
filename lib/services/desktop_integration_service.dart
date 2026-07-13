@@ -449,6 +449,15 @@ class DesktopIntegrationService extends WindowListener {
 
       items.addAll([
         MenuSeparator(),
+        MenuItemLabel(
+          label: state.soundscapeEnabled ? 'Mute Focus Soundscape' : 'Unmute Focus Soundscape',
+          onClicked: (_) {
+            DesktopControlsController.instance.triggerCommand(
+              DesktopCommand.toggleSoundscape,
+            );
+          },
+        ),
+        MenuSeparator(),
         MenuItemLabel(label: 'Exit', onClicked: (_) => _quitApp()),
       ]);
 
