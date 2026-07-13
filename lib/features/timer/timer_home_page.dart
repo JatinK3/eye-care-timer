@@ -1372,7 +1372,8 @@ class TimerHomePageState extends State<TimerHomePage>
         content: Text(
           AppLocalizations.of(context)!.waterLoggedMessage(progress),
         ),
-        duration: const Duration(seconds: 4),
+        margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+        duration: const Duration(seconds: 3),
         action: SnackBarAction(
           label: AppLocalizations.of(context)!.waterUndo,
           onPressed: () {
@@ -1864,13 +1865,8 @@ class TimerHomePageState extends State<TimerHomePage>
     _showTimerSnackBar(
       SnackBar(
         content: Text(AppLocalizations.of(context)!.timerNaturalBreakCredited),
-        duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'OK',
-          onPressed: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          },
-        ),
+        margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -2121,13 +2117,8 @@ class TimerHomePageState extends State<TimerHomePage>
           content: Text(
             'You\'ve skipped $limit break${limit == 1 ? '' : 's'} in a row — take a moment to rest your eyes! 👁️',
           ),
-          duration: const Duration(seconds: 4),
-          action: SnackBarAction(
-            label: 'OK',
-            onPressed: () {
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            },
-          ),
+          margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+          duration: const Duration(seconds: 3),
         ),
       );
       return;
@@ -2160,13 +2151,8 @@ class TimerHomePageState extends State<TimerHomePage>
           content: Text(
             'You\'ve postponed this break $limit time${limit == 1 ? '' : 's'} in a row — take a moment to rest your eyes! 👁️',
           ),
-          duration: const Duration(seconds: 4),
-          action: SnackBarAction(
-            label: 'OK',
-            onPressed: () {
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            },
-          ),
+          margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+          duration: const Duration(seconds: 3),
         ),
       );
       return;
@@ -2410,13 +2396,8 @@ class TimerHomePageState extends State<TimerHomePage>
                 content: const Text(
                   'Natural break detected while away! Timer reset.',
                 ),
-                duration: const Duration(seconds: 4),
-                action: SnackBarAction(
-                  label: 'OK',
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  },
-                ),
+                margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+                duration: const Duration(seconds: 3),
               ),
             );
           });
@@ -4132,7 +4113,11 @@ class TimerHomePageState extends State<TimerHomePage>
               }
 
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(msg)),
+                SnackBar(
+                  content: Text(msg),
+                  margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+                  duration: const Duration(seconds: 3),
+                ),
               );
               setState(() {
                 _aiScheduleSuggestion = null;
