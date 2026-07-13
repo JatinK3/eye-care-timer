@@ -78,12 +78,7 @@ flutter:
 
   assets:
     - assets/app_icon.png
-    - assets/sounds/tibetan_bowl.wav
-    - assets/sounds/wind_chimes.wav
-    - assets/sounds/zen_bell.wav
-    - assets/sounds/binaural_alpha.wav
-    - assets/sounds/binaural_gamma.wav
-    - assets/sounds/brown_noise.wav
+    - assets/sounds/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

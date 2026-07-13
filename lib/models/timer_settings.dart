@@ -76,6 +76,7 @@ class TimerSettings {
   final bool soundEnabled;
   final bool soundscapeEnabled;
   final String soundscapeStyle;
+  final double soundscapeVolume;
   final bool longBreakEnabled;
   final int longBreakDurationSeconds;
   final int longBreakEveryCycles;
@@ -145,6 +146,7 @@ class TimerSettings {
     required this.soundEnabled,
     required this.soundscapeEnabled,
     required this.soundscapeStyle,
+    required this.soundscapeVolume,
     required this.longBreakEnabled,
     required this.longBreakDurationSeconds,
     required this.longBreakEveryCycles,
@@ -215,6 +217,7 @@ class TimerSettings {
       soundEnabled = true,
       soundscapeEnabled = false,
       soundscapeStyle = 'Brown Noise',
+      soundscapeVolume = 0.5,
       longBreakEnabled = false,
       longBreakDurationSeconds = defaultLongBreakDurationSeconds,
       longBreakEveryCycles = defaultLongBreakEveryCycles,
@@ -284,6 +287,7 @@ class TimerSettings {
     bool? soundEnabled,
     bool? soundscapeEnabled,
     String? soundscapeStyle,
+    double? soundscapeVolume,
     bool? longBreakEnabled,
     int? longBreakDurationSeconds,
     int? longBreakEveryCycles,
@@ -353,6 +357,7 @@ class TimerSettings {
       soundEnabled: soundEnabled ?? this.soundEnabled,
       soundscapeEnabled: soundscapeEnabled ?? this.soundscapeEnabled,
       soundscapeStyle: soundscapeStyle ?? this.soundscapeStyle,
+      soundscapeVolume: soundscapeVolume ?? this.soundscapeVolume,
       longBreakEnabled: longBreakEnabled ?? this.longBreakEnabled,
       longBreakDurationSeconds:
           longBreakDurationSeconds ?? this.longBreakDurationSeconds,
@@ -444,6 +449,7 @@ class TimerSettings {
       'soundEnabled': soundEnabled,
       'soundscapeEnabled': soundscapeEnabled,
       'soundscapeStyle': soundscapeStyle,
+      'soundscapeVolume': soundscapeVolume,
       'longBreakEnabled': longBreakEnabled,
       'longBreakDurationSeconds': longBreakDurationSeconds,
       'longBreakEveryCycles': longBreakEveryCycles,
@@ -521,6 +527,7 @@ class TimerSettings {
       soundEnabled: json['soundEnabled'] as bool? ?? false,
       soundscapeEnabled: json['soundscapeEnabled'] as bool? ?? false,
       soundscapeStyle: json['soundscapeStyle'] as String? ?? 'Brown Noise',
+      soundscapeVolume: (json['soundscapeVolume'] as num?)?.toDouble() ?? 0.5,
       longBreakEnabled: json['longBreakEnabled'] as bool? ?? false,
       longBreakDurationSeconds:
           json['longBreakDurationSeconds'] as int? ??

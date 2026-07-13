@@ -614,11 +614,18 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     unawaited(_preferencesService.saveSoundscapeEnabled(enabled));
   }
 
-  void _setSoundscapeStyle(String style) {
+  Future<void> _setSoundscapeStyle(String style) async {
     setState(() {
       _settings = _settings.copyWith(soundscapeStyle: style);
     });
-    unawaited(_preferencesService.saveSoundscapeStyle(style));
+    await _preferencesService.saveSoundscapeStyle(style);
+  }
+
+  Future<void> _setSoundscapeVolume(double volume) async {
+    setState(() {
+      _settings = _settings.copyWith(soundscapeVolume: volume);
+    });
+    await _preferencesService.saveSoundscapeVolume(volume);
   }
 
   void _setChimeStyle(String style) {
@@ -1667,6 +1674,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   soundscapeEnabled: _settings.soundscapeEnabled,
                   setSoundscapeEnabled: _setSoundscapeEnabled,
                   soundscapeStyle: _settings.soundscapeStyle,
+                  soundscapeVolume: _settings.soundscapeVolume,
+                  setSoundscapeVolume: _setSoundscapeVolume,
                   chimeStyle: _settings.chimeStyle,
                   blinkRemindersEnabled: _settings.blinkRemindersEnabled,
                   blinkRemindersCadenceSeconds:

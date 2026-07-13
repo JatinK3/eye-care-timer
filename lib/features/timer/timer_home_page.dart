@@ -58,6 +58,8 @@ class TimerHomePage extends StatefulWidget {
   final bool soundscapeEnabled;
   final void Function(bool) setSoundscapeEnabled;
   final String soundscapeStyle;
+  final double soundscapeVolume;
+  final void Function(double) setSoundscapeVolume;
   final BreakMode breakMode;
   final BreakOverlayService? breakOverlayService;
   final void Function(BuildContext context, bool canChangeDurations, bool isTimerRunning)
@@ -159,6 +161,8 @@ class TimerHomePage extends StatefulWidget {
     required this.soundscapeEnabled,
     required this.setSoundscapeEnabled,
     required this.soundscapeStyle,
+    required this.soundscapeVolume,
+    required this.setSoundscapeVolume,
     required this.breakMode,
     required this.allowSkip,
     required this.allowPostpone,
@@ -843,6 +847,8 @@ class TimerHomePageState extends State<TimerHomePage>
       } else {
         unawaited(_syncSoundscapePlayback());
       }
+    } else if (oldWidget.soundscapeVolume != widget.soundscapeVolume) {
+      _soundscapePlayer?.setVolume(widget.soundscapeVolume);
     }
     // Dynamically start or stop the media poll timer when the setting changes.
     if (oldWidget.autoPauseOnMediaEnabled != widget.autoPauseOnMediaEnabled) {
@@ -3692,6 +3698,73 @@ class TimerHomePageState extends State<TimerHomePage>
     );
   }
 
+  Widget _buildSoundscapeCard(ThemeData theme, bool isDark, Color accentColor) {
+    if (!widget.soundscapeEnabled) return const SizedBox.shrink();
+
+    final surfaceColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.white.withValues(alpha: 0.72);
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.black.withValues(alpha: 0.08);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.headphones, color: accentColor, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'Focus Soundscape',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                widget.soundscapeStyle.replaceAll('Binaural', '').replaceAll('Noise', '').trim(),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(Icons.volume_down, size: 16, color: theme.iconTheme.color?.withValues(alpha: 0.7)),
+              Expanded(
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 2,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                  ),
+                  child: Slider(
+                    value: widget.soundscapeVolume,
+                    activeColor: accentColor,
+                    inactiveColor: accentColor.withValues(alpha: 0.2),
+                    onChanged: widget.setSoundscapeVolume,
+                  ),
+                ),
+              ),
+              Icon(Icons.volume_up, size: 16, color: theme.iconTheme.color?.withValues(alpha: 0.7)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLearnCard(ThemeData theme, bool isDark, Color accentColor) {
     final tip = _currentEducationTip;
     final surfaceColor = isDark
@@ -4613,6 +4686,16 @@ class TimerHomePageState extends State<TimerHomePage>
                                                     progressColor,
                                                   ),
                                                 ),
+                                                if (widget.soundscapeEnabled) ...[
+                                                  const SizedBox(height: 12),
+                                                  _ParallaxCard(
+                                                    child: _buildSoundscapeCard(
+                                                      Theme.of(context),
+                                                      isDark,
+                                                      progressColor,
+                                                    ),
+                                                  ),
+                                                ],
                                                 const SizedBox(height: 12),
                                                 _ParallaxCard(
                                                   child: _buildLearnCard(
@@ -4844,6 +4927,16 @@ class TimerHomePageState extends State<TimerHomePage>
                                           progressColor,
                                         ),
                                       ),
+                                      if (widget.soundscapeEnabled) ...[
+                                        const SizedBox(height: 12),
+                                        _ParallaxCard(
+                                          child: _buildSoundscapeCard(
+                                            Theme.of(context),
+                                            isDark,
+                                            progressColor,
+                                          ),
+                                        ),
+                                      ],
                                       const SizedBox(height: 12),
                                       _ParallaxCard(
                                         child: _buildLearnCard(
@@ -5313,20 +5406,37 @@ class TimerHomePageState extends State<TimerHomePage>
     String assetPath;
     switch (widget.soundscapeStyle) {
       case 'Brown Noise':
-        assetPath = 'sounds/brown_noise.wav';
+        assetPath = 'sounds/brown_noise.ogg';
+        break;
+      case 'Pink Noise':
+        assetPath = 'sounds/pink_noise.ogg';
+        break;
+      case 'White Noise':
+        assetPath = 'sounds/white_noise.ogg';
+        break;
+      case 'Binaural Delta (2Hz)':
+        assetPath = 'sounds/binaural_delta.ogg';
+        break;
+      case 'Binaural Theta (6Hz)':
+        assetPath = 'sounds/binaural_theta.ogg';
         break;
       case 'Binaural Alpha (10Hz)':
-        assetPath = 'sounds/binaural_alpha.wav';
+        assetPath = 'sounds/binaural_alpha.ogg';
+        break;
+      case 'Binaural Beta (20Hz)':
+        assetPath = 'sounds/binaural_beta.ogg';
         break;
       case 'Binaural Gamma (40Hz)':
-        assetPath = 'sounds/binaural_gamma.wav';
+        assetPath = 'sounds/binaural_gamma.ogg';
         break;
       default:
-        assetPath = 'sounds/brown_noise.wav';
+        assetPath = 'sounds/brown_noise.ogg';
     }
     
     if (_soundscapePlayer?.state != PlayerState.playing) {
-      await _soundscapePlayer?.play(AssetSource(assetPath));
+      await _soundscapePlayer?.play(AssetSource(assetPath), volume: widget.soundscapeVolume);
+    } else {
+      await _soundscapePlayer?.setVolume(widget.soundscapeVolume);
     }
   }
 

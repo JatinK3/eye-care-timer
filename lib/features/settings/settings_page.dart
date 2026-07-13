@@ -2490,7 +2490,16 @@ class _SettingsPageState extends State<SettingsPage>
                 subtitle: const Text('Choose your background audio'),
                 trailing: DropdownButton<String>(
                   value: widget.soundscapeStyle,
-                  items: ['Brown Noise', 'Binaural Alpha (10Hz)', 'Binaural Gamma (40Hz)']
+                  items: [
+                    'Brown Noise',
+                    'Pink Noise',
+                    'White Noise',
+                    'Binaural Delta (2Hz)',
+                    'Binaural Theta (6Hz)',
+                    'Binaural Alpha (10Hz)',
+                    'Binaural Beta (20Hz)',
+                    'Binaural Gamma (40Hz)',
+                  ]
                       .map((style) => DropdownMenuItem<String>(
                             value: style,
                             child: Text(style),

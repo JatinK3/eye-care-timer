@@ -22,6 +22,7 @@ class PreferencesService {
   static const String soundEnabledKey = 'soundEnabled';
   static const String soundscapeEnabledKey = 'soundscapeEnabled';
   static const String soundscapeStyleKey = 'soundscapeStyle';
+  static const String soundscapeVolumeKey = 'soundscapeVolume';
   static const String longBreakEnabledKey = 'longBreakEnabled';
   static const String longBreakDurationSecondsKey = 'longBreakDurationSeconds';
   static const String longBreakEveryCyclesKey = 'longBreakEveryCycles';
@@ -135,6 +136,7 @@ class PreferencesService {
       soundEnabled: prefs.getBool(soundEnabledKey) ?? true,
       soundscapeEnabled: prefs.getBool(soundscapeEnabledKey) ?? false,
       soundscapeStyle: prefs.getString(soundscapeStyleKey) ?? 'Brown Noise',
+      soundscapeVolume: prefs.getDouble(soundscapeVolumeKey) ?? 0.5,
       longBreakEnabled: prefs.getBool(longBreakEnabledKey) ?? false,
       longBreakDurationSeconds:
           prefs.getInt(longBreakDurationSecondsKey) ??
@@ -423,6 +425,7 @@ class PreferencesService {
     await prefs.setBool(soundEnabledKey, false);
     await prefs.setBool(soundscapeEnabledKey, false);
     await prefs.setString(soundscapeStyleKey, 'Brown Noise');
+    await prefs.setDouble(soundscapeVolumeKey, 0.5);
     await prefs.setBool(longBreakEnabledKey, false);
     await prefs.setInt(
       longBreakDurationSecondsKey,
@@ -588,6 +591,7 @@ class PreferencesService {
     await prefs.setBool(soundEnabledKey, settings.soundEnabled);
     await prefs.setBool(soundscapeEnabledKey, settings.soundscapeEnabled);
     await prefs.setString(soundscapeStyleKey, settings.soundscapeStyle);
+    await prefs.setDouble(soundscapeVolumeKey, settings.soundscapeVolume);
     await prefs.setBool(longBreakEnabledKey, settings.longBreakEnabled);
     await prefs.setInt(
       longBreakDurationSecondsKey,
@@ -958,6 +962,11 @@ class PreferencesService {
   Future<void> saveSoundscapeStyle(String style) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(soundscapeStyleKey, style);
+  }
+
+  Future<void> saveSoundscapeVolume(double volume) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(soundscapeVolumeKey, volume);
   }
 
   Future<void> saveActiveProfile(String profile) async {
