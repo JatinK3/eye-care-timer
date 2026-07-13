@@ -1111,4 +1111,4 @@ Ideas captured from design review session. Prioritized by impact. None are sched
 - [x] **Hero Expansion Transitions**: Smooth shared-element "Hero" transitions between dashboard elements and detail pages (e.g., clicking on the Water card seamlessly expands it into a full-screen water history page).
 - [ ] **App Blocking / Strict Mode (Focus Enforcer)**: A system to block distracting apps/websites natively during work phases.
 - [x] **"Skip This Break" Counter (Guilt Metric)**: Visualizing skipped breaks natively in the history chart to discourage burning out.
-- [ ] **Soundscapes & Binaural Beats (Immersion Mode)**: Looping focus audio directly natively built-in.
+- [x] **Soundscapes & Binaural Beats (Immersion Mode)**: Looping focus audio directly natively built-in.
