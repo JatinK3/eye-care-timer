@@ -847,6 +847,7 @@ class TimerHomePageState extends State<TimerHomePage>
       } else {
         unawaited(_syncSoundscapePlayback());
       }
+      _updateDesktopState();
     } else if (oldWidget.soundscapeVolume != widget.soundscapeVolume) {
       _soundscapePlayer?.setVolume(widget.soundscapeVolume);
     }
@@ -5434,7 +5435,8 @@ class TimerHomePageState extends State<TimerHomePage>
     }
     
     if (_soundscapePlayer?.state != PlayerState.playing) {
-      await _soundscapePlayer?.play(AssetSource(assetPath), volume: widget.soundscapeVolume);
+      await _soundscapePlayer?.setVolume(widget.soundscapeVolume);
+      await _soundscapePlayer?.play(AssetSource(assetPath));
     } else {
       await _soundscapePlayer?.setVolume(widget.soundscapeVolume);
     }
