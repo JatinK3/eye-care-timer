@@ -1588,7 +1588,7 @@ class _HistoryRow extends StatelessWidget {
   }
 }
 
-enum ChartMetric { cycles, focusTime, compliance, water }
+enum ChartMetric { cycles, focusTime, compliance, water, skipped }
 
 class _ActivityBarChart extends StatefulWidget {
   final List<DateTime> dates;
@@ -1652,6 +1652,9 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
           return totalDecisions == 0 ? 0.0 : (completed / totalDecisions * 100.0);
         case ChartMetric.water:
           return (widget.waterHistory[key] ?? 0).toDouble();
+        case ChartMetric.skipped:
+          final dayEvents = widget.timerEvents.where((e) => _dateKey(e.timestamp) == key);
+          return dayEvents.where((e) => e.type == TimerEventType.breakSkipped).length.toDouble();
       }
     }).toList();
 
@@ -1675,6 +1678,10 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
       case ChartMetric.water:
         goalValue = widget.waterDailyGoal.toDouble();
         maxValue = values.fold<double>(goalValue, (prev, val) => val > prev ? val : prev);
+        break;
+      case ChartMetric.skipped:
+        goalValue = 0.0;
+        maxValue = values.fold<double>(1.0, (prev, val) => val > prev ? val : prev);
         break;
     }
 
@@ -1709,6 +1716,14 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                   icon: const Icon(Icons.water_drop_outlined, size: 16),
                   label: Text(
                     AppLocalizations.of(context)!.waterChartLabel,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                ButtonSegment(
+                  value: ChartMetric.skipped,
+                  icon: const Icon(Icons.trending_down, size: 16),
+                  label: Text(
+                    AppLocalizations.of(context)!.skippedBreaks,
                     style: const TextStyle(fontSize: 12),
                   ),
                 ),
@@ -1747,17 +1762,21 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                           ? "${values[_selectedIndex!].toStringAsFixed(1)} mins / goal: ${goalValue.toStringAsFixed(1)} mins"
                           : _activeMetric == ChartMetric.water
                               ? "${AppLocalizations.of(context)!.waterGlassesCount(values[_selectedIndex!].toInt())} / goal: ${AppLocalizations.of(context)!.waterGlassesCount(goalValue.toInt())}"
-                              : "${values[_selectedIndex!].toStringAsFixed(1)}% Eye Health Score / goal: 80%",
+                              : _activeMetric == ChartMetric.skipped
+                                  ? "${values[_selectedIndex!].toInt()} ${AppLocalizations.of(context)!.skippedBreaks.toLowerCase()} / goal: 0"
+                                  : "${values[_selectedIndex!].toStringAsFixed(1)}% Eye Health Score / goal: 80%",
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: values[_selectedIndex!] >= goalValue
+                    color: (_activeMetric == ChartMetric.skipped ? values[_selectedIndex!] <= goalValue : values[_selectedIndex!] >= goalValue)
                         ? (_activeMetric == ChartMetric.cycles
                             ? Colors.green
                             : _activeMetric == ChartMetric.focusTime
                                 ? Colors.cyan
                                 : _activeMetric == ChartMetric.water
                                     ? const Color(0xFF3BA7E6)
-                                    : Colors.teal)
-                        : Theme.of(context).colorScheme.primary,
+                                    : _activeMetric == ChartMetric.skipped
+                                        ? Colors.green
+                                        : Colors.teal)
+                        : (_activeMetric == ChartMetric.skipped ? Colors.red : Theme.of(context).colorScheme.primary),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1815,7 +1834,7 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                       final val = values[index];
                       final ratio = maxValue > 0 ? val / maxValue : 0.0;
                       final barHeight = chartHeight * ratio;
-                      final isGoalReached = val >= goalValue;
+                      final isGoalReached = _activeMetric == ChartMetric.skipped ? val <= goalValue : val >= goalValue;
                       final isSelected = _selectedIndex == index;
 
                       return GestureDetector(
@@ -1879,6 +1898,18 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                         );
+                                } else if (_activeMetric == ChartMetric.skipped) {
+                                  gradient = isGoalReached
+                                      ? const LinearGradient(
+                                          colors: [Colors.green, Color(0xFF81C784)],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        )
+                                      : const LinearGradient(
+                                          colors: [Colors.red, Colors.redAccent],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        );
                                 } else {
                                   gradient = isGoalReached
                                       ? const LinearGradient(
@@ -1914,14 +1945,18 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                                               ? Colors.cyan
                                                               : _activeMetric == ChartMetric.water
                                                                   ? const Color(0xFF3BA7E6)
-                                                                  : Colors.deepPurple)
+                                                                  : _activeMetric == ChartMetric.skipped
+                                                                      ? Colors.green
+                                                                      : Colors.deepPurple)
                                                       : (_activeMetric == ChartMetric.cycles
                                                           ? Theme.of(context).colorScheme.primary
                                                           : _activeMetric == ChartMetric.focusTime
                                                               ? Colors.blue
                                                               : _activeMetric == ChartMetric.water
                                                                   ? const Color(0xFF60A5FA)
-                                                                  : Colors.orange))
+                                                                  : _activeMetric == ChartMetric.skipped
+                                                                      ? Colors.red
+                                                                      : Colors.orange))
                                                   .withValues(alpha: 0.4),
                                               blurRadius: 8,
                                               spreadRadius: 2,
@@ -1972,7 +2007,9 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                                     ? Colors.cyan
                                                     : _activeMetric == ChartMetric.water
                                                         ? const Color(0xFF3BA7E6)
-                                                        : Colors.deepPurple)
+                                                        : _activeMetric == ChartMetric.skipped
+                                                            ? Colors.green
+                                                            : Colors.deepPurple)
                                             .withValues(alpha: 0.4)
                                         : Colors.transparent,
                                   ),

@@ -242,7 +242,12 @@ class AiService {
       temperature: 0.2,
     );
     try {
-      final cleanJson = result.replaceAll('```json', '').replaceAll('```', '').trim();
+      String cleanJson = result;
+      final RegExp jsonRegExp = RegExp(r'\{[\s\S]*\}');
+      final match = jsonRegExp.firstMatch(result);
+      if (match != null) {
+        cleanJson = match.group(0)!;
+      }
       final data = jsonDecode(cleanJson);
       return {
         'work_minutes': data['work_minutes'] as int? ?? currentWorkMinutes,
