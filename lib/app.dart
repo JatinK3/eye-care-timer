@@ -779,6 +779,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     unawaited(_preferencesService.saveNaturalBreakCreditEnabled(enabled));
   }
 
+  void _setEndOfDaySummaryEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(endOfDaySummaryEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveEndOfDaySummaryEnabled(enabled));
+  }
+
   void _setAutoStartSchedule(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(autoStartSchedule: enabled);
@@ -1409,6 +1416,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           setSoundscapeEnabled: _setSoundscapeEnabled,
           soundscapeStyle: _settings.soundscapeStyle,
           setSoundscapeStyle: _setSoundscapeStyle,
+          endOfDaySummaryEnabled: _settings.endOfDaySummaryEnabled,
+          setEndOfDaySummaryEnabled: _setEndOfDaySummaryEnabled,
           blinkRemindersEnabled: _settings.blinkRemindersEnabled,
           blinkRemindersCadenceSeconds: _settings.blinkRemindersCadenceSeconds,
           setBlinkRemindersEnabled: _setBlinkRemindersEnabled,
@@ -1697,6 +1706,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   maxConsecutiveSkips: _settings.maxConsecutiveSkips,
                   allowPostpone: _settings.allowPostpone,
                   maxConsecutivePostpones: _settings.maxConsecutivePostpones,
+                  endOfDaySummaryEnabled: _settings.endOfDaySummaryEnabled,
                   postponeDurationSeconds: _settings.postponeDurationSeconds,
                   adaptiveSchedulingEnabled: _settings.adaptiveSchedulingEnabled,
                   animationSpeed: _settings.animationSpeed,

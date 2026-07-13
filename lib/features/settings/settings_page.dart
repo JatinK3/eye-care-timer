@@ -65,6 +65,8 @@ class SettingsPage extends StatefulWidget {
   final void Function(bool) setSoundscapeEnabled;
   final String soundscapeStyle;
   final void Function(String) setSoundscapeStyle;
+  final bool endOfDaySummaryEnabled;
+  final void Function(bool) setEndOfDaySummaryEnabled;
   final String chimeStyle;
   final void Function(String) setChimeStyle;
   final bool blinkRemindersEnabled;
@@ -237,6 +239,8 @@ class SettingsPage extends StatefulWidget {
     required this.setSoundscapeEnabled,
     required this.soundscapeStyle,
     required this.setSoundscapeStyle,
+    required this.endOfDaySummaryEnabled,
+    required this.setEndOfDaySummaryEnabled,
     required this.chimeStyle,
     required this.setChimeStyle,
     required this.blinkRemindersEnabled,
@@ -3389,6 +3393,17 @@ class _SettingsPageState extends State<SettingsPage>
                 }
               },
             ),
+          ),
+          const Divider(height: 1),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.summarize_outlined),
+            title: const Text('End-of-Day AI Summaries'),
+            subtitle: const Text(
+              'Get a personalized AI review of your focus and break adherence at the end of the day.',
+            ),
+            value: widget.endOfDaySummaryEnabled,
+            onChanged: widget.setEndOfDaySummaryEnabled,
           ),
           const Divider(height: 1),
           // System prompt

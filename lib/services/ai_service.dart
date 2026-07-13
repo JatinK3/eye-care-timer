@@ -258,4 +258,26 @@ class AiService {
       throw Exception('Failed to parse AI schedule JSON: $e');
     }
   }
+
+  Future<String> generateEndOfDaySummary({
+    required String provider,
+    required String apiKey,
+    required String model,
+    required String todayHistorySummary,
+  }) async {
+    const prompt =
+        'You are a wellness and productivity assistant. The user is finishing their workday. '
+        'Review their timer history for today and provide a short, insightful, and warmly encouraging '
+        'summary of their performance. Praise good habits (taking breaks, hydration) and gently suggest improvements '
+        'if they skipped or postponed too many breaks. Keep it under 50 words, conversational, and uplifting. '
+        'Do NOT use markdown. Output only the message.\n\n';
+
+    return generateMotivation(
+      provider: provider,
+      apiKey: apiKey,
+      model: model,
+      prompt: prompt + todayHistorySummary,
+      temperature: 0.3,
+    );
+  }
 }

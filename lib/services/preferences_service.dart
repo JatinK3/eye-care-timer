@@ -102,6 +102,8 @@ class PreferencesService {
   static const String animationSpeedKey = 'animationSpeed';
   static const String analyticsEnabledKey = 'analyticsEnabled';
   static const String adaptiveSchedulingEnabledKey = 'adaptiveSchedulingEnabled';
+  static const String endOfDaySummaryEnabledKey = 'endOfDaySummaryEnabled';
+  static const String lastEndOfDaySummaryDateKey = 'lastEndOfDaySummaryDate';
 
   Future<TimerSettings> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -277,6 +279,8 @@ class PreferencesService {
       maxConsecutivePostpones:
           prefs.getInt(maxConsecutivePostponesKey) ??
           TimerSettings.defaultMaxConsecutivePostpones,
+      endOfDaySummaryEnabled: prefs.getBool(endOfDaySummaryEnabledKey) ??
+          TimerSettings.defaultEndOfDaySummaryEnabled,
       activeProfile:
           prefs.getString(activeProfileKey) ??
           TimerSettings.defaultActiveProfile,
@@ -703,6 +707,10 @@ class PreferencesService {
     await prefs.setInt(
       maxConsecutivePostponesKey,
       settings.maxConsecutivePostpones,
+    );
+    await prefs.setBool(
+      endOfDaySummaryEnabledKey,
+      settings.endOfDaySummaryEnabled,
     );
     await prefs.setBool(
       autoPauseOnMediaEnabledKey,
@@ -1148,6 +1156,21 @@ class PreferencesService {
   Future<void> saveOsFocusDndEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(osFocusDndEnabledKey, enabled);
+  }
+
+  Future<void> saveEndOfDaySummaryEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(endOfDaySummaryEnabledKey, enabled);
+  }
+
+  Future<String?> getLastEndOfDaySummaryDate() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(lastEndOfDaySummaryDateKey);
+  }
+
+  Future<void> saveLastEndOfDaySummaryDate(String date) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(lastEndOfDaySummaryDateKey, date);
   }
 
   Future<void> saveStreakCount(int streakCount) async {

@@ -23,6 +23,7 @@ import '../../services/desktop_controls_controller.dart';
 import '../../services/desktop_integration_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/os_focus_service.dart';
+import '../../services/preferences_service.dart';
 import '../../services/system_ui_service.dart';
 import '../../services/timer_background_service.dart';
 import '../../theme/color_presets.dart';
@@ -84,6 +85,7 @@ class TimerHomePage extends StatefulWidget {
   final bool allowSkip;
   final int maxConsecutiveSkips;
   final int maxConsecutivePostpones;
+  final bool endOfDaySummaryEnabled;
   final bool allowPostpone;
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
@@ -227,6 +229,7 @@ class TimerHomePage extends StatefulWidget {
     this.backgroundService,
     required this.maxConsecutiveSkips,
     required this.maxConsecutivePostpones,
+    required this.endOfDaySummaryEnabled,
     required this.showBatteryWarning,
     required this.oemManufacturer,
     required this.onDismissBatteryWarning,
@@ -1733,6 +1736,8 @@ class TimerHomePageState extends State<TimerHomePage>
   void _checkSchedule() {
     if (!mounted) return;
 
+    _checkEndOfDaySummary();
+
     // Check snooze expiry
     if (_snoozeEndsAt != null && DateTime.now().isAfter(_snoozeEndsAt!)) {
       _cancelSnooze();
@@ -2269,6 +2274,57 @@ class TimerHomePageState extends State<TimerHomePage>
       _pulseController.reset();
     }
   }
+  bool _isCheckingEndOfDay = false;
+
+  Future<void> _checkEndOfDaySummary() async {
+    if (!widget.endOfDaySummaryEnabled || widget.aiApiKey.isEmpty) return;
+    if (_isCheckingEndOfDay) return;
+
+    final now = DateTime.now();
+    bool passedEnd = false;
+    if (widget.workHoursEnabled) {
+      final currentMins = now.hour * 60 + now.minute;
+      final endMins = widget.workHoursEndHour * 60 + widget.workHoursEndMinute;
+      passedEnd = currentMins >= endMins;
+    } else {
+      passedEnd = now.hour >= 17;
+    }
+
+    if (!passedEnd) return;
+
+    final today = "\${now.year}-\${now.month.toString().padLeft(2, '0')}-\${now.day.toString().padLeft(2, '0')}";
+    final prefs = PreferencesService();
+    final lastSummaryDate = await prefs.getLastEndOfDaySummaryDate();
+    if (lastSummaryDate == today) return;
+
+    _isCheckingEndOfDay = true;
+    try {
+      final todayStats = await prefs.loadHistory();
+      final todayBreaks = todayStats[today] ?? 0;
+      final waterStats = await prefs.loadWaterHistory();
+      final todayWater = waterStats[today] ?? 0;
+      
+      final promptStats = "Today's stats - Work cycles completed: $_autoRunCompletedCycles, Breaks taken: $todayBreaks, Current skips: $_consecutiveSkips, Water glasses logged: $todayWater.";
+      
+      final summary = await AiService.instance.generateEndOfDaySummary(
+        provider: widget.aiProvider,
+        apiKey: widget.aiApiKey,
+        model: widget.aiModel,
+        todayHistorySummary: promptStats,
+      );
+
+      widget.notificationService.showEndOfDaySummary(summary);
+
+      await prefs.saveLastEndOfDaySummaryDate(today);
+    } catch (e) {
+      debugPrint("Failed to generate end of day summary: \$e");
+    } finally {
+      if (mounted) {
+        _isCheckingEndOfDay = false;
+      }
+    }
+  }
+
 
   Future<void> _syncTimerWithClock() async {
     if (!_isRunning || _isPaused || _phaseEndsAt == null) {

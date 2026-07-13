@@ -59,6 +59,7 @@ class TimerSettings {
       'You are a friendly health and wellness assistant for a developer. Generate a very short, warm, and highly engaging health tip or motivational quote (strict limit of 25 words) encouraging them to blink, rest their eyes, stretch their body/legs/shoulders, stand up, drink water regularly, or take a deep breath. Keep it fresh, productive, encouraging, and extremely punchy.';
   static const int defaultMaxConsecutiveSkips = 0; // 0 means no limit
   static const int defaultMaxConsecutivePostpones = 0; // 0 means no limit
+  static const bool defaultEndOfDaySummaryEnabled = true;
   static const String defaultActiveProfile = 'standard';
   static const bool defaultReducedMotionEnabled = false;
   static const AnimationSpeed defaultAnimationSpeed = AnimationSpeed.normal;
@@ -126,6 +127,7 @@ class TimerSettings {
   final bool blinkReminderInteractiveEnabled;
   final int maxConsecutiveSkips;
   final int maxConsecutivePostpones;
+  final bool endOfDaySummaryEnabled;
   final bool autoPauseOnMediaEnabled;
   final String autoPauseMediaFilter;
   final String activeProfile;
@@ -171,6 +173,7 @@ class TimerSettings {
     required this.workHoursStartHour,
     required this.maxConsecutiveSkips,
     required this.maxConsecutivePostpones,
+    required this.endOfDaySummaryEnabled,
     required this.workHoursStartMinute,
     required this.workHoursEndHour,
     required this.workHoursEndMinute,
@@ -267,6 +270,7 @@ class TimerSettings {
       blinkReminderInteractiveEnabled = defaultBlinkReminderInteractiveEnabled,
       maxConsecutiveSkips = defaultMaxConsecutiveSkips,
       maxConsecutivePostpones = defaultMaxConsecutivePostpones,
+      endOfDaySummaryEnabled = defaultEndOfDaySummaryEnabled,
       autoPauseOnMediaEnabled = defaultAutoPauseOnMediaEnabled,
       autoPauseMediaFilter = defaultAutoPauseMediaFilter,
       activeProfile = defaultActiveProfile,
@@ -337,6 +341,7 @@ class TimerSettings {
     bool? blinkReminderInteractiveEnabled,
     int? maxConsecutiveSkips,
     int? maxConsecutivePostpones,
+    bool? endOfDaySummaryEnabled,
     bool? autoPauseOnMediaEnabled,
     String? autoPauseMediaFilter,
     String? activeProfile,
@@ -424,6 +429,7 @@ class TimerSettings {
       maxConsecutiveSkips: maxConsecutiveSkips ?? this.maxConsecutiveSkips,
       maxConsecutivePostpones:
           maxConsecutivePostpones ?? this.maxConsecutivePostpones,
+      endOfDaySummaryEnabled: endOfDaySummaryEnabled ?? this.endOfDaySummaryEnabled,
       autoPauseOnMediaEnabled:
           autoPauseOnMediaEnabled ?? this.autoPauseOnMediaEnabled,
       autoPauseMediaFilter:
@@ -499,6 +505,7 @@ class TimerSettings {
       'blinkReminderInteractiveEnabled': blinkReminderInteractiveEnabled,
       'maxConsecutiveSkips': maxConsecutiveSkips,
       'maxConsecutivePostpones': maxConsecutivePostpones,
+      'endOfDaySummaryEnabled': endOfDaySummaryEnabled,
       'autoPauseOnMediaEnabled': autoPauseOnMediaEnabled,
       'autoPauseMediaFilter': autoPauseMediaFilter,
       'activeProfile': activeProfile,
@@ -567,6 +574,8 @@ class TimerSettings {
           json['maxConsecutiveSkips'] as int? ?? defaultMaxConsecutiveSkips,
       maxConsecutivePostpones: json['maxConsecutivePostpones'] as int? ??
           defaultMaxConsecutivePostpones,
+      endOfDaySummaryEnabled: json['endOfDaySummaryEnabled'] as bool? ??
+          defaultEndOfDaySummaryEnabled,
       trayBlinkNudgesEnabled:
           json['trayBlinkNudgesEnabled'] as bool? ??
           defaultTrayBlinkNudgesEnabled,

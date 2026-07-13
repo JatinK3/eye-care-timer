@@ -743,6 +743,36 @@ class NotificationService {
         title: title,
         body: body,
         notificationDetails: _wellnessNotificationDetails,
+      );
+    } catch (e) {
+      debugPrint('Failed to show startup notification: \$e');
+    }
+  }
+
+  Future<void> showEndOfDaySummary(String summary) async {
+    if (kIsWeb) return;
+    if (Platform.isLinux) {
+      try {
+        await Process.run('notify-send', [
+          '-a',
+          'BlinkKind',
+          '-i',
+          'com.jatin.eyecaretimer',
+          'End of Day Summary',
+          summary,
+        ]);
+      } catch (e) {
+        debugPrint('Failed to send Linux end of day notification: \$e');
+      }
+      return;
+    }
+    await initialize();
+    try {
+      await _notificationsPlugin.show(
+        id: 1008,
+        title: 'Your Focus Summary',
+        body: summary,
+        notificationDetails: _wellnessNotificationDetails,
         payload: 'startup',
       );
     } on PlatformException catch (error) {
