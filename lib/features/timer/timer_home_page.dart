@@ -2838,7 +2838,7 @@ class TimerHomePageState extends State<TimerHomePage>
     });
   }
 
-  bool get _canChangeSettings => !_isRunning;
+  bool get _canChangeSettings => !_isRunning || _isPaused;
 
   LinearGradient _backgroundGradientFromPreset(String preset, bool isDark) {
     if (widget.useSystemAccent) {
