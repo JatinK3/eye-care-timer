@@ -208,6 +208,9 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] Add a one-tap "Restore defaults" in Settings and reconsider defaults (e.g. in-app sound defaults to off).
 - [x] Show a "breaks taken today" count on home.
 - [x] Add a pre-break countdown indication on the tray icon.
+- [x] **Focus Soundscapes**: Added continuous gapless loops of Brown Noise and Binaural Beats, with a dedicated volume slider in the dashboard.
+- [x] **End-of-Day AI Summaries**: Auto-generated 5 PM notification providing a personalized focus and hydration recap.
+- [x] **UI Notification Polish**: Normalized SnackBars to auto-hide in 3 seconds, suppressed unnecessary actions, and added clear margins to float above the navigation window.
 
 ---
 

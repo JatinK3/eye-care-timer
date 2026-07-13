@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Soundscapes & Binaural Beats:** Enjoy seamless, gapless loops of Brown Noise and Binaural Beats with a dedicated volume slider integrated directly into the dashboard.
+- **End-of-Day AI Summaries:** Receive an automated, AI-generated summary at the end of your workday (5 PM or end of configured hours) celebrating your focus cycles, breaks taken, and hydration levels.
+
+### Fixed
+- **Notification Overlap:** Fixed an issue where app notifications (SnackBars) overlapped the floating navigation bar. All non-critical notifications now consistently auto-hide in exactly 3 seconds without requiring manual dismissal.
+- **System Tray Sync:** Fixed the Linux system tray menu so that the "Mute" / "Unmute" audio options instantly synchronize with the app's internal state.
+
 ## [1.3.1] - 2026-07-12
 
 ### Added

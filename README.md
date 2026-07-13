@@ -12,7 +12,8 @@ A beautiful, highly customizable Flutter-based 20-20-20 eye break timer that hel
 - **System Do-Not-Disturb Awareness (Android & Linux GNOME):** Detects OS focus/DND state so break prompts and wellness nudges respect quiet hours.
 - **Smart Auto-Postpone (Linux & Android):** Detects active microphone or camera usage (e.g., during Zoom/Meet calls) and automatically postpones eye breaks so you aren't disturbed during meetings.
 - **Background Wellness Scheduling:** Keeps periodic hydration, posture, stretch, and blink nudges on cadence through native notification scheduling and Android foreground service integration.
-- **AI Wellness Coach & Smart Schedule:** Interactive, AI-generated micro-reminders and a fully dynamic focus/break schedule powered by Gemini, OpenAI, or Groq that adjusts automatically based on your current task context and fatigue.
+- **AI Wellness Coach & Smart Schedule:** Interactive, AI-generated micro-reminders and a fully dynamic focus/break schedule powered by Gemini, OpenAI, or Groq that adjusts automatically based on your current task context and fatigue. Also includes End-of-Day AI Summaries to recap your daily health metrics.
+- **Immersive Soundscapes:** Stay in the zone with seamless, gapless loops of focus audio like Brown Noise and Binaural Beats, complete with an independent dashboard volume slider.
 - **Sleek, Distraction-Free UI:** Built with Material 3, frosted glassmorphism, dynamic gradients, smooth fluid mesh backgrounds, and a pulsing eye mascot.
 - **Accessibility / Reduced Motion:** Optional support for disabling animations and full-screen color flashes for motion-sensitive users.
 - **In-Depth Analytics:** Visualizes your eye health score, daily goals, and historical compliance streaks.
