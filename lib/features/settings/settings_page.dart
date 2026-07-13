@@ -61,6 +61,10 @@ class SettingsPage extends StatefulWidget {
   final OverlayPermissionStatus overlayPermissionStatus;
   final bool hapticsEnabled;
   final bool soundEnabled;
+  final bool soundscapeEnabled;
+  final void Function(bool) setSoundscapeEnabled;
+  final String soundscapeStyle;
+  final void Function(String) setSoundscapeStyle;
   final String chimeStyle;
   final void Function(String) setChimeStyle;
   final bool blinkRemindersEnabled;
@@ -229,6 +233,10 @@ class SettingsPage extends StatefulWidget {
     required this.overlayPermissionStatus,
     required this.hapticsEnabled,
     required this.soundEnabled,
+    required this.soundscapeEnabled,
+    required this.setSoundscapeEnabled,
+    required this.soundscapeStyle,
+    required this.setSoundscapeStyle,
     required this.chimeStyle,
     required this.setChimeStyle,
     required this.blinkRemindersEnabled,
@@ -2454,6 +2462,45 @@ class _SettingsPageState extends State<SettingsPage>
                 ),
               ),
               const SizedBox(height: 16),
+            ],
+          ],
+        ),
+      ),
+      SettingItem(
+        title: 'Focus Soundscapes',
+        subtitle: 'Play ambient loops during work phases',
+        keywords: ['sound', 'ambient', 'focus', 'music', 'noise', 'brown', 'binaural', 'loop'],
+        category: 'Notifications & Sounds',
+        widget: Column(
+          children: [
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.headphones_outlined),
+              title: const Text('Focus Soundscapes'),
+              subtitle: const Text('Play ambient loops during work phases'),
+              value: widget.soundscapeEnabled,
+              onChanged: widget.setSoundscapeEnabled,
+            ),
+            if (widget.soundscapeEnabled) ...[
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.waves_outlined),
+                title: const Text('Soundscape Style'),
+                subtitle: const Text('Choose your background audio'),
+                trailing: DropdownButton<String>(
+                  value: widget.soundscapeStyle,
+                  items: ['Brown Noise', 'Binaural Alpha (10Hz)', 'Binaural Gamma (40Hz)']
+                      .map((style) => DropdownMenuItem<String>(
+                            value: style,
+                            child: Text(style),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) widget.setSoundscapeStyle(value);
+                  },
+                ),
+              ),
             ],
           ],
         ),

@@ -55,6 +55,8 @@ class TimerHomePage extends StatefulWidget {
   final bool notificationsEnabled;
   final bool hapticsEnabled;
   final bool soundEnabled;
+  final bool soundscapeEnabled;
+  final String soundscapeStyle;
   final BreakMode breakMode;
   final BreakOverlayService? breakOverlayService;
   final void Function(BuildContext context, bool canChangeDurations, bool isTimerRunning)
@@ -153,6 +155,8 @@ class TimerHomePage extends StatefulWidget {
     required this.notificationsEnabled,
     required this.hapticsEnabled,
     required this.soundEnabled,
+    required this.soundscapeEnabled,
+    required this.soundscapeStyle,
     required this.breakMode,
     required this.allowSkip,
     required this.allowPostpone,
@@ -515,6 +519,7 @@ class TimerHomePageState extends State<TimerHomePage>
   StreamSubscription<bool>? _desktopLockSubscription;
 
   AudioPlayer? _audioPlayer;
+  AudioPlayer? _soundscapePlayer;
   Process? _activeChimeProcess;
 
   @override
@@ -523,6 +528,8 @@ class TimerHomePageState extends State<TimerHomePage>
     WidgetsBinding.instance.addObserver(this);
     _initAndroidPip();
     _audioPlayer = AudioPlayer();
+    _soundscapePlayer = AudioPlayer();
+    _soundscapePlayer?.setReleaseMode(ReleaseMode.loop);
     _backgroundService = widget.backgroundService ?? TimerBackgroundService();
     _workDurationSeconds = widget.initialWorkDurationSeconds;
     _breakDurationSeconds = widget.initialBreakDurationSeconds;
@@ -824,6 +831,14 @@ class TimerHomePageState extends State<TimerHomePage>
     if (oldWidget.osFocusDndEnabled != widget.osFocusDndEnabled) {
       _updateOsFocusDnd();
     }
+    if (oldWidget.soundscapeEnabled != widget.soundscapeEnabled || oldWidget.soundscapeStyle != widget.soundscapeStyle) {
+      // Force an explicit restart if the style changes while running
+      if (oldWidget.soundscapeStyle != widget.soundscapeStyle && _soundscapePlayer?.state == PlayerState.playing) {
+        _soundscapePlayer?.stop().then((_) => _syncSoundscapePlayback());
+      } else {
+        unawaited(_syncSoundscapePlayback());
+      }
+    }
     // Dynamically start or stop the media poll timer when the setting changes.
     if (oldWidget.autoPauseOnMediaEnabled != widget.autoPauseOnMediaEnabled) {
       if (widget.autoPauseOnMediaEnabled) {
@@ -889,6 +904,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _taskContextController.dispose();
     _activeChimeProcess?.kill();
     _audioPlayer?.dispose();
+    _soundscapePlayer?.dispose();
     if (_isFocusMode) {
       unawaited(_systemUiService.setFocusModeEnabled(false));
     }
@@ -5267,7 +5283,36 @@ class TimerHomePageState extends State<TimerHomePage>
     );
   }
 
+  Future<void> _syncSoundscapePlayback() async {
+    if (!widget.soundscapeEnabled || _isBreak || !_isRunning || _isPaused || _isMediaPaused || _isSystemIdlePaused || _isSchedulePaused) {
+      if (_soundscapePlayer?.state == PlayerState.playing) {
+        await _soundscapePlayer?.stop();
+      }
+      return;
+    }
+    
+    String assetPath;
+    switch (widget.soundscapeStyle) {
+      case 'Brown Noise':
+        assetPath = 'sounds/brown_noise.wav';
+        break;
+      case 'Binaural Alpha (10Hz)':
+        assetPath = 'sounds/binaural_alpha.wav';
+        break;
+      case 'Binaural Gamma (40Hz)':
+        assetPath = 'sounds/binaural_gamma.wav';
+        break;
+      default:
+        assetPath = 'sounds/brown_noise.wav';
+    }
+    
+    if (_soundscapePlayer?.state != PlayerState.playing) {
+      await _soundscapePlayer?.play(AssetSource(assetPath));
+    }
+  }
+
   void _updateDesktopState() {
+    unawaited(_syncSoundscapePlayback());
     _updateOsFocusDnd();
     if (kIsWeb) return;
     if (defaultTargetPlatform == TargetPlatform.linux ||

@@ -74,6 +74,8 @@ class TimerSettings {
   final bool notificationsEnabled;
   final bool hapticsEnabled;
   final bool soundEnabled;
+  final bool soundscapeEnabled;
+  final String soundscapeStyle;
   final bool longBreakEnabled;
   final int longBreakDurationSeconds;
   final int longBreakEveryCycles;
@@ -141,6 +143,8 @@ class TimerSettings {
     required this.notificationsEnabled,
     required this.hapticsEnabled,
     required this.soundEnabled,
+    required this.soundscapeEnabled,
+    required this.soundscapeStyle,
     required this.longBreakEnabled,
     required this.longBreakDurationSeconds,
     required this.longBreakEveryCycles,
@@ -209,6 +213,8 @@ class TimerSettings {
       notificationsEnabled = true,
       hapticsEnabled = true,
       soundEnabled = true,
+      soundscapeEnabled = false,
+      soundscapeStyle = 'Brown Noise',
       longBreakEnabled = false,
       longBreakDurationSeconds = defaultLongBreakDurationSeconds,
       longBreakEveryCycles = defaultLongBreakEveryCycles,
@@ -276,6 +282,8 @@ class TimerSettings {
     bool? notificationsEnabled,
     bool? hapticsEnabled,
     bool? soundEnabled,
+    bool? soundscapeEnabled,
+    String? soundscapeStyle,
     bool? longBreakEnabled,
     int? longBreakDurationSeconds,
     int? longBreakEveryCycles,
@@ -343,6 +351,8 @@ class TimerSettings {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
       soundEnabled: soundEnabled ?? this.soundEnabled,
+      soundscapeEnabled: soundscapeEnabled ?? this.soundscapeEnabled,
+      soundscapeStyle: soundscapeStyle ?? this.soundscapeStyle,
       longBreakEnabled: longBreakEnabled ?? this.longBreakEnabled,
       longBreakDurationSeconds:
           longBreakDurationSeconds ?? this.longBreakDurationSeconds,
@@ -432,6 +442,8 @@ class TimerSettings {
       'notificationsEnabled': notificationsEnabled,
       'hapticsEnabled': hapticsEnabled,
       'soundEnabled': soundEnabled,
+      'soundscapeEnabled': soundscapeEnabled,
+      'soundscapeStyle': soundscapeStyle,
       'longBreakEnabled': longBreakEnabled,
       'longBreakDurationSeconds': longBreakDurationSeconds,
       'longBreakEveryCycles': longBreakEveryCycles,
@@ -507,6 +519,8 @@ class TimerSettings {
       notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
       hapticsEnabled: json['hapticsEnabled'] as bool? ?? true,
       soundEnabled: json['soundEnabled'] as bool? ?? false,
+      soundscapeEnabled: json['soundscapeEnabled'] as bool? ?? false,
+      soundscapeStyle: json['soundscapeStyle'] as String? ?? 'Brown Noise',
       longBreakEnabled: json['longBreakEnabled'] as bool? ?? false,
       longBreakDurationSeconds:
           json['longBreakDurationSeconds'] as int? ??

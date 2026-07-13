@@ -607,6 +607,20 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     unawaited(_preferencesService.saveSoundEnabled(enabled));
   }
 
+  void _setSoundscapeEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(soundscapeEnabled: enabled);
+    });
+    unawaited(_preferencesService.saveSoundscapeEnabled(enabled));
+  }
+
+  void _setSoundscapeStyle(String style) {
+    setState(() {
+      _settings = _settings.copyWith(soundscapeStyle: style);
+    });
+    unawaited(_preferencesService.saveSoundscapeStyle(style));
+  }
+
   void _setChimeStyle(String style) {
     setState(() {
       _settings = _settings.copyWith(chimeStyle: style);
@@ -1384,6 +1398,10 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           soundEnabled: _settings.soundEnabled,
           chimeStyle: _settings.chimeStyle,
           setChimeStyle: _setChimeStyle,
+          soundscapeEnabled: _settings.soundscapeEnabled,
+          setSoundscapeEnabled: _setSoundscapeEnabled,
+          soundscapeStyle: _settings.soundscapeStyle,
+          setSoundscapeStyle: _setSoundscapeStyle,
           blinkRemindersEnabled: _settings.blinkRemindersEnabled,
           blinkRemindersCadenceSeconds: _settings.blinkRemindersCadenceSeconds,
           setBlinkRemindersEnabled: _setBlinkRemindersEnabled,
@@ -1646,6 +1664,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   notificationsEnabled: _settings.notificationsEnabled,
                   hapticsEnabled: _settings.hapticsEnabled,
                   soundEnabled: _settings.soundEnabled,
+                  soundscapeEnabled: _settings.soundscapeEnabled,
+                  soundscapeStyle: _settings.soundscapeStyle,
                   chimeStyle: _settings.chimeStyle,
                   blinkRemindersEnabled: _settings.blinkRemindersEnabled,
                   blinkRemindersCadenceSeconds:

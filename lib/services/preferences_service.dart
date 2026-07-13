@@ -20,6 +20,8 @@ class PreferencesService {
   static const String notificationsEnabledKey = 'notificationsEnabled';
   static const String hapticsEnabledKey = 'hapticsEnabled';
   static const String soundEnabledKey = 'soundEnabled';
+  static const String soundscapeEnabledKey = 'soundscapeEnabled';
+  static const String soundscapeStyleKey = 'soundscapeStyle';
   static const String longBreakEnabledKey = 'longBreakEnabled';
   static const String longBreakDurationSecondsKey = 'longBreakDurationSeconds';
   static const String longBreakEveryCyclesKey = 'longBreakEveryCycles';
@@ -131,6 +133,8 @@ class PreferencesService {
       notificationsEnabled: prefs.getBool(notificationsEnabledKey) ?? true,
       hapticsEnabled: prefs.getBool(hapticsEnabledKey) ?? true,
       soundEnabled: prefs.getBool(soundEnabledKey) ?? true,
+      soundscapeEnabled: prefs.getBool(soundscapeEnabledKey) ?? false,
+      soundscapeStyle: prefs.getString(soundscapeStyleKey) ?? 'Brown Noise',
       longBreakEnabled: prefs.getBool(longBreakEnabledKey) ?? false,
       longBreakDurationSeconds:
           prefs.getInt(longBreakDurationSecondsKey) ??
@@ -417,6 +421,8 @@ class PreferencesService {
     await prefs.setBool(notificationsEnabledKey, true);
     await prefs.setBool(hapticsEnabledKey, true);
     await prefs.setBool(soundEnabledKey, false);
+    await prefs.setBool(soundscapeEnabledKey, false);
+    await prefs.setString(soundscapeStyleKey, 'Brown Noise');
     await prefs.setBool(longBreakEnabledKey, false);
     await prefs.setInt(
       longBreakDurationSecondsKey,
@@ -580,6 +586,8 @@ class PreferencesService {
     await prefs.setBool(notificationsEnabledKey, settings.notificationsEnabled);
     await prefs.setBool(hapticsEnabledKey, settings.hapticsEnabled);
     await prefs.setBool(soundEnabledKey, settings.soundEnabled);
+    await prefs.setBool(soundscapeEnabledKey, settings.soundscapeEnabled);
+    await prefs.setString(soundscapeStyleKey, settings.soundscapeStyle);
     await prefs.setBool(longBreakEnabledKey, settings.longBreakEnabled);
     await prefs.setInt(
       longBreakDurationSecondsKey,
@@ -940,6 +948,16 @@ class PreferencesService {
   Future<void> saveSoundEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(soundEnabledKey, enabled);
+  }
+
+  Future<void> saveSoundscapeEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(soundscapeEnabledKey, enabled);
+  }
+
+  Future<void> saveSoundscapeStyle(String style) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(soundscapeStyleKey, style);
   }
 
   Future<void> saveActiveProfile(String profile) async {
