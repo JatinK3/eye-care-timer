@@ -1109,3 +1109,6 @@ Ideas captured from design review session. Prioritized by impact. None are sched
 - [ ] **Glassmorphic Floating Navigation Bar**: A sleek, floating, translucent glassmorphic navigation bar with active-tab micro-animations instead of the standard material navigation.
 - [x] **Interactive Parallax 3D Cards**: Apply a subtle 3D parallax tilt effect to the History and Settings cards, utilizing mouse hover on desktop or gyroscope on mobile for a premium depth effect.
 - [x] **Hero Expansion Transitions**: Smooth shared-element "Hero" transitions between dashboard elements and detail pages (e.g., clicking on the Water card seamlessly expands it into a full-screen water history page).
+- [ ] **App Blocking / Strict Mode (Focus Enforcer)**: A system to block distracting apps/websites natively during work phases.
+- [ ] **"Skip This Break" Counter (Guilt Metric)**: Visualizing skipped breaks natively in the history chart to discourage burning out.
+- [ ] **Soundscapes & Binaural Beats (Immersion Mode)**: Looping focus audio directly natively built-in.
