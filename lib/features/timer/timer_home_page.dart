@@ -57,7 +57,7 @@ class TimerHomePage extends StatefulWidget {
   final bool soundEnabled;
   final BreakMode breakMode;
   final BreakOverlayService? breakOverlayService;
-  final void Function(BuildContext context, bool canChangeDurations)
+  final void Function(BuildContext context, bool canChangeDurations, bool isTimerRunning)
   openSettings;
   final void Function(BuildContext context) openHistory;
   final void Function(String) setPreset;
@@ -699,7 +699,7 @@ class TimerHomePageState extends State<TimerHomePage>
             case DesktopCommand.openSettings:
               unawaited(windowManager.show());
               unawaited(windowManager.focus());
-              widget.openSettings(context, _canChangeSettings);
+              widget.openSettings(context, _canChangeSettings, _isRunning);
               break;
             case DesktopCommand.showDashboard:
               Navigator.of(context).popUntil((route) => route.isFirst);
@@ -4186,7 +4186,7 @@ class TimerHomePageState extends State<TimerHomePage>
               : _GlassmorphicNavBar(
                   onTimerTap: () {}, // Already on Timer
                   onHistoryTap: () => widget.openHistory(context),
-                  onSettingsTap: () => widget.openSettings(context, _canChangeSettings),
+                  onSettingsTap: () => widget.openSettings(context, _canChangeSettings, _isRunning),
                   canChangeSettings: _canChangeSettings,
                   isDark: isDark,
                 ),

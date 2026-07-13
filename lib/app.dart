@@ -1333,7 +1333,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     );
   }
 
-  void _openSettings(BuildContext context, bool canChangeDurations) {
+  void _openSettings(BuildContext context, bool canChangeDurations, bool isTimerRunning) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SettingsPage(
@@ -1432,6 +1432,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           autoStartSchedule: _settings.autoStartSchedule,
           setAutoStartSchedule: _setAutoStartSchedule,
           canChangeDurations: canChangeDurations,
+          isTimerRunning: isTimerRunning,
           toggleTheme: _toggleTheme,
           setPreset: _setPreset,
           saveDurations: _saveDurations,

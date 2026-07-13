@@ -92,6 +92,7 @@ class SettingsPage extends StatefulWidget {
   final void Function(int) setWaterDailyGoalGlasses;
   final void Function(int) setWaterGlassSizeMl;
   final bool canChangeDurations;
+  final bool isTimerRunning;
   final BreakMode breakMode;
   final void Function(BreakMode breakMode) setBreakMode;
   final VoidCallback toggleTheme;
@@ -261,6 +262,7 @@ class SettingsPage extends StatefulWidget {
     required this.adaptiveSchedulingEnabled,
     required this.setAdaptiveSchedulingEnabled,
     required this.canChangeDurations,
+    required this.isTimerRunning,
     required this.toggleTheme,
     required this.setNotificationsEnabled,
     required this.setHapticsEnabled,
@@ -905,6 +907,29 @@ class _SettingsPageState extends State<SettingsPage>
                     final nextSeconds = value == 0
                         ? widget.workDurationSeconds
                         : value * 60;
+                    
+                    final oldWorkSeconds = widget.workDurationSeconds;
+                    
+                    if (_autoRunCycleLimit > 0 && oldWorkSeconds > 0) {
+                      final int totalWorkSeconds = oldWorkSeconds * _autoRunCycleLimit;
+                      int newLimit = (totalWorkSeconds / nextSeconds).round();
+                      if (newLimit < 1) newLimit = 1;
+                      if (newLimit > 99) newLimit = 99;
+                      if (newLimit != _autoRunCycleLimit) {
+                        _saveAutoRun(cycleLimit: newLimit);
+                      }
+                    }
+
+                    if (widget.dailyGoal > 0 && oldWorkSeconds > 0) {
+                      final int totalDailySeconds = oldWorkSeconds * widget.dailyGoal;
+                      int newDailyGoal = (totalDailySeconds / nextSeconds).round();
+                      if (newDailyGoal < 1) newDailyGoal = 1;
+                      if (newDailyGoal > 99) newDailyGoal = 99;
+                      if (newDailyGoal != widget.dailyGoal) {
+                        widget.setDailyGoal(newDailyGoal);
+                      }
+                    }
+
                     widget.saveDurations(
                       nextSeconds,
                       widget.breakDurationSeconds,
@@ -2744,7 +2769,7 @@ class _SettingsPageState extends State<SettingsPage>
                       ),
                     )
                     .toList(),
-                onChanged: widget.canChangeDurations && _autoRunEnabled
+                onChanged: !widget.isTimerRunning && widget.canChangeDurations && _autoRunEnabled
                     ? (value) {
                         if (value != null) _saveAutoRun(cycleLimit: value);
                       }
