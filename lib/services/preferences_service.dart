@@ -235,7 +235,8 @@ class PreferencesService {
         if (saved == null) {
           return TimerSettings.defaultAiCustomSystemPrompt;
         }
-        if (saved.contains('friendly eye-care assistant')) {
+        if (saved.contains('friendly eye-care assistant') || 
+            saved.contains('friendly health and wellness assistant')) {
           return TimerSettings.defaultAiCustomSystemPrompt;
         }
         return saved;
