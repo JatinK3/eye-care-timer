@@ -1137,3 +1137,7 @@ Ideas captured from design review session. Prioritized by impact. None are sched
 - [ ] **App Blocking / Strict Mode (Focus Enforcer)**: A system to block distracting apps/websites natively during work phases.
 - [x] **"Skip This Break" Counter (Guilt Metric)**: Visualizing skipped breaks natively in the history chart to discourage burning out.
 - [x] **Soundscapes & Binaural Beats (Immersion Mode)**: Looping focus audio directly natively built-in.
+
+- **Idle Detection Polish:** 
+  - Increased system idle threshold from 60 seconds to 120 seconds.
+  - Disabled aggressive natural break crediting upon resuming from idle state, ensuring the timer cleanly resumes from its paused state instead of resetting the work cycle from the beginning.
