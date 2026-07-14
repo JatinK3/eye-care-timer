@@ -9,6 +9,10 @@ class TimerSession {
   final int completedAutoRunCycles;
   final int? postponedBreakDuration;
   final int breakDebtSeconds;
+  /// Wall-clock time at which this session snapshot was last persisted.
+  /// Used to detect cross-day stale sessions even when both [phaseStartedAt]
+  /// and [phaseEndsAt] are null (e.g. a manually paused session).
+  final DateTime? savedAt;
 
   const TimerSession({
     required this.isActive,
@@ -21,6 +25,7 @@ class TimerSession {
     this.completedAutoRunCycles = 0,
     this.postponedBreakDuration,
     this.breakDebtSeconds = 0,
+    this.savedAt,
   });
 
   const TimerSession.idle()
@@ -33,7 +38,8 @@ class TimerSession {
       phaseEndsAt = null,
       completedAutoRunCycles = 0,
       postponedBreakDuration = null,
-      breakDebtSeconds = 0;
+      breakDebtSeconds = 0,
+      savedAt = null;
 
   /// Serializes the session to a plain JSON map. Timestamps are stored as epoch
   /// milliseconds so the same representation can be shared with the native
@@ -50,6 +56,7 @@ class TimerSession {
       'completedAutoRunCycles': completedAutoRunCycles,
       'postponedBreakDuration': postponedBreakDuration,
       'breakDebtSeconds': breakDebtSeconds,
+      'savedAt': savedAt?.millisecondsSinceEpoch,
     };
   }
 
@@ -67,6 +74,7 @@ class TimerSession {
       completedAutoRunCycles: _asInt(json['completedAutoRunCycles']),
       postponedBreakDuration: json['postponedBreakDuration'] != null ? _asInt(json['postponedBreakDuration']) : null,
       breakDebtSeconds: _asInt(json['breakDebtSeconds']),
+      savedAt: _dateTimeFromMillis(json['savedAt']),
     );
   }
 

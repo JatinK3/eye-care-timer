@@ -1189,7 +1189,9 @@ class TimerHomePageState extends State<TimerHomePage>
 
     final phaseStartedAt = session.phaseStartedAt;
     final phaseEndsAt = session.phaseEndsAt;
-    final sessionTime = phaseStartedAt ?? phaseEndsAt;
+    // Use savedAt as a fallback anchor when both phase timestamps are null
+    // (e.g. a paused session where _phaseStartedAt/_phaseEndsAt were cleared).
+    final sessionTime = phaseStartedAt ?? phaseEndsAt ?? session.savedAt;
     if (sessionTime != null) {
       final now = DateTime.now();
       final isSameDay =

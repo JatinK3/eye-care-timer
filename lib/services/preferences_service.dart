@@ -66,6 +66,7 @@ class PreferencesService {
   static const String sessionPhaseEndsAtKey = 'sessionPhaseEndsAt';
   static const String sessionCompletedAutoRunCyclesKey =
       'sessionCompletedAutoRunCycles';
+  static const String sessionSavedAtKey = 'sessionSavedAt';
   static const String amoledDarkEnabledKey = 'amoledDarkEnabled';
   static const String customAccentColorHexKey = 'customAccentColorHex';
   static const String useSystemAccentKey = 'useSystemAccent';
@@ -755,6 +756,7 @@ class PreferencesService {
       phaseEndsAt: _dateTimeFromMillis(prefs.getInt(sessionPhaseEndsAtKey)),
       completedAutoRunCycles:
           prefs.getInt(sessionCompletedAutoRunCyclesKey) ?? 0,
+      savedAt: _dateTimeFromMillis(prefs.getInt(sessionSavedAtKey)),
     );
   }
 
@@ -782,6 +784,12 @@ class PreferencesService {
       sessionPhaseEndsAtKey,
       session.phaseEndsAt,
     );
+    // Always stamp the wall-clock time so the restore logic can detect
+    // stale cross-day sessions even when phase timestamps are null.
+    await prefs.setInt(
+      sessionSavedAtKey,
+      DateTime.now().millisecondsSinceEpoch,
+    );
   }
 
   Future<void> clearSession() async {
@@ -794,6 +802,7 @@ class PreferencesService {
     await prefs.remove(sessionPhaseStartedAtKey);
     await prefs.remove(sessionPhaseEndsAtKey);
     await prefs.remove(sessionCompletedAutoRunCyclesKey);
+    await prefs.remove(sessionSavedAtKey);
   }
 
   Future<void> saveDurations({
