@@ -1141,3 +1141,4 @@ Ideas captured from design review session. Prioritized by impact. None are sched
 - **Idle Detection Polish:** 
   - Increased system idle threshold from 60 seconds to 120 seconds.
   - Disabled aggressive natural break crediting upon resuming from idle state, ensuring the timer cleanly resumes from its paused state instead of resetting the work cycle from the beginning.
+- Added configurable idle detection timeout (2, 3, 5, 10 min) to settings.
