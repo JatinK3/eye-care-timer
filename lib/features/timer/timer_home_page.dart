@@ -431,12 +431,26 @@ class TimerHomePageState extends State<TimerHomePage>
       int completed = 0;
       int skipped = 0;
       int postponed = 0;
+      final moodCounts = <String, int>{};
+      
       for (final event in widget.todaysEvents) {
-        if (event.type == TimerEventType.workCompleted) completed++;
+        if (event.type == TimerEventType.workCompleted) {
+          completed++;
+          if (event.mood != null) {
+            final moodName = event.mood!.displayName;
+            moodCounts[moodName] = (moodCounts[moodName] ?? 0) + 1;
+          }
+        }
         if (event.type == TimerEventType.breakSkipped) skipped++;
         if (event.type == TimerEventType.breakPostponed) postponed++;
       }
-      final historySummary = 'Today: $completed work sessions completed, $skipped breaks skipped, $postponed breaks postponed.';
+      
+      String moodStr = '';
+      if (moodCounts.isNotEmpty) {
+        moodStr = ' Focus moods reported today: ${moodCounts.entries.map((e) => '${e.value}x ${e.key}').join(', ')}.';
+      }
+      
+      final historySummary = 'Today: $completed work sessions completed, $skipped breaks skipped, $postponed breaks postponed.$moodStr';
 
       final suggestion = await AiService.instance.generateSmartSchedule(
         provider: widget.aiProvider,
@@ -2354,7 +2368,19 @@ class TimerHomePageState extends State<TimerHomePage>
       final waterStats = await prefs.loadWaterHistory();
       final todayWater = waterStats[today] ?? 0;
       
-      final promptStats = "Today's stats - Work cycles completed: $_autoRunCompletedCycles, Breaks taken: $todayBreaks, Current skips: $_consecutiveSkips, Water glasses logged: $todayWater.";
+      final moodCounts = <String, int>{};
+      for (final event in widget.todaysEvents) {
+        if (event.mood != null) {
+          final moodName = event.mood!.displayName;
+          moodCounts[moodName] = (moodCounts[moodName] ?? 0) + 1;
+        }
+      }
+      String moodStr = '';
+      if (moodCounts.isNotEmpty) {
+        moodStr = ' Moods reported today: ${moodCounts.entries.map((e) => '${e.value}x ${e.key}').join(', ')}.';
+      }
+      
+      final promptStats = "Today's stats - Work cycles completed: $_autoRunCompletedCycles, Breaks taken: $todayBreaks, Current skips: $_consecutiveSkips, Water glasses logged: $todayWater.$moodStr";
       
       final summary = await AiService.instance.generateEndOfDaySummary(
         provider: widget.aiProvider,

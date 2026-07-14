@@ -415,6 +415,30 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
             ),
             onSubmitted: (_) => _submitWellnessCoach(),
           ),
+          const SizedBox(height: 12),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              'Neck stiffness',
+              'Eye strain',
+              'Lower back pain',
+              'Wrist fatigue',
+            ].map((prompt) {
+              return ActionChip(
+                label: Text(prompt),
+                backgroundColor: Colors.white10,
+                labelStyle: const TextStyle(color: Colors.white70, fontSize: 12),
+                side: BorderSide.none,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                onPressed: () {
+                  _wellnessCoachController.text = prompt;
+                  _submitWellnessCoach();
+                },
+              );
+            }).toList(),
+          ),
         ],
       ),
     );
