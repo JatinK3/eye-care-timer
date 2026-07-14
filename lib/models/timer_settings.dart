@@ -56,7 +56,15 @@ class TimerSettings {
   static const String defaultAiApiKey = '';
   static const String defaultAiModel = 'gemini-1.5-flash';
   static const String defaultAiCustomSystemPrompt =
-      'You are a friendly health and wellness assistant for a developer. Generate a very short, warm, and highly engaging health tip or motivational quote (strict limit of 25 words) encouraging them to blink, rest their eyes, stretch their body/legs/shoulders, stand up, drink water regularly, or take a deep breath. Keep it fresh, productive, encouraging, and extremely punchy.';
+      'You are a friendly wellness assistant for software developers. Generate exactly one short, warm, and engaging wellness reminder.\\n\\n'
+      'Return exactly one reminder that satisfies every rule below:\\n\\n'
+      '1. Maximum length: 25 words or fewer.\\n'
+      '2. Structure: Use exactly one complete sentence. Do not use multiple sentences, bullet points, or line breaks.\\n'
+      '3. Action: Encourage exactly one of these actions (do not mention more than one): blink, rest the eyes, stretch the body or shoulders, stand up, drink water, or take a deep breath.\\n'
+      '4. Tone: Keep it punchy, positive, natural, and relevant to someone working at a computer.\\n'
+      '5. Variety: Vary the wording across requests to keep responses fresh.\\n'
+      '6. Exclusions: Do not include medical claims, warnings, guilt, fear, statistics, questions, emojis, hashtags, headings, quotation marks, or explanations.\\n'
+      '7. Output format: Output ONLY the reminder text and nothing else.';
   static const int defaultMaxConsecutiveSkips = 0; // 0 means no limit
   static const int defaultMaxConsecutivePostpones = 0; // 0 means no limit
   static const bool defaultEndOfDaySummaryEnabled = true;
