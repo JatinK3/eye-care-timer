@@ -66,7 +66,10 @@ class SettingsPage extends StatefulWidget {
   final String soundscapeStyle;
   final void Function(String) setSoundscapeStyle;
   final bool endOfDaySummaryEnabled;
+  final int endOfDaySummaryHour;
+  final int endOfDaySummaryMinute;
   final void Function(bool) setEndOfDaySummaryEnabled;
+  final void Function(int, int) setEndOfDaySummaryTime;
   final String chimeStyle;
   final void Function(String) setChimeStyle;
   final bool blinkRemindersEnabled;
@@ -240,7 +243,10 @@ class SettingsPage extends StatefulWidget {
     required this.soundscapeStyle,
     required this.setSoundscapeStyle,
     required this.endOfDaySummaryEnabled,
+    required this.endOfDaySummaryHour,
+    required this.endOfDaySummaryMinute,
     required this.setEndOfDaySummaryEnabled,
+    required this.setEndOfDaySummaryTime,
     required this.chimeStyle,
     required this.setChimeStyle,
     required this.blinkRemindersEnabled,
@@ -3405,6 +3411,28 @@ class _SettingsPageState extends State<SettingsPage>
             value: widget.endOfDaySummaryEnabled,
             onChanged: widget.setEndOfDaySummaryEnabled,
           ),
+          if (widget.endOfDaySummaryEnabled) ...[
+            ListTile(
+              contentPadding: const EdgeInsets.only(left: 56),
+              title: const Text('Summary Time'),
+              trailing: Text(
+                '${widget.endOfDaySummaryHour.toString().padLeft(2, '0')}:${widget.endOfDaySummaryMinute.toString().padLeft(2, '0')}',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              onTap: () async {
+                final time = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay(
+                    hour: widget.endOfDaySummaryHour,
+                    minute: widget.endOfDaySummaryMinute,
+                  ),
+                );
+                if (time != null) {
+                  widget.setEndOfDaySummaryTime(time.hour, time.minute);
+                }
+              },
+            ),
+          ],
           const Divider(height: 1),
           // System prompt
           Padding(

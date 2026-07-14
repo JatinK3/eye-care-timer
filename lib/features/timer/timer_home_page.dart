@@ -86,6 +86,8 @@ class TimerHomePage extends StatefulWidget {
   final int maxConsecutiveSkips;
   final int maxConsecutivePostpones;
   final bool endOfDaySummaryEnabled;
+  final int endOfDaySummaryHour;
+  final int endOfDaySummaryMinute;
   final bool allowPostpone;
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
@@ -230,6 +232,8 @@ class TimerHomePage extends StatefulWidget {
     required this.maxConsecutiveSkips,
     required this.maxConsecutivePostpones,
     required this.endOfDaySummaryEnabled,
+    required this.endOfDaySummaryHour,
+    required this.endOfDaySummaryMinute,
     required this.showBatteryWarning,
     required this.oemManufacturer,
     required this.onDismissBatteryWarning,
@@ -2351,7 +2355,9 @@ class TimerHomePageState extends State<TimerHomePage>
       final endMins = widget.workHoursEndHour * 60 + widget.workHoursEndMinute;
       passedEnd = currentMins >= endMins;
     } else {
-      passedEnd = now.hour >= 17;
+      final currentMins = now.hour * 60 + now.minute;
+      final endMins = widget.endOfDaySummaryHour * 60 + widget.endOfDaySummaryMinute;
+      passedEnd = currentMins >= endMins;
     }
 
     if (!passedEnd) return;

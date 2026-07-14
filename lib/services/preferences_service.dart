@@ -104,6 +104,8 @@ class PreferencesService {
   static const String analyticsEnabledKey = 'analyticsEnabled';
   static const String adaptiveSchedulingEnabledKey = 'adaptiveSchedulingEnabled';
   static const String endOfDaySummaryEnabledKey = 'endOfDaySummaryEnabled';
+  static const String endOfDaySummaryHourKey = 'endOfDaySummaryHour';
+  static const String endOfDaySummaryMinuteKey = 'endOfDaySummaryMinute';
   static const String lastEndOfDaySummaryDateKey = 'lastEndOfDaySummaryDate';
 
   Future<TimerSettings> loadSettings() async {
@@ -282,6 +284,10 @@ class PreferencesService {
           TimerSettings.defaultMaxConsecutivePostpones,
       endOfDaySummaryEnabled: prefs.getBool(endOfDaySummaryEnabledKey) ??
           TimerSettings.defaultEndOfDaySummaryEnabled,
+      endOfDaySummaryHour: prefs.getInt(endOfDaySummaryHourKey) ??
+          TimerSettings.defaultEndOfDaySummaryHour,
+      endOfDaySummaryMinute: prefs.getInt(endOfDaySummaryMinuteKey) ??
+          TimerSettings.defaultEndOfDaySummaryMinute,
       activeProfile:
           prefs.getString(activeProfileKey) ??
           TimerSettings.defaultActiveProfile,
@@ -1170,6 +1176,12 @@ class PreferencesService {
   Future<void> saveEndOfDaySummaryEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(endOfDaySummaryEnabledKey, enabled);
+  }
+
+  Future<void> saveEndOfDaySummaryTime(int hour, int minute) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(endOfDaySummaryHourKey, hour);
+    await prefs.setInt(endOfDaySummaryMinuteKey, minute);
   }
 
   Future<String?> getLastEndOfDaySummaryDate() async {

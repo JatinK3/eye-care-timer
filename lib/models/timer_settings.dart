@@ -60,6 +60,8 @@ class TimerSettings {
   static const int defaultMaxConsecutiveSkips = 0; // 0 means no limit
   static const int defaultMaxConsecutivePostpones = 0; // 0 means no limit
   static const bool defaultEndOfDaySummaryEnabled = true;
+  static const int defaultEndOfDaySummaryHour = 17;
+  static const int defaultEndOfDaySummaryMinute = 0;
   static const String defaultActiveProfile = 'standard';
   static const bool defaultReducedMotionEnabled = false;
   static const AnimationSpeed defaultAnimationSpeed = AnimationSpeed.normal;
@@ -128,6 +130,8 @@ class TimerSettings {
   final int maxConsecutiveSkips;
   final int maxConsecutivePostpones;
   final bool endOfDaySummaryEnabled;
+  final int endOfDaySummaryHour;
+  final int endOfDaySummaryMinute;
   final bool autoPauseOnMediaEnabled;
   final String autoPauseMediaFilter;
   final String activeProfile;
@@ -174,6 +178,8 @@ class TimerSettings {
     required this.maxConsecutiveSkips,
     required this.maxConsecutivePostpones,
     required this.endOfDaySummaryEnabled,
+    required this.endOfDaySummaryHour,
+    required this.endOfDaySummaryMinute,
     required this.workHoursStartMinute,
     required this.workHoursEndHour,
     required this.workHoursEndMinute,
@@ -271,6 +277,8 @@ class TimerSettings {
       maxConsecutiveSkips = defaultMaxConsecutiveSkips,
       maxConsecutivePostpones = defaultMaxConsecutivePostpones,
       endOfDaySummaryEnabled = defaultEndOfDaySummaryEnabled,
+      endOfDaySummaryHour = defaultEndOfDaySummaryHour,
+      endOfDaySummaryMinute = defaultEndOfDaySummaryMinute,
       autoPauseOnMediaEnabled = defaultAutoPauseOnMediaEnabled,
       autoPauseMediaFilter = defaultAutoPauseMediaFilter,
       activeProfile = defaultActiveProfile,
@@ -342,6 +350,8 @@ class TimerSettings {
     int? maxConsecutiveSkips,
     int? maxConsecutivePostpones,
     bool? endOfDaySummaryEnabled,
+    int? endOfDaySummaryHour,
+    int? endOfDaySummaryMinute,
     bool? autoPauseOnMediaEnabled,
     String? autoPauseMediaFilter,
     String? activeProfile,
@@ -430,6 +440,8 @@ class TimerSettings {
       maxConsecutivePostpones:
           maxConsecutivePostpones ?? this.maxConsecutivePostpones,
       endOfDaySummaryEnabled: endOfDaySummaryEnabled ?? this.endOfDaySummaryEnabled,
+      endOfDaySummaryHour: endOfDaySummaryHour ?? this.endOfDaySummaryHour,
+      endOfDaySummaryMinute: endOfDaySummaryMinute ?? this.endOfDaySummaryMinute,
       autoPauseOnMediaEnabled:
           autoPauseOnMediaEnabled ?? this.autoPauseOnMediaEnabled,
       autoPauseMediaFilter:
@@ -506,6 +518,8 @@ class TimerSettings {
       'maxConsecutiveSkips': maxConsecutiveSkips,
       'maxConsecutivePostpones': maxConsecutivePostpones,
       'endOfDaySummaryEnabled': endOfDaySummaryEnabled,
+      'endOfDaySummaryHour': endOfDaySummaryHour,
+      'endOfDaySummaryMinute': endOfDaySummaryMinute,
       'autoPauseOnMediaEnabled': autoPauseOnMediaEnabled,
       'autoPauseMediaFilter': autoPauseMediaFilter,
       'activeProfile': activeProfile,
@@ -576,6 +590,10 @@ class TimerSettings {
           defaultMaxConsecutivePostpones,
       endOfDaySummaryEnabled: json['endOfDaySummaryEnabled'] as bool? ??
           defaultEndOfDaySummaryEnabled,
+      endOfDaySummaryHour: json['endOfDaySummaryHour'] as int? ??
+          defaultEndOfDaySummaryHour,
+      endOfDaySummaryMinute: json['endOfDaySummaryMinute'] as int? ??
+          defaultEndOfDaySummaryMinute,
       trayBlinkNudgesEnabled:
           json['trayBlinkNudgesEnabled'] as bool? ??
           defaultTrayBlinkNudgesEnabled,
