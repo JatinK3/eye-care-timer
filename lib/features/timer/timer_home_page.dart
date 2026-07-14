@@ -1119,7 +1119,7 @@ class TimerHomePageState extends State<TimerHomePage>
         if (!mounted) return;
         if (systemIdle.isSupported) {
           _desktopIdleSubscription = systemIdle
-              .onIdleChanged(idleDuration: const Duration(seconds: 60))
+              .onIdleChanged(idleDuration: const Duration(seconds: 120))
               .listen((isIdle) {
                 if (!mounted) return;
                 // Only use the system_idle stream on non-Wayland sessions
@@ -1138,7 +1138,7 @@ class TimerHomePageState extends State<TimerHomePage>
       // keyboard/pointer idle time, unaffected by rendering.
       final sessionType = Platform.environment['XDG_SESSION_TYPE'] ?? '';
       if (sessionType.toLowerCase() == 'wayland') {
-        const idleThresholdMs = 60 * 1000; // 60 s, same as system_idle
+        const idleThresholdMs = 120 * 1000; // 120 s, same as system_idle
         _mutterIdlePoller = Timer.periodic(
           const Duration(seconds: 5),
           (_) async {
@@ -1188,11 +1188,11 @@ class TimerHomePageState extends State<TimerHomePage>
       if (!_isPaused && !_isSystemIdlePaused) {
         setState(() {
           // If this is a regular idle event (not screen lock), the user has already
-          // been idle for 60 seconds (the system idle detection threshold). We subtract
-          // those 60 seconds to accurately measure the total duration of the user's away time.
+          // been idle for 120 seconds (the system idle detection threshold). We subtract
+          // those 120 seconds to accurately measure the total duration of the user's away time.
           _idleStartedAt = isLockEvent
               ? DateTime.now()
-              : DateTime.now().subtract(const Duration(seconds: 60));
+              : DateTime.now().subtract(const Duration(seconds: 120));
           _isSystemIdlePaused = true;
           _animationController.stop();
           _pulseController.stop();
@@ -1218,13 +1218,6 @@ class TimerHomePageState extends State<TimerHomePage>
           // based on how long they were away!
           if (idleDuration.inSeconds > 0) {
             _breakDebtSeconds = math.max(0, _breakDebtSeconds - idleDuration.inSeconds);
-          }
-
-          if (widget.naturalBreakCreditEnabled) {
-            if (idleDuration.inSeconds >= _breakDurationSeconds) {
-              _creditNaturalBreak();
-              return;
-            }
           }
         }
 
