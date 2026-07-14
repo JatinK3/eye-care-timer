@@ -91,6 +91,7 @@ class TimerHomePage extends StatefulWidget {
   final bool allowPostpone;
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
+  final int idleTimeoutMinutes;
   final String breakVisualizerStyle;
   final bool breakShowClock;
   final bool breakShowTips;
@@ -175,6 +176,7 @@ class TimerHomePage extends StatefulWidget {
     required this.animationSpeed,
     required this.reducedMotionEnabled,
     required this.smartIdleEnabled,
+    required this.idleTimeoutMinutes,
     required this.breakVisualizerStyle,
     required this.breakShowClock,
     required this.breakShowTips,
@@ -1119,7 +1121,7 @@ class TimerHomePageState extends State<TimerHomePage>
         if (!mounted) return;
         if (systemIdle.isSupported) {
           _desktopIdleSubscription = systemIdle
-              .onIdleChanged(idleDuration: const Duration(seconds: 120))
+              .onIdleChanged(idleDuration: Duration(minutes: widget.idleTimeoutMinutes))
               .listen((isIdle) {
                 if (!mounted) return;
                 // Only use the system_idle stream on non-Wayland sessions
@@ -1138,7 +1140,7 @@ class TimerHomePageState extends State<TimerHomePage>
       // keyboard/pointer idle time, unaffected by rendering.
       final sessionType = Platform.environment['XDG_SESSION_TYPE'] ?? '';
       if (sessionType.toLowerCase() == 'wayland') {
-        const idleThresholdMs = 120 * 1000; // 120 s, same as system_idle
+        final idleThresholdMs = widget.idleTimeoutMinutes * 60 * 1000;
         _mutterIdlePoller = Timer.periodic(
           const Duration(seconds: 5),
           (_) async {
@@ -1188,11 +1190,11 @@ class TimerHomePageState extends State<TimerHomePage>
       if (!_isPaused && !_isSystemIdlePaused) {
         setState(() {
           // If this is a regular idle event (not screen lock), the user has already
-          // been idle for 120 seconds (the system idle detection threshold). We subtract
-          // those 120 seconds to accurately measure the total duration of the user's away time.
+          // been idle for the threshold. We subtract
+          // those seconds to accurately measure the total duration of the user's away time.
           _idleStartedAt = isLockEvent
               ? DateTime.now()
-              : DateTime.now().subtract(const Duration(seconds: 120));
+              : DateTime.now().subtract(Duration(minutes: widget.idleTimeoutMinutes));
           _isSystemIdlePaused = true;
           _animationController.stop();
           _pulseController.stop();
@@ -1885,64 +1887,7 @@ class TimerHomePageState extends State<TimerHomePage>
     }
   }
 
-  void _creditNaturalBreak() {
-    if (!mounted) return;
 
-    // Log the work done up to this point so user doesn't lose credit for it
-    final workDone = _initialDuration - _remainingSeconds;
-    if (workDone > 0) {
-      final now = DateTime.now();
-      widget.saveCompletedWorkSession(now, workDone);
-      widget.saveTimerEventRecord(
-        TimerEventRecord(
-          id: now.millisecondsSinceEpoch.toString(),
-          timestamp: now,
-          type: TimerEventType.workCompleted,
-          durationSeconds: workDone,
-          mood: _currentMood,
-        ),
-      );
-    }
-
-    setState(() {
-      _streakCount = _streakCount + 1;
-      _autoRunCompletedCycles++;
-      _isBreak = false;
-      _isSystemIdlePaused = false;
-      _isMediaPaused = false;
-      _isSchedulePaused = false;
-      _isPaused = false;
-      _isRunning = true;
-      _phaseOpacity = 1.0;
-      final effWork = _getEffectiveWorkDuration();
-      _initialDuration = effWork;
-      _remainingSeconds = effWork;
-      _animationController.duration = Duration(seconds: effWork);
-      _animationController.reset();
-      _phaseStartedAt = DateTime.now();
-      _phaseEndsAt = _phaseStartedAt!.add(
-        Duration(seconds: effWork),
-      );
-    });
-
-    _onStreakIncremented(_streakCount);
-    widget.saveStreakCount(_streakCount);
-
-    _animationController.forward(from: 0.0);
-    _saveActiveSession(remainingSeconds: _initialDuration);
-    _schedulePhaseDeadlineTimer(_phaseEndsAt!);
-    unawaited(_schedulePhaseReminder(_initialDuration, isBreak: false));
-    _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: false);
-    _updateDesktopState();
-
-    _showTimerSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.timerNaturalBreakCredited),
-        margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
 
   // -------------------- Timer Logic --------------------
   void _startTimer(int duration, {bool isBreak = false}) {

@@ -1155,6 +1155,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     unawaited(_preferencesService.saveSmartIdleEnabled(enabled));
   }
 
+  void _setIdleTimeoutMinutes(int minutes) {
+    setState(() {
+      _settings = _settings.copyWith(idleTimeoutMinutes: minutes);
+    });
+    unawaited(_preferencesService.saveIdleTimeoutMinutes(minutes));
+  }
+
   void _setBreakVisualizerStyle(String style) {
     setState(() {
       _settings = _settings.copyWith(breakVisualizerStyle: style);
@@ -1396,6 +1403,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           setMaxConsecutivePostpones: _setMaxConsecutivePostpones,
           postponeDurationSeconds: _settings.postponeDurationSeconds,
           smartIdleEnabled: _settings.smartIdleEnabled,
+          idleTimeoutMinutes: _settings.idleTimeoutMinutes,
           breakVisualizerStyle: _settings.breakVisualizerStyle,
           breakShowClock: _settings.breakShowClock,
           breakShowTips: _settings.breakShowTips,
@@ -1405,6 +1413,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           setAllowPostpone: _setAllowPostpone,
           setPostponeDurationSeconds: _setPostponeDurationSeconds,
           setSmartIdleEnabled: _setSmartIdleEnabled,
+          setIdleTimeoutMinutes: _setIdleTimeoutMinutes,
           setBreakVisualizerStyle: _setBreakVisualizerStyle,
           setBreakShowClock: _setBreakShowClock,
           setBreakShowTips: _setBreakShowTips,
@@ -1727,6 +1736,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
                   animationSpeed: _settings.animationSpeed,
                   reducedMotionEnabled: _settings.reducedMotionEnabled,
                   smartIdleEnabled: _settings.smartIdleEnabled,
+                  idleTimeoutMinutes: _settings.idleTimeoutMinutes,
                   breakVisualizerStyle: _settings.breakVisualizerStyle,
                   breakShowClock: _settings.breakShowClock,
                   breakShowTips: _settings.breakShowTips,

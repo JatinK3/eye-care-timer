@@ -34,6 +34,7 @@ class PreferencesService {
   static const String allowPostponeKey = 'allowPostpone';
   static const String postponeDurationSecondsKey = 'postponeDurationSeconds';
   static const String smartIdleEnabledKey = 'smartIdleEnabled';
+  static const String idleTimeoutMinutesKey = 'idleTimeoutMinutes';
   static const String breakVisualizerStyleKey = 'breakVisualizerStyle';
   static const String breakShowClockKey = 'breakShowClock';
   static const String breakShowTipsKey = 'breakShowTips';
@@ -161,6 +162,8 @@ class PreferencesService {
       smartIdleEnabled:
           prefs.getBool(smartIdleEnabledKey) ??
           TimerSettings.defaultSmartIdleEnabled,
+      idleTimeoutMinutes:
+          prefs.getInt(idleTimeoutMinutesKey) ?? 2,
       breakVisualizerStyle:
           prefs.getString(breakVisualizerStyleKey) ??
           TimerSettings.defaultBreakVisualizerStyle,
@@ -462,6 +465,7 @@ class PreferencesService {
       smartIdleEnabledKey,
       TimerSettings.defaultSmartIdleEnabled,
     );
+    await prefs.setInt(idleTimeoutMinutesKey, 2);
     await prefs.setString(
       breakVisualizerStyleKey,
       TimerSettings.defaultBreakVisualizerStyle,
@@ -619,6 +623,7 @@ class PreferencesService {
       settings.postponeDurationSeconds,
     );
     await prefs.setBool(smartIdleEnabledKey, settings.smartIdleEnabled);
+    await prefs.setInt(idleTimeoutMinutesKey, settings.idleTimeoutMinutes);
     await prefs.setString(
       breakVisualizerStyleKey,
       settings.breakVisualizerStyle,
@@ -1051,6 +1056,11 @@ class PreferencesService {
   Future<void> saveSmartIdleEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(smartIdleEnabledKey, enabled);
+  }
+
+  Future<void> saveIdleTimeoutMinutes(int minutes) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(idleTimeoutMinutesKey, minutes);
   }
 
   Future<void> saveBreakVisualizerStyle(String style) async {

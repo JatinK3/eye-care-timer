@@ -90,6 +90,7 @@ class TimerSettings {
   final bool allowPostpone;
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
+  final int idleTimeoutMinutes;
   final String breakVisualizerStyle;
   final bool breakShowClock;
   final bool breakShowTips;
@@ -163,6 +164,7 @@ class TimerSettings {
     required this.allowPostpone,
     required this.postponeDurationSeconds,
     required this.smartIdleEnabled,
+    required this.idleTimeoutMinutes,
     required this.breakVisualizerStyle,
     required this.breakShowClock,
     required this.breakShowTips,
@@ -237,6 +239,7 @@ class TimerSettings {
       allowPostpone = defaultAllowPostpone,
       postponeDurationSeconds = defaultPostponeDurationSeconds,
       smartIdleEnabled = defaultSmartIdleEnabled,
+      idleTimeoutMinutes = 2,
       breakVisualizerStyle = defaultBreakVisualizerStyle,
       breakShowClock = defaultBreakShowClock,
       breakShowTips = defaultBreakShowTips,
@@ -310,6 +313,7 @@ class TimerSettings {
     bool? allowPostpone,
     int? postponeDurationSeconds,
     bool? smartIdleEnabled,
+    int? idleTimeoutMinutes,
     String? breakVisualizerStyle,
     bool? breakShowClock,
     bool? breakShowTips,
@@ -385,6 +389,7 @@ class TimerSettings {
       postponeDurationSeconds:
           postponeDurationSeconds ?? this.postponeDurationSeconds,
       smartIdleEnabled: smartIdleEnabled ?? this.smartIdleEnabled,
+      idleTimeoutMinutes: idleTimeoutMinutes ?? this.idleTimeoutMinutes,
       breakVisualizerStyle: breakVisualizerStyle ?? this.breakVisualizerStyle,
       breakShowClock: breakShowClock ?? this.breakShowClock,
       breakShowTips: breakShowTips ?? this.breakShowTips,
@@ -478,6 +483,7 @@ class TimerSettings {
       'allowPostpone': allowPostpone,
       'postponeDurationSeconds': postponeDurationSeconds,
       'smartIdleEnabled': smartIdleEnabled,
+      'idleTimeoutMinutes': idleTimeoutMinutes,
       'breakVisualizerStyle': breakVisualizerStyle,
       'breakShowClock': breakShowClock,
       'breakShowTips': breakShowTips,
@@ -565,6 +571,8 @@ class TimerSettings {
           defaultPostponeDurationSeconds,
       smartIdleEnabled:
           json['smartIdleEnabled'] as bool? ?? defaultSmartIdleEnabled,
+      idleTimeoutMinutes:
+          json['idleTimeoutMinutes'] as int? ?? 2,
       breakVisualizerStyle:
           json['breakVisualizerStyle'] as String? ??
           defaultBreakVisualizerStyle,

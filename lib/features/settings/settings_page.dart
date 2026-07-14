@@ -33,6 +33,7 @@ class SettingsPage extends StatefulWidget {
   final bool allowPostpone;
   final int postponeDurationSeconds;
   final bool smartIdleEnabled;
+  final int idleTimeoutMinutes;
   final String breakVisualizerStyle;
   final bool breakShowClock;
   final bool breakShowTips;
@@ -44,6 +45,7 @@ class SettingsPage extends StatefulWidget {
   final void Function(bool) setAllowPostpone;
   final void Function(int) setPostponeDurationSeconds;
   final void Function(bool) setSmartIdleEnabled;
+  final void Function(int) setIdleTimeoutMinutes;
   final void Function(String) setBreakVisualizerStyle;
   final void Function(bool) setBreakShowClock;
   final void Function(bool) setBreakShowTips;
@@ -218,6 +220,7 @@ class SettingsPage extends StatefulWidget {
     required this.setMaxConsecutivePostpones,
     required this.postponeDurationSeconds,
     required this.smartIdleEnabled,
+    required this.idleTimeoutMinutes,
     required this.breakVisualizerStyle,
     required this.breakShowClock,
     required this.breakShowTips,
@@ -227,6 +230,7 @@ class SettingsPage extends StatefulWidget {
     required this.setAllowPostpone,
     required this.setPostponeDurationSeconds,
     required this.setSmartIdleEnabled,
+    required this.setIdleTimeoutMinutes,
     required this.setBreakVisualizerStyle,
     required this.setBreakShowClock,
     required this.setBreakShowTips,
@@ -1482,13 +1486,37 @@ class _SettingsPageState extends State<SettingsPage>
           'dnd',
         ],
           category: 'Break Screen & Behavior',
-          widget: SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.psychology_outlined),
-            title: Text(l10n.settingsSmartPausePostpone),
-            subtitle: Text(l10n.settingsSmartPausePostponeSubtitle),
-            value: widget.smartIdleEnabled,
-            onChanged: widget.setSmartIdleEnabled,
+          widget: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.psychology_outlined),
+                title: Text(l10n.settingsSmartPausePostpone),
+                subtitle: Text(l10n.settingsSmartPausePostponeSubtitle),
+                value: widget.smartIdleEnabled,
+                onChanged: widget.setSmartIdleEnabled,
+              ),
+              if (widget.smartIdleEnabled) ...[
+                ListTile(
+                  contentPadding: const EdgeInsets.only(left: 56),
+                  title: const Text('Idle Timeout'),
+                  subtitle: const Text('How long to wait before declaring you idle.'),
+                  trailing: DropdownButton<int>(
+                    value: widget.idleTimeoutMinutes,
+                    onChanged: (val) {
+                      if (val != null) widget.setIdleTimeoutMinutes(val);
+                    },
+                    items: const [
+                      DropdownMenuItem(value: 2, child: Text('2 min')),
+                      DropdownMenuItem(value: 3, child: Text('3 min')),
+                      DropdownMenuItem(value: 5, child: Text('5 min')),
+                      DropdownMenuItem(value: 10, child: Text('10 min')),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
         SettingItem(
