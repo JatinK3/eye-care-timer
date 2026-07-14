@@ -526,6 +526,13 @@ class TimerHomePageState extends State<TimerHomePage>
   StreamSubscription<DesktopCommand>? _desktopCommandSubscription;
   StreamSubscription<bool>? _desktopIdleSubscription;
   StreamSubscription<bool>? _desktopLockSubscription;
+  /// Polling timer that uses org.gnome.Mutter.IdleMonitor.GetIdletime on
+  /// Wayland/GNOME as a reliable fallback for idle detection. The
+  /// system_idle package uses ext-idle-notify-v1, but on GNOME/Wayland the
+  /// Flutter animation loop continuously commits Wayland surfaces, which
+  /// prevents the seat from ever becoming idle per that protocol.
+  Timer? _mutterIdlePoller;
+  bool _mutterIdleState = false;
 
   AudioPlayer? _audioPlayer;
   AudioPlayer? _soundscapePlayer;
@@ -927,6 +934,8 @@ class TimerHomePageState extends State<TimerHomePage>
     _desktopIdleSubscription?.cancel();
     _desktopLockSubscription?.cancel();
     _desktopCommandSubscription?.cancel();
+    _mutterIdlePoller?.cancel();
+    _mutterIdlePoller = null;
     _desktopTrayTicker?.cancel();
     _educationTipTimer?.cancel();
     _scheduleCheckTimer?.cancel();
@@ -1093,10 +1102,58 @@ class TimerHomePageState extends State<TimerHomePage>
               .onIdleChanged(idleDuration: const Duration(seconds: 60))
               .listen((isIdle) {
                 if (!mounted) return;
+                // Only use the system_idle stream on non-Wayland sessions
+                // (e.g. X11). On Wayland the Mutter poller takes over.
+                final sessionType =
+                    Platform.environment['XDG_SESSION_TYPE'] ?? '';
+                if (sessionType.toLowerCase() == 'wayland') return;
                 handleDesktopIdleChange(isIdle, isLockEvent: false);
               });
         }
       }());
+
+      // On Wayland + GNOME, ext-idle-notify-v1 (used by system_idle) is
+      // reset by the app's own frame commits, so it never fires. Instead we
+      // poll org.gnome.Mutter.IdleMonitor.GetIdletime which reports true
+      // keyboard/pointer idle time, unaffected by rendering.
+      final sessionType = Platform.environment['XDG_SESSION_TYPE'] ?? '';
+      if (sessionType.toLowerCase() == 'wayland') {
+        const idleThresholdMs = 60 * 1000; // 60 s, same as system_idle
+        _mutterIdlePoller = Timer.periodic(
+          const Duration(seconds: 5),
+          (_) async {
+            if (!mounted || !widget.smartIdleEnabled) return;
+            if (!_isRunning || _isBreak) return;
+            try {
+              final result = await Process.run('gdbus', [
+                'call',
+                '--session',
+                '--dest',
+                'org.gnome.Mutter.IdleMonitor',
+                '--object-path',
+                '/org/gnome/Mutter/IdleMonitor/Core',
+                '--method',
+                'org.gnome.Mutter.IdleMonitor.GetIdletime',
+              ]);
+              if (!mounted) return;
+              if (result.exitCode != 0) return;
+              final stdout = result.stdout as String;
+              // gdbus returns "(uint64 1234,)" — parse the number
+              final match = RegExp(r'uint64\s+(\d+)').firstMatch(stdout);
+              if (match == null) return;
+              final idleMs = int.tryParse(match.group(1)!);
+              if (idleMs == null) return;
+              final isNowIdle = idleMs >= idleThresholdMs;
+              if (isNowIdle != _mutterIdleState) {
+                _mutterIdleState = isNowIdle;
+                handleDesktopIdleChange(isNowIdle, isLockEvent: false);
+              }
+            } catch (_) {
+              // gdbus not available or call failed — silently skip
+            }
+          },
+        );
+      }
     } catch (e, stackTrace) {
       unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       debugPrint('Failed to initialize desktop idle detection: $e');
@@ -2261,6 +2318,8 @@ class TimerHomePageState extends State<TimerHomePage>
     if (resetPulse) {
       _pulseController.reset();
     }
+    // Reset the Mutter idle state tracker so next run starts clean.
+    _mutterIdleState = false;
   }
   bool _isCheckingEndOfDay = false;
 
