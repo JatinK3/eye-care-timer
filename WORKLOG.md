@@ -197,11 +197,23 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 - [x] **Accessibility & performance audit** — screen-reader pass, reduced-motion option, colorblind-safe palettes; revisit the once-per-second tray PNG render cadence on desktop.
 
 ### P4 — Future AI-Driven Wellness Features
-- [ ] **Interactive AI Wellness & Ergonomics Coach:** A chat/companion interface during breaks. Uses the existing `AiService` to generate personalized 2-minute guided neck stretch routines or posture advice based on user prompts (e.g. "My neck hurts").
-- [x] **AI-Driven Smart-Break Schedule:** The app learns from user habits via `TimerEventRecord` history. It can dynamically adjust timer phases (e.g. suggesting a 45/5 Pomodoro schedule instead of 20-20-20) based on focus patterns, daily compliance, and fatigue feedback.
-- [ ] **AI Fatigue & Blink Detection (Local Privacy):** Since camera usage detection is already built, add an opt-in, privacy-first computer vision model (e.g. MediaPipe) using the front camera to detect blink rate and eye fatigue, triggering a "Micro-Blink Break" dynamically when needed.
-- [ ] **AI Voice-Guided Eye Exercises:** Generate soothing TTS (Text-to-Speech) audio guiding the user through eye-rolling exercises or a 4-7-8 breathing technique, much like a premium meditation app.
-- [ ] **AI Task Breakdown & Context:** The user types "I need to write a presentation", and the AI breaks it into optimal 20-minute chunks based on the Pomodoro technique, auto-scheduling the timer phases.
+
+#### Already implemented
+- [x] **AI LLM Settings & Custom Provider Config** — key-value config for Gemini/OpenAI/Groq, model selection, editable prompts.
+- [x] **Background Pre-Fetch AI Service** — lightweight HTTP client with background pre-fetch, timeout/retry, local fallback templates.
+- [x] **Dynamic AI Break Screen Messaging** — pre-fetched AI text injected into break overlay and in-app break card.
+- [x] **App Launch Splash Quote Animation** — 1.5-second startup splash with motivational AI quote.
+- [x] **AI-Driven Smart-Break Schedule** — analyzes compliance history to suggest tailored work/break ratios; one-tap adoption.
+- [x] **End-of-Day AI Summaries** — automated personalized recap at 5 PM (or end of configured hours) via notification.
+
+#### Planned / Open
+- [ ] **Interactive AI Wellness & Ergonomics Coach** — A chat panel that opens during breaks. The user types a prompt like "My neck hurts" or "I'm stressed" and the AI generates a personalized 2-minute guided stretch or breathing routine, rendered as a step-by-step card inside the break overlay. Uses the existing `AiService`; no new dependencies needed. Inject into `desktop_break_overlay.dart` and the in-app `BreakCard`. Priority: **HIGH** (on-brand, differentiating).
+- [ ] **AI Voice-Guided Eye Exercises** — TTS-narrated guided eye exercise sessions during breaks ("Now slowly roll your eyes clockwise…"). AI generates varied scripts per session (to avoid repetition), plays audio via the existing chime/audio pipeline (`just_audio` or `pw-play`/`paplay`). On Linux/macOS use a system TTS command (`espeak-ng`, `say`); on Android use `flutter_tts`. Priority: **MEDIUM** (premium feel, meditation-app quality).
+- [ ] **AI Fatigue Detection from Session Patterns** — Analyzes real-time break compliance rate, skip frequency, time-of-day, and session length. When the AI detects a fatigue pattern (e.g. 3 consecutive skips after 3 hours), it proactively suggests shortening the work phase or scheduling an extra long break. Displayed as a non-intrusive suggestion card on the home screen. Reuses `AiService`; no camera required. Priority: **MEDIUM**.
+- [ ] **AI Focus Mood Tagging** — One-tap mood check-in widget before each work session ('Deep Focus / Tired / Distracted / Creative'). The AI uses this tag plus break history to personalize the smart schedule suggestion and provide context to the end-of-day summary. Persisted alongside `TimerEventRecord`. Priority: **MEDIUM** (adds context richness to all other AI features).
+- [ ] **AI-Powered Work Task Planner** — The user types their task before starting ("Write a presentation for 2h"). The AI breaks it into optimal timed work chunks, auto-sets the cycle count and work/break cadence, and shows a mini task roadmap on the home screen. Acts as a lightweight AI Pomodoro planner. Priority: **MEDIUM-LOW** (complex UX surface; build after the Coach).
+- [ ] **AI Fatigue & Blink Detection (Local Privacy)** — Opt-in, privacy-first computer vision (e.g. MediaPipe) using the front camera to detect blink rate and eye fatigue, triggering a "Micro-Blink Break" dynamically when needed. High complexity; camera permission already wired. Priority: **LOW** (long-term, post-distribution).
+- [ ] **AI Task Breakdown & Context (Deep Integration)** — Extended version of the Task Planner: the user types "I need to write a presentation", and the AI not only schedules the session but also crafts break-screen messages themed to the active task for motivation and context continuity. Priority: **LOW**.
 
 ### Quick wins (low effort, near-term)
 - [x] Promote "Take a break now" and a "Snooze for…" action to the main home screen (currently tray-only).
