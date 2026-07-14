@@ -265,6 +265,16 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 
 ## Session Log
 
+### 2026-07-14 (IST)
+
+**Completed this session:**
+- **Fixed stale session restoration on next-day startup**: Added a `savedAt` timestamp field to `TimerSession` (serialised in `PreferencesService`) so that even when the timer is paused (and `phaseEndsAt` is null), the restore path in `_restoreInitialSession` can detect sessions from a previous calendar day and discard them. Before this fix, a paused session closed on Day N would be silently restored on Day N+1 with the timer still paused, requiring a manual user action. Now it auto-discards stale sessions and auto-starts the schedule if `autoStartSchedule` is enabled.
+- **Fixed broken smart idle detection on Wayland/GNOME**: Diagnosed and patched the root cause of idle detection never triggering on GNOME + Wayland. The `system_idle` package relies on `ext-idle-notify-v1`, but GNOME Mutter resets that protocol's idle counter every time the Flutter app commits a Wayland surface frame — which happens ~60 fps while the countdown animation is running, so the 60-second threshold was **never** reached. Replaced with a 5-second polling loop that calls `org.gnome.Mutter.IdleMonitor.GetIdletime` via `gdbus`. Mutter's IdleMonitor tracks true keyboard/pointer inactivity independent of rendering, so idle is now correctly detected after 60 s of user inactivity. The existing `system_idle` stream is preserved for X11 sessions. The Mutter poller is started in `_initDesktopIdleDetection`, cancelled in `dispose`, and its state is reset in `_stopTimerCleanup`.
+
+**Commits this session:**
+- `fix: add savedAt to TimerSession for cross-day stale detection`
+- `fix: replace broken Wayland idle detection with Mutter DBus poller`
+
 ### 2026-07-10 (Session ongoing — IST)
 
 **Completed this session:**
