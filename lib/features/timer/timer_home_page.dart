@@ -294,6 +294,8 @@ class TimerHomePageState extends State<TimerHomePage>
   String? _aiScheduleError;
   final TextEditingController _taskContextController = TextEditingController();
 
+  FocusMood? _currentMood;
+
   bool _lastDndState = false;
 
   int? _postponedBreakDuration;
@@ -1886,6 +1888,7 @@ class TimerHomePageState extends State<TimerHomePage>
           timestamp: now,
           type: TimerEventType.workCompleted,
           durationSeconds: workDone,
+          mood: _currentMood,
         ),
       );
     }
@@ -2633,6 +2636,7 @@ class TimerHomePageState extends State<TimerHomePage>
             timestamp: completedPhaseAt,
             type: TimerEventType.workCompleted,
             durationSeconds: _initialDuration,
+            mood: _currentMood,
           ),
         );
       }
@@ -3061,6 +3065,7 @@ class TimerHomePageState extends State<TimerHomePage>
           timestamp: completedPhaseAt,
           type: TimerEventType.workCompleted,
           durationSeconds: _initialDuration,
+          mood: _currentMood,
         ),
       );
     }
@@ -3858,6 +3863,49 @@ class TimerHomePageState extends State<TimerHomePage>
               ),
               Icon(Icons.volume_up, size: 16, color: theme.iconTheme.color?.withValues(alpha: 0.7)),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMoodSelector(ThemeData theme, bool isDark, Color accentColor) {
+    if (_isRunning) return const SizedBox.shrink();
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24.0),
+      child: Column(
+        children: [
+          Text(
+            'How are you feeling?',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: isDark ? Colors.white70 : Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: FocusMood.values.map((mood) {
+              final isSelected = _currentMood == mood;
+              return ChoiceChip(
+                label: Text('${mood.emoji} ${mood.displayName}'),
+                selected: isSelected,
+                selectedColor: accentColor.withValues(alpha: 0.2),
+                checkmarkColor: accentColor,
+                labelStyle: theme.textTheme.bodySmall?.copyWith(
+                  color: isSelected ? accentColor : (isDark ? Colors.white70 : Colors.black87),
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+                backgroundColor: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                onSelected: (selected) {
+                  setState(() {
+                    _currentMood = selected ? mood : null;
+                  });
+                },
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -4749,6 +4797,8 @@ class TimerHomePageState extends State<TimerHomePage>
                                                 ),
                                                 const SizedBox(height: 12),
                                               ],
+                                              if (!_isFocusMode && !_isRunning)
+                                                _buildMoodSelector(Theme.of(context), isDark, progressColor),
                                               actionButtons,
                                               const SizedBox(height: 12),
                                               if (!_isFocusMode) ...[
@@ -4992,6 +5042,8 @@ class TimerHomePageState extends State<TimerHomePage>
                                       ],
                                     ],
                                     const SizedBox(height: 20),
+                                    if (!_isFocusMode && !_isRunning)
+                                      _buildMoodSelector(Theme.of(context), isDark, progressColor),
                                     actionButtons,
                                     const SizedBox(height: 16),
                                     if (!_isFocusMode) ...[

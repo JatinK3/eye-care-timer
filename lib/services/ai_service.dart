@@ -110,6 +110,7 @@ class AiService {
     required String model,
     required String prompt,
     double temperature = 0.3,
+    int maxTokens = 150,
   }) async {
     if (apiKey.isEmpty) {
       throw ArgumentError('API Key cannot be empty');
@@ -171,7 +172,7 @@ class AiService {
             {'role': 'user', 'content': prompt}
           ],
           'temperature': temperature,
-          'max_tokens': 100,
+          'max_tokens': maxTokens,
         }),
       ).timeout(const Duration(seconds: 10));
 
@@ -211,6 +212,27 @@ class AiService {
       model: model,
       prompt: prompt,
       temperature: 0.15,
+    );
+  }
+
+  Future<String> generateWellnessCoachAdvice({
+    required String provider,
+    required String apiKey,
+    required String model,
+    required String query,
+  }) async {
+    final prompt = 'You are an expert ergonomic and wellness coach for desk workers. '
+        'The user says: "$query". '
+        'Provide a very brief (max 3 short steps) stretching or wellness routine they can do '
+        'right now at their desk. Keep it encouraging and direct. '
+        'Do not use markdown. Output only the routine.';
+    return generateMotivation(
+      provider: provider,
+      apiKey: apiKey,
+      model: model,
+      prompt: prompt,
+      temperature: 0.3,
+      maxTokens: 250,
     );
   }
 

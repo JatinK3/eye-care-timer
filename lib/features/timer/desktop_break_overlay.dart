@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/timer_settings.dart';
 import '../../services/desktop_controls_controller.dart';
 import '../../services/desktop_integration_service.dart';
+import '../../services/ai_service.dart';
+import '../../services/preferences_service.dart';
 import 'break_guides.dart';
 import 'eye_health_tips.dart';
 
@@ -60,6 +63,11 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   );
   bool _isSpacePressed = false;
   bool _wasRunningBeforePreview = false;
+  
+  bool _isWellnessCoachLoading = false;
+  String? _wellnessCoachResponse;
+  String? _wellnessCoachError;
+  final TextEditingController _wellnessCoachController = TextEditingController();
 
   @override
   void initState() {
@@ -125,6 +133,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     if (widget.isPreview && _wasRunningBeforePreview) {
       DesktopControlsController.instance.triggerCommand(DesktopCommand.resume);
     }
+    _wellnessCoachController.dispose();
     super.dispose();
   }
 
@@ -267,6 +276,150 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     );
   }
 
+  Future<void> _submitWellnessCoach() async {
+    final query = _wellnessCoachController.text.trim();
+    if (query.isEmpty) return;
+    
+    setState(() {
+      _isWellnessCoachLoading = true;
+      _wellnessCoachError = null;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final aiProvider = prefs.getString(PreferencesService.aiProviderKey) ?? TimerSettings.defaultAiProvider;
+      final aiApiKey = prefs.getString(PreferencesService.aiApiKeyKey) ?? '';
+      final aiModel = prefs.getString(PreferencesService.aiModelKey) ?? TimerSettings.defaultAiModel;
+      
+      if (aiApiKey.isEmpty) {
+        throw Exception('AI API key is missing. Please configure it in settings.');
+      }
+
+      final response = await AiService.instance.generateWellnessCoachAdvice(
+        provider: aiProvider,
+        apiKey: aiApiKey,
+        model: aiModel,
+        query: query,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _wellnessCoachResponse = response;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _wellnessCoachError = e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isWellnessCoachLoading = false;
+        });
+      }
+    }
+  }
+
+  Widget _buildWellnessCoach(BuildContext context) {
+    if (_isWellnessCoachLoading) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 16),
+        child: CircularProgressIndicator(color: Colors.cyanAccent),
+      );
+    }
+
+    if (_wellnessCoachResponse != null) {
+      return ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.black45,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.auto_awesome, color: Colors.cyanAccent, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Wellness Coach',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.cyanAccent),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _wellnessCoachResponse!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white, height: 1.5),
+              ),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _wellnessCoachResponse = null;
+                      _wellnessCoachController.clear();
+                    });
+                  },
+                  style: TextButton.styleFrom(foregroundColor: Colors.white54),
+                  child: const Text('Ask something else'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 400),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_wellnessCoachError != null) ...[
+            Text(_wellnessCoachError!, style: const TextStyle(color: Colors.redAccent)),
+            const SizedBox(height: 8),
+          ],
+          TextField(
+            controller: _wellnessCoachController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Any aches? (e.g., "My neck hurts")',
+              hintStyle: const TextStyle(color: Colors.white38),
+              prefixIcon: const Icon(Icons.healing, color: Colors.cyanAccent, size: 20),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.send, color: Colors.cyanAccent),
+                onPressed: _submitWellnessCoach,
+              ),
+              filled: true,
+              fillColor: Colors.black45,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide(color: Colors.cyanAccent.withValues(alpha: 0.3)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide(color: Colors.cyanAccent.withValues(alpha: 0.3)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: const BorderSide(color: Colors.cyanAccent),
+              ),
+            ),
+            onSubmitted: (_) => _submitWellnessCoach(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBreakCard(BuildContext context) {
     final style = widget.breakVisualizerStyle;
 
@@ -380,6 +533,10 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               ),
             ),
           ],
+
+          const SizedBox(height: 24),
+          _buildWellnessCoach(context),
+
           const SizedBox(height: 40),
           if (!showBreathingGuide && widget.showClock) ...[
             Text(
