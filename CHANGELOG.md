@@ -7,13 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-07-21
+
 ### Added
 - **Soundscapes & Binaural Beats:** Enjoy seamless, gapless loops of Brown Noise and Binaural Beats with a dedicated volume slider integrated directly into the dashboard.
 - **End-of-Day AI Summaries:** Receive an automated, AI-generated summary at the end of your workday (5 PM or end of configured hours) celebrating your focus cycles, breaks taken, and hydration levels.
+- **Break Coach Hold:** Asking the Wellness Coach now pauses the active break and keeps its response visible until the user explicitly selects `Close now`. Suggested prompts rotate during a break, and Enter submits the focused coach input without triggering break shortcuts.
+- **Automatic-Pause Override:** The home screen now exposes a session-scoped override for media, microphone/camera, idle, schedule, and auto-postpone behavior.
+- **Deferred Break Queue:** Skipped and postponed breaks retain their intended queued duration, including long breaks, across app and Android foreground-service recovery.
 
 ### Fixed
 - **Notification Overlap:** Fixed an issue where app notifications (SnackBars) overlapped the floating navigation bar. All non-critical notifications now consistently auto-hide in exactly 3 seconds without requiring manual dismissal.
 - **System Tray Sync:** Fixed the Linux system tray menu so that the "Mute" / "Unmute" audio options instantly synchronize with the app's internal state.
+- **Timer Recovery & Break Debt:** Hardened persisted-session recovery, prevented queued long breaks from being truncated by the seven-minute break-debt recovery cap, and corrected completed-break history reconciliation.
+- **Linux Lock Screen:** Locking the desktop now pauses work or break phases and silences phase, wellness, and water reminders regardless of Smart Idle settings. Locked time reduces break debt and can be credited as a natural break.
+- **Automatic-Pause Resume:** Fixed stale media probes so the timer resumes after microphone/camera activity ends when no other automatic pause is active.
 
 ## [1.3.1] - 2026-07-12
 

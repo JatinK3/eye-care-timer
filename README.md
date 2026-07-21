@@ -2,7 +2,7 @@
 
 A beautiful, highly customizable Flutter-based 20-20-20 eye break timer that helps developers and heavy computer users protect their vision. With automatic schedules, interactive PiP mini-mode, system Do-Not-Disturb awareness, streak tracking, intelligent auto-postpone, AI wellness reminders, and gorgeous theme presets, BlinkKind keeps your eyes fresh without interrupting your deep focus.
 
-**Latest release:** v1.3.0
+**Latest release:** v1.3.2
 
 ## ✨ Core Features
 - **The 20-20-20 Rule:** Automatically prompts you to take a 20-second break every 20 minutes to look 20 feet away.
@@ -11,6 +11,8 @@ A beautiful, highly customizable Flutter-based 20-20-20 eye break timer that hel
 - **Customizable Skip & Postpone Limits:** Avoid eye strain by configuring maximum limits for consecutive skips and postpones. Once the limit is reached, skipping or postponing is blocked, prompting you to take the eye break.
 - **System Do-Not-Disturb Awareness (Android & Linux GNOME):** Detects OS focus/DND state so break prompts and wellness nudges respect quiet hours.
 - **Smart Auto-Postpone (Linux & Android):** Detects active microphone or camera usage (e.g., during Zoom/Meet calls) and automatically postpones eye breaks so you aren't disturbed during meetings.
+- **Reliable Automatic Pauses:** Desktop locks always silence timers and reminders. Idle, media, call, and schedule pauses share one recovery path, with a session-scoped override when uninterrupted work is intentional.
+- **Break Continuity:** Coach conversations hold a break until you close them, while skipped or postponed long breaks remain queued instead of being replaced by a short break.
 - **Background Wellness Scheduling:** Keeps periodic hydration, posture, stretch, and blink nudges on cadence through native notification scheduling and Android foreground service integration.
 - **AI Wellness Coach & Smart Schedule:** Interactive, AI-generated micro-reminders and a fully dynamic focus/break schedule powered by Gemini, OpenAI, or Groq that adjusts automatically based on your current task context and fatigue. Also includes End-of-Day AI Summaries to recap your daily health metrics.
 - **Immersive Soundscapes:** Stay in the zone with seamless, gapless loops of focus audio like Brown Noise and Binaural Beats, complete with an independent dashboard volume slider.
