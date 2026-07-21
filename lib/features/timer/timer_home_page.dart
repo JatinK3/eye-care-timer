@@ -33,6 +33,7 @@ import 'break_guides.dart';
 import 'eye_health_tips.dart';
 import 'phase_schedule.dart';
 import '../insights/eye_strain_calculator.dart';
+import '../insights/fatigue_recommendation.dart';
 
 /// Home page with all timer logic and UI.
 class TimerHomePage extends StatefulWidget {
@@ -556,6 +557,9 @@ class TimerHomePageState extends State<TimerHomePage>
   int _consecutiveSkips = 0;
   int _consecutivePostpones = 0;
   int _breakDebtSeconds = 0;
+  String? _dismissedFatigueRecommendationId;
+  int? _nextFocusDurationOverrideSeconds;
+  int _activeFatigueRecoveryCreditSeconds = 0;
   static const int _maxDebtRecoveryBreakSeconds = 420;
   // Tip frozen at break start — stays the same for the whole break so the
   // message never changes mid-break and no extra LLM calls are triggered.
@@ -1399,7 +1403,7 @@ class TimerHomePageState extends State<TimerHomePage>
           durationSeconds: lockedSeconds,
         ),
       );
-      _startTimer(_getEffectiveWorkDuration());
+      _startTimer(_getEffectiveWorkDuration(), applyFatigueWorkOverride: true);
       _showTimerSnackBar(
         const SnackBar(
           content: Text('Screen lock counted as a natural break.'),
@@ -1419,7 +1423,10 @@ class TimerHomePageState extends State<TimerHomePage>
       if (widget.autoStartSchedule) {
         scheduleMicrotask(() {
           if (mounted && !_isRunning) {
-            _startTimer(_getEffectiveWorkDuration());
+            _startTimer(
+              _getEffectiveWorkDuration(),
+              applyFatigueWorkOverride: true,
+            );
             _checkSchedule();
           }
         });
@@ -1447,7 +1454,10 @@ class TimerHomePageState extends State<TimerHomePage>
         if (widget.autoStartSchedule) {
           scheduleMicrotask(() {
             if (mounted && !_isRunning) {
-              _startTimer(_getEffectiveWorkDuration());
+              _startTimer(
+                _getEffectiveWorkDuration(),
+                applyFatigueWorkOverride: true,
+              );
               _checkSchedule();
             }
           });
@@ -1585,6 +1595,9 @@ class TimerHomePageState extends State<TimerHomePage>
           _phaseEndsAt = null;
           _autoRunCompletedCycles = 0;
           _breakDebtSeconds = 0;
+          _dismissedFatigueRecommendationId = null;
+          _nextFocusDurationOverrideSeconds = null;
+          _activeFatigueRecoveryCreditSeconds = 0;
           final effWork = _getEffectiveWorkDuration();
           _initialDuration = effWork;
           _remainingSeconds = effWork;
@@ -2051,7 +2064,16 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   // -------------------- Timer Logic --------------------
-  void _startTimer(int duration, {bool isBreak = false}) {
+  void _startTimer(
+    int duration, {
+    bool isBreak = false,
+    bool applyFatigueWorkOverride = false,
+  }) {
+    if (!isBreak &&
+        applyFatigueWorkOverride &&
+        _nextFocusDurationOverrideSeconds != null) {
+      duration = math.min(duration, _nextFocusDurationOverrideSeconds!);
+    }
     _phaseTransitionTimer?.cancel();
     _phaseTransitionTimer = null;
     _lastBlinkReminderBucket = null;
@@ -2103,6 +2125,9 @@ class TimerHomePageState extends State<TimerHomePage>
       _screenLockStartedAt = null;
       _isMediaPaused = false;
       _isSchedulePaused = false;
+      if (!isBreak && applyFatigueWorkOverride) {
+        _nextFocusDurationOverrideSeconds = null;
+      }
       _isRunning = true;
       _isCancelled = false;
       _phaseOpacity = 1.0;
@@ -2148,7 +2173,7 @@ class TimerHomePageState extends State<TimerHomePage>
   void _startWorkTimer() {
     _autoRunCompletedCycles = 0;
     _automaticPauseOverride = false;
-    _startTimer(_getEffectiveWorkDuration());
+    _startTimer(_getEffectiveWorkDuration(), applyFatigueWorkOverride: true);
     _updateDesktopState();
   }
 
@@ -2395,6 +2420,7 @@ class TimerHomePageState extends State<TimerHomePage>
     );
     setState(() {
       _isBreak = false;
+      _activeFatigueRecoveryCreditSeconds = 0;
       _pendingBreak = PendingBreak(
         durationSeconds: _initialDuration,
         reason: PendingBreakReason.postponed,
@@ -2466,6 +2492,9 @@ class TimerHomePageState extends State<TimerHomePage>
       _phaseStartedAt = null;
       _phaseEndsAt = null;
       _autoRunCompletedCycles = 0;
+      _dismissedFatigueRecommendationId = null;
+      _nextFocusDurationOverrideSeconds = null;
+      _activeFatigueRecoveryCreditSeconds = 0;
       final effWork = _getEffectiveWorkDuration();
       _initialDuration = effWork;
       _remainingSeconds = effWork;
@@ -2714,15 +2743,24 @@ class TimerHomePageState extends State<TimerHomePage>
     );
     _pulseController.stop();
 
-    if (completedBreakPhase && !breakWasSkipped) {
-      widget.saveTimerEventRecord(
-        TimerEventRecord(
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
-          timestamp: DateTime.now(),
-          type: TimerEventType.breakCompleted,
-          durationSeconds: _initialDuration,
-        ),
-      );
+    if (completedBreakPhase) {
+      if (!breakWasSkipped && _activeFatigueRecoveryCreditSeconds > 0) {
+        _breakDebtSeconds = math.max(
+          0,
+          _breakDebtSeconds - _activeFatigueRecoveryCreditSeconds,
+        );
+      }
+      _activeFatigueRecoveryCreditSeconds = 0;
+      if (!breakWasSkipped) {
+        widget.saveTimerEventRecord(
+          TimerEventRecord(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            timestamp: DateTime.now(),
+            type: TimerEventType.breakCompleted,
+            durationSeconds: _initialDuration,
+          ),
+        );
+      }
     }
 
     setState(() => _phaseOpacity = 0.0);
@@ -2776,7 +2814,10 @@ class TimerHomePageState extends State<TimerHomePage>
         _consecutiveSkips = 0;
         _consecutivePostpones = 0;
         if (_shouldContinueAutoRun()) {
-          _startTimer(_getEffectiveWorkDuration());
+          _startTimer(
+            _getEffectiveWorkDuration(),
+            applyFatigueWorkOverride: true,
+          );
           return;
         }
 
@@ -2789,6 +2830,8 @@ class TimerHomePageState extends State<TimerHomePage>
           _phaseStartedAt = null;
           _phaseEndsAt = null;
           _autoRunCompletedCycles = 0;
+          _dismissedFatigueRecommendationId = null;
+          _nextFocusDurationOverrideSeconds = null;
           final effWork = _getEffectiveWorkDuration();
           _initialDuration = effWork;
           _remainingSeconds = effWork;
@@ -3981,6 +4024,148 @@ class TimerHomePageState extends State<TimerHomePage>
     );
   }
 
+  FatigueRecommendation? get _fatigueRecommendation {
+    if (_isBreak) return null;
+    final settings = SettingsProvider.of(context);
+    final riskScore = EyeStrainCalculator.calculate(
+      todaysEvents: widget.todaysEvents,
+      breakDebtSeconds: _breakDebtSeconds,
+      waterGlassesToday: _waterGlassesToday,
+      dailyWaterGoal: settings.waterDailyGoalGlasses,
+    );
+    final recommendation = FatigueRecommendationEngine.evaluate(
+      riskScore: riskScore,
+      todaysEvents: widget.todaysEvents,
+      breakDebtSeconds: _breakDebtSeconds,
+    );
+    if (recommendation?.id == _dismissedFatigueRecommendationId) {
+      return null;
+    }
+    return recommendation;
+  }
+
+  void _dismissFatigueRecommendation(FatigueRecommendation recommendation) {
+    setState(() {
+      _dismissedFatigueRecommendationId = recommendation.id;
+    });
+  }
+
+  void _applyFatigueRecommendation(FatigueRecommendation recommendation) {
+    switch (recommendation.action) {
+      case FatigueRecommendationAction.recoveryBreak:
+        final recoverySeconds = math.max(
+          _breakDurationSeconds,
+          math.max(120, math.min(_breakDebtSeconds, 300)),
+        );
+        setState(() {
+          _dismissedFatigueRecommendationId = recommendation.id;
+          _activeFatigueRecoveryCreditSeconds = math.min(
+            _breakDebtSeconds,
+            recoverySeconds,
+          );
+        });
+        _startTimer(recoverySeconds, isBreak: true);
+        return;
+      case FatigueRecommendationAction.shortenNextFocus:
+        final nextDuration = math.max(
+          1,
+          (_getEffectiveWorkDuration() * 0.75).round(),
+        );
+        setState(() {
+          _nextFocusDurationOverrideSeconds = nextDuration;
+          _dismissedFatigueRecommendationId = recommendation.id;
+        });
+        _showTimerSnackBar(
+          SnackBar(
+            content: Text(
+              'Your next focus block will be ${_durationLabel(nextDuration)}.',
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+    }
+  }
+
+  Widget _buildFatigueRecommendationCard(ThemeData theme) {
+    final recommendation = _fatigueRecommendation;
+    if (recommendation == null) return const SizedBox.shrink();
+
+    final canAct =
+        !_isSchedulePaused && !_isSnoozed && !_isScreenLocked && !_isPaused;
+    final isRecovery =
+        recommendation.action == FatigueRecommendationAction.recoveryBreak;
+    final accentColor = isRecovery ? Colors.deepOrange : Colors.amber.shade800;
+    final actionLabel = isRecovery
+        ? 'Take recovery break'
+        : 'Shorten next focus';
+    final actionIcon = isRecovery
+        ? Icons.self_improvement_outlined
+        : Icons.timelapse_outlined;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: accentColor.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.psychology_alt_outlined, color: accentColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  recommendation.title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            recommendation.detail,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.76),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              TextButton(
+                onPressed: () => _dismissFatigueRecommendation(recommendation),
+                child: const Text('Dismiss for session'),
+              ),
+              FilledButton.icon(
+                onPressed: canAct
+                    ? () => _applyFatigueRecommendation(recommendation)
+                    : null,
+                icon: Icon(actionIcon, size: 18),
+                label: Text(actionLabel),
+                style: FilledButton.styleFrom(
+                  backgroundColor: accentColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHomeQuickActions(
     ThemeData theme,
     bool isDark,
@@ -5146,6 +5331,16 @@ class TimerHomePageState extends State<TimerHomePage>
                                                         Theme.of(context),
                                                       ),
                                                 ),
+                                                if (_fatigueRecommendation !=
+                                                    null) ...[
+                                                  const SizedBox(height: 12),
+                                                  _ParallaxCard(
+                                                    child:
+                                                        _buildFatigueRecommendationCard(
+                                                          Theme.of(context),
+                                                        ),
+                                                  ),
+                                                ],
                                                 const SizedBox(height: 12),
                                                 _ParallaxCard(
                                                   child: _buildHomeQuickActions(
@@ -5403,6 +5598,15 @@ class TimerHomePageState extends State<TimerHomePage>
                                           Theme.of(context),
                                         ),
                                       ),
+                                      if (_fatigueRecommendation != null) ...[
+                                        const SizedBox(height: 12),
+                                        _ParallaxCard(
+                                          child:
+                                              _buildFatigueRecommendationCard(
+                                                Theme.of(context),
+                                              ),
+                                        ),
+                                      ],
                                       const SizedBox(height: 12),
                                       _ParallaxCard(
                                         child: _buildHomeQuickActions(

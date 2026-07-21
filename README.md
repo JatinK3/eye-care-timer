@@ -15,6 +15,7 @@ A beautiful, highly customizable Flutter-based 20-20-20 eye break timer that hel
 - **Break Continuity:** Coach conversations hold a break until you close them, while skipped or postponed long breaks remain queued instead of being replaced by a short break.
 - **Background Wellness Scheduling:** Keeps periodic hydration, posture, stretch, and blink nudges on cadence through native notification scheduling and Android foreground service integration.
 - **AI Wellness Coach & Smart Schedule:** Interactive, AI-generated micro-reminders and a fully dynamic focus/break schedule powered by Gemini, OpenAI, or Groq that adjusts automatically based on your current task context and fatigue. Also includes End-of-Day AI Summaries to recap your daily health metrics.
+- **Proactive Fatigue Recommendations:** Uses local break debt, eye-strain risk, and break-compliance signals to suggest a recovery break or a shorter next focus block, without relying on an AI decision or network access.
 - **Immersive Soundscapes:** Stay in the zone with seamless, gapless loops of focus audio like Brown Noise and Binaural Beats, complete with an independent dashboard volume slider.
 - **Sleek, Distraction-Free UI:** Built with Material 3, frosted glassmorphism, dynamic gradients, smooth fluid mesh backgrounds, and a pulsing eye mascot.
 - **Accessibility / Reduced Motion:** Optional support for disabling animations and full-screen color flashes for motion-sensitive users.

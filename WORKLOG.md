@@ -16,6 +16,7 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 ### Current Reliability Work (2026-07-21)
 - [x] **Linux lock-screen pause and natural-rest credit**: Desktop lock events now bypass Smart Idle and its override, immediately pause the active work or break phase, cancel phase/wellness/water reminders, stop the native background phase, and silence desktop state while locked. On unlock, the elapsed locked time reduces break debt; with Natural Break Credit enabled, a lock lasting at least the next queued break duration is recorded as `naturalBreakCredited` and starts a fresh work phase. History and weekly reporting include this event as a completed break. Widget coverage verifies the reminder cancellation and credit path.
+- [x] **Proactive fatigue recommendations**: Added a local, deterministic recommendation engine that combines Eye Strain Risk, break debt, and skip/postpone history. It offers one non-blocking action at a time: a recovery break (with debt credit only after completion) or a one-time 25% shorter next focus block. Dismissal remains session-scoped. Added unit and widget coverage.
 
 ### Prioritized Backlog
 1. [x] **Break Warning, Fade-to-Black & Postpone Policy**: Implement a pre-break warning notification/overlay, a smooth fade-to-black transition before the break starts, and a configurable skip/postpone settings policy in Flutter and Android.

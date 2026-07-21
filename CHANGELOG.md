@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Proactive Fatigue Recommendations:** BlinkKind now evaluates break debt, Eye Strain Risk, and skipped/postponed breaks locally to offer one quiet intervention at a time: a recovery break for severe fatigue or a 25% shorter next focus block for repeated deferrals. Recommendations can be dismissed for the active session.
+
 ### Fixed
 - **Desktop Chime Picker Scrollbar:** Removed the automatic desktop scrollbar from the compact horizontal chime-card picker while keeping drag and trackpad scrolling available.
 

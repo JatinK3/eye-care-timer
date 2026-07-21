@@ -1546,6 +1546,42 @@ void main() {
     expect(find.text('Pause'), findsOneWidget);
   });
 
+  testWidgets('fatigue recommendation shortens the next focus block', (
+    WidgetTester tester,
+  ) async {
+    final now = DateTime.now();
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.timerEventsHistoryKey: jsonEncode([
+        TimerEventRecord(
+          id: 'skip-one',
+          timestamp: now,
+          type: TimerEventType.breakSkipped,
+          durationSeconds: 20,
+        ).toJson(),
+        TimerEventRecord(
+          id: 'skip-two',
+          timestamp: now.subtract(const Duration(minutes: 1)),
+          type: TimerEventType.breakSkipped,
+          durationSeconds: 20,
+        ).toJson(),
+      ]),
+    });
+    await pumpBlinkKindApp(tester);
+
+    expect(find.text('Shorten the next focus block'), findsOneWidget);
+    final shortenFinder = find.text('Shorten next focus');
+    await tester.ensureVisible(shortenFinder);
+    await tester.tap(shortenFinder);
+    await tester.pump();
+
+    final startFinder = find.text('Start');
+    await tester.ensureVisible(startFinder);
+    await tester.tap(startFinder);
+    await tester.pump();
+    expect(find.text('15:00'), findsOneWidget);
+  });
+
   testWidgets(
     'desktop lock pauses all reminders and credits a qualifying natural break',
     (WidgetTester tester) async {
