@@ -2468,35 +2468,40 @@ class _SettingsPageState extends State<SettingsPage>
               const SizedBox(height: 8),
               SizedBox(
                 height: 84,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  children: [
-                    _buildChimeCard(
-                      style: 'tibetan_bowl',
-                      name: l10n.settingsChimeTibetanBowl,
-                      icon: Icons.brightness_low_outlined,
-                      l10n: l10n,
-                    ),
-                    _buildChimeCard(
-                      style: 'wind_chimes',
-                      name: l10n.settingsChimeWindChimes,
-                      icon: Icons.air_outlined,
-                      l10n: l10n,
-                    ),
-                    _buildChimeCard(
-                      style: 'zen_bell',
-                      name: l10n.settingsChimeZenBell,
-                      icon: Icons.notifications_active_outlined,
-                      l10n: l10n,
-                    ),
-                    _buildChimeCard(
-                      style: 'system_alert',
-                      name: l10n.settingsChimeSystemAlert,
-                      icon: Icons.volume_up_outlined,
-                      l10n: l10n,
-                    ),
-                  ],
+                child: ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(
+                    context,
+                  ).copyWith(scrollbars: false),
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    children: [
+                      _buildChimeCard(
+                        style: 'tibetan_bowl',
+                        name: l10n.settingsChimeTibetanBowl,
+                        icon: Icons.brightness_low_outlined,
+                        l10n: l10n,
+                      ),
+                      _buildChimeCard(
+                        style: 'wind_chimes',
+                        name: l10n.settingsChimeWindChimes,
+                        icon: Icons.air_outlined,
+                        l10n: l10n,
+                      ),
+                      _buildChimeCard(
+                        style: 'zen_bell',
+                        name: l10n.settingsChimeZenBell,
+                        icon: Icons.notifications_active_outlined,
+                        l10n: l10n,
+                      ),
+                      _buildChimeCard(
+                        style: 'system_alert',
+                        name: l10n.settingsChimeSystemAlert,
+                        icon: Icons.volume_up_outlined,
+                        l10n: l10n,
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

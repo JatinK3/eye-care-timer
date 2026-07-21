@@ -302,6 +302,7 @@ This is the current priority. The recent Coach, automatic-pause, and deferred-lo
 ### 2026-07-21 (IST)
 
 **Completed this session:**
+- **Desktop chime picker scrollbar:** Disabled Flutter's automatic desktop scrollbar for the compact horizontal sound-card carousel, retaining direct drag and trackpad scrolling without a scrollbar overlapping the cards.
 - **Wellness Coach break hold:** Submitting a typed or suggested coach question now pauses the active desktop break before the request is made, preserving the response until the user selects `Close now`. Closing completes the held break without recording a skip or adding break debt. Coach suggestions now rotate through a larger prompt set every 12 seconds and after another question is requested.
 - **Coach keyboard safety:** Enter is scoped to the coach text field, submits the question, and no longer triggers the overlay-level skip shortcut.
 - **Unified automatic-pause recovery and override:** Media, microphone/camera, system-idle, and work-hours pauses now share a single resume path. Media probes discard stale asynchronous results so ending a call resumes reliably. The home screen shows an `Override automatic pauses` checkbox while automatically paused; it resumes the timer and suppresses media/call, idle, schedule, and camera/mic auto-postpone actions for the current session until unchecked or a new session begins.

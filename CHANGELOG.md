@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Desktop Chime Picker Scrollbar:** Removed the automatic desktop scrollbar from the compact horizontal chime-card picker while keeping drag and trackpad scrolling available.
+
 ## [1.3.2] - 2026-07-21
 
 ### Added
