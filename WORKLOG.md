@@ -236,7 +236,7 @@ This is the current priority. The recent Coach, automatic-pause, and deferred-lo
 
 #### P0 — Correctness and recoverability
 - [x] **Make the deferred-break queue a first-class, shared state model.** Replaced the paired legacy flags with a typed `PendingBreak` record (duration + reason), migrated saved Flutter and Android state, and applied the same cycle-attribution rule in live Flutter, `projectPhase`, and `TimerForegroundService`. A skipped long break now counts exactly one later work phase before delivery.
-- [x] **Resolve the configured-duration versus 420-second cap contradiction.** Removed the live-only seven-minute cap, so 10- and 15-minute configured long breaks retain their identity and duration across the queue. Added 900-second queue coverage.
+- [x] **Resolve the configured-duration versus 420-second cap contradiction.** The seven-minute ceiling now applies only to break-debt recovery. Configured 10- and 15-minute long breaks retain their identity and duration across the queue, while a standard break plus debt cannot exceed seven minutes and excess debt remains queued. Added 900-second queue and debt-cap coverage.
 - [x] **Record recovered and native break outcomes accurately.** Elapsed-time recovery now persists natural `breakCompleted` events, History/Weekly Report use those events for break-compliance counts, and Android skip emits only `breakSkipped` with the unserved remaining duration rather than also emitting a natural completion. Event-source metadata and collision-resistant native IDs remain P1 follow-up work.
 - [x] **Give the held Wellness Coach a failure-safe exit.** Loading and error states now retain an explicit `Close now` action that completes the held break; duplicate submissions are ignored and request timeouts present an actionable error.
 - [x] **Specify and test automatic-pause override lifecycle.** The override now persists with the active session, suppresses Android smart-idle while active, and immediately re-evaluates schedule, idle, and media conditions when disabled. It resets for a new/cancelled run and has regression coverage for immediate media re-pause.
@@ -309,7 +309,7 @@ This is the current priority. The recent Coach, automatic-pause, and deferred-lo
 - Replaced the deferred-break flag pair with a typed, migration-safe `PendingBreak` model across Flutter persistence, elapsed-time recovery, and the Android foreground-service channel. Queued 15-minute long breaks are no longer truncated to seven minutes, and native-to-Flutter reconciliation uses Android's actual current phase duration.
 - Recovery now writes natural break completion history; History and Weekly Report calculate compliance from actual completed breaks. Android no longer records a skipped break as both skipped and completed.
 - Coach loading/error states now provide `Close now`, while active-session automatic-pause overrides persist through restart and immediately re-evaluate when disabled.
-- Added scheduler, session, preference, widget, and history regression coverage. The Dart suite now passes 106 tests; native Kotlin compilation remains blocked only by the machine's missing JDK compiler (`javac`).
+- Added scheduler, session, preference, widget, and history regression coverage. The Dart suite now passes 107 tests; native Kotlin compilation remains blocked only by the machine's missing JDK compiler (`javac`).
 
 ### 2026-07-14 (IST)
 

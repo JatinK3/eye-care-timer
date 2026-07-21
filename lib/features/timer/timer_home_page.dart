@@ -553,6 +553,7 @@ class TimerHomePageState extends State<TimerHomePage>
   int _consecutiveSkips = 0;
   int _consecutivePostpones = 0;
   int _breakDebtSeconds = 0;
+  static const int _maxDebtRecoveryBreakSeconds = 420;
   // Tip frozen at break start — stays the same for the whole break so the
   // message never changes mid-break and no extra LLM calls are triggered.
   EyeHealthTip? _frozenBreakTip;
@@ -2694,10 +2695,7 @@ class TimerHomePageState extends State<TimerHomePage>
           _breakDurationForCompletedCycle(_streakCount + 1);
       final isPostponed = _pendingBreak?.isPostponed ?? false;
 
-      if (_breakDebtSeconds > 0) {
-        upcomingBreakDuration += _breakDebtSeconds;
-        _breakDebtSeconds = 0;
-      }
+      upcomingBreakDuration = _applyBreakDebt(upcomingBreakDuration);
 
       setState(() {
         _pendingBreak = null;
@@ -2736,6 +2734,24 @@ class TimerHomePageState extends State<TimerHomePage>
     if (isMilestone && newStreak > 0) {
       _triggerMilestoneCelebration();
     }
+  }
+
+  /// Debt can extend ordinary breaks up to seven minutes, but must never
+  /// truncate a deliberately configured long break or discard debt that does
+  /// not fit in the current recovery window.
+  int _applyBreakDebt(int baseDurationSeconds) {
+    if (_breakDebtSeconds <= 0) return baseDurationSeconds;
+
+    final availableRecoverySeconds = math.max(
+      0,
+      _maxDebtRecoveryBreakSeconds - baseDurationSeconds,
+    );
+    final appliedDebtSeconds = math.min(
+      _breakDebtSeconds,
+      availableRecoverySeconds,
+    );
+    _breakDebtSeconds -= appliedDebtSeconds;
+    return baseDurationSeconds + appliedDebtSeconds;
   }
 
   void _triggerMilestoneCelebration() {

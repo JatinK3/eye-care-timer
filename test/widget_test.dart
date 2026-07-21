@@ -1721,6 +1721,33 @@ void main() {
     expect(overlayService.breakOverlayDurations, [900, 900]);
   });
 
+  testWidgets('break debt extends standard breaks to seven minutes at most', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 1,
+      PreferencesService.breakDurationSecondsKey: 300,
+      PreferencesService.autoRunEnabledKey: true,
+      PreferencesService.autoRunCycleLimitKey: 3,
+    });
+    final overlayService = FakeBreakOverlayService();
+    await pumpBlinkKindApp(tester, breakOverlayService: overlayService);
+
+    await tester.tap(find.text('Start'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(overlayService.breakOverlayDurations, [300]);
+
+    await tester.tap(find.text('Skip'));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(overlayService.breakOverlayDurations, [300, 420]);
+  });
+
   testWidgets('postponing a break persists a TimerEventRecord', (tester) async {
     final now = DateTime.now();
     SharedPreferences.setMockInitialValues({
