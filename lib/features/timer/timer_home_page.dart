@@ -280,9 +280,12 @@ class TimerHomePageState extends State<TimerHomePage>
   bool _isBreak = false;
   late String _activeBreakVisualizerStyle;
   bool _isCancelled = false;
+  bool _isSkippingBreak = false;
   bool _isFocusMode = false;
   bool _isSystemIdlePaused = false;
   bool _isMediaPaused = false;
+  bool _automaticPauseOverride = false;
+  int _mediaCheckRequestId = 0;
   Timer? _mediaPollTimer;
   final SystemUiService _systemUiService = const SystemUiService();
 
@@ -305,6 +308,7 @@ class TimerHomePageState extends State<TimerHomePage>
   bool _lastDndState = false;
 
   int? _postponedBreakDuration;
+  bool _deferredBreakWasSkipped = false;
 
   static const Size _miniModeWindowSize = Size(168, 168);
 
@@ -578,6 +582,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _autoRunCycleLimit = widget.autoRunCycleLimit;
     _autoRunCompletedCycles = widget.initialSession.completedAutoRunCycles;
     _breakDebtSeconds = widget.initialSession.breakDebtSeconds;
+    _deferredBreakWasSkipped = widget.initialSession.deferredBreakWasSkipped;
     _streakCount = widget.initialStreakCount;
     _waterGlassesToday = widget.initialWaterGlassesToday;
     _currentDateKey = _todayKey();
@@ -711,6 +716,14 @@ class TimerHomePageState extends State<TimerHomePage>
                   _pauseOrResume();
                 }
               }
+              break;
+            case DesktopCommand.holdBreakForCoach:
+              if (_isRunning && _isBreak && !_isPaused) {
+                _pauseOrResume();
+              }
+              break;
+            case DesktopCommand.completeBreak:
+              _completeHeldBreak();
               break;
             case DesktopCommand.skipBreak:
               if (_isRunning && _isBreak) {
@@ -896,19 +909,8 @@ class TimerHomePageState extends State<TimerHomePage>
         if (_isMediaPaused) {
           setState(() {
             _isMediaPaused = false;
-            if (_isRunning && !_isPaused) {
-              _phaseStartedAt = DateTime.now();
-              _phaseEndsAt = _phaseStartedAt!.add(
-                Duration(seconds: _remainingSeconds),
-              );
-              _animationController.forward();
-              _schedulePhaseDeadlineTimer(_phaseEndsAt!);
-              _startBackgroundPhase(
-                phaseEndsAt: _phaseEndsAt!,
-                isBreak: _isBreak,
-              );
-            }
           });
+          _resumeAfterAutomaticPause();
           _updateDesktopState();
         }
       }
@@ -983,17 +985,27 @@ class TimerHomePageState extends State<TimerHomePage>
   /// On Linux uses `pactl list sink-inputs` to check for un-corked streams.
   Future<void> _checkMediaPlayback() async {
     if (!mounted || !_isRunning) return;
-    if (!widget.autoPauseOnMediaEnabled) return;
+    if (!widget.autoPauseOnMediaEnabled || _automaticPauseOverride) return;
 
     final overlayService = widget.breakOverlayService;
     if (overlayService == null) return;
 
+    final requestId = ++_mediaCheckRequestId;
     final isPlaying = await overlayService.isMediaPlaying(filter: widget.autoPauseMediaFilter);
     final isMicActive = await _isMicInUse();
     final isCamActive = await _isCameraInUse();
     final isMediaActive = isPlaying || isMicActive || isCamActive;
 
-    if (!mounted) return;
+    // A slow platform probe can finish after a later poll. Only the newest
+    // result may change timer state, otherwise a stale "mic active" result can
+    // leave the timer paused after the call has ended.
+    if (!mounted ||
+        requestId != _mediaCheckRequestId ||
+        !_isRunning ||
+        !widget.autoPauseOnMediaEnabled ||
+        _automaticPauseOverride) {
+      return;
+    }
 
     if (isMediaActive && !_isPaused && !_isMediaPaused && !_isSystemIdlePaused && !_isSchedulePaused) {
       // Media just started → auto-pause
@@ -1017,19 +1029,52 @@ class TimerHomePageState extends State<TimerHomePage>
       // Media stopped → auto-resume
       setState(() {
         _isMediaPaused = false;
-        _phaseStartedAt = DateTime.now();
-        _phaseEndsAt = _phaseStartedAt!.add(
-          Duration(seconds: _remainingSeconds),
-        );
-        if (!_isPaused && !_isSystemIdlePaused && !_isSchedulePaused) {
-          _animationController.forward();
-          _schedulePhaseDeadlineTimer(_phaseEndsAt!);
-          unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
-          _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
-          if (_remainingSeconds <= 5) _pulseController.forward();
-        }
-        _saveActiveSession();
       });
+      _resumeAfterAutomaticPause();
+    }
+  }
+
+  bool get _isAutomaticallyPaused =>
+      _isMediaPaused || _isSystemIdlePaused || _isSchedulePaused;
+
+  void _resumeAfterAutomaticPause() {
+    if (!_isRunning ||
+        _isPaused ||
+        _isMediaPaused ||
+        _isSystemIdlePaused ||
+        _isSchedulePaused) {
+      _updateDesktopState();
+      return;
+    }
+
+    setState(() {
+      _phaseStartedAt = DateTime.now();
+      _phaseEndsAt = _phaseStartedAt!.add(
+        Duration(seconds: _remainingSeconds),
+      );
+      _animationController.forward();
+      _saveActiveSession();
+    });
+    _schedulePhaseDeadlineTimer(_phaseEndsAt!);
+    unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
+    _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
+    if (_remainingSeconds <= 5) _pulseController.forward();
+    _updateDesktopState();
+  }
+
+  void _setAutomaticPauseOverride(bool enabled) {
+    setState(() {
+      _automaticPauseOverride = enabled;
+      if (enabled) {
+        _isMediaPaused = false;
+        _isSystemIdlePaused = false;
+        _isSchedulePaused = false;
+        _idleStartedAt = null;
+      }
+    });
+    if (enabled) {
+      _resumeAfterAutomaticPause();
+    } else {
       _updateDesktopState();
     }
   }
@@ -1183,7 +1228,7 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   void handleDesktopIdleChange(bool isIdle, {bool isLockEvent = false}) {
-    if (!widget.smartIdleEnabled) return;
+    if (!widget.smartIdleEnabled || _automaticPauseOverride) return;
     if (!_isRunning || _isBreak) return;
 
     if (isIdle) {
@@ -1225,22 +1270,8 @@ class TimerHomePageState extends State<TimerHomePage>
 
         setState(() {
           _isSystemIdlePaused = false;
-          _phaseStartedAt = DateTime.now();
-          _phaseEndsAt = _phaseStartedAt!.add(
-            Duration(seconds: _remainingSeconds),
-          );
-          if (!_isPaused && !_isMediaPaused && !_isSchedulePaused) {
-            _animationController.forward();
-            _schedulePhaseDeadlineTimer(_phaseEndsAt!);
-            unawaited(
-              _schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak),
-            );
-            _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
-            if (_remainingSeconds <= 5) _pulseController.forward();
-          }
-          _saveActiveSession();
         });
-        _updateDesktopState();
+        _resumeAfterAutomaticPause();
       }
     }
   }
@@ -1303,6 +1334,7 @@ class TimerHomePageState extends State<TimerHomePage>
     }
 
     _postponedBreakDuration = session.postponedBreakDuration;
+    _deferredBreakWasSkipped = session.deferredBreakWasSkipped;
 
     final projection = projectPhase(
       now: DateTime.now(),
@@ -1366,6 +1398,7 @@ class TimerHomePageState extends State<TimerHomePage>
       _animationController.value = progress;
       _autoRunCompletedCycles = session.completedAutoRunCycles;
       _postponedBreakDuration = session.postponedBreakDuration;
+      _deferredBreakWasSkipped = session.deferredBreakWasSkipped;
     });
   }
 
@@ -1510,6 +1543,7 @@ class TimerHomePageState extends State<TimerHomePage>
   }) {
     if (projection.boundariesCrossed > 0) {
       _postponedBreakDuration = null;
+      _deferredBreakWasSkipped = false;
     }
     for (final work in projection.completedWorkSessions) {
       widget.saveCompletedWorkSession(work.completedAt, work.durationSeconds);
@@ -1643,6 +1677,7 @@ class TimerHomePageState extends State<TimerHomePage>
         naturalBreakCreditEnabled: widget.naturalBreakCreditEnabled,
         osFocusDndEnabled: widget.osFocusDndEnabled,
         postponedBreakDuration: _postponedBreakDuration,
+        deferredBreakWasSkipped: _deferredBreakWasSkipped,
         currentPhaseDurationSeconds: _initialDuration,
         maxConsecutiveSkips: widget.maxConsecutiveSkips,
         consecutiveSkips: _consecutiveSkips,
@@ -1819,28 +1854,14 @@ class TimerHomePageState extends State<TimerHomePage>
       return;
     }
 
+    if (_automaticPauseOverride) return;
+
     if (!widget.workHoursEnabled) {
       if (_isSchedulePaused) {
         setState(() {
           _isSchedulePaused = false;
-          if (_isRunning && !_isPaused && !_isSystemIdlePaused && !_isMediaPaused) {
-            _phaseStartedAt = DateTime.now();
-            _phaseEndsAt = _phaseStartedAt!.add(
-              Duration(seconds: _remainingSeconds),
-            );
-            _animationController.forward();
-            _schedulePhaseDeadlineTimer(_phaseEndsAt!);
-            unawaited(
-              _schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak),
-            );
-            _startBackgroundPhase(
-              phaseEndsAt: _phaseEndsAt!,
-              isBreak: _isBreak,
-            );
-            if (_remainingSeconds <= 5) _pulseController.forward();
-          }
         });
-        _updateDesktopState();
+        _resumeAfterAutomaticPause();
       }
       return;
     }
@@ -1865,24 +1886,8 @@ class TimerHomePageState extends State<TimerHomePage>
       if (_isRunning && _isSchedulePaused) {
         setState(() {
           _isSchedulePaused = false;
-          if (!_isPaused && !_isSystemIdlePaused && !_isMediaPaused) {
-            _phaseStartedAt = DateTime.now();
-            _phaseEndsAt = _phaseStartedAt!.add(
-              Duration(seconds: _remainingSeconds),
-            );
-            _animationController.forward();
-            _schedulePhaseDeadlineTimer(_phaseEndsAt!);
-            unawaited(
-              _schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak),
-            );
-            _startBackgroundPhase(
-              phaseEndsAt: _phaseEndsAt!,
-              isBreak: _isBreak,
-            );
-            if (_remainingSeconds <= 5) _pulseController.forward();
-          }
         });
-        _updateDesktopState();
+        _resumeAfterAutomaticPause();
       }
     }
   }
@@ -1983,6 +1988,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
   void _startWorkTimer() {
     _autoRunCompletedCycles = 0;
+    _automaticPauseOverride = false;
     _startTimer(_getEffectiveWorkDuration());
     _updateDesktopState();
   }
@@ -2034,6 +2040,21 @@ class TimerHomePageState extends State<TimerHomePage>
         if (_remainingSeconds <= 5) _pulseController.forward();
       }
     });
+    _updateDesktopState();
+  }
+
+  void _completeHeldBreak() {
+    if (!_isRunning || !_isBreak || !_isPaused || !mounted) return;
+
+    // Coach use deliberately pauses the break. Treat the explicit close action
+    // as completing that break, rather than as a skip that adds break debt.
+    setState(() {
+      _remainingSeconds = 0;
+      _isPaused = false;
+      _phaseStartedAt = DateTime.now();
+      _phaseEndsAt = _phaseStartedAt;
+    });
+    _onPhaseComplete();
     _updateDesktopState();
   }
 
@@ -2125,6 +2146,11 @@ class TimerHomePageState extends State<TimerHomePage>
   bool get _canPostponeBreak =>
       widget.allowPostpone && _hasPostponeAllowanceRemaining;
 
+  bool get _isCurrentLongBreak =>
+      _longBreakEnabled &&
+      _longBreakDurationSeconds > _breakDurationSeconds &&
+      _initialDuration >= _longBreakDurationSeconds;
+
   void _skipBreak() {
     if (!_isBreak || !_isRunning) return;
     if (!widget.allowSkip) return;
@@ -2143,7 +2169,14 @@ class TimerHomePageState extends State<TimerHomePage>
     }
     _consecutiveSkips++;
     _consecutivePostpones = 0;
-    if (_isBreak) {
+    _isSkippingBreak = true;
+    if (_isCurrentLongBreak) {
+      // Keep a skipped long break at the head of the pending-break queue.
+      // It is delivered after the next work phase instead of being replaced by
+      // that phase's normal short-break cadence.
+      _postponedBreakDuration = _initialDuration;
+      _deferredBreakWasSkipped = true;
+    } else if (_isBreak) {
       _breakDebtSeconds += _remainingSeconds;
     }
     _animationController.stop();
@@ -2152,7 +2185,7 @@ class TimerHomePageState extends State<TimerHomePage>
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         timestamp: DateTime.now(),
         type: TimerEventType.breakSkipped,
-        durationSeconds: 0,
+        durationSeconds: _remainingSeconds,
       ),
     );
     _onPhaseComplete();
@@ -2200,6 +2233,7 @@ class TimerHomePageState extends State<TimerHomePage>
     setState(() {
       _isBreak = false;
       _postponedBreakDuration = _initialDuration;
+      _deferredBreakWasSkipped = false;
       _phaseOpacity = 1.0;
       _initialDuration = postponeSeconds;
       _remainingSeconds = _initialDuration;
@@ -2255,6 +2289,9 @@ class TimerHomePageState extends State<TimerHomePage>
       _isPaused = false;
       _isBreak = false;
       _isSystemIdlePaused = false;
+      _isMediaPaused = false;
+      _isSchedulePaused = false;
+      _automaticPauseOverride = false;
       _snoozeEndsAt = null;
       _lastSnoozeRemaining = null;
       _phaseOpacity = 1.0;
@@ -2444,6 +2481,8 @@ class TimerHomePageState extends State<TimerHomePage>
         _autoRunCompletedCycles = bgCompletedAutoRunCycles;
         _phaseEndsAt = DateTime.fromMillisecondsSinceEpoch(bgEndsAtMillis);
         _postponedBreakDuration = bgPostponedBreakDuration;
+        _deferredBreakWasSkipped =
+            bgSession['deferredBreakWasSkipped'] as bool? ?? false;
         _consecutiveSkips =
             bgSession['consecutiveSkips'] as int? ?? _consecutiveSkips;
         _consecutivePostpones =
@@ -2490,6 +2529,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _cancelPhaseDeadlineTimer();
 
     final completedBreakPhase = _isBreak;
+    final breakWasSkipped = _isSkippingBreak;
     final completedPhaseAt = _phaseEndsAt!;
     _phaseStartedAt = null;
     _phaseEndsAt = null;
@@ -2499,6 +2539,17 @@ class TimerHomePageState extends State<TimerHomePage>
     );
     _pulseController.stop();
 
+    if (completedBreakPhase && !breakWasSkipped) {
+      widget.saveTimerEventRecord(
+        TimerEventRecord(
+          id: DateTime.now().microsecondsSinceEpoch.toString(),
+          timestamp: DateTime.now(),
+          type: TimerEventType.breakCompleted,
+          durationSeconds: _initialDuration,
+        ),
+      );
+    }
+
     setState(() => _phaseOpacity = 0.0);
 
     // Camera/mic & Focused app auto postpone check
@@ -2506,7 +2557,8 @@ class TimerHomePageState extends State<TimerHomePage>
     int upcomingBreakDuration = 0;
     bool wasPostponedWork = false;
     if (!completedBreakPhase) {
-      if (widget.cameraMicAutoPostponeEnabled) {
+      if (widget.cameraMicAutoPostponeEnabled &&
+          !_automaticPauseOverride) {
         final camInUse = await _isCameraInUse();
         final micInUse = await _isMicInUse();
         final mediaPlaying = await widget.breakOverlayService?.isMediaPlaying() ?? false;
@@ -2519,7 +2571,8 @@ class TimerHomePageState extends State<TimerHomePage>
         upcomingBreakDuration =
             _postponedBreakDuration ??
             _breakDurationForCompletedCycle(_streakCount + 1);
-        wasPostponedWork = _postponedBreakDuration != null;
+        wasPostponedWork =
+            _postponedBreakDuration != null && !_deferredBreakWasSkipped;
       }
     }
 
@@ -2544,6 +2597,7 @@ class TimerHomePageState extends State<TimerHomePage>
       }
 
       if (completedBreakPhase) {
+        _isSkippingBreak = false;
         // Reset skip and postpone counters — the user actually took the break
         _consecutiveSkips = 0;
         _consecutivePostpones = 0;
@@ -2576,7 +2630,8 @@ class TimerHomePageState extends State<TimerHomePage>
       int upcomingBreakDuration =
           _postponedBreakDuration ??
           _breakDurationForCompletedCycle(_streakCount + 1);
-      final isPostponed = _postponedBreakDuration != null;
+      final isPostponed =
+          _postponedBreakDuration != null && !_deferredBreakWasSkipped;
 
       if (_breakDebtSeconds > 0) {
         upcomingBreakDuration += _breakDebtSeconds;
@@ -2590,6 +2645,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
       setState(() {
         _postponedBreakDuration = null;
+        _deferredBreakWasSkipped = false;
         if (!isPostponed) {
           _streakCount = _streakCount + 1;
           _autoRunCompletedCycles++;
@@ -2652,9 +2708,10 @@ class TimerHomePageState extends State<TimerHomePage>
         remainingSeconds: remainingSeconds ?? _remainingSeconds,
         phaseStartedAt: _phaseStartedAt,
         phaseEndsAt: _phaseEndsAt,
-        completedAutoRunCycles: _autoRunCompletedCycles,
-        postponedBreakDuration: _postponedBreakDuration,
-        breakDebtSeconds: _breakDebtSeconds,
+      completedAutoRunCycles: _autoRunCompletedCycles,
+      postponedBreakDuration: _postponedBreakDuration,
+      deferredBreakWasSkipped: _deferredBreakWasSkipped,
+      breakDebtSeconds: _breakDebtSeconds,
       ),
     );
   }
@@ -3054,6 +3111,7 @@ class TimerHomePageState extends State<TimerHomePage>
     setState(() {
       _isBreak = false;
       _postponedBreakDuration = upcomingBreakDuration;
+      _deferredBreakWasSkipped = false;
       _phaseOpacity = 1.0;
       _initialDuration = postponeSeconds;
       _remainingSeconds = _initialDuration;
@@ -3082,6 +3140,7 @@ class TimerHomePageState extends State<TimerHomePage>
       !_isPaused &&
       !_isSchedulePaused &&
       !_isSystemIdlePaused &&
+      !_isMediaPaused &&
       !_isSnoozed;
 
   void _processIntervalReminders(int elapsedActiveSeconds) {
@@ -3396,6 +3455,28 @@ class TimerHomePageState extends State<TimerHomePage>
     return _isBreak
         ? 'Relax your focus and blink naturally.'
         : 'A reminder will help you take the next eye break.';
+  }
+
+  Widget _buildAutomaticPauseOverrideControl(BuildContext context) {
+    if (!_isAutomaticallyPaused && !_automaticPauseOverride) {
+      return const SizedBox.shrink();
+    }
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 420),
+      child: CheckboxListTile(
+        value: _automaticPauseOverride,
+        onChanged: (value) => _setAutomaticPauseOverride(value ?? false),
+        controlAffinity: ListTileControlAffinity.leading,
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Override automatic pauses'),
+        subtitle: Text(
+          _automaticPauseOverride
+              ? 'Automatic media, call, idle, schedule, and break-postpone checks are ignored for this session.'
+              : 'Continue the timer and ignore automatic media, call, idle, schedule, and break-postpone checks for this session.',
+        ),
+      ),
+    );
   }
 
   IconData get _statusIcon {
@@ -4770,6 +4851,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                               if (!_isFocusMode && !_isRunning)
                                                 _buildMoodSelector(Theme.of(context), isDark, progressColor),
                                               actionButtons,
+                                              _buildAutomaticPauseOverrideControl(context),
                                               const SizedBox(height: 12),
                                               if (!_isFocusMode) ...[
                                                 Text(
@@ -5015,6 +5097,7 @@ class TimerHomePageState extends State<TimerHomePage>
                                     if (!_isFocusMode && !_isRunning)
                                       _buildMoodSelector(Theme.of(context), isDark, progressColor),
                                     actionButtons,
+                                    _buildAutomaticPauseOverrideControl(context),
                                     const SizedBox(height: 16),
                                     if (!_isFocusMode) ...[
                                       Opacity(
@@ -5592,7 +5675,11 @@ class TimerHomePageState extends State<TimerHomePage>
       DesktopControlsController.instance.updateState(
         DesktopTimerState(
           isRunning: _isRunning,
-          isPaused: _isPaused || _isSystemIdlePaused,
+          isPaused:
+              _isPaused ||
+              _isSystemIdlePaused ||
+              _isMediaPaused ||
+              _isSchedulePaused,
           isBreak: _isBreak,
           remainingSeconds: _remainingSeconds,
           allowSkip: _canSkipBreak,

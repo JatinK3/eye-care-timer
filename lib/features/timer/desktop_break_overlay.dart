@@ -65,9 +65,28 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   bool _wasRunningBeforePreview = false;
   
   bool _isWellnessCoachLoading = false;
+  bool _isWellnessCoachSessionActive = false;
   String? _wellnessCoachResponse;
   String? _wellnessCoachError;
   final TextEditingController _wellnessCoachController = TextEditingController();
+  final FocusNode _wellnessCoachFocusNode = FocusNode(
+    debugLabel: 'WellnessCoachInputFocus',
+  );
+  Timer? _wellnessCoachSuggestionTimer;
+  late int _wellnessCoachSuggestionOffset;
+
+  static const List<String> _wellnessCoachPrompts = [
+    'Neck stiffness',
+    'Eye strain',
+    'Lower back pain',
+    'Wrist fatigue',
+    'Tense shoulders',
+    'Headache after screens',
+    'Dry, tired eyes',
+    'Poor sitting posture',
+    'Jaw tension',
+    'Trouble refocusing',
+  ];
 
   @override
   void initState() {
@@ -75,6 +94,8 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     _remainingSeconds = widget.initialDurationSeconds;
 
     _tipOffset = math.Random().nextInt(EyeHealthTips.all.length);
+    _wellnessCoachSuggestionOffset =
+        math.Random().nextInt(_wellnessCoachPrompts.length);
     // Freeze the break tip at break start — we pick one and show it
     // throughout the entire break. This prevents the message from changing
     // mid-break and avoids repeated LLM calls for tip rotation.
@@ -117,6 +138,14 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
       });
     }
 
+    _wellnessCoachSuggestionTimer = Timer.periodic(
+      const Duration(seconds: 12),
+      (_) {
+        if (!mounted || _wellnessCoachResponse != null) return;
+        setState(_rotateWellnessCoachSuggestions);
+      },
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _focusNode.requestFocus();
@@ -129,11 +158,13 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     _stateSubscription?.cancel();
     _localTimer?.cancel();
     _holdTimer?.cancel();
+    _wellnessCoachSuggestionTimer?.cancel();
     _focusNode.dispose();
     if (widget.isPreview && _wasRunningBeforePreview) {
       DesktopControlsController.instance.triggerCommand(DesktopCommand.resume);
     }
     _wellnessCoachController.dispose();
+    _wellnessCoachFocusNode.dispose();
     super.dispose();
   }
 
@@ -187,6 +218,10 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   }
 
   void _handleKeyEvent(KeyEvent event) {
+    // Enter belongs to the coach text field while it is being edited. Without
+    // this guard the overlay-level Enter shortcut skips the active break.
+    if (_wellnessCoachFocusNode.hasFocus) return;
+
     if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.escape) {
         if (widget.breakMode == BreakMode.gentle && widget.allowPostpone) {
@@ -279,6 +314,17 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   Future<void> _submitWellnessCoach() async {
     final query = _wellnessCoachController.text.trim();
     if (query.isEmpty) return;
+
+    if (!_isWellnessCoachSessionActive) {
+      _isWellnessCoachSessionActive = true;
+      // Stop the local fallback too, so a near-deadline request keeps its answer.
+      _localTimer?.cancel();
+      if (!widget.isPreview) {
+        DesktopControlsController.instance.triggerCommand(
+          DesktopCommand.holdBreakForCoach,
+        );
+      }
+    }
     
     setState(() {
       _isWellnessCoachLoading = true;
@@ -320,6 +366,17 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     }
   }
 
+  void _rotateWellnessCoachSuggestions() {
+    _wellnessCoachSuggestionOffset =
+        (_wellnessCoachSuggestionOffset + 4) % _wellnessCoachPrompts.length;
+  }
+
+  List<String> get _wellnessCoachSuggestions => List<String>.generate(
+    4,
+    (index) => _wellnessCoachPrompts[
+        (_wellnessCoachSuggestionOffset + index) % _wellnessCoachPrompts.length],
+  );
+
   Widget _buildWellnessCoach(BuildContext context) {
     if (_isWellnessCoachLoading) {
       return const Padding(
@@ -360,15 +417,31 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _wellnessCoachResponse = null;
-                      _wellnessCoachController.clear();
-                    });
-                  },
-                  style: TextButton.styleFrom(foregroundColor: Colors.white54),
-                  child: const Text('Ask something else'),
+                child: Wrap(
+                  spacing: 8,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _wellnessCoachResponse = null;
+                          _wellnessCoachController.clear();
+                          _rotateWellnessCoachSuggestions();
+                        });
+                      },
+                      style: TextButton.styleFrom(foregroundColor: Colors.white54),
+                      child: const Text('Ask something else'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: () {
+                        DesktopControlsController.instance.triggerCommand(
+                          DesktopCommand.completeBreak,
+                        );
+                        _dismiss();
+                      },
+                      icon: const Icon(Icons.close),
+                      label: const Text('Close now'),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -388,6 +461,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           ],
           TextField(
             controller: _wellnessCoachController,
+            focusNode: _wellnessCoachFocusNode,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: 'Any aches? (e.g., "My neck hurts")',
@@ -420,12 +494,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
             alignment: WrapAlignment.center,
             spacing: 8,
             runSpacing: 8,
-            children: [
-              'Neck stiffness',
-              'Eye strain',
-              'Lower back pain',
-              'Wrist fatigue',
-            ].map((prompt) {
+            children: _wellnessCoachSuggestions.map((prompt) {
               return ActionChip(
                 label: Text(prompt),
                 backgroundColor: Colors.white10,

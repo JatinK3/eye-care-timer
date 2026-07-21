@@ -8,6 +8,9 @@ class TimerSession {
   final DateTime? phaseEndsAt;
   final int completedAutoRunCycles;
   final int? postponedBreakDuration;
+  /// True when [postponedBreakDuration] is a skipped break held for the next
+  /// work boundary, rather than a user-initiated postpone work window.
+  final bool deferredBreakWasSkipped;
   final int breakDebtSeconds;
   /// Wall-clock time at which this session snapshot was last persisted.
   /// Used to detect cross-day stale sessions even when both [phaseStartedAt]
@@ -24,6 +27,7 @@ class TimerSession {
     required this.phaseEndsAt,
     this.completedAutoRunCycles = 0,
     this.postponedBreakDuration,
+    this.deferredBreakWasSkipped = false,
     this.breakDebtSeconds = 0,
     this.savedAt,
   });
@@ -38,6 +42,7 @@ class TimerSession {
       phaseEndsAt = null,
       completedAutoRunCycles = 0,
       postponedBreakDuration = null,
+      deferredBreakWasSkipped = false,
       breakDebtSeconds = 0,
       savedAt = null;
 
@@ -55,6 +60,7 @@ class TimerSession {
       'phaseEndsAt': phaseEndsAt?.millisecondsSinceEpoch,
       'completedAutoRunCycles': completedAutoRunCycles,
       'postponedBreakDuration': postponedBreakDuration,
+      'deferredBreakWasSkipped': deferredBreakWasSkipped,
       'breakDebtSeconds': breakDebtSeconds,
       'savedAt': savedAt?.millisecondsSinceEpoch,
     };
@@ -73,6 +79,7 @@ class TimerSession {
       phaseEndsAt: _dateTimeFromMillis(json['phaseEndsAt']),
       completedAutoRunCycles: _asInt(json['completedAutoRunCycles']),
       postponedBreakDuration: json['postponedBreakDuration'] != null ? _asInt(json['postponedBreakDuration']) : null,
+      deferredBreakWasSkipped: _asBool(json['deferredBreakWasSkipped']),
       breakDebtSeconds: _asInt(json['breakDebtSeconds']),
       savedAt: _dateTimeFromMillis(json['savedAt']),
     );

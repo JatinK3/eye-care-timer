@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,14 +14,17 @@ import 'package:eyeapptimer/models/work_session_record.dart';
 import 'package:eyeapptimer/models/timer_event_record.dart';
 import 'package:eyeapptimer/models/timer_settings.dart';
 import 'package:eyeapptimer/features/timer/timer_home_page.dart';
+import 'package:eyeapptimer/features/timer/desktop_break_overlay.dart';
 import 'package:eyeapptimer/features/timer/eye_health_tips.dart';
 import 'package:eyeapptimer/features/settings/settings_page.dart';
+import 'package:eyeapptimer/generated/l10n/app_localizations.dart';
 
 class FakeBreakOverlayService extends BreakOverlayService {
   OverlayPermissionStatus status;
   int openSettingsCount = 0;
   int previewCount = 0;
   int breakOverlayCount = 0;
+  final List<int> breakOverlayDurations = [];
   String? lastCustomMessage;
 
   @override
@@ -66,6 +70,7 @@ class FakeBreakOverlayService extends BreakOverlayService {
     int postponeDurationSeconds = 120,
   }) async {
     breakOverlayCount++;
+    breakOverlayDurations.add(durationSeconds);
     lastCustomMessage = customMessage;
     return status == OverlayPermissionStatus.allowed;
   }
@@ -268,6 +273,86 @@ void main() {
     expect(first.title, isNot(second.title));
   });
 
+  testWidgets('wellness coach suggestions rotate during a break', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1440, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const prompts = [
+      'Neck stiffness',
+      'Eye strain',
+      'Lower back pain',
+      'Wrist fatigue',
+      'Tense shoulders',
+      'Headache after screens',
+      'Dry, tired eyes',
+      'Poor sitting posture',
+      'Jaw tension',
+      'Trouble refocusing',
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: DesktopBreakOverlay(
+          initialDurationSeconds: 60,
+          breakMode: BreakMode.gentle,
+          onDismiss: () {},
+        ),
+      ),
+    );
+
+    Set<String> visibleSuggestions() => prompts
+        .where((prompt) => find.text(prompt).evaluate().isNotEmpty)
+        .toSet();
+
+    final initialSuggestions = visibleSuggestions();
+    expect(initialSuggestions, hasLength(4));
+
+    await tester.pump(const Duration(seconds: 12));
+
+    expect(visibleSuggestions(), isNot(initialSuggestions));
+  });
+
+  testWidgets('Enter submits a coach prompt without dismissing the break', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1440, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    var dismissed = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: DesktopBreakOverlay(
+          initialDurationSeconds: 60,
+          breakMode: BreakMode.gentle,
+          onDismiss: () => dismissed = true,
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(TextField));
+    await tester.enterText(find.byType(TextField), 'My neck hurts');
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+
+    expect(dismissed, isFalse);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(
+      find.text('AI API key is missing. Please configure it in settings.'),
+      findsOneWidget,
+    );
+  });
+
   setUp(() {
     SharedPreferences.setMockInitialValues({
       PreferencesService.onboardingCompletedKey: true,
@@ -291,7 +376,9 @@ void main() {
     final overlayService = FakeBreakOverlayService();
     await pumpBlinkKindApp(tester, breakOverlayService: overlayService);
 
-    await tester.tap(find.text('Take break now'));
+    final takeBreakNow = find.text('Take break now');
+    await tester.ensureVisible(takeBreakNow);
+    await tester.tap(takeBreakNow);
     await tester.pump();
 
     expect(overlayService.breakOverlayCount, 1);
@@ -1599,6 +1686,36 @@ void main() {
     expect(records.any((r) => r.type == TimerEventType.breakSkipped), isTrue);
   });
 
+  testWidgets('a skipped long break remains the next queued break', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 1,
+      PreferencesService.breakDurationSecondsKey: 1,
+      PreferencesService.longBreakEnabledKey: true,
+      PreferencesService.longBreakDurationSecondsKey: 3,
+      PreferencesService.longBreakEveryCyclesKey: 1,
+      PreferencesService.autoRunEnabledKey: true,
+      PreferencesService.autoRunCycleLimitKey: 3,
+    });
+    final overlayService = FakeBreakOverlayService();
+    await pumpBlinkKindApp(tester, breakOverlayService: overlayService);
+
+    await tester.tap(find.text('Start'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(overlayService.breakOverlayDurations, [3]);
+
+    await tester.tap(find.text('Skip'));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(overlayService.breakOverlayDurations, [3, 3]);
+  });
+
   testWidgets('postponing a break persists a TimerEventRecord', (tester) async {
     final now = DateTime.now();
     SharedPreferences.setMockInitialValues({
@@ -2140,6 +2257,66 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(notificationService.autoPostponeNotificationCount, 0);
+  });
+
+  testWidgets('media auto-pause resumes after a microphone closes', (
+    WidgetTester tester,
+  ) async {
+    var micActive = true;
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 60,
+      PreferencesService.autoPauseOnMediaEnabledKey: true,
+    });
+
+    await pumpBlinkKindApp(
+      tester,
+      isCameraInUseOverride: () async => false,
+      isMicInUseOverride: () async => micActive,
+    );
+
+    await tester.tap(find.text('Start'));
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    expect(find.text('Paused — media is playing'), findsOneWidget);
+
+    micActive = false;
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+
+    expect(find.text('Paused — media is playing'), findsNothing);
+    expect(find.text('Work Time - focus on your task'), findsOneWidget);
+  });
+
+  testWidgets('automatic-pause override keeps the timer running', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 60,
+      PreferencesService.autoPauseOnMediaEnabledKey: true,
+    });
+
+    await pumpBlinkKindApp(
+      tester,
+      isCameraInUseOverride: () async => false,
+      isMicInUseOverride: () async => true,
+    );
+
+    await tester.tap(find.text('Start'));
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    expect(find.text('Paused — media is playing'), findsOneWidget);
+
+    final overrideControl = find.text('Override automatic pauses');
+    await tester.ensureVisible(overrideControl);
+    await tester.tap(overrideControl);
+    await tester.pump();
+    expect(find.text('Work Time - focus on your task'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    expect(find.text('Paused — media is playing'), findsNothing);
   });
 
   testWidgets('Wellness reminders trigger static tips when AI is disabled', (

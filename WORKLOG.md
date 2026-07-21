@@ -277,6 +277,15 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 
 ## Session Log
 
+### 2026-07-21 (IST)
+
+**Completed this session:**
+- **Wellness Coach break hold:** Submitting a typed or suggested coach question now pauses the active desktop break before the request is made, preserving the response until the user selects `Close now`. Closing completes the held break without recording a skip or adding break debt. Coach suggestions now rotate through a larger prompt set every 12 seconds and after another question is requested.
+- **Coach keyboard safety:** Enter is scoped to the coach text field, submits the question, and no longer triggers the overlay-level skip shortcut.
+- **Unified automatic-pause recovery and override:** Media, microphone/camera, system-idle, and work-hours pauses now share a single resume path. Media probes discard stale asynchronous results so ending a call resumes reliably. The home screen shows an `Override automatic pauses` checkbox while automatically paused; it resumes the timer and suppresses media/call, idle, schedule, and camera/mic auto-postpone actions for the current session until unchecked or a new session begins.
+- **Deferred long-break queue:** A skipped long break is retained as the next pending break instead of being replaced by the next short cadence. The pending state is persisted in `TimerSession` and mirrored through Android's foreground timer service. Naturally completed breaks are now written to timer-event history, while skipped records retain their unserved duration for auditability.
+- **Verification:** Added widget coverage for rotating coach prompts, Enter submission without dismissal, mic-close auto-resume, automatic-pause override, and skipped-long-break carry-over. `flutter test` passes 100 tests and `flutter analyze` is clean. Android compilation remains blocked locally by the existing JDK installation lacking `JAVA_COMPILER` for `audioplayers_android`.
+
 ### 2026-07-14 (IST)
 
 **Completed this session:**

@@ -251,6 +251,7 @@ class MainActivity : FlutterActivity() {
                             naturalBreakCreditEnabled = call.argument<Boolean>("naturalBreakCreditEnabled") ?: true,
                             osFocusDndEnabled = call.argument<Boolean>("osFocusDndEnabled") ?: false,
                             postponedBreakDuration = call.argument<Int>("postponedBreakDuration"),
+                            deferredBreakWasSkipped = call.argument<Boolean>("deferredBreakWasSkipped") ?: false,
                             currentPhaseDurationSeconds = call.argument<Int>("currentPhaseDurationSeconds"),
                             maxConsecutiveSkips = call.argument<Int>("maxConsecutiveSkips") ?: 0,
                             consecutiveSkips = call.argument<Int>("consecutiveSkips") ?: 0,
@@ -286,6 +287,7 @@ class MainActivity : FlutterActivity() {
                             "autoRunCycleLimit" to service.autoRunCycleLimit,
                             "pendingEvents" to events,
                             "postponedBreakDuration" to if (service.postponedBreakDuration > 0) service.postponedBreakDuration else null,
+                            "deferredBreakWasSkipped" to service.deferredBreakWasSkipped,
                             "consecutiveSkips" to service.consecutiveSkips,
                             "consecutivePostpones" to service.consecutivePostpones
                         ))

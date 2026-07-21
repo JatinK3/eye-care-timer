@@ -1,6 +1,7 @@
 enum TimerEventType {
   workCompleted,
   workCancelled,
+  breakCompleted,
   breakSkipped,
   breakPostponed,
   blinkReminderAcknowledged,
