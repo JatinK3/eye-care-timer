@@ -3,8 +3,8 @@ import 'dart:async';
 enum DesktopCommand {
   pause,
   resume,
-  // Holds an in-progress break while the desktop wellness coach is answering.
-  // The user explicitly completes the held break from the coach response.
+  // Marks the active break as using the desktop wellness coach. The countdown
+  // continues normally and is held only when it reaches its natural end.
   holdBreakForCoach,
   completeBreak,
   skipBreak,

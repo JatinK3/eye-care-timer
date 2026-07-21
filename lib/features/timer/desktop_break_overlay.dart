@@ -115,7 +115,8 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
         state,
       ) {
         if (!mounted) return;
-        if (state.isBreak && state.remainingSeconds > 0) {
+        if (state.isBreak &&
+            (state.remainingSeconds > 0 || _isWellnessCoachSessionActive)) {
           setState(() {
             _remainingSeconds = state.remainingSeconds;
           });
@@ -131,6 +132,13 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
         if (!mounted) return;
         final nextRemaining = _remainingSeconds - 1;
         if (nextRemaining <= 0) {
+          _localTimer?.cancel();
+          if (_isWellnessCoachSessionActive) {
+            setState(() {
+              _remainingSeconds = 0;
+            });
+            return;
+          }
           _dismiss();
           return;
         }
@@ -223,6 +231,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     // Enter belongs to the coach text field while it is being edited. Without
     // this guard the overlay-level Enter shortcut skips the active break.
     if (_wellnessCoachFocusNode.hasFocus) return;
+    if (_isCoachBreakAwaitingClose) return;
 
     if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.escape) {
@@ -402,6 +411,9 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     _dismiss();
   }
 
+  bool get _isCoachBreakAwaitingClose =>
+      _isWellnessCoachSessionActive && _remainingSeconds <= 0;
+
   Widget _buildWellnessCoach(BuildContext context) {
     if (_isWellnessCoachLoading) {
       return Padding(
@@ -411,11 +423,12 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           children: [
             const CircularProgressIndicator(color: Colors.cyanAccent),
             const SizedBox(height: 12),
-            TextButton.icon(
-              onPressed: _completeHeldBreakAndDismiss,
-              icon: const Icon(Icons.close),
-              label: const Text('Close now'),
-            ),
+            if (_isCoachBreakAwaitingClose)
+              TextButton.icon(
+                onPressed: _completeHeldBreakAndDismiss,
+                icon: const Icon(Icons.close),
+                label: const Text('Close now'),
+              ),
           ],
         ),
       );
@@ -478,11 +491,12 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
                       ),
                       child: const Text('Ask something else'),
                     ),
-                    FilledButton.icon(
-                      onPressed: _completeHeldBreakAndDismiss,
-                      icon: const Icon(Icons.close),
-                      label: const Text('Close now'),
-                    ),
+                    if (_isCoachBreakAwaitingClose)
+                      FilledButton.icon(
+                        onPressed: _completeHeldBreakAndDismiss,
+                        icon: const Icon(Icons.close),
+                        label: const Text('Close now'),
+                      ),
                   ],
                 ),
               ),
@@ -569,7 +583,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               );
             }).toList(),
           ),
-          if (_isWellnessCoachSessionActive) ...[
+          if (_isCoachBreakAwaitingClose) ...[
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: _completeHeldBreakAndDismiss,
@@ -736,6 +750,8 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
 
   /// Shared action buttons used by both the classic card and guided-mode layouts.
   Widget _buildBreakActions(BuildContext context) {
+    if (_isCoachBreakAwaitingClose) return const SizedBox.shrink();
+
     if (widget.breakMode == BreakMode.gentle) {
       if (!widget.allowPostpone && !widget.allowSkip) {
         return const SizedBox.shrink();

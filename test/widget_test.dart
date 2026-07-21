@@ -353,6 +353,55 @@ void main() {
     );
   });
 
+  testWidgets('coach permits closing only after the break reports expiry', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1440, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    var dismissed = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: DesktopBreakOverlay(
+          initialDurationSeconds: 3,
+          breakMode: BreakMode.gentle,
+          onDismiss: () => dismissed = true,
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(TextField));
+    await tester.enterText(find.byType(TextField), 'My neck hurts');
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    expect(
+      find.text('AI API key is missing. Please configure it in settings.'),
+      findsOneWidget,
+    );
+    expect(find.text('Close now'), findsNothing);
+    expect(dismissed, isFalse);
+
+    DesktopControlsController.instance.updateState(
+      DesktopTimerState(
+        isRunning: true,
+        isPaused: true,
+        isBreak: true,
+        remainingSeconds: 0,
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Close now'), findsOneWidget);
+    expect(dismissed, isFalse);
+  });
+
   setUp(() {
     SharedPreferences.setMockInitialValues({
       PreferencesService.onboardingCompletedKey: true,

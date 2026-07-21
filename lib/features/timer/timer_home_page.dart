@@ -288,6 +288,9 @@ class TimerHomePageState extends State<TimerHomePage>
   late String _activeBreakVisualizerStyle;
   bool _isCancelled = false;
   bool _isSkippingBreak = false;
+  // A Coach response may outlive the configured break. Hold only after the
+  // natural end, until the user explicitly closes the Coach session.
+  bool _coachBreakAwaitingCompletion = false;
   bool _isFocusMode = false;
   bool _isSystemIdlePaused = false;
   bool _isScreenLocked = false;
@@ -741,7 +744,11 @@ class TimerHomePageState extends State<TimerHomePage>
               break;
             case DesktopCommand.holdBreakForCoach:
               if (_isRunning && _isBreak && !_isPaused) {
-                _pauseOrResume();
+                setState(() {
+                  _coachBreakAwaitingCompletion = true;
+                });
+                _saveActiveSession();
+                _updateDesktopState();
               }
               break;
             case DesktopCommand.completeBreak:
@@ -2107,6 +2114,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
     setState(() {
       _isBreak = isBreak;
+      _coachBreakAwaitingCompletion = false;
       if (isBreak) {
         _activeBreakVisualizerStyle = _resolveVisualizerStyle();
         // Freeze a tip at break start \u2014 stays fixed for the entire break.
@@ -2230,13 +2238,20 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   void _completeHeldBreak() {
-    if (!_isRunning || !_isBreak || !_isPaused || !mounted) return;
+    if (!_isRunning ||
+        !_isBreak ||
+        !_isPaused ||
+        !_coachBreakAwaitingCompletion ||
+        !mounted) {
+      return;
+    }
 
-    // Coach use deliberately pauses the break. Treat the explicit close action
-    // as completing that break, rather than as a skip that adds break debt.
+    // The break reached its natural end while the Coach was in use. Treat the
+    // explicit close action as completion, rather than an early exit.
     setState(() {
       _remainingSeconds = 0;
       _isPaused = false;
+      _coachBreakAwaitingCompletion = false;
       _phaseStartedAt = DateTime.now();
       _phaseEndsAt = _phaseStartedAt;
     });
@@ -2367,6 +2382,7 @@ class TimerHomePageState extends State<TimerHomePage>
     } else if (_isBreak) {
       _breakDebtSeconds += _remainingSeconds;
     }
+    _coachBreakAwaitingCompletion = false;
     _animationController.stop();
     widget.saveTimerEventRecord(
       TimerEventRecord(
@@ -2396,6 +2412,7 @@ class TimerHomePageState extends State<TimerHomePage>
       );
       return;
     }
+    _coachBreakAwaitingCompletion = false;
     _animationController.stop();
     if (_isBreak) {
       _breakDebtSeconds += _remainingSeconds;
@@ -2730,6 +2747,11 @@ class TimerHomePageState extends State<TimerHomePage>
       return;
     }
 
+    if (_isBreak && _coachBreakAwaitingCompletion) {
+      _holdCompletedCoachBreak();
+      return;
+    }
+
     _cancelPhaseDeadlineTimer();
 
     final completedBreakPhase = _isBreak;
@@ -2744,6 +2766,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _pulseController.stop();
 
     if (completedBreakPhase) {
+      _coachBreakAwaitingCompletion = false;
       if (!breakWasSkipped && _activeFatigueRecoveryCreditSeconds > 0) {
         _breakDebtSeconds = math.max(
           0,
@@ -2876,6 +2899,25 @@ class TimerHomePageState extends State<TimerHomePage>
 
       _startTimer(upcomingBreakDuration, isBreak: true);
     });
+  }
+
+  void _holdCompletedCoachBreak() {
+    _cancelPhaseDeadlineTimer();
+    _animationController.stop();
+    _pulseController.stop();
+    _cancelReminders();
+    unawaited(widget.notificationService.cancelWellnessRemindersBackground());
+    unawaited(widget.notificationService.cancelWaterRemindersBackground());
+    unawaited(_backgroundService.stopPhase());
+
+    setState(() {
+      _remainingSeconds = 0;
+      _isPaused = true;
+      _phaseStartedAt = null;
+      _phaseEndsAt = null;
+    });
+    _saveActiveSession(isPaused: true, remainingSeconds: 0);
+    _updateDesktopState();
   }
 
   void _onStreakIncremented(int newStreak) {
