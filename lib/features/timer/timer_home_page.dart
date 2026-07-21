@@ -289,6 +289,9 @@ class TimerHomePageState extends State<TimerHomePage>
   bool _isSkippingBreak = false;
   bool _isFocusMode = false;
   bool _isSystemIdlePaused = false;
+  bool _isScreenLocked = false;
+  bool _lockPausedTimer = false;
+  DateTime? _screenLockStartedAt;
   bool _isMediaPaused = false;
   bool _automaticPauseOverride = false;
   int _mediaCheckRequestId = 0;
@@ -1060,13 +1063,17 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   bool get _isAutomaticallyPaused =>
-      _isMediaPaused || _isSystemIdlePaused || _isSchedulePaused;
+      _isMediaPaused ||
+      _isSystemIdlePaused ||
+      _isScreenLocked ||
+      _isSchedulePaused;
 
   void _resumeAfterAutomaticPause() {
     if (!_isRunning ||
         _isPaused ||
         _isMediaPaused ||
         _isSystemIdlePaused ||
+        _isScreenLocked ||
         _isSchedulePaused) {
       _updateDesktopState();
       return;
@@ -1090,7 +1097,9 @@ class TimerHomePageState extends State<TimerHomePage>
       _automaticPauseOverride = enabled;
       if (enabled) {
         _isMediaPaused = false;
-        _isSystemIdlePaused = false;
+        if (!_isScreenLocked) {
+          _isSystemIdlePaused = false;
+        }
         _isSchedulePaused = false;
         _idleStartedAt = null;
       }
@@ -1259,6 +1268,11 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   void handleDesktopIdleChange(bool isIdle, {bool isLockEvent = false}) {
+    if (isLockEvent) {
+      _handleDesktopLockChange(isIdle);
+      return;
+    }
+    if (_isScreenLocked) return;
     if (!widget.smartIdleEnabled || _automaticPauseOverride) return;
     if (!_isRunning || _isBreak) return;
 
@@ -1310,6 +1324,93 @@ class TimerHomePageState extends State<TimerHomePage>
         _resumeAfterAutomaticPause();
       }
     }
+  }
+
+  void _handleDesktopLockChange(bool isLocked) {
+    if (isLocked) {
+      if (!_isRunning || _isScreenLocked) return;
+
+      final shouldPauseTimer =
+          !_isPaused &&
+          !_isMediaPaused &&
+          !_isSystemIdlePaused &&
+          !_isSchedulePaused;
+      setState(() {
+        _isScreenLocked = true;
+        _screenLockStartedAt = DateTime.now();
+        _lockPausedTimer = shouldPauseTimer;
+        if (shouldPauseTimer) {
+          _isSystemIdlePaused = true;
+          _animationController.stop();
+          _pulseController.stop();
+          _cancelPhaseDeadlineTimer();
+          _phaseStartedAt = null;
+          _phaseEndsAt = null;
+        }
+        _saveActiveSession(isPaused: true);
+      });
+
+      // Locking the desktop must silence every reminder source, independent of
+      // Smart Idle and the automatic-pause override setting.
+      _cancelReminders();
+      unawaited(widget.notificationService.cancelWellnessRemindersBackground());
+      unawaited(widget.notificationService.cancelWaterRemindersBackground());
+      unawaited(_backgroundService.stopPhase());
+      _updateDesktopState();
+      return;
+    }
+
+    if (!_isScreenLocked) return;
+
+    final lockStartedAt = _screenLockStartedAt;
+    final pausedTimer = _lockPausedTimer;
+    final lockedSeconds = lockStartedAt == null
+        ? 0
+        : DateTime.now().difference(lockStartedAt).inSeconds;
+    final requiredBreakSeconds =
+        _pendingBreak?.durationSeconds ??
+        _breakDurationForCompletedCycle(_streakCount + 1);
+    final shouldCreditNaturalBreak =
+        pausedTimer &&
+        !_isBreak &&
+        !_isSchedulePaused &&
+        widget.naturalBreakCreditEnabled &&
+        lockedSeconds >= requiredBreakSeconds;
+
+    setState(() {
+      _isScreenLocked = false;
+      _screenLockStartedAt = null;
+      _lockPausedTimer = false;
+      if (pausedTimer) {
+        _isSystemIdlePaused = false;
+      }
+      if (lockedSeconds > 0) {
+        _breakDebtSeconds = math.max(0, _breakDebtSeconds - lockedSeconds);
+      }
+    });
+
+    if (shouldCreditNaturalBreak) {
+      final now = DateTime.now();
+      widget.saveTimerEventRecord(
+        TimerEventRecord(
+          id: now.microsecondsSinceEpoch.toString(),
+          timestamp: now,
+          type: TimerEventType.naturalBreakCredited,
+          durationSeconds: lockedSeconds,
+        ),
+      );
+      _startTimer(_getEffectiveWorkDuration());
+      _showTimerSnackBar(
+        const SnackBar(
+          content: Text('Screen lock counted as a natural break.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    _saveActiveSession(isPaused: _isPaused);
+    _resumeAfterAutomaticPause();
   }
 
   void _restoreInitialSession() {
@@ -1473,6 +1574,9 @@ class TimerHomePageState extends State<TimerHomePage>
           _isPaused = false;
           _isBreak = false;
           _isSystemIdlePaused = false;
+          _isScreenLocked = false;
+          _lockPausedTimer = false;
+          _screenLockStartedAt = null;
           _automaticPauseOverride = false;
           _snoozeEndsAt = null;
           _lastSnoozeRemaining = null;
@@ -1994,6 +2098,9 @@ class TimerHomePageState extends State<TimerHomePage>
       }
       _isPaused = false;
       _isSystemIdlePaused = false;
+      _isScreenLocked = false;
+      _lockPausedTimer = false;
+      _screenLockStartedAt = null;
       _isMediaPaused = false;
       _isSchedulePaused = false;
       _isRunning = true;
@@ -2063,7 +2170,9 @@ class TimerHomePageState extends State<TimerHomePage>
     if (!_isRunning) return;
     setState(() {
       _isPaused = !_isPaused;
-      _isSystemIdlePaused = false;
+      if (!_isScreenLocked) {
+        _isSystemIdlePaused = false;
+      }
       _isMediaPaused = false;
       _isSchedulePaused = false;
       if (_isPaused) {
@@ -2345,6 +2454,9 @@ class TimerHomePageState extends State<TimerHomePage>
       _isPaused = false;
       _isBreak = false;
       _isSystemIdlePaused = false;
+      _isScreenLocked = false;
+      _lockPausedTimer = false;
+      _screenLockStartedAt = null;
       _isMediaPaused = false;
       _isSchedulePaused = false;
       _automaticPauseOverride = false;
@@ -2505,14 +2617,13 @@ class TimerHomePageState extends State<TimerHomePage>
             final typeStr = event['type'] as String;
             final timestamp = event['timestamp'] as int;
             final durationSeconds = event['durationSeconds'] as int;
-            if (typeStr == 'naturalBreakCredited') {
-              hasNaturalBreak = true;
-              continue;
-            }
             final type = TimerEventType.values.firstWhere(
               (e) => e.name == typeStr,
               orElse: () => TimerEventType.workCompleted,
             );
+            if (type == TimerEventType.naturalBreakCredited) {
+              hasNaturalBreak = true;
+            }
             widget.saveTimerEventRecord(
               TimerEventRecord(
                 id: timestamp.toString(),
@@ -2924,7 +3035,8 @@ class TimerHomePageState extends State<TimerHomePage>
       !_isPaused &&
       !_isSnoozed &&
       !_isSchedulePaused &&
-      !_isSystemIdlePaused;
+      !_isSystemIdlePaused &&
+      !_isScreenLocked;
 
   void _processBlinkReminderCadences() {
     if (!_canRunBlinkReminderCadences) return;
@@ -3213,6 +3325,7 @@ class TimerHomePageState extends State<TimerHomePage>
       !_isPaused &&
       !_isSchedulePaused &&
       !_isSystemIdlePaused &&
+      !_isScreenLocked &&
       !_isMediaPaused &&
       !_isSnoozed;
 
@@ -3475,6 +3588,9 @@ class TimerHomePageState extends State<TimerHomePage>
     if (_isMediaPaused) {
       return 'Media';
     }
+    if (_isScreenLocked) {
+      return 'Locked';
+    }
     if (_isPaused) {
       return l10n.paused;
     }
@@ -3500,6 +3616,9 @@ class TimerHomePageState extends State<TimerHomePage>
     if (_isMediaPaused) {
       return 'Paused — media is playing';
     }
+    if (_isScreenLocked) {
+      return _isBreak ? l10n.breakPaused : l10n.workPausedIdle;
+    }
     if (_isPaused) {
       return _isBreak ? l10n.breakPaused : l10n.workPaused;
     }
@@ -3518,6 +3637,9 @@ class TimerHomePageState extends State<TimerHomePage>
     }
     if (_isMediaPaused) {
       return 'Will resume automatically when media stops.';
+    }
+    if (_isScreenLocked) {
+      return 'Paused while the screen is locked.';
     }
     if (_isPaused) {
       return 'Resume when you are ready to continue.';
@@ -5403,7 +5525,8 @@ class TimerHomePageState extends State<TimerHomePage>
         !_isPaused &&
         !_isBreak &&
         !_isSchedulePaused &&
-        !_isSystemIdlePaused;
+        !_isSystemIdlePaused &&
+        !_isScreenLocked;
     if (shouldBeEnabled != _lastDndState) {
       _lastDndState = shouldBeEnabled;
       unawaited(OsFocusService.instance.setDndEnabled(shouldBeEnabled));
@@ -5764,6 +5887,7 @@ class TimerHomePageState extends State<TimerHomePage>
         _isPaused ||
         _isMediaPaused ||
         _isSystemIdlePaused ||
+        _isScreenLocked ||
         _isSchedulePaused) {
       if (_soundscapePlayer?.state == PlayerState.playing) {
         await _soundscapePlayer?.stop();
@@ -5828,6 +5952,7 @@ class TimerHomePageState extends State<TimerHomePage>
           !_isBreak &&
           !_isPaused &&
           !_isSystemIdlePaused &&
+          !_isScreenLocked &&
           !isSnoozed) {
         nextBreakVal = _phaseEndsAt;
       }
@@ -5838,6 +5963,7 @@ class TimerHomePageState extends State<TimerHomePage>
           isPaused:
               _isPaused ||
               _isSystemIdlePaused ||
+              _isScreenLocked ||
               _isMediaPaused ||
               _isSchedulePaused,
           isBreak: _isBreak,

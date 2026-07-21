@@ -66,7 +66,11 @@ class WeeklyHealthReportPage extends StatelessWidget {
       // Daily breaks
       final dayEvents = timerEvents.where((e) => dateKey(e.timestamp) == key);
       final dayCompleted = dayEvents
-          .where((e) => e.type == TimerEventType.breakCompleted)
+          .where(
+            (e) =>
+                e.type == TimerEventType.breakCompleted ||
+                e.type == TimerEventType.naturalBreakCredited,
+          )
           .length;
       final dayMissed = dayEvents
           .where(

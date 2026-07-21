@@ -1546,6 +1546,41 @@ void main() {
     expect(find.text('Pause'), findsOneWidget);
   });
 
+  testWidgets(
+    'desktop lock pauses all reminders and credits a qualifying natural break',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        PreferencesService.onboardingCompletedKey: true,
+        PreferencesService.workDurationSecondsKey: 60,
+        PreferencesService.breakDurationSecondsKey: 1,
+        PreferencesService.smartIdleEnabledKey: false,
+        PreferencesService.naturalBreakCreditEnabledKey: true,
+      });
+      final notificationService = await pumpBlinkKindApp(tester);
+
+      await tester.tap(find.text('Start'));
+      await tester.pump();
+      expect(notificationService.workReminderCount, 1);
+
+      final state = tester.state<TimerHomePageState>(
+        find.byType(TimerHomePage),
+      );
+      state.handleDesktopIdleChange(true, isLockEvent: true);
+      await tester.pump();
+
+      expect(find.text('Locked'), findsOneWidget);
+      expect(notificationService.cancelCount, greaterThan(0));
+
+      await tester.pump(const Duration(seconds: 2));
+      state.handleDesktopIdleChange(false, isLockEvent: true);
+      await tester.pump();
+
+      expect(find.text('Pause'), findsOneWidget);
+      expect(notificationService.workReminderCount, 2);
+      expect(find.text('01:00'), findsOneWidget);
+    },
+  );
+
   testWidgets('settings updates break visualizer style', (
     WidgetTester tester,
   ) async {

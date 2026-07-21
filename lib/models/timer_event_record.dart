@@ -2,6 +2,7 @@ enum TimerEventType {
   workCompleted,
   workCancelled,
   breakCompleted,
+  naturalBreakCredited,
   breakSkipped,
   breakPostponed,
   blinkReminderAcknowledged,
@@ -23,7 +24,7 @@ enum FocusMood {
       case FocusMood.stressed: return 'Stressed';
     }
   }
-  
+
   String get emoji {
     switch (this) {
       case FocusMood.deepFocus: return '🧠';

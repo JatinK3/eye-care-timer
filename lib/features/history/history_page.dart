@@ -148,7 +148,11 @@ class _HistoryPageState extends State<HistoryPage> {
     final rangeEvents = _eventsForRange();
 
     final completedWorkCount = rangeEvents
-        .where((e) => e.type == TimerEventType.breakCompleted)
+        .where(
+          (e) =>
+              e.type == TimerEventType.breakCompleted ||
+              e.type == TimerEventType.naturalBreakCredited,
+        )
         .length;
     final cancelledWorkCount = rangeEvents
         .where((e) => e.type == TimerEventType.workCancelled)
@@ -638,7 +642,11 @@ class _HistoryPageState extends State<HistoryPage> {
       final rangeEvents = _eventsForRange();
 
       final completedWorkCount = rangeEvents
-          .where((e) => e.type == TimerEventType.breakCompleted)
+          .where(
+            (e) =>
+                e.type == TimerEventType.breakCompleted ||
+                e.type == TimerEventType.naturalBreakCredited,
+          )
           .length;
       final skippedBreakCount = rangeEvents
           .where((e) => e.type == TimerEventType.breakSkipped)
