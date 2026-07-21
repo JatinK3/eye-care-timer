@@ -148,7 +148,7 @@ class _HistoryPageState extends State<HistoryPage> {
     final rangeEvents = _eventsForRange();
 
     final completedWorkCount = rangeEvents
-        .where((e) => e.type == TimerEventType.workCompleted)
+        .where((e) => e.type == TimerEventType.breakCompleted)
         .length;
     final cancelledWorkCount = rangeEvents
         .where((e) => e.type == TimerEventType.workCancelled)
@@ -170,12 +170,12 @@ class _HistoryPageState extends State<HistoryPage> {
     final waterGoalDays = widget.waterDailyGoalGlasses <= 0
         ? 0
         : dates
-            .where(
-              (date) =>
-                  (_waterHistory[_dateKey(date)] ?? 0) >=
-                  widget.waterDailyGoalGlasses,
-            )
-            .length;
+              .where(
+                (date) =>
+                    (_waterHistory[_dateKey(date)] ?? 0) >=
+                    widget.waterDailyGoalGlasses,
+              )
+              .length;
     final waterGoalRate = dates.isEmpty || widget.waterDailyGoalGlasses <= 0
         ? 0
         : ((waterGoalDays / dates.length) * 100).round();
@@ -184,9 +184,10 @@ class _HistoryPageState extends State<HistoryPage> {
     final goalDays = widget.dailyGoal <= 0
         ? 0
         : dates
-            .where((date) =>
-                (_history[_dateKey(date)] ?? 0) >= widget.dailyGoal)
-            .length;
+              .where(
+                (date) => (_history[_dateKey(date)] ?? 0) >= widget.dailyGoal,
+              )
+              .length;
     final goalRate = dates.isEmpty || widget.dailyGoal <= 0
         ? 0
         : ((goalDays / dates.length) * 100).round();
@@ -220,10 +221,7 @@ class _HistoryPageState extends State<HistoryPage> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Hero(
-              tag: 'history_icon',
-              child: Icon(Icons.bar_chart),
-            ),
+            const Hero(tag: 'history_icon', child: Icon(Icons.bar_chart)),
             const SizedBox(width: 12),
             Text(AppLocalizations.of(context)!.historyTitle),
           ],
@@ -302,7 +300,8 @@ class _HistoryPageState extends State<HistoryPage> {
                     timerEvents: _timerEvents,
                     dailyGoal: widget.dailyGoal,
                     waterDailyGoal: widget.waterDailyGoalGlasses,
-                    currentWorkDurationSeconds: widget.currentWorkDurationSeconds,
+                    currentWorkDurationSeconds:
+                        widget.currentWorkDurationSeconds,
                   ),
           ),
           const SizedBox(height: 16),
@@ -319,7 +318,9 @@ class _HistoryPageState extends State<HistoryPage> {
               icon: Icons.track_changes_outlined,
               label: AppLocalizations.of(context)!.goalRate,
               value: "$goalRate%",
-              detail: AppLocalizations.of(context)!.daysGoalMetDetail(goalDays, dates.length),
+              detail: AppLocalizations.of(
+                context,
+              )!.daysGoalMetDetail(goalDays, dates.length),
             ),
           ),
           const SizedBox(height: 12),
@@ -342,7 +343,9 @@ class _HistoryPageState extends State<HistoryPage> {
             first: _MetricCard(
               icon: Icons.water_drop_outlined,
               label: AppLocalizations.of(context)!.waterLoggedHistory,
-              value: AppLocalizations.of(context)!.waterGlassesCount(totalWaterGlasses),
+              value: AppLocalizations.of(
+                context,
+              )!.waterGlassesCount(totalWaterGlasses),
               detail: totalWaterMl > 0
                   ? AppLocalizations.of(context)!.waterVolumeTotal(totalWaterMl)
                   : AppLocalizations.of(context)!.noWaterLogged,
@@ -351,7 +354,9 @@ class _HistoryPageState extends State<HistoryPage> {
               icon: Icons.flag_outlined,
               label: AppLocalizations.of(context)!.hydrationGoal,
               value: "$waterGoalRate%",
-              detail: AppLocalizations.of(context)!.daysGoalMetDetail(waterGoalDays, dates.length),
+              detail: AppLocalizations.of(
+                context,
+              )!.daysGoalMetDetail(waterGoalDays, dates.length),
             ),
           ),
           const SizedBox(height: 12),
@@ -418,7 +423,9 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
                 _InsightRow(
                   label: AppLocalizations.of(context)!.waterLoggedHistory,
-                  value: AppLocalizations.of(context)!.waterGlassesCount(totalWaterGlasses),
+                  value: AppLocalizations.of(
+                    context,
+                  )!.waterGlassesCount(totalWaterGlasses),
                   icon: Icons.water_drop_outlined,
                   color: const Color(0xFF3BA7E6),
                 ),
@@ -589,7 +596,8 @@ class _HistoryPageState extends State<HistoryPage> {
 
           // Clear History Action Button
           OutlinedButton.icon(
-            onPressed: _history.isEmpty &&
+            onPressed:
+                _history.isEmpty &&
                     _waterHistory.isEmpty &&
                     _workSessions.isEmpty &&
                     _timerEvents.isEmpty
@@ -630,7 +638,7 @@ class _HistoryPageState extends State<HistoryPage> {
       final rangeEvents = _eventsForRange();
 
       final completedWorkCount = rangeEvents
-          .where((e) => e.type == TimerEventType.workCompleted)
+          .where((e) => e.type == TimerEventType.breakCompleted)
           .length;
       final skippedBreakCount = rangeEvents
           .where((e) => e.type == TimerEventType.breakSkipped)
@@ -649,12 +657,12 @@ class _HistoryPageState extends State<HistoryPage> {
       final waterGoalDays = widget.waterDailyGoalGlasses <= 0
           ? 0
           : dates
-              .where(
-                (date) =>
-                    (_waterHistory[_dateKey(date)] ?? 0) >=
-                    widget.waterDailyGoalGlasses,
-              )
-              .length;
+                .where(
+                  (date) =>
+                      (_waterHistory[_dateKey(date)] ?? 0) >=
+                      widget.waterDailyGoalGlasses,
+                )
+                .length;
 
       final goalDays = dates
           .where((date) => (_history[_dateKey(date)] ?? 0) >= widget.dailyGoal)
@@ -679,8 +687,8 @@ class _HistoryPageState extends State<HistoryPage> {
       final rangeStr = _range == HistoryRange.sevenDays
           ? 'past 7 days'
           : _range == HistoryRange.thirtyDays
-              ? 'past 30 days'
-              : 'all time';
+          ? 'past 30 days'
+          : 'all time';
 
       final prompt =
           'You are an expert occupational therapist and developer wellness coach. '
@@ -712,7 +720,8 @@ class _HistoryPageState extends State<HistoryPage> {
     } catch (e, stackTrace) {
       unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       setState(() {
-        _reportError = 'Failed to generate report. Please verify connection/API key.';
+        _reportError =
+            'Failed to generate report. Please verify connection/API key.';
         _isReportLoading = false;
       });
     }
@@ -723,8 +732,8 @@ class _HistoryPageState extends State<HistoryPage> {
     final rangeText = _range == HistoryRange.sevenDays
         ? '7-Day'
         : _range == HistoryRange.thirtyDays
-            ? '30-Day'
-            : 'All-Time';
+        ? '30-Day'
+        : 'All-Time';
 
     Widget content;
 
@@ -787,10 +796,7 @@ class _HistoryPageState extends State<HistoryPage> {
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _aiReport!,
-            style: theme.textTheme.bodyMedium,
-          ),
+          Text(_aiReport!, style: theme.textTheme.bodyMedium),
           if (isStale) ...[
             const SizedBox(height: 12),
             Text(
@@ -807,7 +813,9 @@ class _HistoryPageState extends State<HistoryPage> {
             child: TextButton.icon(
               onPressed: _generateAiReport,
               icon: const Icon(Icons.auto_awesome),
-              label: Text(isStale ? 'Regenerate for $rangeText' : 'Refresh Analysis'),
+              label: Text(
+                isStale ? 'Regenerate for $rangeText' : 'Refresh Analysis',
+              ),
             ),
           ),
         ],
@@ -836,10 +844,7 @@ class _HistoryPageState extends State<HistoryPage> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant,
-          width: 1,
-        ),
+        side: BorderSide(color: theme.colorScheme.outlineVariant, width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -883,12 +888,13 @@ class _HistoryPageState extends State<HistoryPage> {
       );
     }
     final allKeys = <String>{..._history.keys, ..._waterHistory.keys};
-    final dates = allKeys
-        .map(DateTime.tryParse)
-        .whereType<DateTime>()
-        .map(_startOfDay)
-        .toList()
-      ..sort((a, b) => b.compareTo(a));
+    final dates =
+        allKeys
+            .map(DateTime.tryParse)
+            .whereType<DateTime>()
+            .map(_startOfDay)
+            .toList()
+          ..sort((a, b) => b.compareTo(a));
     return dates;
   }
 
@@ -1176,7 +1182,9 @@ class _HistoryPageState extends State<HistoryPage> {
           content: Row(
             children: [
               Expanded(
-                child: Text(AppLocalizations.of(context)!.exportedToFile(fileName)),
+                child: Text(
+                  AppLocalizations.of(context)!.exportedToFile(fileName),
+                ),
               ),
               const SizedBox(width: 8),
               _SnackBarButton(
@@ -1509,13 +1517,17 @@ class _EmptyMessage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.auto_graph_rounded,
               size: 32,
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 16),
@@ -1640,21 +1652,41 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
         case ChartMetric.cycles:
           return (widget.history[key] ?? 0).toDouble();
         case ChartMetric.focusTime:
-          final daySessions = widget.workSessions.where((s) => _dateKey(s.completedAt) == key);
-          final seconds = daySessions.fold<int>(0, (sum, s) => sum + s.durationSeconds);
+          final daySessions = widget.workSessions.where(
+            (s) => _dateKey(s.completedAt) == key,
+          );
+          final seconds = daySessions.fold<int>(
+            0,
+            (sum, s) => sum + s.durationSeconds,
+          );
           return seconds / 60.0;
         case ChartMetric.compliance:
-          final dayEvents = widget.timerEvents.where((e) => _dateKey(e.timestamp) == key);
-          final completed = dayEvents.where((e) => e.type == TimerEventType.workCompleted).length;
-          final skipped = dayEvents.where((e) => e.type == TimerEventType.breakSkipped).length;
-          final postponed = dayEvents.where((e) => e.type == TimerEventType.breakPostponed).length;
+          final dayEvents = widget.timerEvents.where(
+            (e) => _dateKey(e.timestamp) == key,
+          );
+          final completed = dayEvents
+              .where((e) => e.type == TimerEventType.workCompleted)
+              .length;
+          final skipped = dayEvents
+              .where((e) => e.type == TimerEventType.breakSkipped)
+              .length;
+          final postponed = dayEvents
+              .where((e) => e.type == TimerEventType.breakPostponed)
+              .length;
           final totalDecisions = completed + skipped + postponed;
-          return totalDecisions == 0 ? 0.0 : (completed / totalDecisions * 100.0);
+          return totalDecisions == 0
+              ? 0.0
+              : (completed / totalDecisions * 100.0);
         case ChartMetric.water:
           return (widget.waterHistory[key] ?? 0).toDouble();
         case ChartMetric.skipped:
-          final dayEvents = widget.timerEvents.where((e) => _dateKey(e.timestamp) == key);
-          return dayEvents.where((e) => e.type == TimerEventType.breakSkipped).length.toDouble();
+          final dayEvents = widget.timerEvents.where(
+            (e) => _dateKey(e.timestamp) == key,
+          );
+          return dayEvents
+              .where((e) => e.type == TimerEventType.breakSkipped)
+              .length
+              .toDouble();
       }
     }).toList();
 
@@ -1665,11 +1697,18 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
     switch (_activeMetric) {
       case ChartMetric.cycles:
         goalValue = widget.dailyGoal.toDouble();
-        maxValue = values.fold<double>(goalValue, (prev, val) => val > prev ? val : prev);
+        maxValue = values.fold<double>(
+          goalValue,
+          (prev, val) => val > prev ? val : prev,
+        );
         break;
       case ChartMetric.focusTime:
-        goalValue = (widget.dailyGoal * widget.currentWorkDurationSeconds) / 60.0;
-        maxValue = values.fold<double>(goalValue, (prev, val) => val > prev ? val : prev);
+        goalValue =
+            (widget.dailyGoal * widget.currentWorkDurationSeconds) / 60.0;
+        maxValue = values.fold<double>(
+          goalValue,
+          (prev, val) => val > prev ? val : prev,
+        );
         break;
       case ChartMetric.compliance:
         goalValue = 80.0; // 80% baseline compliance goal
@@ -1677,11 +1716,17 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
         break;
       case ChartMetric.water:
         goalValue = widget.waterDailyGoal.toDouble();
-        maxValue = values.fold<double>(goalValue, (prev, val) => val > prev ? val : prev);
+        maxValue = values.fold<double>(
+          goalValue,
+          (prev, val) => val > prev ? val : prev,
+        );
         break;
       case ChartMetric.skipped:
         goalValue = 0.0;
-        maxValue = values.fold<double>(1.0, (prev, val) => val > prev ? val : prev);
+        maxValue = values.fold<double>(
+          1.0,
+          (prev, val) => val > prev ? val : prev,
+        );
         break;
     }
 
@@ -1741,11 +1786,14 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
         const SizedBox(height: 16),
 
         // Selected Bar Details Tooltip
-        if (_selectedIndex != null && _selectedIndex! < chronologicalDates.length) ...[
+        if (_selectedIndex != null &&
+            _selectedIndex! < chronologicalDates.length) ...[
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -1753,30 +1801,37 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
               children: [
                 Text(
                   _fullDateLabel(chronologicalDates[_selectedIndex!]),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   _activeMetric == ChartMetric.cycles
                       ? "${values[_selectedIndex!].toInt()} cycles / goal: ${goalValue.toInt()}"
                       : _activeMetric == ChartMetric.focusTime
-                          ? "${values[_selectedIndex!].toStringAsFixed(1)} mins / goal: ${goalValue.toStringAsFixed(1)} mins"
-                          : _activeMetric == ChartMetric.water
-                              ? "${AppLocalizations.of(context)!.waterGlassesCount(values[_selectedIndex!].toInt())} / goal: ${AppLocalizations.of(context)!.waterGlassesCount(goalValue.toInt())}"
-                              : _activeMetric == ChartMetric.skipped
-                                  ? "${values[_selectedIndex!].toInt()} ${AppLocalizations.of(context)!.skippedBreaks.toLowerCase()} / goal: 0"
-                                  : "${values[_selectedIndex!].toStringAsFixed(1)}% Eye Health Score / goal: 80%",
+                      ? "${values[_selectedIndex!].toStringAsFixed(1)} mins / goal: ${goalValue.toStringAsFixed(1)} mins"
+                      : _activeMetric == ChartMetric.water
+                      ? "${AppLocalizations.of(context)!.waterGlassesCount(values[_selectedIndex!].toInt())} / goal: ${AppLocalizations.of(context)!.waterGlassesCount(goalValue.toInt())}"
+                      : _activeMetric == ChartMetric.skipped
+                      ? "${values[_selectedIndex!].toInt()} ${AppLocalizations.of(context)!.skippedBreaks.toLowerCase()} / goal: 0"
+                      : "${values[_selectedIndex!].toStringAsFixed(1)}% Eye Health Score / goal: 80%",
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: (_activeMetric == ChartMetric.skipped ? values[_selectedIndex!] <= goalValue : values[_selectedIndex!] >= goalValue)
+                    color:
+                        (_activeMetric == ChartMetric.skipped
+                            ? values[_selectedIndex!] <= goalValue
+                            : values[_selectedIndex!] >= goalValue)
                         ? (_activeMetric == ChartMetric.cycles
-                            ? Colors.green
-                            : _activeMetric == ChartMetric.focusTime
-                                ? Colors.cyan
-                                : _activeMetric == ChartMetric.water
-                                    ? const Color(0xFF3BA7E6)
-                                    : _activeMetric == ChartMetric.skipped
-                                        ? Colors.green
-                                        : Colors.teal)
-                        : (_activeMetric == ChartMetric.skipped ? Colors.red : Theme.of(context).colorScheme.primary),
+                              ? Colors.green
+                              : _activeMetric == ChartMetric.focusTime
+                              ? Colors.cyan
+                              : _activeMetric == ChartMetric.water
+                              ? const Color(0xFF3BA7E6)
+                              : _activeMetric == ChartMetric.skipped
+                              ? Colors.green
+                              : Colors.teal)
+                        : (_activeMetric == ChartMetric.skipped
+                              ? Colors.red
+                              : Theme.of(context).colorScheme.primary),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1834,7 +1889,9 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                       final val = values[index];
                       final ratio = maxValue > 0 ? val / maxValue : 0.0;
                       final barHeight = chartHeight * ratio;
-                      final isGoalReached = _activeMetric == ChartMetric.skipped ? val <= goalValue : val >= goalValue;
+                      final isGoalReached = _activeMetric == ChartMetric.skipped
+                          ? val <= goalValue
+                          : val >= goalValue;
                       final isSelected = _selectedIndex == index;
 
                       return GestureDetector(
@@ -1859,22 +1916,34 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                 if (_activeMetric == ChartMetric.cycles) {
                                   gradient = isGoalReached
                                       ? const LinearGradient(
-                                          colors: [Colors.green, Color(0xFF81C784)],
+                                          colors: [
+                                            Colors.green,
+                                            Color(0xFF81C784),
+                                          ],
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                         )
                                       : LinearGradient(
                                           colors: [
-                                            Theme.of(context).colorScheme.primary,
-                                            Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                            Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                                .withValues(alpha: 0.7),
                                           ],
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                         );
-                                } else if (_activeMetric == ChartMetric.focusTime) {
+                                } else if (_activeMetric ==
+                                    ChartMetric.focusTime) {
                                   gradient = isGoalReached
                                       ? const LinearGradient(
-                                          colors: [Colors.cyan, Color(0xFF00E5CC)],
+                                          colors: [
+                                            Colors.cyan,
+                                            Color(0xFF00E5CC),
+                                          ],
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                         )
@@ -1889,38 +1958,56 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                 } else if (_activeMetric == ChartMetric.water) {
                                   gradient = isGoalReached
                                       ? const LinearGradient(
-                                          colors: [Color(0xFF3BA7E6), Color(0xFF7DD3FC)],
+                                          colors: [
+                                            Color(0xFF3BA7E6),
+                                            Color(0xFF7DD3FC),
+                                          ],
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                         )
                                       : const LinearGradient(
-                                          colors: [Color(0xFF60A5FA), Color(0xFF93C5FD)],
+                                          colors: [
+                                            Color(0xFF60A5FA),
+                                            Color(0xFF93C5FD),
+                                          ],
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                         );
-                                } else if (_activeMetric == ChartMetric.skipped) {
+                                } else if (_activeMetric ==
+                                    ChartMetric.skipped) {
                                   gradient = isGoalReached
                                       ? const LinearGradient(
-                                          colors: [Colors.green, Color(0xFF81C784)],
+                                          colors: [
+                                            Colors.green,
+                                            Color(0xFF81C784),
+                                          ],
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                         )
                                       : const LinearGradient(
-                                          colors: [Colors.red, Colors.redAccent],
+                                          colors: [
+                                            Colors.red,
+                                            Colors.redAccent,
+                                          ],
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                         );
                                 } else {
                                   gradient = isGoalReached
                                       ? const LinearGradient(
-                                          colors: [Colors.teal, Color(0xFF64FFDA)],
+                                          colors: [
+                                            Colors.teal,
+                                            Color(0xFF64FFDA),
+                                          ],
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                         )
                                       : LinearGradient(
                                           colors: [
                                             Colors.orange,
-                                            Colors.orange.withValues(alpha: 0.7),
+                                            Colors.orange.withValues(
+                                              alpha: 0.7,
+                                            ),
                                           ],
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
@@ -1938,26 +2025,53 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                     boxShadow: isSelected
                                         ? [
                                             BoxShadow(
-                                              color: (isGoalReached
-                                                      ? (_activeMetric == ChartMetric.cycles
-                                                          ? Colors.green
-                                                          : _activeMetric == ChartMetric.focusTime
-                                                              ? Colors.cyan
-                                                              : _activeMetric == ChartMetric.water
-                                                                  ? const Color(0xFF3BA7E6)
-                                                                  : _activeMetric == ChartMetric.skipped
-                                                                      ? Colors.green
-                                                                      : Colors.deepPurple)
-                                                      : (_activeMetric == ChartMetric.cycles
-                                                          ? Theme.of(context).colorScheme.primary
-                                                          : _activeMetric == ChartMetric.focusTime
-                                                              ? Colors.blue
-                                                              : _activeMetric == ChartMetric.water
-                                                                  ? const Color(0xFF60A5FA)
-                                                                  : _activeMetric == ChartMetric.skipped
-                                                                      ? Colors.red
-                                                                      : Colors.orange))
-                                                  .withValues(alpha: 0.4),
+                                              color:
+                                                  (isGoalReached
+                                                          ? (_activeMetric ==
+                                                                    ChartMetric
+                                                                        .cycles
+                                                                ? Colors.green
+                                                                : _activeMetric ==
+                                                                      ChartMetric
+                                                                          .focusTime
+                                                                ? Colors.cyan
+                                                                : _activeMetric ==
+                                                                      ChartMetric
+                                                                          .water
+                                                                ? const Color(
+                                                                    0xFF3BA7E6,
+                                                                  )
+                                                                : _activeMetric ==
+                                                                      ChartMetric
+                                                                          .skipped
+                                                                ? Colors.green
+                                                                : Colors
+                                                                      .deepPurple)
+                                                          : (_activeMetric ==
+                                                                    ChartMetric
+                                                                        .cycles
+                                                                ? Theme.of(
+                                                                        context,
+                                                                      )
+                                                                      .colorScheme
+                                                                      .primary
+                                                                : _activeMetric ==
+                                                                      ChartMetric
+                                                                          .focusTime
+                                                                ? Colors.blue
+                                                                : _activeMetric ==
+                                                                      ChartMetric
+                                                                          .water
+                                                                ? const Color(
+                                                                    0xFF60A5FA,
+                                                                  )
+                                                                : _activeMetric ==
+                                                                      ChartMetric
+                                                                          .skipped
+                                                                ? Colors.red
+                                                                : Colors
+                                                                      .orange))
+                                                      .withValues(alpha: 0.4),
                                               blurRadius: 8,
                                               spreadRadius: 2,
                                             ),
@@ -1973,11 +2087,19 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                               child: Text(
                                 _shortDateLabel(date),
                                 textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
                                       color: isSelected
-                                          ? Theme.of(context).colorScheme.primary
-                                          : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                                      fontWeight: isSelected ? FontWeight.bold : null,
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant
+                                                .withValues(alpha: 0.7),
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : null,
                                     ),
                               ),
                             ),
@@ -2002,15 +2124,18 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                     height: 1,
                                     color: i % 2 == 0
                                         ? (_activeMetric == ChartMetric.cycles
-                                                ? Colors.green
-                                                : _activeMetric == ChartMetric.focusTime
-                                                    ? Colors.cyan
-                                                    : _activeMetric == ChartMetric.water
-                                                        ? const Color(0xFF3BA7E6)
-                                                        : _activeMetric == ChartMetric.skipped
-                                                            ? Colors.green
-                                                            : Colors.deepPurple)
-                                            .withValues(alpha: 0.4)
+                                                  ? Colors.green
+                                                  : _activeMetric ==
+                                                        ChartMetric.focusTime
+                                                  ? Colors.cyan
+                                                  : _activeMetric ==
+                                                        ChartMetric.water
+                                                  ? const Color(0xFF3BA7E6)
+                                                  : _activeMetric ==
+                                                        ChartMetric.skipped
+                                                  ? Colors.green
+                                                  : Colors.deepPurple)
+                                              .withValues(alpha: 0.4)
                                         : Colors.transparent,
                                   ),
                                 ),
@@ -2024,9 +2149,12 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                   scrollDirection: Axis.horizontal,
                                   physics: const BouncingScrollPhysics(),
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
                                     child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
                                       children: List.generate(
                                         chronologicalDates.length,
                                         (index) {
@@ -2042,7 +2170,8 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                   ),
                                 )
                               : Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: List.generate(
                                     chronologicalDates.length,
@@ -2120,16 +2249,19 @@ class _SnackBarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return TextButton(
-      style: TextButton.styleFrom(
-        foregroundColor: cs.inversePrimary,
-        backgroundColor: cs.inversePrimary.withValues(alpha: 0.15),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        minimumSize: const Size(40, 32),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        shape: const StadiumBorder(),
-      ).copyWith(
-        overlayColor: WidgetStatePropertyAll(cs.inversePrimary.withValues(alpha: 0.22)),
-      ),
+      style:
+          TextButton.styleFrom(
+            foregroundColor: cs.inversePrimary,
+            backgroundColor: cs.inversePrimary.withValues(alpha: 0.15),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            minimumSize: const Size(40, 32),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            shape: const StadiumBorder(),
+          ).copyWith(
+            overlayColor: WidgetStatePropertyAll(
+              cs.inversePrimary.withValues(alpha: 0.22),
+            ),
+          ),
       onPressed: onPressed,
       child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
     );

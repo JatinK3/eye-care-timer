@@ -27,9 +27,13 @@ class WeeklyHealthReportPage extends StatelessWidget {
     // 1. Filter data to last 7 days
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final dates = List.generate(7, (i) => today.subtract(Duration(days: 6 - i)));
+    final dates = List.generate(
+      7,
+      (i) => today.subtract(Duration(days: 6 - i)),
+    );
 
-    String dateKey(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    String dateKey(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
     // 2. Aggregate Data
     int totalFocusSeconds = 0;
@@ -44,10 +48,15 @@ class WeeklyHealthReportPage extends StatelessWidget {
 
     for (var date in dates) {
       final key = dateKey(date);
-      
+
       // Daily focus
-      final daySessions = workSessions.where((s) => dateKey(s.completedAt) == key);
-      final dayFocusSecs = daySessions.fold<int>(0, (sum, s) => sum + s.durationSeconds);
+      final daySessions = workSessions.where(
+        (s) => dateKey(s.completedAt) == key,
+      );
+      final dayFocusSecs = daySessions.fold<int>(
+        0,
+        (sum, s) => sum + s.durationSeconds,
+      );
       totalFocusSeconds += dayFocusSecs;
 
       // Daily water
@@ -56,9 +65,17 @@ class WeeklyHealthReportPage extends StatelessWidget {
 
       // Daily breaks
       final dayEvents = timerEvents.where((e) => dateKey(e.timestamp) == key);
-      final dayCompleted = dayEvents.where((e) => e.type == TimerEventType.workCompleted).length;
-      final dayMissed = dayEvents.where((e) => e.type == TimerEventType.breakSkipped || e.type == TimerEventType.breakPostponed).length;
-      
+      final dayCompleted = dayEvents
+          .where((e) => e.type == TimerEventType.breakCompleted)
+          .length;
+      final dayMissed = dayEvents
+          .where(
+            (e) =>
+                e.type == TimerEventType.breakSkipped ||
+                e.type == TimerEventType.breakPostponed,
+          )
+          .length;
+
       completedBreaks += dayCompleted;
       missedBreaks += dayMissed;
 
@@ -66,12 +83,16 @@ class WeeklyHealthReportPage extends StatelessWidget {
       double score = 0;
       if (dayFocusSecs > 0) {
         // Only score days with activity
-        final compliance = dayCompleted + dayMissed > 0 ? dayCompleted / (dayCompleted + dayMissed) : 1.0;
-        final hydration = waterDailyGoalGlasses > 0 ? (dayWater / waterDailyGoalGlasses).clamp(0.0, 1.0) : 1.0;
-        
+        final compliance = dayCompleted + dayMissed > 0
+            ? dayCompleted / (dayCompleted + dayMissed)
+            : 1.0;
+        final hydration = waterDailyGoalGlasses > 0
+            ? (dayWater / waterDailyGoalGlasses).clamp(0.0, 1.0)
+            : 1.0;
+
         // 50% break compliance, 30% hydration, 20% focus time (capped at 4 hours for score)
         final focusScore = (dayFocusSecs / (4 * 3600)).clamp(0.0, 1.0);
-        
+
         score = (compliance * 50) + (hydration * 30) + (focusScore * 20);
 
         if (score > maxScore) {
@@ -87,7 +108,9 @@ class WeeklyHealthReportPage extends StatelessWidget {
 
     final totalWaterMl = totalWaterGlasses * waterGlassSizeMl;
     final totalBreaks = completedBreaks + missedBreaks;
-    final breakCompliance = totalBreaks > 0 ? ((completedBreaks / totalBreaks) * 100).round() : 100;
+    final breakCompliance = totalBreaks > 0
+        ? ((completedBreaks / totalBreaks) * 100).round()
+        : 100;
 
     String formatDuration(int seconds) {
       final h = seconds ~/ 3600;
@@ -102,9 +125,7 @@ class WeeklyHealthReportPage extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Weekly Health Report'),
-      ),
+      appBar: AppBar(title: const Text('Weekly Health Report')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -159,7 +180,8 @@ class WeeklyHealthReportPage extends StatelessWidget {
     );
   }
 
-  Widget _buildReportCard(BuildContext context, {
+  Widget _buildReportCard(
+    BuildContext context, {
     required String title,
     required String value,
     required IconData icon,
@@ -184,18 +206,30 @@ class WeeklyHealthReportPage extends StatelessWidget {
                 children: [
                   Text(title, style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                  Text(
+                    subtitle,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                  ),
                 ],
               ),
             ),
-            Text(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: color)),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDayCard(BuildContext context, {
+  Widget _buildDayCard(
+    BuildContext context, {
     required String title,
     required String date,
     required IconData icon,
@@ -214,7 +248,12 @@ class WeeklyHealthReportPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(date, style: Theme.of(context).textTheme.bodyMedium),
                 ],

@@ -12,6 +12,8 @@
 /// without a widget tree.
 library;
 
+import '../../models/pending_break.dart';
+
 /// Immutable description of the timer cadence used to project future phases.
 class PhasePlan {
   final int workDurationSeconds;
@@ -63,6 +65,18 @@ class CompletedWork {
   });
 }
 
+/// A break phase that completed during elapsed-time recovery and should be
+/// recorded as a natural completion in timer history.
+class CompletedBreak {
+  final DateTime completedAt;
+  final int durationSeconds;
+
+  const CompletedBreak({
+    required this.completedAt,
+    required this.durationSeconds,
+  });
+}
+
 /// Result of [projectPhase]: the phase that should be active "now" after
 /// crossing every elapsed boundary, plus the side effects the caller must
 /// apply (completed work sessions, updated streak / auto-run counters).
@@ -94,6 +108,10 @@ class PhaseProjection {
   /// Work phases that completed during the fast-forward, oldest first.
   final List<CompletedWork> completedWorkSessions;
 
+  /// Break phases that completed naturally during the fast-forward, oldest
+  /// first. Skipped and postponed breaks are already persisted at the action.
+  final List<CompletedBreak> completedBreaks;
+
   /// Number of phase boundaries crossed (0 means the original phase is still
   /// running and only the remaining time changed).
   final int boundariesCrossed;
@@ -108,6 +126,7 @@ class PhaseProjection {
     required this.streakCount,
     required this.autoRunCompletedCycles,
     required this.completedWorkSessions,
+    required this.completedBreaks,
     required this.boundariesCrossed,
   });
 
@@ -115,6 +134,7 @@ class PhaseProjection {
     required this.streakCount,
     required this.autoRunCompletedCycles,
     required this.completedWorkSessions,
+    required this.completedBreaks,
     required this.boundariesCrossed,
   }) : isIdle = true,
        isBreak = false,
@@ -142,7 +162,7 @@ PhaseProjection projectPhase({
   required int streakCount,
   required int autoRunCompletedCycles,
   required PhasePlan plan,
-  int? postponedBreakDuration,
+  PendingBreak? pendingBreak,
 }) {
   var curIsBreak = isBreak;
   var curEndsAt = phaseEndsAt;
@@ -150,6 +170,7 @@ PhaseProjection projectPhase({
   var streak = streakCount;
   var cycles = autoRunCompletedCycles;
   final completed = <CompletedWork>[];
+  final completedBreaks = <CompletedBreak>[];
   var boundaries = 0;
 
   while (boundaries < _maxBoundaries) {
@@ -175,6 +196,7 @@ PhaseProjection projectPhase({
         streakCount: streak,
         autoRunCompletedCycles: cycles,
         completedWorkSessions: completed,
+        completedBreaks: completedBreaks,
         boundariesCrossed: boundaries,
       );
     }
@@ -183,11 +205,15 @@ PhaseProjection projectPhase({
     boundaries++;
 
     if (curIsBreak) {
+      completedBreaks.add(
+        CompletedBreak(completedAt: curEndsAt, durationSeconds: curDuration),
+      );
       if (!plan.shouldContinueAutoRun(cycles)) {
         return PhaseProjection._idle(
           streakCount: streak,
           autoRunCompletedCycles: 0,
           completedWorkSessions: completed,
+          completedBreaks: completedBreaks,
           boundariesCrossed: boundaries,
         );
       }
@@ -197,6 +223,7 @@ PhaseProjection projectPhase({
           streakCount: streak,
           autoRunCompletedCycles: 0,
           completedWorkSessions: completed,
+          completedBreaks: completedBreaks,
           boundariesCrossed: boundaries,
         );
       }
@@ -205,20 +232,33 @@ PhaseProjection projectPhase({
       curEndsAt = curEndsAt.add(Duration(seconds: dur));
     } else {
       // Work completed: count it and roll into the appropriate break.
-      final isPostponedTransition = !isBreak && boundaries == 1 && postponedBreakDuration != null;
-      if (isPostponedTransition) {
-        final dur = postponedBreakDuration;
+      final isPendingBreakTransition =
+          !isBreak && boundaries == 1 && pendingBreak != null;
+      if (isPendingBreakTransition) {
+        final completedWorkDuration = curDuration;
+        final dur = pendingBreak.durationSeconds;
         if (dur <= 0) {
           return PhaseProjection._idle(
             streakCount: streak,
             autoRunCompletedCycles: 0,
             completedWorkSessions: completed,
+            completedBreaks: completedBreaks,
             boundariesCrossed: boundaries,
           );
         }
         curIsBreak = true;
         curDuration = dur;
         curEndsAt = curEndsAt.add(Duration(seconds: dur));
+        if (pendingBreak.isSkippedLong) {
+          streak += 1;
+          cycles += 1;
+          completed.add(
+            CompletedWork(
+              completedAt: curEndsAt.subtract(Duration(seconds: dur)),
+              durationSeconds: completedWorkDuration,
+            ),
+          );
+        }
       } else {
         streak += 1;
         cycles += 1;
@@ -231,6 +271,7 @@ PhaseProjection projectPhase({
             streakCount: streak,
             autoRunCompletedCycles: 0,
             completedWorkSessions: completed,
+            completedBreaks: completedBreaks,
             boundariesCrossed: boundaries,
           );
         }
@@ -246,6 +287,7 @@ PhaseProjection projectPhase({
     streakCount: streak,
     autoRunCompletedCycles: 0,
     completedWorkSessions: completed,
+    completedBreaks: completedBreaks,
     boundariesCrossed: boundaries,
   );
 }

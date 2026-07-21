@@ -52,8 +52,8 @@ class TimerForegroundService : Service() {
     var consecutivePostpones = 0
     var smartIdleEnabled = true
     var naturalBreakCreditEnabled = true
-    var postponedBreakDuration = -1
-    var deferredBreakWasSkipped = false
+    var pendingBreakDuration = -1
+    var pendingBreakReason: String? = null
     var currentPhaseInitialDuration = 0
     var osFocusDndEnabled = false
 
@@ -222,8 +222,19 @@ class TimerForegroundService : Service() {
         postponeDurationSeconds = intent.getIntExtra(EXTRA_POSTPONE_DURATION, 120)
         smartIdleEnabled = intent.getBooleanExtra(EXTRA_SMART_IDLE, true)
         naturalBreakCreditEnabled = intent.getBooleanExtra(EXTRA_NATURAL_BREAK_CREDIT, true)
-        postponedBreakDuration = intent.getIntExtra("postponedBreakDuration", -1)
-        deferredBreakWasSkipped = intent.getBooleanExtra("deferredBreakWasSkipped", false)
+        pendingBreakDuration = if (intent.hasExtra("pendingBreakDuration")) {
+            intent.getIntExtra("pendingBreakDuration", -1)
+        } else {
+            intent.getIntExtra("postponedBreakDuration", -1)
+        }
+        pendingBreakReason = intent.getStringExtra("pendingBreakReason")
+            ?: if (intent.getBooleanExtra("deferredBreakWasSkipped", false)) {
+                "skippedLong"
+            } else if (pendingBreakDuration > 0) {
+                "postponed"
+            } else {
+                null
+            }
         currentPhaseInitialDuration = intent.getIntExtra("currentPhaseInitialDuration", if (isBreak) breakDurationForCompletedCycle(streakCount) else workDurationSeconds)
         maxConsecutiveSkips = intent.getIntExtra("maxConsecutiveSkips", 0)
         if (intent.hasExtra("consecutiveSkips")) {
@@ -265,16 +276,16 @@ class TimerForegroundService : Service() {
             if (longBreakEnabled &&
                 longBreakDurationSeconds > breakDurationSeconds &&
                 currentPhaseInitialDuration >= longBreakDurationSeconds) {
-                postponedBreakDuration = currentPhaseInitialDuration
-                deferredBreakWasSkipped = true
+                pendingBreakDuration = currentPhaseInitialDuration
+                pendingBreakReason = "skippedLong"
             }
             pendingEvents.add(mapOf(
                 "type" to "breakSkipped",
                 "timestamp" to System.currentTimeMillis(),
-                "durationSeconds" to currentPhaseInitialDuration
+                "durationSeconds" to secondsRemaining().toInt()
             ))
             deadlineMillis = System.currentTimeMillis()
-            handleComplete(deadlineMillis)
+            handleComplete(deadlineMillis, skippedBreakAtBoundary = true)
         }
     }
 
@@ -286,8 +297,8 @@ class TimerForegroundService : Service() {
             consecutivePostpones++
             BreakOverlayController.hide()
             isBreak = false
-            postponedBreakDuration = currentPhaseInitialDuration
-            deferredBreakWasSkipped = false
+            pendingBreakDuration = currentPhaseInitialDuration
+            pendingBreakReason = "postponed"
             currentPhaseInitialDuration = postponeDurationSeconds
             pendingEvents.add(mapOf(
                 "type" to "breakPostponed",
@@ -392,7 +403,10 @@ class TimerForegroundService : Service() {
         return false
     }
 
-    fun handleComplete(expectedDeadline: Long) {
+    fun handleComplete(
+        expectedDeadline: Long,
+        skippedBreakAtBoundary: Boolean = false,
+    ) {
         if (expectedDeadline > 0L && expectedDeadline != deadlineMillis) {
             // A previous alarm was already queued when Flutter changed phase.
             resumeCurrentPhase()
@@ -428,12 +442,14 @@ class TimerForegroundService : Service() {
             return
         }
 
+        var skippedBreak = skippedBreakAtBoundary
         do {
             val completedWasBreak = isBreak
-            if (!advanceBoundary()) {
+            if (!advanceBoundary(skippedBreak)) {
                 finishSchedule(completedWasBreak)
                 return
             }
+            skippedBreak = false
         } while (deadlineMillis <= now)
 
         saveState()
@@ -446,17 +462,19 @@ class TimerForegroundService : Service() {
      * work increments counters and starts a break; break checks the run limit
      * before starting the next work phase.
      */
-    private fun advanceBoundary(): Boolean {
+    private fun advanceBoundary(breakWasSkipped: Boolean = false): Boolean {
         if (isBreak) {
             BreakOverlayController.hide()
-            // Break completed naturally — reset consecutive skip counter
-            consecutiveSkips = 0
-            consecutivePostpones = 0
-            pendingEvents.add(mapOf(
-                "type" to "breakCompleted",
-                "timestamp" to System.currentTimeMillis(),
-                "durationSeconds" to currentPhaseInitialDuration
-            ))
+            if (!breakWasSkipped) {
+                // A natural completion resets the skip/postpone streak.
+                consecutiveSkips = 0
+                consecutivePostpones = 0
+                pendingEvents.add(mapOf(
+                    "type" to "breakCompleted",
+                    "timestamp" to System.currentTimeMillis(),
+                    "durationSeconds" to currentPhaseInitialDuration
+                ))
+            }
             if (!shouldContinueAutoRun() || workDurationSeconds <= 0) {
                 return false
             }
@@ -466,14 +484,14 @@ class TimerForegroundService : Service() {
             return true
         }
 
-        val isPostponedTransition = postponedBreakDuration > 0
-        val isDeferredSkippedBreak =
-            isPostponedTransition && deferredBreakWasSkipped
-        val duration = if (isPostponedTransition) {
-            val dur = postponedBreakDuration
-            postponedBreakDuration = -1
-            deferredBreakWasSkipped = false
-            if (isDeferredSkippedBreak) {
+        val hasPendingBreak = pendingBreakDuration > 0
+        val isSkippedLongBreak =
+            hasPendingBreak && pendingBreakReason == "skippedLong"
+        val duration = if (hasPendingBreak) {
+            val dur = pendingBreakDuration
+            pendingBreakDuration = -1
+            pendingBreakReason = null
+            if (isSkippedLongBreak) {
                 streakCount += 1
                 completedAutoRunCycles += 1
             }
@@ -488,7 +506,7 @@ class TimerForegroundService : Service() {
             return false
         }
 
-        if (!isPostponedTransition || isDeferredSkippedBreak) {
+        if (!hasPendingBreak || isSkippedLongBreak) {
             pendingEvents.add(mapOf(
                 "type" to "workCompleted",
                 "timestamp" to System.currentTimeMillis(),
@@ -769,8 +787,8 @@ class TimerForegroundService : Service() {
             .putInt(EXTRA_POSTPONE_DURATION, postponeDurationSeconds)
             .putBoolean("smartIdleEnabled", smartIdleEnabled)
             .putBoolean("naturalBreakCreditEnabled", naturalBreakCreditEnabled)
-            .putInt("postponedBreakDuration", postponedBreakDuration)
-            .putBoolean("deferredBreakWasSkipped", deferredBreakWasSkipped)
+            .putInt("pendingBreakDuration", pendingBreakDuration)
+            .putString("pendingBreakReason", pendingBreakReason)
             .putInt("currentPhaseInitialDuration", currentPhaseInitialDuration)
             .putLong("screenOffTimeMillis", screenOffTimeMillis)
             .putBoolean("isScreenOffPaused", isScreenOffPaused)
@@ -820,8 +838,19 @@ class TimerForegroundService : Service() {
         postponeDurationSeconds = preferences.getInt(EXTRA_POSTPONE_DURATION, 120)
         smartIdleEnabled = preferences.getBoolean("smartIdleEnabled", true)
         naturalBreakCreditEnabled = preferences.getBoolean("naturalBreakCreditEnabled", true)
-        postponedBreakDuration = preferences.getInt("postponedBreakDuration", -1)
-        deferredBreakWasSkipped = preferences.getBoolean("deferredBreakWasSkipped", false)
+        pendingBreakDuration = if (preferences.contains("pendingBreakDuration")) {
+            preferences.getInt("pendingBreakDuration", -1)
+        } else {
+            preferences.getInt("postponedBreakDuration", -1)
+        }
+        pendingBreakReason = preferences.getString("pendingBreakReason", null)
+            ?: if (preferences.getBoolean("deferredBreakWasSkipped", false)) {
+                "skippedLong"
+            } else if (pendingBreakDuration > 0) {
+                "postponed"
+            } else {
+                null
+            }
         currentPhaseInitialDuration = preferences.getInt("currentPhaseInitialDuration", 0)
         screenOffTimeMillis = preferences.getLong("screenOffTimeMillis", 0L)
         maxConsecutiveSkips = preferences.getInt("maxConsecutiveSkips", 0)
@@ -925,8 +954,8 @@ class TimerForegroundService : Service() {
             postponeDurationSeconds: Int,
             smartIdleEnabled: Boolean,
             naturalBreakCreditEnabled: Boolean,
-            postponedBreakDuration: Int? = null,
-            deferredBreakWasSkipped: Boolean = false,
+            pendingBreakDuration: Int? = null,
+            pendingBreakReason: String? = null,
             currentPhaseDurationSeconds: Int? = null,
             maxConsecutiveSkips: Int = 0,
             consecutiveSkips: Int = 0,
@@ -953,8 +982,8 @@ class TimerForegroundService : Service() {
                 putExtra(EXTRA_POSTPONE_DURATION, postponeDurationSeconds)
                 putExtra(EXTRA_SMART_IDLE, smartIdleEnabled)
                 putExtra(EXTRA_NATURAL_BREAK_CREDIT, naturalBreakCreditEnabled)
-                putExtra("postponedBreakDuration", postponedBreakDuration ?: -1)
-                putExtra("deferredBreakWasSkipped", deferredBreakWasSkipped)
+                putExtra("pendingBreakDuration", pendingBreakDuration ?: -1)
+                putExtra("pendingBreakReason", pendingBreakReason)
                 putExtra("maxConsecutiveSkips", maxConsecutiveSkips)
                 putExtra("consecutiveSkips", consecutiveSkips)
                 putExtra("maxConsecutivePostpones", maxConsecutivePostpones)

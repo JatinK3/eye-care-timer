@@ -17,6 +17,7 @@ import 'package:screen_retriever/screen_retriever.dart';
 import '../../models/timer_session.dart';
 import '../../models/timer_settings.dart';
 import '../../models/timer_event_record.dart';
+import '../../models/pending_break.dart';
 import '../../services/ai_service.dart';
 import '../../services/break_overlay_service.dart';
 import '../../services/desktop_controls_controller.dart';
@@ -63,14 +64,19 @@ class TimerHomePage extends StatefulWidget {
   final void Function(double) setSoundscapeVolume;
   final BreakMode breakMode;
   final BreakOverlayService? breakOverlayService;
-  final void Function(BuildContext context, bool canChangeDurations, bool isTimerRunning)
+  final void Function(
+    BuildContext context,
+    bool canChangeDurations,
+    bool isTimerRunning,
+  )
   openSettings;
   final void Function(BuildContext context) openHistory;
   final void Function(String) setPreset;
   final VoidCallback toggleTheme;
   final void Function(int workDurationSeconds, int breakDurationSeconds)
   saveDurations;
-  final void Function({required bool enabled, required int cycleLimit}) saveAutoRunSettings;
+  final void Function({required bool enabled, required int cycleLimit})
+  saveAutoRunSettings;
   final void Function(int) setDailyGoal;
   final void Function(int streakCount) saveStreakCount;
   final void Function(DateTime completedAt, int durationSeconds)
@@ -307,8 +313,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
   bool _lastDndState = false;
 
-  int? _postponedBreakDuration;
-  bool _deferredBreakWasSkipped = false;
+  PendingBreak? _pendingBreak;
 
   static const Size _miniModeWindowSize = Size(168, 168);
 
@@ -405,7 +410,8 @@ class TimerHomePageState extends State<TimerHomePage>
     if (!widget.adaptiveSchedulingEnabled) return;
     if (widget.aiApiKey.isEmpty) {
       setState(() {
-        _aiScheduleError = 'API key is missing. Please configure it in Settings.';
+        _aiScheduleError =
+            'API key is missing. Please configure it in Settings.';
         _isAiScheduleLoading = false;
       });
       return;
@@ -442,7 +448,7 @@ class TimerHomePageState extends State<TimerHomePage>
       int skipped = 0;
       int postponed = 0;
       final moodCounts = <String, int>{};
-      
+
       for (final event in widget.todaysEvents) {
         if (event.type == TimerEventType.workCompleted) {
           completed++;
@@ -454,13 +460,15 @@ class TimerHomePageState extends State<TimerHomePage>
         if (event.type == TimerEventType.breakSkipped) skipped++;
         if (event.type == TimerEventType.breakPostponed) postponed++;
       }
-      
+
       String moodStr = '';
       if (moodCounts.isNotEmpty) {
-        moodStr = ' Focus moods reported today: ${moodCounts.entries.map((e) => '${e.value}x ${e.key}').join(', ')}.';
+        moodStr =
+            ' Focus moods reported today: ${moodCounts.entries.map((e) => '${e.value}x ${e.key}').join(', ')}.';
       }
-      
-      final historySummary = 'Today: $completed work sessions completed, $skipped breaks skipped, $postponed breaks postponed.$moodStr';
+
+      final historySummary =
+          'Today: $completed work sessions completed, $skipped breaks skipped, $postponed breaks postponed.$moodStr';
 
       final suggestion = await AiService.instance.generateSmartSchedule(
         provider: widget.aiProvider,
@@ -471,10 +479,13 @@ class TimerHomePageState extends State<TimerHomePage>
         currentBreakMinutes: widget.initialBreakDurationSeconds ~/ 60,
         userTaskContext: _taskContextController.text,
       );
-      
+
       try {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('last_ai_schedule_fetch', DateTime.now().millisecondsSinceEpoch);
+        await prefs.setInt(
+          'last_ai_schedule_fetch',
+          DateTime.now().millisecondsSinceEpoch,
+        );
         await prefs.setString('cached_ai_schedule', jsonEncode(suggestion));
       } catch (_) {}
 
@@ -485,7 +496,8 @@ class TimerHomePageState extends State<TimerHomePage>
     } catch (e, stackTrace) {
       unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       setState(() {
-        _aiScheduleError = 'Failed to analyze schedule. Make sure your API key and connection are valid.';
+        _aiScheduleError =
+            'Failed to analyze schedule. Make sure your API key and connection are valid.';
         _isAiScheduleLoading = false;
       });
     }
@@ -552,6 +564,7 @@ class TimerHomePageState extends State<TimerHomePage>
   StreamSubscription<DesktopCommand>? _desktopCommandSubscription;
   StreamSubscription<bool>? _desktopIdleSubscription;
   StreamSubscription<bool>? _desktopLockSubscription;
+
   /// Polling timer that uses org.gnome.Mutter.IdleMonitor.GetIdletime on
   /// Wayland/GNOME as a reliable fallback for idle detection. The
   /// system_idle package uses ext-idle-notify-v1, but on GNOME/Wayland the
@@ -582,7 +595,8 @@ class TimerHomePageState extends State<TimerHomePage>
     _autoRunCycleLimit = widget.autoRunCycleLimit;
     _autoRunCompletedCycles = widget.initialSession.completedAutoRunCycles;
     _breakDebtSeconds = widget.initialSession.breakDebtSeconds;
-    _deferredBreakWasSkipped = widget.initialSession.deferredBreakWasSkipped;
+    _pendingBreak = widget.initialSession.pendingBreak;
+    _automaticPauseOverride = widget.initialSession.automaticPauseOverride;
     _streakCount = widget.initialStreakCount;
     _waterGlassesToday = widget.initialWaterGlassesToday;
     _currentDateKey = _todayKey();
@@ -860,8 +874,10 @@ class TimerHomePageState extends State<TimerHomePage>
   @override
   void didUpdateWidget(covariant TimerHomePage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialWorkDurationSeconds != widget.initialWorkDurationSeconds ||
-        oldWidget.initialBreakDurationSeconds != widget.initialBreakDurationSeconds) {
+    if (oldWidget.initialWorkDurationSeconds !=
+            widget.initialWorkDurationSeconds ||
+        oldWidget.initialBreakDurationSeconds !=
+            widget.initialBreakDurationSeconds) {
       _applyNewDurations(
         oldWork: oldWidget.initialWorkDurationSeconds,
         newWork: widget.initialWorkDurationSeconds,
@@ -869,7 +885,7 @@ class TimerHomePageState extends State<TimerHomePage>
         newBreak: widget.initialBreakDurationSeconds,
       );
     }
-    
+
     if (widget.aiMotivationEnabled &&
         (!oldWidget.aiMotivationEnabled ||
             oldWidget.aiApiKey != widget.aiApiKey ||
@@ -885,9 +901,11 @@ class TimerHomePageState extends State<TimerHomePage>
     if (oldWidget.osFocusDndEnabled != widget.osFocusDndEnabled) {
       _updateOsFocusDnd();
     }
-    if (oldWidget.soundscapeEnabled != widget.soundscapeEnabled || oldWidget.soundscapeStyle != widget.soundscapeStyle) {
+    if (oldWidget.soundscapeEnabled != widget.soundscapeEnabled ||
+        oldWidget.soundscapeStyle != widget.soundscapeStyle) {
       // Force an explicit restart if the style changes while running
-      if (oldWidget.soundscapeStyle != widget.soundscapeStyle && _soundscapePlayer?.state == PlayerState.playing) {
+      if (oldWidget.soundscapeStyle != widget.soundscapeStyle &&
+          _soundscapePlayer?.state == PlayerState.playing) {
         _soundscapePlayer?.stop().then((_) => _syncSoundscapePlayback());
       } else {
         unawaited(_syncSoundscapePlayback());
@@ -991,7 +1009,9 @@ class TimerHomePageState extends State<TimerHomePage>
     if (overlayService == null) return;
 
     final requestId = ++_mediaCheckRequestId;
-    final isPlaying = await overlayService.isMediaPlaying(filter: widget.autoPauseMediaFilter);
+    final isPlaying = await overlayService.isMediaPlaying(
+      filter: widget.autoPauseMediaFilter,
+    );
     final isMicActive = await _isMicInUse();
     final isCamActive = await _isCameraInUse();
     final isMediaActive = isPlaying || isMicActive || isCamActive;
@@ -1007,7 +1027,11 @@ class TimerHomePageState extends State<TimerHomePage>
       return;
     }
 
-    if (isMediaActive && !_isPaused && !_isMediaPaused && !_isSystemIdlePaused && !_isSchedulePaused) {
+    if (isMediaActive &&
+        !_isPaused &&
+        !_isMediaPaused &&
+        !_isSystemIdlePaused &&
+        !_isSchedulePaused) {
       // Media just started → auto-pause
       setState(() {
         _isMediaPaused = true;
@@ -1049,9 +1073,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
     setState(() {
       _phaseStartedAt = DateTime.now();
-      _phaseEndsAt = _phaseStartedAt!.add(
-        Duration(seconds: _remainingSeconds),
-      );
+      _phaseEndsAt = _phaseStartedAt!.add(Duration(seconds: _remainingSeconds));
       _animationController.forward();
       _saveActiveSession();
     });
@@ -1073,8 +1095,15 @@ class TimerHomePageState extends State<TimerHomePage>
       }
     });
     if (enabled) {
+      _saveActiveSession();
       _resumeAfterAutomaticPause();
     } else {
+      _saveActiveSession();
+      _checkSchedule();
+      if (!_isBreak && widget.smartIdleEnabled) {
+        handleDesktopIdleChange(_mutterIdleState);
+      }
+      unawaited(_checkMediaPlayback());
       _updateDesktopState();
     }
   }
@@ -1085,20 +1114,20 @@ class TimerHomePageState extends State<TimerHomePage>
       final dayChanged = _checkDayChange();
       if (!dayChanged) {
         if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-        // Android can fully suspend the Dart VM, so reconcile across every
-        // elapsed work/break boundary on resume.
-        _syncTimerWithClock();
-      } else if (!kIsWeb &&
-          (defaultTargetPlatform == TargetPlatform.linux ||
-              defaultTargetPlatform == TargetPlatform.macOS ||
-              defaultTargetPlatform == TargetPlatform.windows)) {
-        // Desktop keeps the Dart VM and the phase deadline timer running while
-        // hidden, so only the frozen countdown *animation* needs re-aligning.
-        // Deliberately NOT _syncTimerWithClock(): full phase reconciliation on
-        // desktop focus transitions previously spawned duplicate break overlays
-        // and corrupted streak state (see WORKLOG).
-        _realignAnimationToClock();
-      }
+          // Android can fully suspend the Dart VM, so reconcile across every
+          // elapsed work/break boundary on resume.
+          _syncTimerWithClock();
+        } else if (!kIsWeb &&
+            (defaultTargetPlatform == TargetPlatform.linux ||
+                defaultTargetPlatform == TargetPlatform.macOS ||
+                defaultTargetPlatform == TargetPlatform.windows)) {
+          // Desktop keeps the Dart VM and the phase deadline timer running while
+          // hidden, so only the frozen countdown *animation* needs re-aligning.
+          // Deliberately NOT _syncTimerWithClock(): full phase reconciliation on
+          // desktop focus transitions previously spawned duplicate break overlays
+          // and corrupted streak state (see WORKLOG).
+          _realignAnimationToClock();
+        }
       }
       if (_isFocusMode) {
         unawaited(_systemUiService.setFocusModeEnabled(true));
@@ -1166,7 +1195,9 @@ class TimerHomePageState extends State<TimerHomePage>
         if (!mounted) return;
         if (systemIdle.isSupported) {
           _desktopIdleSubscription = systemIdle
-              .onIdleChanged(idleDuration: Duration(minutes: widget.idleTimeoutMinutes))
+              .onIdleChanged(
+                idleDuration: Duration(minutes: widget.idleTimeoutMinutes),
+              )
               .listen((isIdle) {
                 if (!mounted) return;
                 // Only use the system_idle stream on non-Wayland sessions
@@ -1186,40 +1217,39 @@ class TimerHomePageState extends State<TimerHomePage>
       final sessionType = Platform.environment['XDG_SESSION_TYPE'] ?? '';
       if (sessionType.toLowerCase() == 'wayland') {
         final idleThresholdMs = widget.idleTimeoutMinutes * 60 * 1000;
-        _mutterIdlePoller = Timer.periodic(
-          const Duration(seconds: 5),
-          (_) async {
-            if (!mounted || !widget.smartIdleEnabled) return;
-            if (!_isRunning || _isBreak) return;
-            try {
-              final result = await Process.run('gdbus', [
-                'call',
-                '--session',
-                '--dest',
-                'org.gnome.Mutter.IdleMonitor',
-                '--object-path',
-                '/org/gnome/Mutter/IdleMonitor/Core',
-                '--method',
-                'org.gnome.Mutter.IdleMonitor.GetIdletime',
-              ]);
-              if (!mounted) return;
-              if (result.exitCode != 0) return;
-              final stdout = result.stdout as String;
-              // gdbus returns "(uint64 1234,)" — parse the number
-              final match = RegExp(r'uint64\s+(\d+)').firstMatch(stdout);
-              if (match == null) return;
-              final idleMs = int.tryParse(match.group(1)!);
-              if (idleMs == null) return;
-              final isNowIdle = idleMs >= idleThresholdMs;
-              if (isNowIdle != _mutterIdleState) {
-                _mutterIdleState = isNowIdle;
-                handleDesktopIdleChange(isNowIdle, isLockEvent: false);
-              }
-            } catch (_) {
-              // gdbus not available or call failed — silently skip
+        _mutterIdlePoller = Timer.periodic(const Duration(seconds: 5), (
+          _,
+        ) async {
+          if (!mounted || !widget.smartIdleEnabled) return;
+          if (!_isRunning || _isBreak) return;
+          try {
+            final result = await Process.run('gdbus', [
+              'call',
+              '--session',
+              '--dest',
+              'org.gnome.Mutter.IdleMonitor',
+              '--object-path',
+              '/org/gnome/Mutter/IdleMonitor/Core',
+              '--method',
+              'org.gnome.Mutter.IdleMonitor.GetIdletime',
+            ]);
+            if (!mounted) return;
+            if (result.exitCode != 0) return;
+            final stdout = result.stdout as String;
+            // gdbus returns "(uint64 1234,)" — parse the number
+            final match = RegExp(r'uint64\s+(\d+)').firstMatch(stdout);
+            if (match == null) return;
+            final idleMs = int.tryParse(match.group(1)!);
+            if (idleMs == null) return;
+            final isNowIdle = idleMs >= idleThresholdMs;
+            if (isNowIdle != _mutterIdleState) {
+              _mutterIdleState = isNowIdle;
+              handleDesktopIdleChange(isNowIdle, isLockEvent: false);
             }
-          },
-        );
+          } catch (_) {
+            // gdbus not available or call failed — silently skip
+          }
+        });
       }
     } catch (e, stackTrace) {
       unawaited(Sentry.captureException(e, stackTrace: stackTrace));
@@ -1239,7 +1269,9 @@ class TimerHomePageState extends State<TimerHomePage>
           // those seconds to accurately measure the total duration of the user's away time.
           _idleStartedAt = isLockEvent
               ? DateTime.now()
-              : DateTime.now().subtract(Duration(minutes: widget.idleTimeoutMinutes));
+              : DateTime.now().subtract(
+                  Duration(minutes: widget.idleTimeoutMinutes),
+                );
           _isSystemIdlePaused = true;
           _animationController.stop();
           _pulseController.stop();
@@ -1256,15 +1288,18 @@ class TimerHomePageState extends State<TimerHomePage>
       if (_isSystemIdlePaused) {
         final idleStart = _idleStartedAt;
         _idleStartedAt = null;
-        
+
         if (idleStart != null) {
           final idleDuration = DateTime.now().difference(idleStart);
-          
+
           // Even if they didn't take a full natural break, time away from the screen
           // allows the eyes to rest. We dynamically reduce their break debt (Eye Strain Risk)
           // based on how long they were away!
           if (idleDuration.inSeconds > 0) {
-            _breakDebtSeconds = math.max(0, _breakDebtSeconds - idleDuration.inSeconds);
+            _breakDebtSeconds = math.max(
+              0,
+              _breakDebtSeconds - idleDuration.inSeconds,
+            );
           }
         }
 
@@ -1333,8 +1368,8 @@ class TimerHomePageState extends State<TimerHomePage>
       return;
     }
 
-    _postponedBreakDuration = session.postponedBreakDuration;
-    _deferredBreakWasSkipped = session.deferredBreakWasSkipped;
+    _pendingBreak = session.pendingBreak;
+    _automaticPauseOverride = session.automaticPauseOverride;
 
     final projection = projectPhase(
       now: DateTime.now(),
@@ -1344,7 +1379,7 @@ class TimerHomePageState extends State<TimerHomePage>
       streakCount: _streakCount,
       autoRunCompletedCycles: session.completedAutoRunCycles,
       plan: _currentPlan(),
-      postponedBreakDuration: session.postponedBreakDuration,
+      pendingBreak: session.pendingBreak,
     );
 
     if (projection.boundariesCrossed == 0 && !projection.isIdle) {
@@ -1397,8 +1432,8 @@ class TimerHomePageState extends State<TimerHomePage>
       );
       _animationController.value = progress;
       _autoRunCompletedCycles = session.completedAutoRunCycles;
-      _postponedBreakDuration = session.postponedBreakDuration;
-      _deferredBreakWasSkipped = session.deferredBreakWasSkipped;
+      _pendingBreak = session.pendingBreak;
+      _automaticPauseOverride = session.automaticPauseOverride;
     });
   }
 
@@ -1437,6 +1472,7 @@ class TimerHomePageState extends State<TimerHomePage>
           _isPaused = false;
           _isBreak = false;
           _isSystemIdlePaused = false;
+          _automaticPauseOverride = false;
           _snoozeEndsAt = null;
           _lastSnoozeRemaining = null;
           _phaseOpacity = 1.0;
@@ -1542,11 +1578,20 @@ class TimerHomePageState extends State<TimerHomePage>
     required bool playChime,
   }) {
     if (projection.boundariesCrossed > 0) {
-      _postponedBreakDuration = null;
-      _deferredBreakWasSkipped = false;
+      _pendingBreak = null;
     }
     for (final work in projection.completedWorkSessions) {
       widget.saveCompletedWorkSession(work.completedAt, work.durationSeconds);
+    }
+    for (final completedBreak in projection.completedBreaks) {
+      widget.saveTimerEventRecord(
+        TimerEventRecord(
+          id: completedBreak.completedAt.microsecondsSinceEpoch.toString(),
+          timestamp: completedBreak.completedAt,
+          type: TimerEventType.breakCompleted,
+          durationSeconds: completedBreak.durationSeconds,
+        ),
+      );
     }
     if (projection.completedWorkSessions.isNotEmpty) {
       _streakCount = projection.streakCount;
@@ -1673,11 +1718,10 @@ class TimerHomePageState extends State<TimerHomePage>
         allowSkip: widget.allowSkip,
         allowPostpone: widget.allowPostpone,
         postponeDurationSeconds: widget.postponeDurationSeconds,
-        smartIdleEnabled: widget.smartIdleEnabled,
+        smartIdleEnabled: widget.smartIdleEnabled && !_automaticPauseOverride,
         naturalBreakCreditEnabled: widget.naturalBreakCreditEnabled,
         osFocusDndEnabled: widget.osFocusDndEnabled,
-        postponedBreakDuration: _postponedBreakDuration,
-        deferredBreakWasSkipped: _deferredBreakWasSkipped,
+        pendingBreak: _pendingBreak,
         currentPhaseDurationSeconds: _initialDuration,
         maxConsecutiveSkips: widget.maxConsecutiveSkips,
         consecutiveSkips: _consecutiveSkips,
@@ -1754,6 +1798,7 @@ class TimerHomePageState extends State<TimerHomePage>
     _animationController.forward();
     _updateDesktopState();
   }
+
   void _applyNewDurations({
     required int oldWork,
     required int newWork,
@@ -1788,12 +1833,18 @@ class TimerHomePageState extends State<TimerHomePage>
 
       if (_phaseStartedAt != null) {
         _phaseEndsAt = _phaseStartedAt!.add(Duration(seconds: newDuration));
-        
-        final bool isActivelyTicking = !_isPaused && !_isSystemIdlePaused && !_isMediaPaused && !_isSchedulePaused;
+
+        final bool isActivelyTicking =
+            !_isPaused &&
+            !_isSystemIdlePaused &&
+            !_isMediaPaused &&
+            !_isSchedulePaused;
         if (isActivelyTicking) {
           _cancelReminders();
           _schedulePhaseDeadlineTimer(_phaseEndsAt!);
-          unawaited(_schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak));
+          unawaited(
+            _schedulePhaseReminder(_remainingSeconds, isBreak: _isBreak),
+          );
           _startBackgroundPhase(phaseEndsAt: _phaseEndsAt!, isBreak: _isBreak);
         }
       }
@@ -1802,7 +1853,10 @@ class TimerHomePageState extends State<TimerHomePage>
       if (progress > 1.0) progress = 1.0;
       if (progress < 0.0) progress = 0.0;
 
-      if (_isPaused || _isSystemIdlePaused || _isMediaPaused || _isSchedulePaused) {
+      if (_isPaused ||
+          _isSystemIdlePaused ||
+          _isMediaPaused ||
+          _isSchedulePaused) {
         _animationController.value = progress;
         _saveActiveSession(isPaused: true);
       } else {
@@ -1813,7 +1867,6 @@ class TimerHomePageState extends State<TimerHomePage>
       _updateDesktopState();
     });
   }
-
 
   bool _isWithinWorkHours() {
     if (!widget.workHoursEnabled) return true;
@@ -1891,8 +1944,6 @@ class TimerHomePageState extends State<TimerHomePage>
       }
     }
   }
-
-
 
   // -------------------- Timer Logic --------------------
   void _startTimer(int duration, {bool isBreak = false}) {
@@ -2126,14 +2177,14 @@ class TimerHomePageState extends State<TimerHomePage>
 
   int _getEffectiveWorkDuration() {
     if (!widget.adaptiveSchedulingEnabled) return _workDurationSeconds;
-    
+
     // Add 5 minutes for each skip/postpone
     final additions = (_consecutiveSkips + _consecutivePostpones) * 300;
     if (additions == 0) return _workDurationSeconds;
-    
+
     // Cap addition to +15m max to prevent extreme schedules
     final cappedAdditions = additions > 900 ? 900 : additions;
-    
+
     return _workDurationSeconds + cappedAdditions;
   }
 
@@ -2174,8 +2225,10 @@ class TimerHomePageState extends State<TimerHomePage>
       // Keep a skipped long break at the head of the pending-break queue.
       // It is delivered after the next work phase instead of being replaced by
       // that phase's normal short-break cadence.
-      _postponedBreakDuration = _initialDuration;
-      _deferredBreakWasSkipped = true;
+      _pendingBreak = PendingBreak(
+        durationSeconds: _initialDuration,
+        reason: PendingBreakReason.skippedLong,
+      );
     } else if (_isBreak) {
       _breakDebtSeconds += _remainingSeconds;
     }
@@ -2232,8 +2285,10 @@ class TimerHomePageState extends State<TimerHomePage>
     );
     setState(() {
       _isBreak = false;
-      _postponedBreakDuration = _initialDuration;
-      _deferredBreakWasSkipped = false;
+      _pendingBreak = PendingBreak(
+        durationSeconds: _initialDuration,
+        reason: PendingBreakReason.postponed,
+      );
       _phaseOpacity = 1.0;
       _initialDuration = postponeSeconds;
       _remainingSeconds = _initialDuration;
@@ -2317,6 +2372,7 @@ class TimerHomePageState extends State<TimerHomePage>
     // Reset the Mutter idle state tracker so next run starts clean.
     _mutterIdleState = false;
   }
+
   bool _isCheckingEndOfDay = false;
 
   Future<void> _checkEndOfDaySummary() async {
@@ -2331,13 +2387,15 @@ class TimerHomePageState extends State<TimerHomePage>
       passedEnd = currentMins >= endMins;
     } else {
       final currentMins = now.hour * 60 + now.minute;
-      final endMins = widget.endOfDaySummaryHour * 60 + widget.endOfDaySummaryMinute;
+      final endMins =
+          widget.endOfDaySummaryHour * 60 + widget.endOfDaySummaryMinute;
       passedEnd = currentMins >= endMins;
     }
 
     if (!passedEnd) return;
 
-    final today = "\${now.year}-\${now.month.toString().padLeft(2, '0')}-\${now.day.toString().padLeft(2, '0')}";
+    final today =
+        "\${now.year}-\${now.month.toString().padLeft(2, '0')}-\${now.day.toString().padLeft(2, '0')}";
     final prefs = PreferencesService();
     final lastSummaryDate = await prefs.getLastEndOfDaySummaryDate();
     if (lastSummaryDate == today) return;
@@ -2348,7 +2406,7 @@ class TimerHomePageState extends State<TimerHomePage>
       final todayBreaks = todayStats[today] ?? 0;
       final waterStats = await prefs.loadWaterHistory();
       final todayWater = waterStats[today] ?? 0;
-      
+
       final moodCounts = <String, int>{};
       for (final event in widget.todaysEvents) {
         if (event.mood != null) {
@@ -2358,11 +2416,13 @@ class TimerHomePageState extends State<TimerHomePage>
       }
       String moodStr = '';
       if (moodCounts.isNotEmpty) {
-        moodStr = ' Moods reported today: ${moodCounts.entries.map((e) => '${e.value}x ${e.key}').join(', ')}.';
+        moodStr =
+            ' Moods reported today: ${moodCounts.entries.map((e) => '${e.value}x ${e.key}').join(', ')}.';
       }
-      
-      final promptStats = "Today's stats - Work cycles completed: $_autoRunCompletedCycles, Breaks taken: $todayBreaks, Current skips: $_consecutiveSkips, Water glasses logged: $todayWater.$moodStr";
-      
+
+      final promptStats =
+          "Today's stats - Work cycles completed: $_autoRunCompletedCycles, Breaks taken: $todayBreaks, Current skips: $_consecutiveSkips, Water glasses logged: $todayWater.$moodStr";
+
       final summary = await AiService.instance.generateEndOfDaySummary(
         provider: widget.aiProvider,
         apiKey: widget.aiApiKey,
@@ -2381,7 +2441,6 @@ class TimerHomePageState extends State<TimerHomePage>
       }
     }
   }
-
 
   Future<void> _syncTimerWithClock() async {
     if (!_isRunning || _isPaused || _phaseEndsAt == null) {
@@ -2431,9 +2490,13 @@ class TimerHomePageState extends State<TimerHomePage>
       final bgStreakCount = bgSession['streakCount'] as int;
       final bgCompletedAutoRunCycles =
           bgSession['completedAutoRunCycles'] as int;
+      final bgCurrentPhaseDuration =
+          bgSession['currentPhaseInitialDuration'] as int? ?? 0;
       final pendingEvents = bgSession['pendingEvents'] as List<dynamic>?;
-      final bgPostponedBreakDuration =
-          bgSession['postponedBreakDuration'] as int?;
+      final bgPendingBreak = PendingBreak.fromJson(<String, dynamic>{
+        'durationSeconds': bgSession['pendingBreakDuration'],
+        'reason': bgSession['pendingBreakReason'],
+      });
       if (pendingEvents != null) {
         bool hasNaturalBreak = false;
         for (final event in pendingEvents) {
@@ -2480,9 +2543,7 @@ class TimerHomePageState extends State<TimerHomePage>
         _streakCount = bgStreakCount;
         _autoRunCompletedCycles = bgCompletedAutoRunCycles;
         _phaseEndsAt = DateTime.fromMillisecondsSinceEpoch(bgEndsAtMillis);
-        _postponedBreakDuration = bgPostponedBreakDuration;
-        _deferredBreakWasSkipped =
-            bgSession['deferredBreakWasSkipped'] as bool? ?? false;
+        _pendingBreak = bgPendingBreak;
         _consecutiveSkips =
             bgSession['consecutiveSkips'] as int? ?? _consecutiveSkips;
         _consecutivePostpones =
@@ -2497,7 +2558,9 @@ class TimerHomePageState extends State<TimerHomePage>
         _autoRunEnabled = bgSession['autoRunEnabled'] as bool;
         _autoRunCycleLimit = bgSession['autoRunCycleLimit'] as int;
 
-        _initialDuration = _isBreak
+        _initialDuration = bgCurrentPhaseDuration > 0
+            ? bgCurrentPhaseDuration
+            : _isBreak
             ? _breakDurationForCompletedCycle(_streakCount)
             : _workDurationSeconds;
       });
@@ -2511,7 +2574,7 @@ class TimerHomePageState extends State<TimerHomePage>
       streakCount: _streakCount,
       autoRunCompletedCycles: _autoRunCompletedCycles,
       plan: _currentPlan(),
-      postponedBreakDuration: _postponedBreakDuration,
+      pendingBreak: _pendingBreak,
     );
     _applyProjection(
       projection,
@@ -2557,22 +2620,21 @@ class TimerHomePageState extends State<TimerHomePage>
     int upcomingBreakDuration = 0;
     bool wasPostponedWork = false;
     if (!completedBreakPhase) {
-      if (widget.cameraMicAutoPostponeEnabled &&
-          !_automaticPauseOverride) {
+      if (widget.cameraMicAutoPostponeEnabled && !_automaticPauseOverride) {
         final camInUse = await _isCameraInUse();
         final micInUse = await _isMicInUse();
-        final mediaPlaying = await widget.breakOverlayService?.isMediaPlaying() ?? false;
-        
+        final mediaPlaying =
+            await widget.breakOverlayService?.isMediaPlaying() ?? false;
+
         if (camInUse || micInUse || mediaPlaying) {
           shouldAutoPostpone = true;
         }
       }
       if (shouldAutoPostpone) {
         upcomingBreakDuration =
-            _postponedBreakDuration ??
+            _pendingBreak?.durationSeconds ??
             _breakDurationForCompletedCycle(_streakCount + 1);
-        wasPostponedWork =
-            _postponedBreakDuration != null && !_deferredBreakWasSkipped;
+        wasPostponedWork = _pendingBreak?.isPostponed ?? false;
       }
     }
 
@@ -2628,24 +2690,17 @@ class TimerHomePageState extends State<TimerHomePage>
       }
 
       int upcomingBreakDuration =
-          _postponedBreakDuration ??
+          _pendingBreak?.durationSeconds ??
           _breakDurationForCompletedCycle(_streakCount + 1);
-      final isPostponed =
-          _postponedBreakDuration != null && !_deferredBreakWasSkipped;
+      final isPostponed = _pendingBreak?.isPostponed ?? false;
 
       if (_breakDebtSeconds > 0) {
         upcomingBreakDuration += _breakDebtSeconds;
         _breakDebtSeconds = 0;
       }
-      
-      // Cap the break duration to 7 minutes (420 seconds) maximum to prevent excessively long breaks
-      if (upcomingBreakDuration > 420) {
-        upcomingBreakDuration = 420;
-      }
 
       setState(() {
-        _postponedBreakDuration = null;
-        _deferredBreakWasSkipped = false;
+        _pendingBreak = null;
         if (!isPostponed) {
           _streakCount = _streakCount + 1;
           _autoRunCompletedCycles++;
@@ -2708,17 +2763,17 @@ class TimerHomePageState extends State<TimerHomePage>
         remainingSeconds: remainingSeconds ?? _remainingSeconds,
         phaseStartedAt: _phaseStartedAt,
         phaseEndsAt: _phaseEndsAt,
-      completedAutoRunCycles: _autoRunCompletedCycles,
-      postponedBreakDuration: _postponedBreakDuration,
-      deferredBreakWasSkipped: _deferredBreakWasSkipped,
-      breakDebtSeconds: _breakDebtSeconds,
+        completedAutoRunCycles: _autoRunCompletedCycles,
+        pendingBreak: _pendingBreak,
+        automaticPauseOverride: _automaticPauseOverride,
+        breakDebtSeconds: _breakDebtSeconds,
       ),
     );
   }
 
   bool _isNextBreakLong() {
-    if (_postponedBreakDuration != null) {
-      return _postponedBreakDuration == _longBreakDurationSeconds;
+    if (_pendingBreak != null) {
+      return _pendingBreak!.durationSeconds == _longBreakDurationSeconds;
     }
     if (!_longBreakEnabled || _longBreakEveryCycles <= 0) return false;
     return (_streakCount + 1) % _longBreakEveryCycles == 0;
@@ -3110,8 +3165,10 @@ class TimerHomePageState extends State<TimerHomePage>
     // 3. Set the state for the new postponed work phase
     setState(() {
       _isBreak = false;
-      _postponedBreakDuration = upcomingBreakDuration;
-      _deferredBreakWasSkipped = false;
+      _pendingBreak = PendingBreak(
+        durationSeconds: upcomingBreakDuration,
+        reason: PendingBreakReason.postponed,
+      );
       _phaseOpacity = 1.0;
       _initialDuration = postponeSeconds;
       _remainingSeconds = _initialDuration;
@@ -3605,7 +3662,7 @@ class TimerHomePageState extends State<TimerHomePage>
     final consumed = _waterGlassesToday;
     final goalReached = goal > 0 && consumed >= goal;
     final ml = consumed * settings.waterGlassSizeMl;
-    
+
     final expected = _expectedWaterGlassesBy(DateTime.now());
     String forecastText = '';
     if (goalReached) {
@@ -3629,9 +3686,7 @@ class TimerHomePageState extends State<TimerHomePage>
         children: [
           // Base background
           Positioned.fill(
-            child: Container(
-              color: waterColor.withValues(alpha: 0.05),
-            ),
+            child: Container(color: waterColor.withValues(alpha: 0.05)),
           ),
           // Animated progress fill background
           Positioned.fill(
@@ -3886,9 +3941,14 @@ class TimerHomePageState extends State<TimerHomePage>
               ),
               const Spacer(),
               Text(
-                widget.soundscapeStyle.replaceAll('Binaural', '').replaceAll('Noise', '').trim(),
+                widget.soundscapeStyle
+                    .replaceAll('Binaural', '')
+                    .replaceAll('Noise', '')
+                    .trim(),
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                  color: theme.textTheme.bodySmall?.color?.withValues(
+                    alpha: 0.7,
+                  ),
                 ),
               ),
             ],
@@ -3896,13 +3956,21 @@ class TimerHomePageState extends State<TimerHomePage>
           const SizedBox(height: 4),
           Row(
             children: [
-              Icon(Icons.volume_down, size: 16, color: theme.iconTheme.color?.withValues(alpha: 0.7)),
+              Icon(
+                Icons.volume_down,
+                size: 16,
+                color: theme.iconTheme.color?.withValues(alpha: 0.7),
+              ),
               Expanded(
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     trackHeight: 2,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 6,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 12,
+                    ),
                   ),
                   child: Slider(
                     value: widget.soundscapeVolume,
@@ -3912,7 +3980,11 @@ class TimerHomePageState extends State<TimerHomePage>
                   ),
                 ),
               ),
-              Icon(Icons.volume_up, size: 16, color: theme.iconTheme.color?.withValues(alpha: 0.7)),
+              Icon(
+                Icons.volume_up,
+                size: 16,
+                color: theme.iconTheme.color?.withValues(alpha: 0.7),
+              ),
             ],
           ),
         ],
@@ -3922,7 +3994,7 @@ class TimerHomePageState extends State<TimerHomePage>
 
   Widget _buildMoodSelector(ThemeData theme, bool isDark, Color accentColor) {
     if (_isRunning) return const SizedBox.shrink();
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
       child: Column(
@@ -3946,10 +4018,14 @@ class TimerHomePageState extends State<TimerHomePage>
                 selectedColor: accentColor.withValues(alpha: 0.2),
                 checkmarkColor: accentColor,
                 labelStyle: theme.textTheme.bodySmall?.copyWith(
-                  color: isSelected ? accentColor : (isDark ? Colors.white70 : Colors.black87),
+                  color: isSelected
+                      ? accentColor
+                      : (isDark ? Colors.white70 : Colors.black87),
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
-                backgroundColor: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                backgroundColor: isDark
+                    ? Colors.white10
+                    : Colors.black.withValues(alpha: 0.05),
                 onSelected: (selected) {
                   setState(() {
                     _currentMood = selected ? mood : null;
@@ -4166,7 +4242,11 @@ class TimerHomePageState extends State<TimerHomePage>
     );
   }
 
-  Widget _buildAiSmartScheduleCard(ThemeData theme, bool isDark, Color accentColor) {
+  Widget _buildAiSmartScheduleCard(
+    ThemeData theme,
+    bool isDark,
+    Color accentColor,
+  ) {
     if (!widget.adaptiveSchedulingEnabled) return const SizedBox.shrink();
 
     final surfaceColor = isDark
@@ -4249,9 +4329,12 @@ class TimerHomePageState extends State<TimerHomePage>
                 newLimit = (totalWorkSeconds / newWorkSeconds).round();
                 if (newLimit < 1) newLimit = 1;
                 if (newLimit > 99) newLimit = 99;
-                
+
                 if (newLimit != currentLimit) {
-                  widget.saveAutoRunSettings(enabled: _autoRunEnabled, cycleLimit: newLimit);
+                  widget.saveAutoRunSettings(
+                    enabled: _autoRunEnabled,
+                    cycleLimit: newLimit,
+                  );
                 }
               }
 
@@ -4261,7 +4344,7 @@ class TimerHomePageState extends State<TimerHomePage>
                 newDailyGoal = (totalDailySeconds / newWorkSeconds).round();
                 if (newDailyGoal < 1) newDailyGoal = 1;
                 if (newDailyGoal > 99) newDailyGoal = 99;
-                
+
                 if (newDailyGoal != widget.dailyGoal) {
                   widget.setDailyGoal(newDailyGoal);
                 }
@@ -4275,7 +4358,11 @@ class TimerHomePageState extends State<TimerHomePage>
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(msg),
-                  margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+                  margin: const EdgeInsets.only(
+                    bottom: 80,
+                    left: 16,
+                    right: 16,
+                  ),
                   duration: const Duration(seconds: 3),
                 ),
               );
@@ -4295,7 +4382,10 @@ class TimerHomePageState extends State<TimerHomePage>
         ],
       );
     } else {
-      content = Text('No schedule suggestion available.', style: theme.textTheme.bodySmall);
+      content = Text(
+        'No schedule suggestion available.',
+        style: theme.textTheme.bodySmall,
+      );
     }
 
     return Card(
@@ -4325,7 +4415,8 @@ class TimerHomePageState extends State<TimerHomePage>
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      if (!_isAiScheduleLoading && _aiScheduleSuggestion != null)
+                      if (!_isAiScheduleLoading &&
+                          _aiScheduleSuggestion != null)
                         IconButton(
                           icon: const Icon(Icons.refresh, size: 16),
                           padding: EdgeInsets.zero,
@@ -4342,12 +4433,20 @@ class TimerHomePageState extends State<TimerHomePage>
                     enabled: !_isAiScheduleLoading,
                     minLines: 1,
                     maxLines: 3,
-                    style: theme.textTheme.bodySmall?.copyWith(color: isDark ? Colors.white : Colors.black87),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                     decoration: InputDecoration(
-                      hintText: 'What are you working on? (e.g. "Writing a presentation for 2 hours")',
-                      hintStyle: theme.textTheme.bodySmall?.copyWith(color: isDark ? Colors.white54 : Colors.black38),
+                      hintText:
+                          'What are you working on? (e.g. "Writing a presentation for 2 hours")',
+                      hintStyle: theme.textTheme.bodySmall?.copyWith(
+                        color: isDark ? Colors.white54 : Colors.black38,
+                      ),
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: borderColor),
@@ -4362,16 +4461,24 @@ class TimerHomePageState extends State<TimerHomePage>
                       ),
                       disabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: borderColor.withValues(alpha: 0.05)),
+                        borderSide: BorderSide(
+                          color: borderColor.withValues(alpha: 0.05),
+                        ),
                       ),
                       suffixIcon: _isAiScheduleLoading
                           ? null
                           : IconButton(
-                              icon: Icon(Icons.send, size: 16, color: accentColor),
+                              icon: Icon(
+                                Icons.send,
+                                size: 16,
+                                color: accentColor,
+                              ),
                               onPressed: () => _fetchAiSmartSchedule(true),
                             ),
                     ),
-                    onSubmitted: _isAiScheduleLoading ? null : (_) => _fetchAiSmartSchedule(true),
+                    onSubmitted: _isAiScheduleLoading
+                        ? null
+                        : (_) => _fetchAiSmartSchedule(true),
                   ),
                   const SizedBox(height: 12),
                   content,
@@ -4476,13 +4583,18 @@ class TimerHomePageState extends State<TimerHomePage>
         data: effectiveTheme,
         child: Scaffold(
           extendBodyBehindAppBar: true,
-          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerFloat,
           floatingActionButton: _isFocusMode
               ? null
               : _GlassmorphicNavBar(
                   onTimerTap: () {}, // Already on Timer
                   onHistoryTap: () => widget.openHistory(context),
-                  onSettingsTap: () => widget.openSettings(context, _canChangeSettings, _isRunning),
+                  onSettingsTap: () => widget.openSettings(
+                    context,
+                    _canChangeSettings,
+                    _isRunning,
+                  ),
                   canChangeSettings: _canChangeSettings,
                   isDark: isDark,
                 ),
@@ -4559,7 +4671,7 @@ class TimerHomePageState extends State<TimerHomePage>
                         onPressed: _toggleMiniMode,
                         tooltip: 'Enter Mini Mode (PiP)',
                       ),
-                      
+
                     IconButton(
                       icon: Icon(
                         widget.soundscapeEnabled
@@ -4794,7 +4906,9 @@ class TimerHomePageState extends State<TimerHomePage>
                                       const SizedBox(width: 32),
                                       Expanded(
                                         child: SingleChildScrollView(
-                                          padding: const EdgeInsets.only(bottom: 120),
+                                          padding: const EdgeInsets.only(
+                                            bottom: 120,
+                                          ),
                                           child: Column(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
@@ -4836,11 +4950,14 @@ class TimerHomePageState extends State<TimerHomePage>
                                                           height: 10,
                                                         ),
                                                         _ParallaxCard(
-                                                          child: _buildBreakTipPanel(
-                                                            Theme.of(context),
-                                                            isDark,
-                                                            progressColor,
-                                                          ),
+                                                          child:
+                                                              _buildBreakTipPanel(
+                                                                Theme.of(
+                                                                  context,
+                                                                ),
+                                                                isDark,
+                                                                progressColor,
+                                                              ),
                                                         ),
                                                       ],
                                                     ],
@@ -4849,9 +4966,15 @@ class TimerHomePageState extends State<TimerHomePage>
                                                 const SizedBox(height: 12),
                                               ],
                                               if (!_isFocusMode && !_isRunning)
-                                                _buildMoodSelector(Theme.of(context), isDark, progressColor),
+                                                _buildMoodSelector(
+                                                  Theme.of(context),
+                                                  isDark,
+                                                  progressColor,
+                                                ),
                                               actionButtons,
-                                              _buildAutomaticPauseOverrideControl(context),
+                                              _buildAutomaticPauseOverrideControl(
+                                                context,
+                                              ),
                                               const SizedBox(height: 12),
                                               if (!_isFocusMode) ...[
                                                 Text(
@@ -4863,10 +4986,11 @@ class TimerHomePageState extends State<TimerHomePage>
                                                 ),
                                                 const SizedBox(height: 12),
                                                 _ParallaxCard(
-                                                  child: _buildTodayBreakSummary(
-                                                    Theme.of(context),
-                                                    progressColor,
-                                                  ),
+                                                  child:
+                                                      _buildTodayBreakSummary(
+                                                        Theme.of(context),
+                                                        progressColor,
+                                                      ),
                                                 ),
                                                 if (widget
                                                     .waterRemindersEnabled) ...[
@@ -4879,9 +5003,10 @@ class TimerHomePageState extends State<TimerHomePage>
                                                 ],
                                                 const SizedBox(height: 12),
                                                 _ParallaxCard(
-                                                  child: _buildEyeStrainRiskCard(
-                                                    Theme.of(context),
-                                                  ),
+                                                  child:
+                                                      _buildEyeStrainRiskCard(
+                                                        Theme.of(context),
+                                                      ),
                                                 ),
                                                 const SizedBox(height: 12),
                                                 _ParallaxCard(
@@ -4891,7 +5016,8 @@ class TimerHomePageState extends State<TimerHomePage>
                                                     progressColor,
                                                   ),
                                                 ),
-                                                if (widget.soundscapeEnabled) ...[
+                                                if (widget
+                                                    .soundscapeEnabled) ...[
                                                   const SizedBox(height: 12),
                                                   _ParallaxCard(
                                                     child: _buildSoundscapeCard(
@@ -4920,14 +5046,16 @@ class TimerHomePageState extends State<TimerHomePage>
                                                     ),
                                                   ),
                                                 ],
-                                                if (widget.adaptiveSchedulingEnabled) ...[
+                                                if (widget
+                                                    .adaptiveSchedulingEnabled) ...[
                                                   const SizedBox(height: 12),
                                                   _ParallaxCard(
-                                                    child: _buildAiSmartScheduleCard(
-                                                      Theme.of(context),
-                                                      isDark,
-                                                      progressColor,
-                                                    ),
+                                                    child:
+                                                        _buildAiSmartScheduleCard(
+                                                          Theme.of(context),
+                                                          isDark,
+                                                          progressColor,
+                                                        ),
                                                   ),
                                                 ],
                                               ] else ...[
@@ -5095,9 +5223,15 @@ class TimerHomePageState extends State<TimerHomePage>
                                     ],
                                     const SizedBox(height: 20),
                                     if (!_isFocusMode && !_isRunning)
-                                      _buildMoodSelector(Theme.of(context), isDark, progressColor),
+                                      _buildMoodSelector(
+                                        Theme.of(context),
+                                        isDark,
+                                        progressColor,
+                                      ),
                                     actionButtons,
-                                    _buildAutomaticPauseOverrideControl(context),
+                                    _buildAutomaticPauseOverrideControl(
+                                      context,
+                                    ),
                                     const SizedBox(height: 16),
                                     if (!_isFocusMode) ...[
                                       Opacity(
@@ -5120,12 +5254,16 @@ class TimerHomePageState extends State<TimerHomePage>
                                       if (widget.waterRemindersEnabled) ...[
                                         const SizedBox(height: 12),
                                         _ParallaxCard(
-                                          child: _buildWaterSummary(Theme.of(context)),
+                                          child: _buildWaterSummary(
+                                            Theme.of(context),
+                                          ),
                                         ),
                                       ],
                                       const SizedBox(height: 12),
                                       _ParallaxCard(
-                                        child: _buildEyeStrainRiskCard(Theme.of(context)),
+                                        child: _buildEyeStrainRiskCard(
+                                          Theme.of(context),
+                                        ),
                                       ),
                                       const SizedBox(height: 12),
                                       _ParallaxCard(
@@ -5604,13 +5742,19 @@ class TimerHomePageState extends State<TimerHomePage>
   }
 
   Future<void> _syncSoundscapePlayback() async {
-    if (!widget.soundscapeEnabled || _isBreak || !_isRunning || _isPaused || _isMediaPaused || _isSystemIdlePaused || _isSchedulePaused) {
+    if (!widget.soundscapeEnabled ||
+        _isBreak ||
+        !_isRunning ||
+        _isPaused ||
+        _isMediaPaused ||
+        _isSystemIdlePaused ||
+        _isSchedulePaused) {
       if (_soundscapePlayer?.state == PlayerState.playing) {
         await _soundscapePlayer?.stop();
       }
       return;
     }
-    
+
     String assetPath;
     switch (widget.soundscapeStyle) {
       case 'Brown Noise':
@@ -5640,7 +5784,7 @@ class TimerHomePageState extends State<TimerHomePage>
       default:
         assetPath = 'sounds/brown_noise.ogg';
     }
-    
+
     if (_soundscapePlayer?.state != PlayerState.playing) {
       await _soundscapePlayer?.setVolume(widget.soundscapeVolume);
       await _soundscapePlayer?.play(AssetSource(assetPath));
@@ -5827,7 +5971,8 @@ class _AnimatedTimerDialState extends State<_AnimatedTimerDial> {
                 child: null,
                 builder: (context, _) {
                   final remainingSeconds =
-                      (widget.initialDuration * widget.progressAnimation.value).ceil();
+                      (widget.initialDuration * widget.progressAnimation.value)
+                          .ceil();
                   final currentProgressColor = _getCurrentProgressColor(
                     widget.progressAnimation.value,
                   );
@@ -5836,96 +5981,101 @@ class _AnimatedTimerDialState extends State<_AnimatedTimerDial> {
                     widget.progressColor,
                   );
 
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Frosted glass inner circle
-                  Container(
-                    width: dialSize - widget.strokeWidth * 2,
-                    height: dialSize - widget.strokeWidth * 2,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.04),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.07),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: currentProgressColor.withValues(alpha: 0.08),
-                          blurRadius: 24,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Neon ring painter (ghost track + glowing arc + tip dot)
-                  SizedBox(
-                    width: dialSize,
-                    height: dialSize,
-                    child: CustomPaint(
-                      painter: _GradientTimerPainter(
-                        progress: widget.progressAnimation.value,
-                        strokeWidth: widget.strokeWidth,
-                        colors: ringColors,
-                        trackColor: widget.ringBackgroundColor,
-                      ),
-                    ),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
+                  return Stack(
+                    alignment: Alignment.center,
                     children: [
-                      _BlinkKindAnimatedEye(
-                        size: widget.isFocusMode ? 36 : 26,
-                        color: widget.textColor.withValues(alpha: 0.8),
-                        irisColor: currentProgressColor,
-                        isBlinkNudging: widget.isBlinkNudging,
-                        isBreak: widget.isBreak,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _formattedTime(remainingSeconds),
-                        style: Theme.of(context).textTheme.displaySmall
-                            ?.copyWith(
-                              fontSize: widget.isLandscape
-                                  ? 28
-                                  : (widget.isFocusMode ? 54 : null),
-                              fontWeight: FontWeight.w200,
-                              color: widget.textColor,
-                              shadows: widget.isFocusMode
-                                  ? [
-                                      Shadow(
-                                        color: currentProgressColor.withValues(
-                                          alpha: 0.25,
-                                        ),
-                                        blurRadius: 16,
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.statusLabel,
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(
-                              fontSize: widget.isFocusMode ? 14 : null,
-                              fontWeight: widget.isFocusMode ? FontWeight.w300 : null,
-                              color: widget.textColor.withValues(
-                                alpha: widget.isFocusMode ? 0.45 : 0.65,
+                      // Frosted glass inner circle
+                      Container(
+                        width: dialSize - widget.strokeWidth * 2,
+                        height: dialSize - widget.strokeWidth * 2,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.04),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.07),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: currentProgressColor.withValues(
+                                alpha: 0.08,
                               ),
-                              letterSpacing: widget.isFocusMode ? 1.5 : null,
+                              blurRadius: 24,
+                              spreadRadius: 2,
                             ),
+                          ],
+                        ),
+                      ),
+                      // Neon ring painter (ghost track + glowing arc + tip dot)
+                      SizedBox(
+                        width: dialSize,
+                        height: dialSize,
+                        child: CustomPaint(
+                          painter: _GradientTimerPainter(
+                            progress: widget.progressAnimation.value,
+                            strokeWidth: widget.strokeWidth,
+                            colors: ringColors,
+                            trackColor: widget.ringBackgroundColor,
+                          ),
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _BlinkKindAnimatedEye(
+                            size: widget.isFocusMode ? 36 : 26,
+                            color: widget.textColor.withValues(alpha: 0.8),
+                            irisColor: currentProgressColor,
+                            isBlinkNudging: widget.isBlinkNudging,
+                            isBreak: widget.isBreak,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _formattedTime(remainingSeconds),
+                            style: Theme.of(context).textTheme.displaySmall
+                                ?.copyWith(
+                                  fontSize: widget.isLandscape
+                                      ? 28
+                                      : (widget.isFocusMode ? 54 : null),
+                                  fontWeight: FontWeight.w200,
+                                  color: widget.textColor,
+                                  shadows: widget.isFocusMode
+                                      ? [
+                                          Shadow(
+                                            color: currentProgressColor
+                                                .withValues(alpha: 0.25),
+                                            blurRadius: 16,
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.statusLabel,
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(
+                                  fontSize: widget.isFocusMode ? 14 : null,
+                                  fontWeight: widget.isFocusMode
+                                      ? FontWeight.w300
+                                      : null,
+                                  color: widget.textColor.withValues(
+                                    alpha: widget.isFocusMode ? 0.45 : 0.65,
+                                  ),
+                                  letterSpacing: widget.isFocusMode
+                                      ? 1.5
+                                      : null,
+                                ),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
-              );
-            },
+                  );
+                },
+              ),
+            ),
           ),
         ),
-      ),
-      ),
       ),
     );
   }
@@ -6132,37 +6282,37 @@ class _GradientTimerPainter extends CustomPainter {
     if (progress > 0.0 && progress < 1.0) {
       final particleCount = 25;
       final maxTrailAngle = 0.20;
-      
+
       for (int i = 0; i < particleCount; i++) {
         // Fixed distance behind the tip for this particle
         final trailAngleOffset = (i / particleCount) * maxTrailAngle;
         final particleAngle = sweepAngle - trailAngleOffset;
         if (particleAngle <= 0) continue;
-        
+
         final angle = startAngle + particleAngle;
-        
+
         // Smooth sine-wave drift based on particle index and overall progress
         // This makes them weave back and forth smoothly as they travel
-        final wavePhase = (i * 0.4) + (progress * 100); 
+        final wavePhase = (i * 0.4) + (progress * 100);
         final drift = math.sin(wavePhase) * strokeWidth * 1.5;
-        
+
         // Add a secondary harmonic for more organic movement
         final drift2 = math.cos(wavePhase * 0.7) * strokeWidth * 0.5;
-        
+
         final particleRadius = radius + drift + drift2;
-        
+
         final px = center.dx + particleRadius * math.cos(angle);
         final py = center.dy + particleRadius * math.sin(angle);
-        
+
         // Size tapers off the further back it is
         final sizeProgress = 1.0 - (i / particleCount);
         // Add slight pulsing to size
-        final sizePulse = math.sin(wavePhase * 2) * 0.2 + 0.8; 
+        final sizePulse = math.sin(wavePhase * 2) * 0.2 + 0.8;
         final size = strokeWidth * 0.3 * sizeProgress * sizePulse;
-        
+
         // Opacity fades out smoothly
         final alpha = sizeProgress * 0.85;
-        
+
         canvas.drawCircle(
           Offset(px, py),
           size,
@@ -6180,8 +6330,6 @@ class _GradientTimerPainter extends CustomPainter {
         !listEquals(oldDelegate.colors, colors);
   }
 }
-
-
 
 class _BlinkKindAnimatedEye extends StatefulWidget {
   final double size;
@@ -6970,7 +7118,8 @@ class _FluidMeshBackground extends StatefulWidget {
   State<_FluidMeshBackground> createState() => _FluidMeshBackgroundState();
 }
 
-class _FluidMeshBackgroundState extends State<_FluidMeshBackground> with SingleTickerProviderStateMixin {
+class _FluidMeshBackgroundState extends State<_FluidMeshBackground>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   Duration get _animationDuration {
@@ -6987,7 +7136,10 @@ class _FluidMeshBackgroundState extends State<_FluidMeshBackground> with SingleT
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: _animationDuration);
+    _controller = AnimationController(
+      vsync: this,
+      duration: _animationDuration,
+    );
     if (kIsWeb || !Platform.environment.containsKey('FLUTTER_TEST')) {
       _controller.repeat();
     }
@@ -7017,10 +7169,18 @@ class _FluidMeshBackgroundState extends State<_FluidMeshBackground> with SingleT
       builder: (context, child) {
         final t = _controller.value * 2 * math.pi;
         final size = MediaQuery.of(context).size;
-        
-        final color1 = widget.baseColor.withValues(alpha: widget.isDark ? 0.25 : 0.4);
-        final color2 = HSLColor.fromColor(widget.baseColor).withHue((HSLColor.fromColor(widget.baseColor).hue + 40) % 360).toColor().withValues(alpha: widget.isDark ? 0.2 : 0.35);
-        final color3 = HSLColor.fromColor(widget.baseColor).withHue((HSLColor.fromColor(widget.baseColor).hue - 40) % 360).toColor().withValues(alpha: widget.isDark ? 0.2 : 0.35);
+
+        final color1 = widget.baseColor.withValues(
+          alpha: widget.isDark ? 0.25 : 0.4,
+        );
+        final color2 = HSLColor.fromColor(widget.baseColor)
+            .withHue((HSLColor.fromColor(widget.baseColor).hue + 40) % 360)
+            .toColor()
+            .withValues(alpha: widget.isDark ? 0.2 : 0.35);
+        final color3 = HSLColor.fromColor(widget.baseColor)
+            .withHue((HSLColor.fromColor(widget.baseColor).hue - 40) % 360)
+            .toColor()
+            .withValues(alpha: widget.isDark ? 0.2 : 0.35);
 
         return Stack(
           children: [
@@ -7064,10 +7224,7 @@ class _Blob extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 }
@@ -7097,12 +7254,19 @@ class _GlassmorphicNavBar extends StatelessWidget {
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
               decoration: BoxDecoration(
-                color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.15),
+                color: (isDark ? Colors.black : Colors.white).withValues(
+                  alpha: 0.15,
+                ),
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
-                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
+                  color: (isDark ? Colors.white : Colors.black).withValues(
+                    alpha: 0.1,
+                  ),
                   width: 1,
                 ),
                 boxShadow: [
@@ -7178,11 +7342,16 @@ class _NavBarItemState extends State<_NavBarItem> {
   void _handleHover(bool hovering) {
     setState(() => _isHovering = hovering);
   }
+
   @override
   Widget build(BuildContext context) {
     final activeColor = Theme.of(context).colorScheme.primary;
-    final color = widget.isActive ? activeColor : Theme.of(context).colorScheme.onSurface;
-    final effectiveCursor = widget.opacity < 1.0 ? SystemMouseCursors.basic : SystemMouseCursors.click;
+    final color = widget.isActive
+        ? activeColor
+        : Theme.of(context).colorScheme.onSurface;
+    final effectiveCursor = widget.opacity < 1.0
+        ? SystemMouseCursors.basic
+        : SystemMouseCursors.click;
 
     return MouseRegion(
       cursor: effectiveCursor,
@@ -7199,36 +7368,47 @@ class _NavBarItemState extends State<_NavBarItem> {
             splashColor: activeColor.withValues(alpha: 0.1),
             highlightColor: activeColor.withValues(alpha: 0.05),
             child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutQuart,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 12.0,
+              ),
+              decoration: BoxDecoration(
+                color: widget.isActive
+                    ? activeColor.withValues(alpha: 0.15)
+                    : (_isHovering
+                          ? color.withValues(alpha: 0.1)
+                          : Colors.transparent),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: AnimatedSize(
+                duration: const Duration(milliseconds: 150),
                 curve: Curves.easeOutQuart,
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-                decoration: BoxDecoration(
-                  color: widget.isActive 
-                      ? activeColor.withValues(alpha: 0.15) 
-                      : (_isHovering ? color.withValues(alpha: 0.1) : Colors.transparent),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: AnimatedSize(
-                  duration: const Duration(milliseconds: 150),
-                      curve: Curves.easeOutQuart,
-                      alignment: Alignment.centerLeft,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(widget.icon, color: color.withValues(alpha: widget.opacity), size: 22),
-                          if (widget.isActive || _isHovering) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              widget.label,
-                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                color: color.withValues(alpha: widget.opacity),
-                                fontWeight: widget.isActive ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      widget.icon,
+                      color: color.withValues(alpha: widget.opacity),
+                      size: 22,
                     ),
+                    if (widget.isActive || _isHovering) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        widget.label,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: color.withValues(alpha: widget.opacity),
+                          fontWeight: widget.isActive
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),

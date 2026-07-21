@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../models/pending_break.dart';
 import '../models/timer_settings.dart';
 
 /// Dart bridge to the native Android foreground service that owns active timer
@@ -35,8 +36,7 @@ class TimerBackgroundService {
     required bool smartIdleEnabled,
     required bool naturalBreakCreditEnabled,
     required bool osFocusDndEnabled,
-    int? postponedBreakDuration,
-    bool deferredBreakWasSkipped = false,
+    PendingBreak? pendingBreak,
     int? currentPhaseDurationSeconds,
     int maxConsecutiveSkips = 0,
     int consecutiveSkips = 0,
@@ -64,8 +64,8 @@ class TimerBackgroundService {
         'smartIdleEnabled': smartIdleEnabled,
         'naturalBreakCreditEnabled': naturalBreakCreditEnabled,
         'osFocusDndEnabled': osFocusDndEnabled,
-        'postponedBreakDuration': postponedBreakDuration,
-        'deferredBreakWasSkipped': deferredBreakWasSkipped,
+        'pendingBreakDuration': pendingBreak?.durationSeconds,
+        'pendingBreakReason': pendingBreak?.reason.name,
         'currentPhaseDurationSeconds': currentPhaseDurationSeconds,
         'maxConsecutiveSkips': maxConsecutiveSkips,
         'consecutiveSkips': consecutiveSkips,

@@ -63,12 +63,13 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   );
   bool _isSpacePressed = false;
   bool _wasRunningBeforePreview = false;
-  
+
   bool _isWellnessCoachLoading = false;
   bool _isWellnessCoachSessionActive = false;
   String? _wellnessCoachResponse;
   String? _wellnessCoachError;
-  final TextEditingController _wellnessCoachController = TextEditingController();
+  final TextEditingController _wellnessCoachController =
+      TextEditingController();
   final FocusNode _wellnessCoachFocusNode = FocusNode(
     debugLabel: 'WellnessCoachInputFocus',
   );
@@ -94,8 +95,9 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
     _remainingSeconds = widget.initialDurationSeconds;
 
     _tipOffset = math.Random().nextInt(EyeHealthTips.all.length);
-    _wellnessCoachSuggestionOffset =
-        math.Random().nextInt(_wellnessCoachPrompts.length);
+    _wellnessCoachSuggestionOffset = math.Random().nextInt(
+      _wellnessCoachPrompts.length,
+    );
     // Freeze the break tip at break start — we pick one and show it
     // throughout the entire break. This prevents the message from changing
     // mid-break and avoids repeated LLM calls for tip rotation.
@@ -312,6 +314,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   }
 
   Future<void> _submitWellnessCoach() async {
+    if (_isWellnessCoachLoading) return;
     final query = _wellnessCoachController.text.trim();
     if (query.isEmpty) return;
 
@@ -325,7 +328,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
         );
       }
     }
-    
+
     setState(() {
       _isWellnessCoachLoading = true;
       _wellnessCoachError = null;
@@ -333,12 +336,18 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final aiProvider = prefs.getString(PreferencesService.aiProviderKey) ?? TimerSettings.defaultAiProvider;
+      final aiProvider =
+          prefs.getString(PreferencesService.aiProviderKey) ??
+          TimerSettings.defaultAiProvider;
       final aiApiKey = prefs.getString(PreferencesService.aiApiKeyKey) ?? '';
-      final aiModel = prefs.getString(PreferencesService.aiModelKey) ?? TimerSettings.defaultAiModel;
-      
+      final aiModel =
+          prefs.getString(PreferencesService.aiModelKey) ??
+          TimerSettings.defaultAiModel;
+
       if (aiApiKey.isEmpty) {
-        throw Exception('AI API key is missing. Please configure it in settings.');
+        throw Exception(
+          'AI API key is missing. Please configure it in settings.',
+        );
       }
 
       final response = await AiService.instance.generateWellnessCoachAdvice(
@@ -351,6 +360,12 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
       if (!mounted) return;
       setState(() {
         _wellnessCoachResponse = response;
+      });
+    } on TimeoutException {
+      if (!mounted) return;
+      setState(() {
+        _wellnessCoachError =
+            'The coach took too long to respond. Try again or close the break.';
       });
     } catch (e) {
       if (!mounted) return;
@@ -373,15 +388,36 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
 
   List<String> get _wellnessCoachSuggestions => List<String>.generate(
     4,
-    (index) => _wellnessCoachPrompts[
-        (_wellnessCoachSuggestionOffset + index) % _wellnessCoachPrompts.length],
+    (index) =>
+        _wellnessCoachPrompts[(_wellnessCoachSuggestionOffset + index) %
+            _wellnessCoachPrompts.length],
   );
+
+  void _completeHeldBreakAndDismiss() {
+    if (!widget.isPreview && _isWellnessCoachSessionActive) {
+      DesktopControlsController.instance.triggerCommand(
+        DesktopCommand.completeBreak,
+      );
+    }
+    _dismiss();
+  }
 
   Widget _buildWellnessCoach(BuildContext context) {
     if (_isWellnessCoachLoading) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.only(top: 16),
-        child: CircularProgressIndicator(color: Colors.cyanAccent),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(color: Colors.cyanAccent),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: _completeHeldBreakAndDismiss,
+              icon: const Icon(Icons.close),
+              label: const Text('Close now'),
+            ),
+          ],
+        ),
       );
     }
 
@@ -401,18 +437,27 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.auto_awesome, color: Colors.cyanAccent, size: 20),
+                  const Icon(
+                    Icons.auto_awesome,
+                    color: Colors.cyanAccent,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Wellness Coach',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.cyanAccent),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleSmall?.copyWith(color: Colors.cyanAccent),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Text(
                 _wellnessCoachResponse!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white, height: 1.5),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.white,
+                  height: 1.5,
+                ),
               ),
               const SizedBox(height: 16),
               Align(
@@ -428,16 +473,13 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
                           _rotateWellnessCoachSuggestions();
                         });
                       },
-                      style: TextButton.styleFrom(foregroundColor: Colors.white54),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white54,
+                      ),
                       child: const Text('Ask something else'),
                     ),
                     FilledButton.icon(
-                      onPressed: () {
-                        DesktopControlsController.instance.triggerCommand(
-                          DesktopCommand.completeBreak,
-                        );
-                        _dismiss();
-                      },
+                      onPressed: _completeHeldBreakAndDismiss,
                       icon: const Icon(Icons.close),
                       label: const Text('Close now'),
                     ),
@@ -456,7 +498,10 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (_wellnessCoachError != null) ...[
-            Text(_wellnessCoachError!, style: const TextStyle(color: Colors.redAccent)),
+            Text(
+              _wellnessCoachError!,
+              style: const TextStyle(color: Colors.redAccent),
+            ),
             const SizedBox(height: 8),
           ],
           TextField(
@@ -466,21 +511,32 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
             decoration: InputDecoration(
               hintText: 'Any aches? (e.g., "My neck hurts")',
               hintStyle: const TextStyle(color: Colors.white38),
-              prefixIcon: const Icon(Icons.healing, color: Colors.cyanAccent, size: 20),
+              prefixIcon: const Icon(
+                Icons.healing,
+                color: Colors.cyanAccent,
+                size: 20,
+              ),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.send, color: Colors.cyanAccent),
                 onPressed: _submitWellnessCoach,
               ),
               filled: true,
               fillColor: Colors.black45,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(24),
-                borderSide: BorderSide(color: Colors.cyanAccent.withValues(alpha: 0.3)),
+                borderSide: BorderSide(
+                  color: Colors.cyanAccent.withValues(alpha: 0.3),
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(24),
-                borderSide: BorderSide(color: Colors.cyanAccent.withValues(alpha: 0.3)),
+                borderSide: BorderSide(
+                  color: Colors.cyanAccent.withValues(alpha: 0.3),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(24),
@@ -498,9 +554,14 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               return ActionChip(
                 label: Text(prompt),
                 backgroundColor: Colors.white10,
-                labelStyle: const TextStyle(color: Colors.white70, fontSize: 12),
+                labelStyle: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                ),
                 side: BorderSide.none,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 onPressed: () {
                   _wellnessCoachController.text = prompt;
                   _submitWellnessCoach();
@@ -508,6 +569,14 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               );
             }).toList(),
           ),
+          if (_isWellnessCoachSessionActive) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: _completeHeldBreakAndDismiss,
+              icon: const Icon(Icons.close),
+              label: const Text('Close now'),
+            ),
+          ],
         ],
       ),
     );

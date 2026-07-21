@@ -1,3 +1,5 @@
+import 'pending_break.dart';
+
 class TimerSession {
   final bool isActive;
   final bool isBreak;
@@ -7,11 +9,10 @@ class TimerSession {
   final DateTime? phaseStartedAt;
   final DateTime? phaseEndsAt;
   final int completedAutoRunCycles;
-  final int? postponedBreakDuration;
-  /// True when [postponedBreakDuration] is a skipped break held for the next
-  /// work boundary, rather than a user-initiated postpone work window.
-  final bool deferredBreakWasSkipped;
+  final PendingBreak? pendingBreak;
+  final bool automaticPauseOverride;
   final int breakDebtSeconds;
+
   /// Wall-clock time at which this session snapshot was last persisted.
   /// Used to detect cross-day stale sessions even when both [phaseStartedAt]
   /// and [phaseEndsAt] are null (e.g. a manually paused session).
@@ -26,8 +27,8 @@ class TimerSession {
     required this.phaseStartedAt,
     required this.phaseEndsAt,
     this.completedAutoRunCycles = 0,
-    this.postponedBreakDuration,
-    this.deferredBreakWasSkipped = false,
+    this.pendingBreak,
+    this.automaticPauseOverride = false,
     this.breakDebtSeconds = 0,
     this.savedAt,
   });
@@ -41,8 +42,8 @@ class TimerSession {
       phaseStartedAt = null,
       phaseEndsAt = null,
       completedAutoRunCycles = 0,
-      postponedBreakDuration = null,
-      deferredBreakWasSkipped = false,
+      pendingBreak = null,
+      automaticPauseOverride = false,
       breakDebtSeconds = 0,
       savedAt = null;
 
@@ -59,8 +60,8 @@ class TimerSession {
       'phaseStartedAt': phaseStartedAt?.millisecondsSinceEpoch,
       'phaseEndsAt': phaseEndsAt?.millisecondsSinceEpoch,
       'completedAutoRunCycles': completedAutoRunCycles,
-      'postponedBreakDuration': postponedBreakDuration,
-      'deferredBreakWasSkipped': deferredBreakWasSkipped,
+      'pendingBreak': pendingBreak?.toJson(),
+      'automaticPauseOverride': automaticPauseOverride,
       'breakDebtSeconds': breakDebtSeconds,
       'savedAt': savedAt?.millisecondsSinceEpoch,
     };
@@ -78,8 +79,13 @@ class TimerSession {
       phaseStartedAt: _dateTimeFromMillis(json['phaseStartedAt']),
       phaseEndsAt: _dateTimeFromMillis(json['phaseEndsAt']),
       completedAutoRunCycles: _asInt(json['completedAutoRunCycles']),
-      postponedBreakDuration: json['postponedBreakDuration'] != null ? _asInt(json['postponedBreakDuration']) : null,
-      deferredBreakWasSkipped: _asBool(json['deferredBreakWasSkipped']),
+      pendingBreak:
+          PendingBreak.fromJson(json['pendingBreak']) ??
+          PendingBreak.fromLegacy(
+            duration: json['postponedBreakDuration'],
+            deferredBreakWasSkipped: json['deferredBreakWasSkipped'],
+          ),
+      automaticPauseOverride: _asBool(json['automaticPauseOverride']),
       breakDebtSeconds: _asInt(json['breakDebtSeconds']),
       savedAt: _dateTimeFromMillis(json['savedAt']),
     );

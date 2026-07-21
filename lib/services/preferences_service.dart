@@ -7,6 +7,7 @@ import '../models/timer_session.dart';
 import '../models/timer_settings.dart';
 import '../models/timer_event_record.dart';
 import '../models/work_session_record.dart';
+import '../models/pending_break.dart';
 
 class PreferencesService {
   static const String timerEventsHistoryKey = 'timerEventsHistory';
@@ -67,6 +68,13 @@ class PreferencesService {
   static const String sessionPhaseEndsAtKey = 'sessionPhaseEndsAt';
   static const String sessionCompletedAutoRunCyclesKey =
       'sessionCompletedAutoRunCycles';
+  static const String sessionPendingBreakDurationKey =
+      'sessionPendingBreakDuration';
+  static const String sessionPendingBreakReasonKey =
+      'sessionPendingBreakReason';
+  static const String sessionAutomaticPauseOverrideKey =
+      'sessionAutomaticPauseOverride';
+  static const String sessionBreakDebtSecondsKey = 'sessionBreakDebtSeconds';
   static const String sessionSavedAtKey = 'sessionSavedAt';
   static const String amoledDarkEnabledKey = 'amoledDarkEnabled';
   static const String customAccentColorHexKey = 'customAccentColorHex';
@@ -103,7 +111,8 @@ class PreferencesService {
   static const String reducedMotionEnabledKey = 'reducedMotionEnabled';
   static const String animationSpeedKey = 'animationSpeed';
   static const String analyticsEnabledKey = 'analyticsEnabled';
-  static const String adaptiveSchedulingEnabledKey = 'adaptiveSchedulingEnabled';
+  static const String adaptiveSchedulingEnabledKey =
+      'adaptiveSchedulingEnabled';
   static const String endOfDaySummaryEnabledKey = 'endOfDaySummaryEnabled';
   static const String endOfDaySummaryHourKey = 'endOfDaySummaryHour';
   static const String endOfDaySummaryMinuteKey = 'endOfDaySummaryMinute';
@@ -162,8 +171,7 @@ class PreferencesService {
       smartIdleEnabled:
           prefs.getBool(smartIdleEnabledKey) ??
           TimerSettings.defaultSmartIdleEnabled,
-      idleTimeoutMinutes:
-          prefs.getInt(idleTimeoutMinutesKey) ?? 2,
+      idleTimeoutMinutes: prefs.getInt(idleTimeoutMinutesKey) ?? 2,
       breakVisualizerStyle:
           prefs.getString(breakVisualizerStyleKey) ??
           TimerSettings.defaultBreakVisualizerStyle,
@@ -235,7 +243,7 @@ class PreferencesService {
         if (saved == null) {
           return TimerSettings.defaultAiCustomSystemPrompt;
         }
-        if (saved.contains('friendly eye-care assistant') || 
+        if (saved.contains('friendly eye-care assistant') ||
             saved.contains('friendly health and wellness assistant')) {
           return TimerSettings.defaultAiCustomSystemPrompt;
         }
@@ -286,11 +294,14 @@ class PreferencesService {
       maxConsecutivePostpones:
           prefs.getInt(maxConsecutivePostponesKey) ??
           TimerSettings.defaultMaxConsecutivePostpones,
-      endOfDaySummaryEnabled: prefs.getBool(endOfDaySummaryEnabledKey) ??
+      endOfDaySummaryEnabled:
+          prefs.getBool(endOfDaySummaryEnabledKey) ??
           TimerSettings.defaultEndOfDaySummaryEnabled,
-      endOfDaySummaryHour: prefs.getInt(endOfDaySummaryHourKey) ??
+      endOfDaySummaryHour:
+          prefs.getInt(endOfDaySummaryHourKey) ??
           TimerSettings.defaultEndOfDaySummaryHour,
-      endOfDaySummaryMinute: prefs.getInt(endOfDaySummaryMinuteKey) ??
+      endOfDaySummaryMinute:
+          prefs.getInt(endOfDaySummaryMinuteKey) ??
           TimerSettings.defaultEndOfDaySummaryMinute,
       activeProfile:
           prefs.getString(activeProfileKey) ??
@@ -299,8 +310,9 @@ class PreferencesService {
           prefs.getBool(reducedMotionEnabledKey) ??
           TimerSettings.defaultReducedMotionEnabled,
       animationSpeed: AnimationSpeed.values.firstWhere(
-          (e) => e.name == prefs.getString(animationSpeedKey),
-          orElse: () => TimerSettings.defaultAnimationSpeed),
+        (e) => e.name == prefs.getString(animationSpeedKey),
+        orElse: () => TimerSettings.defaultAnimationSpeed,
+      ),
       analyticsEnabled:
           prefs.getBool(analyticsEnabledKey) ??
           TimerSettings.defaultAnalyticsEnabled,
@@ -705,18 +717,12 @@ class PreferencesService {
       waterDailyGoalGlassesKey,
       settings.waterDailyGoalGlasses,
     );
-    await prefs.setInt(
-      waterGlassSizeMlKey,
-      settings.waterGlassSizeMl,
-    );
+    await prefs.setInt(waterGlassSizeMlKey, settings.waterGlassSizeMl);
     await prefs.setBool(
       blinkReminderInteractiveEnabledKey,
       settings.blinkReminderInteractiveEnabled,
     );
-    await prefs.setInt(
-      maxConsecutiveSkipsKey,
-      settings.maxConsecutiveSkips,
-    );
+    await prefs.setInt(maxConsecutiveSkipsKey, settings.maxConsecutiveSkips);
     await prefs.setInt(
       maxConsecutivePostponesKey,
       settings.maxConsecutivePostpones,
@@ -768,6 +774,13 @@ class PreferencesService {
       phaseEndsAt: _dateTimeFromMillis(prefs.getInt(sessionPhaseEndsAtKey)),
       completedAutoRunCycles:
           prefs.getInt(sessionCompletedAutoRunCyclesKey) ?? 0,
+      pendingBreak: PendingBreak.fromJson(<String, Object?>{
+        'durationSeconds': prefs.getInt(sessionPendingBreakDurationKey),
+        'reason': prefs.getString(sessionPendingBreakReasonKey),
+      }),
+      automaticPauseOverride:
+          prefs.getBool(sessionAutomaticPauseOverrideKey) ?? false,
+      breakDebtSeconds: prefs.getInt(sessionBreakDebtSecondsKey) ?? 0,
       savedAt: _dateTimeFromMillis(prefs.getInt(sessionSavedAtKey)),
     );
   }
@@ -786,6 +799,24 @@ class PreferencesService {
       sessionCompletedAutoRunCyclesKey,
       session.completedAutoRunCycles,
     );
+    if (session.pendingBreak == null) {
+      await prefs.remove(sessionPendingBreakDurationKey);
+      await prefs.remove(sessionPendingBreakReasonKey);
+    } else {
+      await prefs.setInt(
+        sessionPendingBreakDurationKey,
+        session.pendingBreak!.durationSeconds,
+      );
+      await prefs.setString(
+        sessionPendingBreakReasonKey,
+        session.pendingBreak!.reason.name,
+      );
+    }
+    await prefs.setBool(
+      sessionAutomaticPauseOverrideKey,
+      session.automaticPauseOverride,
+    );
+    await prefs.setInt(sessionBreakDebtSecondsKey, session.breakDebtSeconds);
     await _setOptionalDateTime(
       prefs,
       sessionPhaseStartedAtKey,
@@ -814,6 +845,10 @@ class PreferencesService {
     await prefs.remove(sessionPhaseStartedAtKey);
     await prefs.remove(sessionPhaseEndsAtKey);
     await prefs.remove(sessionCompletedAutoRunCyclesKey);
+    await prefs.remove(sessionPendingBreakDurationKey);
+    await prefs.remove(sessionPendingBreakReasonKey);
+    await prefs.remove(sessionAutomaticPauseOverrideKey);
+    await prefs.remove(sessionBreakDebtSecondsKey);
     await prefs.remove(sessionSavedAtKey);
   }
 
@@ -885,7 +920,6 @@ class PreferencesService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(notificationsEnabledKey, enabled);
   }
-
 
   Future<void> saveBlinkReminderAiEnabled(bool v) async {
     final prefs = await SharedPreferences.getInstance();
@@ -1002,7 +1036,6 @@ class PreferencesService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(activeProfileKey, profile);
   }
-
 
   Future<void> saveLongBreakSettings({
     required bool enabled,
@@ -1285,34 +1318,52 @@ class PreferencesService {
     };
   }
 
-  Future<TimerSettings> importFullBackup(Map<String, dynamic> data, int currentStreak) async {
+  Future<TimerSettings> importFullBackup(
+    Map<String, dynamic> data,
+    int currentStreak,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // Restore history maps if they exist
     if (data['dailyHistory'] != null) {
       await prefs.setString(dailyHistoryKey, data['dailyHistory'] as String);
     }
     if (data['workSessionHistory'] != null) {
-      await prefs.setString(workSessionHistoryKey, data['workSessionHistory'] as String);
+      await prefs.setString(
+        workSessionHistoryKey,
+        data['workSessionHistory'] as String,
+      );
     }
     if (data['timerEventsHistory'] != null) {
-      await prefs.setString(timerEventsHistoryKey, data['timerEventsHistory'] as String);
+      await prefs.setString(
+        timerEventsHistoryKey,
+        data['timerEventsHistory'] as String,
+      );
     }
     if (data['waterHistory'] != null) {
       await prefs.setString(waterHistoryKey, data['waterHistory'] as String);
     }
     if (data['waterGlassesToday'] != null) {
-      await prefs.setInt(waterGlassesTodayKey, data['waterGlassesToday'] as int);
+      await prefs.setInt(
+        waterGlassesTodayKey,
+        data['waterGlassesToday'] as int,
+      );
     }
     if (data['waterGlassesDate'] != null) {
-      await prefs.setString(waterGlassesDateKey, data['waterGlassesDate'] as String);
+      await prefs.setString(
+        waterGlassesDateKey,
+        data['waterGlassesDate'] as String,
+      );
     }
 
     if (!data.containsKey('settings')) {
       throw Exception("Invalid backup data: settings not found.");
     }
     final settingsMap = data['settings'] as Map<String, dynamic>;
-    final settings = TimerSettings.fromJson(settingsMap, currentStreak: currentStreak);
+    final settings = TimerSettings.fromJson(
+      settingsMap,
+      currentStreak: currentStreak,
+    );
     await saveAllSettings(settings);
     return settings;
   }

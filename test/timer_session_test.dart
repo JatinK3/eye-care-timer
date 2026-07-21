@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:eyeapptimer/models/pending_break.dart';
 import 'package:eyeapptimer/models/timer_session.dart';
 
 void main() {
@@ -28,6 +29,56 @@ void main() {
       expect(restored.phaseStartedAt, startedAt);
       expect(restored.phaseEndsAt, endsAt);
       expect(restored.completedAutoRunCycles, 2);
+    });
+
+    test('round-trips a reasoned pending break', () {
+      const session = TimerSession(
+        isActive: true,
+        isBreak: false,
+        isPaused: false,
+        initialDurationSeconds: 120,
+        remainingSeconds: 100,
+        phaseStartedAt: null,
+        phaseEndsAt: null,
+        pendingBreak: PendingBreak(
+          durationSeconds: 900,
+          reason: PendingBreakReason.skippedLong,
+        ),
+      );
+
+      final restored = TimerSession.fromJson(session.toJson());
+
+      expect(restored.pendingBreak?.durationSeconds, 900);
+      expect(restored.pendingBreak?.reason, PendingBreakReason.skippedLong);
+    });
+
+    test('migrates the legacy deferred-break fields', () {
+      final restored = TimerSession.fromJson(<String, dynamic>{
+        'isActive': true,
+        'postponedBreakDuration': 600,
+        'deferredBreakWasSkipped': true,
+      });
+
+      expect(restored.pendingBreak?.durationSeconds, 600);
+      expect(restored.pendingBreak?.reason, PendingBreakReason.skippedLong);
+    });
+
+    test('round-trips the active-session automatic-pause override', () {
+      const session = TimerSession(
+        isActive: true,
+        isBreak: false,
+        isPaused: false,
+        initialDurationSeconds: 1200,
+        remainingSeconds: 900,
+        phaseStartedAt: null,
+        phaseEndsAt: null,
+        automaticPauseOverride: true,
+      );
+
+      expect(
+        TimerSession.fromJson(session.toJson()).automaticPauseOverride,
+        isTrue,
+      );
     });
 
     test('round-trips an idle session with null timestamps', () {

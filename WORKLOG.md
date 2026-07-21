@@ -230,6 +230,25 @@ This file tracks the improvement plan for BlinkKind: Eye Break Timer. Update sta
 
 Prioritized follow-ups after the v1.2.0 release (native Android PiP, water reminders + intake tracking, the "Log a glass" notification action, and the wellness-reminder scheduling fix). Ordered by value vs. risk. Everything in P0 was built and passes `flutter analyze` / `flutter test` / `apk --debug`, but **could not be exercised on hardware from the dev environment** — that is the single biggest confidence gap for the release.
 
+### Reliability hardening — before further feature work (audited 2026-07-21)
+
+This is the current priority. The recent Coach, automatic-pause, and deferred-long-break changes pass the Dart suite, but the timer has three execution owners: live Flutter, elapsed-time recovery in `projectPhase`, and Android's foreground service. These paths must have identical transition and history semantics before new functionality is added.
+
+#### P0 — Correctness and recoverability
+- [x] **Make the deferred-break queue a first-class, shared state model.** Replaced the paired legacy flags with a typed `PendingBreak` record (duration + reason), migrated saved Flutter and Android state, and applied the same cycle-attribution rule in live Flutter, `projectPhase`, and `TimerForegroundService`. A skipped long break now counts exactly one later work phase before delivery.
+- [x] **Resolve the configured-duration versus 420-second cap contradiction.** Removed the live-only seven-minute cap, so 10- and 15-minute configured long breaks retain their identity and duration across the queue. Added 900-second queue coverage.
+- [x] **Record recovered and native break outcomes accurately.** Elapsed-time recovery now persists natural `breakCompleted` events, History/Weekly Report use those events for break-compliance counts, and Android skip emits only `breakSkipped` with the unserved remaining duration rather than also emitting a natural completion. Event-source metadata and collision-resistant native IDs remain P1 follow-up work.
+- [x] **Give the held Wellness Coach a failure-safe exit.** Loading and error states now retain an explicit `Close now` action that completes the held break; duplicate submissions are ignored and request timeouts present an actionable error.
+- [x] **Specify and test automatic-pause override lifecycle.** The override now persists with the active session, suppresses Android smart-idle while active, and immediately re-evaluates schedule, idle, and media conditions when disabled. It resets for a new/cancelled run and has regression coverage for immediate media re-pause.
+- [ ] **Unblock and validate the Android build/runtime path.** Repair the local JDK installation so `:app:compileDebugKotlin` can run (it currently lacks `JAVA_COMPILER` through `audioplayers_android`), then run foreground-service instrumentation/device validation for skip, postpone, deferred long break, process death, lock screen, Doze, and delayed alarms.
+
+#### P1 — Regression protection and operational clarity
+- [ ] **Add a transition contract test matrix.** Parameterize the same scenario across live Flutter, `projectPhase`, and Android-service fixtures: short/long break, skip/postpone, auto-run limit, break debt, clock jump, app restart, and native-to-Flutter reconciliation. Assert phase, remaining time, streak, cycle count, queue contents, and emitted history together.
+- [ ] **Exercise desktop break-overlay input and lifecycle on real platforms.** Verify Enter, Space, Escape, IME composition, focus transfer, multiple monitors, tray restore, window close, and Coach loading/error states on Linux Wayland/X11, macOS, and Windows. Widget tests cannot validate platform window focus or global shortcut routing.
+- [ ] **Clarify automatic-pause status and diagnostics.** Surface the active trigger(s) rather than the generic `Media` state, record pause/resume/override decisions in the existing diagnostics path, and ensure tray, home, notification scheduling, background service, and soundscape all reflect the same paused state.
+- [ ] **Add persistence migration and corruption tests.** Test old sessions without pending-break fields, malformed/negative pending durations, stale paused Coach sessions, interrupted writes, and day rollover. Invalid state must fail closed to a safe idle session without losing valid history.
+- [ ] **Add release-mode smoke coverage.** Run analyze, unit/widget tests, Android debug/release builds, and one packaged desktop smoke test in CI; do not treat a green Dart suite as validation of Kotlin/native overlay behavior.
+
 ### P0 — Validate what v1.2.0 shipped (highest risk)
 - [ ] **Android native PiP** on a physical Android 8+ device: enter/exit via the button, float over another app's fullscreen video/game, correct 1:1 aspect ratio, and expand/close via the OS PiP controls with `_isMiniMode` staying in sync.
 - [ ] **Wellness reminders fire on cadence** across work→break→work phases while backgrounded (the new anchor-based schedule) — the original bug was *zero* reminders with a 30-min cadence on ~20-min phases.
@@ -285,6 +304,12 @@ Prioritized follow-ups after the v1.2.0 release (native Android PiP, water remin
 - **Unified automatic-pause recovery and override:** Media, microphone/camera, system-idle, and work-hours pauses now share a single resume path. Media probes discard stale asynchronous results so ending a call resumes reliably. The home screen shows an `Override automatic pauses` checkbox while automatically paused; it resumes the timer and suppresses media/call, idle, schedule, and camera/mic auto-postpone actions for the current session until unchecked or a new session begins.
 - **Deferred long-break queue:** A skipped long break is retained as the next pending break instead of being replaced by the next short cadence. The pending state is persisted in `TimerSession` and mirrored through Android's foreground timer service. Naturally completed breaks are now written to timer-event history, while skipped records retain their unserved duration for auditability.
 - **Verification:** Added widget coverage for rotating coach prompts, Enter submission without dismissal, mic-close auto-resume, automatic-pause override, and skipped-long-break carry-over. `flutter test` passes 100 tests and `flutter analyze` is clean. Android compilation remains blocked locally by the existing JDK installation lacking `JAVA_COMPILER` for `audioplayers_android`.
+
+**Reliability follow-up:**
+- Replaced the deferred-break flag pair with a typed, migration-safe `PendingBreak` model across Flutter persistence, elapsed-time recovery, and the Android foreground-service channel. Queued 15-minute long breaks are no longer truncated to seven minutes, and native-to-Flutter reconciliation uses Android's actual current phase duration.
+- Recovery now writes natural break completion history; History and Weekly Report calculate compliance from actual completed breaks. Android no longer records a skipped break as both skipped and completed.
+- Coach loading/error states now provide `Close now`, while active-session automatic-pause overrides persist through restart and immediately re-evaluate when disabled.
+- Added scheduler, session, preference, widget, and history regression coverage. The Dart suite now passes 106 tests; native Kotlin compilation remains blocked only by the machine's missing JDK compiler (`javac`).
 
 ### 2026-07-14 (IST)
 

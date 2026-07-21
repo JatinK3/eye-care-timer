@@ -583,6 +583,11 @@ void main() {
     expect(find.textContaining('Work Time'), findsOneWidget);
     expect(find.text('Pause'), findsOneWidget);
     expect(notificationService.workReminderCount, 1);
+    final events = await PreferencesService().loadTimerEventHistory();
+    expect(
+      events.where((e) => e.type == TimerEventType.breakCompleted),
+      hasLength(1),
+    );
   });
 
   testWidgets('expired break stops when the auto run limit is reached', (
@@ -1694,7 +1699,7 @@ void main() {
       PreferencesService.workDurationSecondsKey: 1,
       PreferencesService.breakDurationSecondsKey: 1,
       PreferencesService.longBreakEnabledKey: true,
-      PreferencesService.longBreakDurationSecondsKey: 3,
+      PreferencesService.longBreakDurationSecondsKey: 900,
       PreferencesService.longBreakEveryCyclesKey: 1,
       PreferencesService.autoRunEnabledKey: true,
       PreferencesService.autoRunCycleLimitKey: 3,
@@ -1706,14 +1711,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
     await tester.pump(const Duration(milliseconds: 400));
-    expect(overlayService.breakOverlayDurations, [3]);
+    expect(overlayService.breakOverlayDurations, [900]);
 
     await tester.tap(find.text('Skip'));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(seconds: 2));
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(overlayService.breakOverlayDurations, [3, 3]);
+    expect(overlayService.breakOverlayDurations, [900, 900]);
   });
 
   testWidgets('postponing a break persists a TimerEventRecord', (tester) async {
@@ -2317,6 +2322,11 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
     await tester.pump();
     expect(find.text('Paused — media is playing'), findsNothing);
+
+    await tester.tap(overrideControl);
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Paused — media is playing'), findsOneWidget);
   });
 
   testWidgets('Wellness reminders trigger static tips when AI is disabled', (

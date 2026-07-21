@@ -250,8 +250,8 @@ class MainActivity : FlutterActivity() {
                             smartIdleEnabled = call.argument<Boolean>("smartIdleEnabled") ?: true,
                             naturalBreakCreditEnabled = call.argument<Boolean>("naturalBreakCreditEnabled") ?: true,
                             osFocusDndEnabled = call.argument<Boolean>("osFocusDndEnabled") ?: false,
-                            postponedBreakDuration = call.argument<Int>("postponedBreakDuration"),
-                            deferredBreakWasSkipped = call.argument<Boolean>("deferredBreakWasSkipped") ?: false,
+                            pendingBreakDuration = call.argument<Int>("pendingBreakDuration"),
+                            pendingBreakReason = call.argument<String>("pendingBreakReason"),
                             currentPhaseDurationSeconds = call.argument<Int>("currentPhaseDurationSeconds"),
                             maxConsecutiveSkips = call.argument<Int>("maxConsecutiveSkips") ?: 0,
                             consecutiveSkips = call.argument<Int>("consecutiveSkips") ?: 0,
@@ -286,8 +286,9 @@ class MainActivity : FlutterActivity() {
                             "autoRunEnabled" to service.autoRunEnabled,
                             "autoRunCycleLimit" to service.autoRunCycleLimit,
                             "pendingEvents" to events,
-                            "postponedBreakDuration" to if (service.postponedBreakDuration > 0) service.postponedBreakDuration else null,
-                            "deferredBreakWasSkipped" to service.deferredBreakWasSkipped,
+                            "pendingBreakDuration" to if (service.pendingBreakDuration > 0) service.pendingBreakDuration else null,
+                            "pendingBreakReason" to service.pendingBreakReason,
+                            "currentPhaseInitialDuration" to service.currentPhaseInitialDuration,
                             "consecutiveSkips" to service.consecutiveSkips,
                             "consecutivePostpones" to service.consecutivePostpones
                         ))

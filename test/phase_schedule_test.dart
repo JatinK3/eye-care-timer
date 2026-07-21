@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:eyeapptimer/features/timer/phase_schedule.dart';
+import 'package:eyeapptimer/models/pending_break.dart';
 
 PhasePlan planWith({
   int work = 1200,
@@ -86,6 +87,8 @@ void main() {
       expect(projection.boundariesCrossed, 2);
       expect(projection.streakCount, 3);
       expect(projection.completedWorkSessions, hasLength(1));
+      expect(projection.completedBreaks, hasLength(1));
+      expect(projection.completedBreaks.single.durationSeconds, 20);
     });
 
     test('expired break rolls into the next work phase under auto-run', () {
@@ -102,6 +105,7 @@ void main() {
       expect(projection.isIdle, isFalse);
       expect(projection.isBreak, isFalse);
       expect(projection.boundariesCrossed, 1);
+      expect(projection.completedBreaks, hasLength(1));
       expect(projection.remainingSeconds, 1195);
       expect(projection.initialDurationSeconds, 1200);
     });
@@ -193,6 +197,52 @@ void main() {
       expect(projection.isBreak, isTrue);
       expect(projection.initialDurationSeconds, 180);
       expect(projection.remainingSeconds, 175);
+    });
+
+    test('delivers a skipped long break after one counted work phase', () {
+      final projection = projectPhase(
+        now: now,
+        isBreak: false,
+        phaseEndsAt: now.subtract(const Duration(seconds: 5)),
+        currentPhaseDurationSeconds: 100,
+        streakCount: 3,
+        autoRunCompletedCycles: 3,
+        plan: planWith(work: 100, breakSeconds: 20, autoRun: true),
+        pendingBreak: const PendingBreak(
+          durationSeconds: 900,
+          reason: PendingBreakReason.skippedLong,
+        ),
+      );
+
+      expect(projection.isBreak, isTrue);
+      expect(projection.initialDurationSeconds, 900);
+      expect(projection.remainingSeconds, 895);
+      expect(projection.streakCount, 4);
+      expect(projection.autoRunCompletedCycles, 4);
+      expect(projection.completedWorkSessions, hasLength(1));
+      expect(projection.completedWorkSessions.single.durationSeconds, 100);
+    });
+
+    test('delivers a postponed break without recounting its work window', () {
+      final projection = projectPhase(
+        now: now,
+        isBreak: false,
+        phaseEndsAt: now.subtract(const Duration(seconds: 5)),
+        currentPhaseDurationSeconds: 120,
+        streakCount: 3,
+        autoRunCompletedCycles: 3,
+        plan: planWith(work: 120, breakSeconds: 20, autoRun: true),
+        pendingBreak: const PendingBreak(
+          durationSeconds: 300,
+          reason: PendingBreakReason.postponed,
+        ),
+      );
+
+      expect(projection.isBreak, isTrue);
+      expect(projection.initialDurationSeconds, 300);
+      expect(projection.streakCount, 3);
+      expect(projection.autoRunCompletedCycles, 3);
+      expect(projection.completedWorkSessions, isEmpty);
     });
 
     test('clamps remaining time when the clock jumps backward', () {
