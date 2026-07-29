@@ -2072,22 +2072,33 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                           );
                         },
                       ),
-                      const SizedBox(height: 6),
                       SizedBox(
-                        width: barWidth,
-                        child: Text(
-                          _shortDateLabel(date),
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: isSelected
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant
-                                          .withValues(alpha: 0.7),
-                                fontWeight: isSelected ? FontWeight.bold : null,
+                        height: 24,
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 6),
+                            SizedBox(
+                              width: barWidth,
+                              child: Text(
+                                _shortDateLabel(date),
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: isSelected
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant
+                                                .withValues(alpha: 0.7),
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : null,
+                                    ),
                               ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -2106,31 +2117,44 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                   Positioned(
                     left: 0,
                     top: -6,
-                    child: Text(
-                      _activeMetric == ChartMetric.compliance
-                          ? "100%"
-                          : "${maxValue.round()}",
-                      style: Theme.of(context).textTheme.labelSmall,
+                    child: SizedBox(
+                      width: 28,
+                      child: Text(
+                        _activeMetric == ChartMetric.compliance
+                            ? "100%"
+                            : "${maxValue.round()}",
+                        style: Theme.of(context).textTheme.labelSmall,
+                        textAlign: TextAlign.right,
+                      ),
                     ),
                   ),
                   if (goalValue > 0 && goalValue < maxValue)
                     Positioned(
                       left: 0,
                       top: goalY - 6,
-                      child: Text(
-                        "${goalValue.round()}${_activeMetric == ChartMetric.compliance ? "%" : ""}",
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
+                      child: SizedBox(
+                        width: 28,
+                        child: Text(
+                          "${goalValue.round()}${_activeMetric == ChartMetric.compliance ? "%" : ""}",
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                          textAlign: TextAlign.right,
                         ),
                       ),
                     ),
                   Positioned(
                     left: 0,
                     top: chartHeight - 6,
-                    child: Text(
-                      _activeMetric == ChartMetric.compliance ? "0%" : "0",
-                      style: Theme.of(context).textTheme.labelSmall,
+                    child: SizedBox(
+                      width: 28,
+                      child: Text(
+                        _activeMetric == ChartMetric.compliance ? "0%" : "0",
+                        style: Theme.of(context).textTheme.labelSmall,
+                        textAlign: TextAlign.right,
+                      ),
                     ),
                   ),
                   // Goal Line (Dashed)
