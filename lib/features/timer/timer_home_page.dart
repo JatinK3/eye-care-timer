@@ -8038,12 +8038,8 @@ class _NavBarItemState extends State<_NavBarItem> {
     final color = widget.isActive
         ? activeColor
         : Theme.of(context).colorScheme.onSurface;
-    final effectiveCursor = widget.opacity < 1.0
-        ? SystemMouseCursors.basic
-        : SystemMouseCursors.click;
-
     return MouseRegion(
-      cursor: effectiveCursor,
+      cursor: SystemMouseCursors.click,
       onEnter: (_) => _handleHover(true),
       onExit: (_) => _handleHover(false),
       child: Tooltip(
@@ -8052,7 +8048,7 @@ class _NavBarItemState extends State<_NavBarItem> {
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.onTap,
-            mouseCursor: effectiveCursor,
+            mouseCursor: SystemMouseCursors.click,
             borderRadius: BorderRadius.circular(24),
             splashColor: activeColor.withValues(alpha: 0.1),
             highlightColor: activeColor.withValues(alpha: 0.05),
