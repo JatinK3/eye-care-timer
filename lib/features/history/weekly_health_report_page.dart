@@ -933,19 +933,20 @@ class _WeeklyTrendPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     const topPadding = 10.0;
     const bottomPadding = 12.0;
+    const leftPadding = 20.0; // Space for the Y-axis value
     final chartHeight = size.height - topPadding - bottomPadding;
-    final chartRect = Rect.fromLTWH(0, topPadding, size.width, chartHeight);
+    final chartRect = Rect.fromLTWH(leftPadding, topPadding, size.width - leftPadding, chartHeight);
 
     final gridPaint = Paint()
       ..color = gridColor
       ..strokeWidth = 1;
     for (final ratio in [0.0, 0.5, 1.0]) {
       final y = chartRect.bottom - chartHeight * ratio;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+      canvas.drawLine(Offset(leftPadding, y), Offset(size.width, y), gridPaint);
     }
     _drawDashedLine(
       canvas,
-      Offset(0, chartRect.top),
+      Offset(leftPadding, chartRect.top),
       Offset(size.width, chartRect.top),
       gridPaint..color = gridColor.withValues(alpha: 0.9),
     );
@@ -981,7 +982,7 @@ class _WeeklyTrendPainter extends CustomPainter {
       final animatedRatio = ratio * progress;
       points.add(
         Offset(
-          index * stepX,
+          chartRect.left + index * stepX,
           chartRect.bottom - chartRect.height * animatedRatio,
         ),
       );
@@ -1039,7 +1040,7 @@ class _WeeklyTrendPainter extends CustomPainter {
       final todayPoint = points.last;
       _drawDashedLine(
         canvas,
-        Offset(0, todayPoint.dy),
+        Offset(20, todayPoint.dy),
         todayPoint,
         Paint()
           ..color = color.withValues(alpha: 0.6)
@@ -1060,7 +1061,7 @@ class _WeeklyTrendPainter extends CustomPainter {
 
       textPainter.paint(
         canvas,
-        Offset(-textPainter.width - 4, todayPoint.dy - textPainter.height / 2),
+        Offset(16 - textPainter.width, todayPoint.dy - textPainter.height / 2),
       );
     }
   }

@@ -1895,285 +1895,304 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
         Container(
           height: 180,
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              // Y-Axis Labels
-              Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final chartHeight = constraints.maxHeight - 24;
+              final goalRatio = maxValue > 0 ? goalValue / maxValue : 0.0;
+              final goalY = chartHeight * (1 - goalRatio);
+
+              final barWidth = widget.dates.length > 7 ? 24.0 : 36.0;
+              final spacing = widget.dates.length > 7 ? 8.0 : 16.0;
+
+              Widget buildBar(int index) {
+                final date = chronologicalDates[index];
+                final val = values[index];
+                final ratio = maxValue > 0 ? val / maxValue : 0.0;
+                final barHeight = chartHeight * ratio;
+                final isGoalReached = _activeMetric == ChartMetric.skipped
+                    ? val <= goalValue
+                    : val >= goalValue;
+                final isSelected = _selectedIndex == index;
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedIndex = isSelected ? null : index;
+                    });
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TweenAnimationBuilder<double>(
+                        tween: Tween<double>(
+                          begin: 0.0,
+                          end: math.max(2.0, barHeight),
+                        ),
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, value, child) {
+                          final LinearGradient gradient;
+                          if (_activeMetric == ChartMetric.cycles) {
+                            gradient = isGoalReached
+                                ? const LinearGradient(
+                                    colors: [Colors.green, Color(0xFF81C784)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  )
+                                : LinearGradient(
+                                    colors: [
+                                      Theme.of(context).colorScheme.primary,
+                                      Theme.of(context).colorScheme.primary
+                                          .withValues(alpha: 0.7),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  );
+                          } else if (_activeMetric == ChartMetric.focusTime) {
+                            gradient = isGoalReached
+                                ? const LinearGradient(
+                                    colors: [Colors.cyan, Color(0xFF00E5CC)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  )
+                                : LinearGradient(
+                                    colors: [
+                                      Colors.blue,
+                                      Colors.blue.withValues(alpha: 0.7),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  );
+                          } else if (_activeMetric == ChartMetric.water) {
+                            gradient = isGoalReached
+                                ? const LinearGradient(
+                                    colors: [
+                                      Color(0xFF3BA7E6),
+                                      Color(0xFF7DD3FC),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  )
+                                : const LinearGradient(
+                                    colors: [
+                                      Color(0xFF60A5FA),
+                                      Color(0xFF93C5FD),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  );
+                          } else if (_activeMetric == ChartMetric.skipped) {
+                            gradient = isGoalReached
+                                ? const LinearGradient(
+                                    colors: [Colors.green, Color(0xFF81C784)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  )
+                                : const LinearGradient(
+                                    colors: [Colors.red, Colors.redAccent],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  );
+                          } else {
+                            gradient = isGoalReached
+                                ? const LinearGradient(
+                                    colors: [Colors.teal, Color(0xFF64FFDA)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  )
+                                : LinearGradient(
+                                    colors: [
+                                      Colors.orange,
+                                      Colors.orange.withValues(alpha: 0.7),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  );
+                          }
+
+                          return Container(
+                            width: barWidth,
+                            height: value,
+                            decoration: BoxDecoration(
+                              gradient: gradient,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(4),
+                              ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color:
+                                            (isGoalReached
+                                                    ? (_activeMetric ==
+                                                              ChartMetric.cycles
+                                                          ? Colors.green
+                                                          : _activeMetric ==
+                                                                ChartMetric
+                                                                    .focusTime
+                                                          ? Colors.cyan
+                                                          : _activeMetric ==
+                                                                ChartMetric
+                                                                    .water
+                                                          ? const Color(
+                                                              0xFF3BA7E6,
+                                                            )
+                                                          : _activeMetric ==
+                                                                ChartMetric
+                                                                    .skipped
+                                                          ? Colors.green
+                                                          : Colors.deepPurple)
+                                                    : (_activeMetric ==
+                                                              ChartMetric.cycles
+                                                          ? Theme.of(context)
+                                                                .colorScheme
+                                                                .primary
+                                                          : _activeMetric ==
+                                                                ChartMetric
+                                                                    .focusTime
+                                                          ? Colors.blue
+                                                          : _activeMetric ==
+                                                                ChartMetric
+                                                                    .water
+                                                          ? const Color(
+                                                              0xFF60A5FA,
+                                                            )
+                                                          : _activeMetric ==
+                                                                ChartMetric
+                                                                    .skipped
+                                                          ? Colors.red
+                                                          : Colors.orange))
+                                                .withValues(alpha: 0.4),
+                                        blurRadius: 8,
+                                        spreadRadius: 2,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: barWidth,
+                        child: Text(
+                          _shortDateLabel(date),
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant
+                                          .withValues(alpha: 0.7),
+                                fontWeight: isSelected ? FontWeight.bold : null,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final todayValue = values.last;
+              final todayRatio = maxValue > 0 ? todayValue / maxValue : 0.0;
+              final todayY = chartHeight * (1 - todayRatio);
+
+              return Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Text(
-                    _activeMetric == ChartMetric.compliance
-                        ? "100%"
-                        : "${maxValue.round()}",
-                    style: Theme.of(context).textTheme.labelSmall,
+                  // Y-Axis Labels
+                  Positioned(
+                    left: 0,
+                    top: -6,
+                    child: Text(
+                      _activeMetric == ChartMetric.compliance
+                          ? "100%"
+                          : "${maxValue.round()}",
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
                   ),
                   if (goalValue > 0 && goalValue < maxValue)
-                    Text(
-                      "${goalValue.round()}${_activeMetric == ChartMetric.compliance ? "%" : ""}",
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
+                    Positioned(
+                      left: 0,
+                      top: goalY - 6,
+                      child: Text(
+                        "${goalValue.round()}${_activeMetric == ChartMetric.compliance ? "%" : ""}",
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  Text(
-                    _activeMetric == ChartMetric.compliance ? "0%" : "0",
-                    style: Theme.of(context).textTheme.labelSmall,
+                  Positioned(
+                    left: 0,
+                    top: chartHeight - 6,
+                    child: Text(
+                      _activeMetric == ChartMetric.compliance ? "0%" : "0",
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
                   ),
-                ],
-              ),
-              const SizedBox(width: 8),
-
-              // Chart Area
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final chartHeight = constraints.maxHeight - 24;
-                    final goalRatio = maxValue > 0 ? goalValue / maxValue : 0.0;
-                    final goalY = chartHeight * (1 - goalRatio);
-
-                    final barWidth = widget.dates.length > 7 ? 24.0 : 36.0;
-                    final spacing = widget.dates.length > 7 ? 8.0 : 16.0;
-
-                    Widget buildBar(int index) {
-                      final date = chronologicalDates[index];
-                      final val = values[index];
-                      final ratio = maxValue > 0 ? val / maxValue : 0.0;
-                      final barHeight = chartHeight * ratio;
-                      final isGoalReached = _activeMetric == ChartMetric.skipped
-                          ? val <= goalValue
-                          : val >= goalValue;
-                      final isSelected = _selectedIndex == index;
-
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedIndex = isSelected ? null : index;
-                          });
-                        },
-                        behavior: HitTestBehavior.opaque,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TweenAnimationBuilder<double>(
-                              tween: Tween<double>(
-                                begin: 0.0,
-                                end: math.max(2.0, barHeight),
-                              ),
-                              duration: const Duration(milliseconds: 400),
-                              curve: Curves.easeOutCubic,
-                              builder: (context, value, child) {
-                                final LinearGradient gradient;
-                                if (_activeMetric == ChartMetric.cycles) {
-                                  gradient = isGoalReached
-                                      ? const LinearGradient(
-                                          colors: [
-                                            Colors.green,
-                                            Color(0xFF81C784),
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        )
-                                      : LinearGradient(
-                                          colors: [
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                            Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                                .withValues(alpha: 0.7),
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        );
-                                } else if (_activeMetric ==
-                                    ChartMetric.focusTime) {
-                                  gradient = isGoalReached
-                                      ? const LinearGradient(
-                                          colors: [
-                                            Colors.cyan,
-                                            Color(0xFF00E5CC),
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        )
-                                      : LinearGradient(
-                                          colors: [
-                                            Colors.blue,
-                                            Colors.blue.withValues(alpha: 0.7),
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        );
-                                } else if (_activeMetric == ChartMetric.water) {
-                                  gradient = isGoalReached
-                                      ? const LinearGradient(
-                                          colors: [
-                                            Color(0xFF3BA7E6),
-                                            Color(0xFF7DD3FC),
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        )
-                                      : const LinearGradient(
-                                          colors: [
-                                            Color(0xFF60A5FA),
-                                            Color(0xFF93C5FD),
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        );
-                                } else if (_activeMetric ==
-                                    ChartMetric.skipped) {
-                                  gradient = isGoalReached
-                                      ? const LinearGradient(
-                                          colors: [
-                                            Colors.green,
-                                            Color(0xFF81C784),
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        )
-                                      : const LinearGradient(
-                                          colors: [
-                                            Colors.red,
-                                            Colors.redAccent,
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        );
-                                } else {
-                                  gradient = isGoalReached
-                                      ? const LinearGradient(
-                                          colors: [
-                                            Colors.teal,
-                                            Color(0xFF64FFDA),
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        )
-                                      : LinearGradient(
-                                          colors: [
-                                            Colors.orange,
-                                            Colors.orange.withValues(
-                                              alpha: 0.7,
-                                            ),
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        );
-                                }
-
-                                return Container(
-                                  width: barWidth,
-                                  height: value,
-                                  decoration: BoxDecoration(
-                                    gradient: gradient,
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(4),
-                                    ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color:
-                                                  (isGoalReached
-                                                          ? (_activeMetric ==
-                                                                    ChartMetric
-                                                                        .cycles
-                                                                ? Colors.green
-                                                                : _activeMetric ==
-                                                                      ChartMetric
-                                                                          .focusTime
-                                                                ? Colors.cyan
-                                                                : _activeMetric ==
-                                                                      ChartMetric
-                                                                          .water
-                                                                ? const Color(
-                                                                    0xFF3BA7E6,
-                                                                  )
-                                                                : _activeMetric ==
-                                                                      ChartMetric
-                                                                          .skipped
-                                                                ? Colors.green
-                                                                : Colors
-                                                                      .deepPurple)
-                                                          : (_activeMetric ==
-                                                                    ChartMetric
-                                                                        .cycles
-                                                                ? Theme.of(
-                                                                        context,
-                                                                      )
-                                                                      .colorScheme
-                                                                      .primary
-                                                                : _activeMetric ==
-                                                                      ChartMetric
-                                                                          .focusTime
-                                                                ? Colors.blue
-                                                                : _activeMetric ==
-                                                                      ChartMetric
-                                                                          .water
-                                                                ? const Color(
-                                                                    0xFF60A5FA,
-                                                                  )
-                                                                : _activeMetric ==
-                                                                      ChartMetric
-                                                                          .skipped
-                                                                ? Colors.red
-                                                                : Colors
-                                                                      .orange))
-                                                      .withValues(alpha: 0.4),
-                                              blurRadius: 8,
-                                              spreadRadius: 2,
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                );
-                              },
+                  // Goal Line (Dashed)
+                  if (goalValue > 0)
+                    Positioned(
+                      left: 32,
+                      right: 0,
+                      top: goalY,
+                      child: Row(
+                        children: List.generate(
+                          40,
+                          (i) => Expanded(
+                            child: Container(
+                              height: 1,
+                              color: i % 2 == 0
+                                  ? (_activeMetric == ChartMetric.cycles
+                                            ? Colors.green
+                                            : _activeMetric ==
+                                                  ChartMetric.focusTime
+                                            ? Colors.cyan
+                                            : _activeMetric == ChartMetric.water
+                                            ? const Color(0xFF3BA7E6)
+                                            : _activeMetric ==
+                                                  ChartMetric.skipped
+                                            ? Colors.green
+                                            : Colors.deepPurple)
+                                        .withValues(alpha: 0.4)
+                                  : Colors.transparent,
                             ),
-                            const SizedBox(height: 6),
-                            SizedBox(
-                              width: barWidth,
-                              child: Text(
-                                _shortDateLabel(date),
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(
-                                      color: isSelected
-                                          ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
-                                          : Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant
-                                                .withValues(alpha: 0.7),
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : null,
-                                    ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      );
-                    }
-
-                    final todayValue = values.last;
-                    final todayRatio = maxValue > 0
-                        ? todayValue / maxValue
-                        : 0.0;
-                    final todayY = chartHeight * (1 - todayRatio);
-
-                    return Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        // Goal Line (Dashed)
-                        if (goalValue > 0)
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            top: goalY,
+                      ),
+                    ),
+                  // Today's Value Line (Dotted)
+                  if (todayValue != goalValue && todayValue > 0)
+                    Positioned(
+                      left: 0, // Draw over the Y-axis area
+                      right: 0,
+                      top: todayY,
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 28,
+                            child: Text(
+                              _activeMetric == ChartMetric.compliance
+                                  ? "${todayValue.round()}%"
+                                  : _activeMetric == ChartMetric.focusTime
+                                  ? "${todayValue.toStringAsFixed(1)}"
+                                  : "${todayValue.round()}",
+                              textAlign: TextAlign.right,
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                  ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
                             child: Row(
                               children: List.generate(
                                 40,
@@ -2181,122 +2200,62 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                   child: Container(
                                     height: 1,
                                     color: i % 2 == 0
-                                        ? (_activeMetric == ChartMetric.cycles
-                                                  ? Colors.green
-                                                  : _activeMetric ==
-                                                        ChartMetric.focusTime
-                                                  ? Colors.cyan
-                                                  : _activeMetric ==
-                                                        ChartMetric.water
-                                                  ? const Color(0xFF3BA7E6)
-                                                  : _activeMetric ==
-                                                        ChartMetric.skipped
-                                                  ? Colors.green
-                                                  : Colors.deepPurple)
-                                              .withValues(alpha: 0.4)
+                                        ? Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant
+                                              .withValues(alpha: 0.5)
                                         : Colors.transparent,
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        // Today's Value Line (Dotted)
-                        if (todayValue != goalValue && todayValue > 0)
-                          Positioned(
-                            left:
-                                -28, // Offset to draw in the Y-axis label area
-                            right: 0,
-                            top: todayY,
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 24,
-                                  child: Text(
-                                    _activeMetric == ChartMetric.compliance
-                                        ? "${todayValue.round()}%"
-                                        : _activeMetric == ChartMetric.focusTime
-                                        ? "${todayValue.toStringAsFixed(1)}"
-                                        : "${todayValue.round()}",
-                                    textAlign: TextAlign.right,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
-                                        ),
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Row(
-                                    children: List.generate(
-                                      40,
-                                      (i) => Expanded(
-                                        child: Container(
-                                          height: 1,
-                                          color: i % 2 == 0
-                                              ? Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant
-                                                    .withValues(alpha: 0.5)
-                                              : Colors.transparent,
-                                        ),
+                        ],
+                      ),
+                    ),
+                  // Bars
+                  Positioned(
+                    left: 32,
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: widget.dates.length > 7
+                        ? SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: List.generate(
+                                  chronologicalDates.length,
+                                  (index) {
+                                    return Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: spacing / 2,
                                       ),
-                                    ),
-                                  ),
+                                      child: buildBar(index),
+                                    );
+                                  },
                                 ),
-                              ],
+                              ),
                             ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: List.generate(chronologicalDates.length, (
+                              index,
+                            ) {
+                              return buildBar(index);
+                            }),
                           ),
-                        // Bars
-                        Positioned.fill(
-                          child: widget.dates.length > 7
-                              ? SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  physics: const BouncingScrollPhysics(),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                    ),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: List.generate(
-                                        chronologicalDates.length,
-                                        (index) {
-                                          return Padding(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: spacing / 2,
-                                            ),
-                                            child: buildBar(index),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              : Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: List.generate(
-                                    chronologicalDates.length,
-                                    (index) {
-                                      return buildBar(index);
-                                    },
-                                  ),
-                                ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ],
