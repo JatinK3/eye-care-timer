@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:convert';
-
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
@@ -7932,49 +7932,65 @@ class _CalmNavigationBar extends StatelessWidget {
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 440),
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: compact ? 8 : 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: CalmSurface.color(theme),
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: CalmSurface.border(theme).color),
-                    boxShadow: CalmSurface.shadows(theme, raised: true),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _NavBarItem(
-                        icon: Icons.timer,
-                        label: 'Timer',
-                        tooltip: 'Timer',
-                        onTap: onTimerTap,
-                        isActive: true,
-                        compact: compact,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 8 : 12,
+                        vertical: 8,
                       ),
-                      const SizedBox(width: 8),
-                      _NavBarItem(
-                        icon: Icons.bar_chart,
-                        label: 'History',
-                        tooltip: 'Productivity Insights',
-                        onTap: onHistoryTap,
-                        isActive: false,
-                        compact: compact,
+                      decoration: BoxDecoration(
+                        color:
+                            (theme.brightness == Brightness.dark
+                                    ? Colors.black
+                                    : Colors.white)
+                                .withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color:
+                              (theme.brightness == Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black)
+                                  .withValues(alpha: 0.1),
+                        ),
+                        boxShadow: CalmSurface.shadows(theme, raised: true),
                       ),
-                      const SizedBox(width: 8),
-                      _NavBarItem(
-                        icon: Icons.settings,
-                        label: 'Settings',
-                        tooltip: 'Settings',
-                        onTap: onSettingsTap,
-                        isActive: false,
-                        opacity: canChangeSettings ? 1.0 : 0.5,
-                        compact: compact,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _NavBarItem(
+                            icon: Icons.timer,
+                            label: 'Timer',
+                            tooltip: 'Timer',
+                            onTap: onTimerTap,
+                            isActive: true,
+                            compact: compact,
+                          ),
+                          const SizedBox(width: 8),
+                          _NavBarItem(
+                            icon: Icons.bar_chart,
+                            label: 'History',
+                            tooltip: 'Productivity Insights',
+                            onTap: onHistoryTap,
+                            isActive: false,
+                            compact: compact,
+                          ),
+                          const SizedBox(width: 8),
+                          _NavBarItem(
+                            icon: Icons.settings,
+                            label: 'Settings',
+                            tooltip: 'Settings',
+                            onTap: onSettingsTap,
+                            isActive: false,
+                            opacity: canChangeSettings ? 1.0 : 0.5,
+                            compact: compact,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
