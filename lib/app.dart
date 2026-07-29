@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 
 import 'features/history/history_page.dart';
+import 'features/diagnostics/health_connect_debug_page.dart';
 import 'features/onboarding/onboarding_page.dart';
 import 'features/settings/settings_page.dart';
 import 'features/timer/timer_home_page.dart';
@@ -19,10 +20,13 @@ import 'models/timer_event_record.dart';
 import 'models/work_session_record.dart';
 import 'services/break_overlay_service.dart';
 import 'services/desktop_controls_controller.dart';
+import 'services/health_connect_sync_service.dart';
+import 'services/health_sync_coordinator.dart';
 import 'services/notification_service.dart';
 import 'services/permissions_service.dart';
 import 'services/preferences_service.dart';
 import 'theme/color_presets.dart';
+import 'theme/calm_surface.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -39,6 +43,24 @@ const PageTransitionsTheme _smoothPageTransitionsTheme = PageTransitionsTheme(
     TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
   },
 );
+
+/// Uses the active scheme's inverse roles so confirmations stay readable with
+/// Material You, custom accents, light mode, dark mode, and AMOLED mode.
+SnackBarThemeData _buildSnackBarTheme(ColorScheme scheme) {
+  return SnackBarThemeData(
+    // The scaffold reserves this lane above persistent navigation, avoiding
+    // confirmation banners covering actions on compact Android screens.
+    behavior: SnackBarBehavior.fixed,
+    backgroundColor: scheme.inverseSurface,
+    contentTextStyle: TextStyle(color: scheme.onInverseSurface, fontSize: 14),
+    actionTextColor: scheme.inversePrimary,
+    disabledActionTextColor: scheme.onInverseSurface.withValues(alpha: 0.38),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(CalmSurface.compactRadius),
+    ),
+    elevation: 6,
+  );
+}
 
 /// Builds a clean, minimalist Inter-based text theme on top of [base].
 /// Inter is geometric, highly legible, and gives the crisp iOS-like feel
@@ -177,8 +199,10 @@ class BlinkKindApp extends StatefulWidget {
   State<BlinkKindApp> createState() => _BlinkKindAppState();
 }
 
-class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver {
+class _BlinkKindAppState extends State<BlinkKindApp>
+    with WidgetsBindingObserver {
   final PreferencesService _preferencesService = PreferencesService();
+  late final HealthSyncCoordinator _healthSyncCoordinator;
   late final NotificationService _notificationService;
   late final BreakOverlayService _breakOverlayService;
 
@@ -202,6 +226,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
   bool _hasCompletedOnboarding = false;
   bool _isLoadingSettings = true;
   bool _showSplash = true;
+  bool _showHealthConnectDebugProbe =
+      kDebugMode && !kIsWeb && Platform.isAndroid;
   bool _showBatteryWarningCard = false;
   bool _showNotificationWarningCard = false;
   String _oemManufacturer = '';
@@ -216,10 +242,16 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     WidgetsBinding.instance.addObserver(this);
     _notificationService = widget.notificationService ?? NotificationService();
     _breakOverlayService = widget.breakOverlayService ?? BreakOverlayService();
+    _healthSyncCoordinator = HealthSyncCoordinator(
+      preferences: _preferencesService,
+      service: HealthConnectSyncService(),
+      isSyncEnabled: _preferencesService.loadHealthConnectSyncEnabled,
+    );
     unawaited(_initializeNotifications());
     unawaited(_refreshOverlayPermissionStatus());
     unawaited(_refreshUsageAccessStatus());
     unawaited(_loadSettings());
+    unawaited(_healthSyncCoordinator.flushPending());
   }
 
   @override
@@ -228,17 +260,22 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
       unawaited(_checkBackgroundRestrictions());
       unawaited(_refreshOverlayPermissionStatus());
       unawaited(_refreshUsageAccessStatus());
+      unawaited(_healthSyncCoordinator.flushPending());
     }
   }
 
   Future<void> _checkBackgroundRestrictions() async {
     await _refreshNotificationReliabilityStatus();
     if (!kIsWeb && Platform.isAndroid) {
-      bool shouldShowBattery = _batteryOptimizationStatus == BatteryOptimizationStatus.restricted;
-      bool shouldShowNotification = _notificationPermissionStatus == NotificationPermissionStatus.disabled;
-      
-       final batteryDismissed = await _preferencesService.isBatteryWarningDismissed();
-      
+      bool shouldShowBattery =
+          _batteryOptimizationStatus == BatteryOptimizationStatus.restricted;
+      bool shouldShowNotification =
+          _notificationPermissionStatus ==
+          NotificationPermissionStatus.disabled;
+
+      final batteryDismissed = await _preferencesService
+          .isBatteryWarningDismissed();
+
       if (_settings.osFocusDndEnabled) {
         final dndGranted = await _permissionsService.isDndPermissionGranted();
         if (!dndGranted) {
@@ -249,13 +286,15 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('DND focus mode disabled because DND permission was not granted.'),
+                content: Text(
+                  'DND focus mode disabled because DND permission was not granted.',
+                ),
               ),
             );
           }
         }
       }
-      
+
       if (mounted) {
         setState(() {
           _showBatteryWarningCard = shouldShowBattery && !batteryDismissed;
@@ -301,11 +340,17 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
       _recordBlinkReminderAcknowledged();
       // Play a confirmation chime so the user gets audio feedback when they
       // tap "I blinked!" from the notification shade (app may be backgrounded).
-      DesktopControlsController.instance.triggerCommand(DesktopCommand.playChime);
+      DesktopControlsController.instance.triggerCommand(
+        DesktopCommand.playChime,
+      );
     } else if (response.actionId == 'postpone_break') {
-      DesktopControlsController.instance.triggerCommand(DesktopCommand.postponeBreak);
+      DesktopControlsController.instance.triggerCommand(
+        DesktopCommand.postponeBreak,
+      );
     } else if (response.actionId == 'skip_break') {
-      DesktopControlsController.instance.triggerCommand(DesktopCommand.skipBreak);
+      DesktopControlsController.instance.triggerCommand(
+        DesktopCommand.skipBreak,
+      );
     } else if (response.actionId == kLogWaterGlassActionId) {
       // App is alive — record the glass through the timer page. (When the app
       // is backgrounded this action is handled in a background isolate instead;
@@ -359,8 +404,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
   }
 
   Future<void> _fixBatteryRestriction() async {
-    final directDone =
-        await _notificationService.requestIgnoreBatteryOptimizations();
+    final directDone = await _notificationService
+        .requestIgnoreBatteryOptimizations();
     if (!directDone) {
       await _notificationService.openOemBatterySettings();
     }
@@ -662,13 +707,13 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     });
     unawaited(_preferencesService.saveAnalyticsEnabled(enabled));
     if (enabled && sentryDsn.isNotEmpty) {
-      unawaited(SentryFlutter.init(
-        (options) {
+      unawaited(
+        SentryFlutter.init((options) {
           options.dsn = sentryDsn;
           options.tracesSampleRate = 1.0;
           options.enableAutoSessionTracking = true;
-        },
-      ));
+        }),
+      );
     } else {
       unawaited(Sentry.close());
     }
@@ -803,7 +848,6 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     unawaited(_preferencesService.saveAutoStartSchedule(enabled));
   }
 
-
   void _setBlinkReminderInteractiveEnabled(bool enabled) {
     setState(() {
       _settings = _settings.copyWith(blinkReminderInteractiveEnabled: enabled);
@@ -864,7 +908,10 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
   }
 
   Future<void> _importFullBackup(Map<String, dynamic> data) async {
-    final newSettings = await _preferencesService.importFullBackup(data, _settings.streakCount);
+    final newSettings = await _preferencesService.importFullBackup(
+      data,
+      _settings.streakCount,
+    );
     setState(() {
       _settings = newSettings;
     });
@@ -916,14 +963,33 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     setState(() {
       _settings = _settings.copyWith(autoPauseOnMediaEnabled: enabled);
     });
-    unawaited(_preferencesService.saveAllSettings(_settings.copyWith(autoPauseOnMediaEnabled: enabled)));
+    unawaited(
+      _preferencesService.saveAllSettings(
+        _settings.copyWith(autoPauseOnMediaEnabled: enabled),
+      ),
+    );
+  }
+
+  void _setAutoPauseOnCallsEnabled(bool enabled) {
+    setState(() {
+      _settings = _settings.copyWith(autoPauseOnCallsEnabled: enabled);
+    });
+    unawaited(
+      _preferencesService.saveAllSettings(
+        _settings.copyWith(autoPauseOnCallsEnabled: enabled),
+      ),
+    );
   }
 
   void _setAutoPauseMediaFilter(String filter) {
     setState(() {
       _settings = _settings.copyWith(autoPauseMediaFilter: filter);
     });
-    unawaited(_preferencesService.saveAllSettings(_settings.copyWith(autoPauseMediaFilter: filter)));
+    unawaited(
+      _preferencesService.saveAllSettings(
+        _settings.copyWith(autoPauseMediaFilter: filter),
+      ),
+    );
   }
 
   void _setWellnessRemindersEnabled(bool enabled) {
@@ -1069,7 +1135,6 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     unawaited(_preferencesService.saveAllSettings(newSettings));
   }
 
-
   void _saveLongBreakSettings({
     required bool enabled,
     required int durationSeconds,
@@ -1118,7 +1183,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
       _settings = _settings.copyWith(allowSkip: enabled);
     });
     unawaited(_preferencesService.saveAllowSkip(enabled));
-   }
+  }
 
   void _setMaxConsecutiveSkips(int count) {
     setState(() {
@@ -1327,6 +1392,28 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     unawaited(_preferencesService.saveWaterGlassesToday(count));
   }
 
+  void _adjustWaterGlassesToday(int delta) {
+    if (delta == 0) return;
+    final next = (_waterGlassesToday + delta).clamp(0, 99);
+    if (next == _waterGlassesToday) return;
+    setState(() {
+      _waterGlassesToday = next;
+      final updatedWaterHistory = Map<String, int>.from(_waterHistory);
+      if (next <= 0) {
+        updatedWaterHistory.remove(_todayKey());
+      } else {
+        updatedWaterHistory[_todayKey()] = next;
+      }
+      _waterHistory = updatedWaterHistory;
+    });
+    unawaited(_recordWaterAdjustment(delta));
+  }
+
+  Future<void> _recordWaterAdjustment(int delta) async {
+    await _preferencesService.incrementWaterGlassesToday(delta);
+    await _healthSyncCoordinator.flushPending();
+  }
+
   Future<HistoryDataSnapshot> _refreshHistoryData() async {
     final history = await _preferencesService.loadHistory();
     final waterHistory = await _preferencesService.loadWaterHistory();
@@ -1367,6 +1454,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           dailyGoal: _settings.dailyGoal,
           waterDailyGoalGlasses: _settings.waterDailyGoalGlasses,
           waterGlassSizeMl: _settings.waterGlassSizeMl,
+          setDailyGoal: _setDailyGoal,
+          setWaterDailyGoalGlasses: _setWaterDailyGoalGlasses,
           resetHistory: _resetHistory,
           aiProvider: _settings.aiProvider,
           aiApiKey: _settings.aiApiKey,
@@ -1378,7 +1467,11 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
     );
   }
 
-  void _openSettings(BuildContext context, bool canChangeDurations, bool isTimerRunning) {
+  void _openSettings(
+    BuildContext context,
+    bool canChangeDurations,
+    bool isTimerRunning,
+  ) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SettingsPage(
@@ -1454,6 +1547,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           setCameraMicAutoPostponeEnabled: _setCameraMicAutoPostponeEnabled,
           autoPauseOnMediaEnabled: _settings.autoPauseOnMediaEnabled,
           setAutoPauseOnMediaEnabled: _setAutoPauseOnMediaEnabled,
+          autoPauseOnCallsEnabled: _settings.autoPauseOnCallsEnabled,
+          setAutoPauseOnCallsEnabled: _setAutoPauseOnCallsEnabled,
           autoPauseMediaFilter: _settings.autoPauseMediaFilter,
           setAutoPauseMediaFilter: _setAutoPauseMediaFilter,
           wellnessRemindersEnabled: _settings.wellnessRemindersEnabled,
@@ -1499,7 +1594,7 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           customAccentColorHex: _settings.customAccentColorHex,
           useSystemAccent: _settings.useSystemAccent,
           startMinimized: _settings.startMinimized,
-                  animationSpeed: _settings.animationSpeed,
+          animationSpeed: _settings.animationSpeed,
           reducedMotionEnabled: _settings.reducedMotionEnabled,
           analyticsEnabled: _settings.analyticsEnabled,
           adaptiveSchedulingEnabled: _settings.adaptiveSchedulingEnabled,
@@ -1507,8 +1602,8 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           setCustomAccentColorHex: _setCustomAccentColorHex,
           setUseSystemAccent: _setUseSystemAccent,
           setStartMinimized: _setStartMinimized,
-                  setAnimationSpeed: _setAnimationSpeed,
-                  setReducedMotionEnabled: _setReducedMotionEnabled,
+          setAnimationSpeed: _setAnimationSpeed,
+          setReducedMotionEnabled: _setReducedMotionEnabled,
           setAnalyticsEnabled: _setAnalyticsEnabled,
           setAdaptiveSchedulingEnabled: _setAdaptiveSchedulingEnabled,
           activeProfile: _settings.activeProfile,
@@ -1587,6 +1682,26 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
           darkColorScheme = darkColorScheme.copyWith(surface: Colors.black);
         }
 
+        // Keep content surfaces calm and mostly opaque. The colour scheme
+        // retains the selected accent, while cards use a reliable, readable
+        // tonal layer instead of stacked translucent glass.
+        lightColorScheme = lightColorScheme.copyWith(
+          surface: const Color(0xFFF6F8FA),
+          surfaceContainerLow: const Color(0xFFFCFDFE),
+          surfaceContainer: const Color(0xFFF0F3F6),
+        );
+        darkColorScheme = darkColorScheme.copyWith(
+          surface: _settings.amoledDarkEnabled
+              ? Colors.black
+              : const Color(0xFF0C1016),
+          surfaceContainerLow: _settings.amoledDarkEnabled
+              ? const Color(0xFF090909)
+              : const Color(0xFF111720),
+          surfaceContainer: _settings.amoledDarkEnabled
+              ? const Color(0xFF101010)
+              : const Color(0xFF171E28),
+        );
+
         final isPlatformDark =
             MediaQuery.platformBrightnessOf(context) == Brightness.dark;
         final isDarkTheme =
@@ -1594,206 +1709,202 @@ class _BlinkKindAppState extends State<BlinkKindApp> with WidgetsBindingObserver
             (_settings.themeMode == ThemeMode.system && isPlatformDark);
 
         // 3) Filter today's timer events for risk score
-    final now = DateTime.now();
-    final todaysEvents = _timerEventHistory.where((e) =>
-        e.timestamp.year == now.year &&
-        e.timestamp.month == now.month &&
-        e.timestamp.day == now.day).toList();
+        final now = DateTime.now();
+        final todaysEvents = _timerEventHistory
+            .where(
+              (e) =>
+                  e.timestamp.year == now.year &&
+                  e.timestamp.month == now.month &&
+                  e.timestamp.day == now.day,
+            )
+            .toList();
 
-    return SettingsProvider(
+        return SettingsProvider(
           settings: _settings,
           child: MaterialApp(
-          navigatorKey: BreakOverlayService.navigatorKey,
-          onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          debugShowCheckedModeBanner: false,
-          scrollBehavior: const _BlinkKindScrollBehavior(),
-          theme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.light,
-            colorScheme: lightColorScheme,
-            textTheme: _buildTextTheme(ThemeData.light().textTheme),
-            pageTransitionsTheme: _smoothPageTransitionsTheme,
-            snackBarTheme: SnackBarThemeData(
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: const Color(0xFF1E2A1E),
-              contentTextStyle: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-              ),
-              actionTextColor: const Color(0xFF4ADE80),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              elevation: 6,
+            navigatorKey: BreakOverlayService.navigatorKey,
+            onGenerateTitle: (context) =>
+                AppLocalizations.of(context)!.appTitle,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            debugShowCheckedModeBanner: false,
+            scrollBehavior: const _BlinkKindScrollBehavior(),
+            theme: ThemeData(
+              useMaterial3: true,
+              brightness: Brightness.light,
+              colorScheme: lightColorScheme,
+              scaffoldBackgroundColor: lightColorScheme.surface,
+              textTheme: _buildTextTheme(ThemeData.light().textTheme),
+              pageTransitionsTheme: _smoothPageTransitionsTheme,
+              cardTheme: CalmSurface.cardTheme(Brightness.light),
+              snackBarTheme: _buildSnackBarTheme(lightColorScheme),
             ),
-          ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.dark,
-            colorScheme: darkColorScheme,
-            scaffoldBackgroundColor: _settings.amoledDarkEnabled
-                ? Colors.black
-                : null,
-            textTheme: _buildTextTheme(ThemeData.dark().textTheme),
-            pageTransitionsTheme: _smoothPageTransitionsTheme,
-            snackBarTheme: SnackBarThemeData(
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: const Color(0xFF1E2A1E),
-              contentTextStyle: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-              ),
-              actionTextColor: const Color(0xFF4ADE80),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              elevation: 6,
+            darkTheme: ThemeData(
+              useMaterial3: true,
+              brightness: Brightness.dark,
+              colorScheme: darkColorScheme,
+              scaffoldBackgroundColor: _settings.amoledDarkEnabled
+                  ? Colors.black
+                  : darkColorScheme.surface,
+              textTheme: _buildTextTheme(ThemeData.dark().textTheme),
+              pageTransitionsTheme: _smoothPageTransitionsTheme,
+              cardTheme: CalmSurface.cardTheme(Brightness.dark),
+              snackBarTheme: _buildSnackBarTheme(darkColorScheme),
             ),
+            themeMode: _settings.themeMode,
+            themeAnimationDuration:
+                _settings.animationSpeed == AnimationSpeed.fast
+                ? const Duration(milliseconds: 100)
+                : _settings.animationSpeed == AnimationSpeed.smooth
+                ? const Duration(milliseconds: 400)
+                : const Duration(milliseconds: 200),
+            themeAnimationCurve: Curves.easeInOut,
+            home: _showHealthConnectDebugProbe
+                ? HealthConnectDebugPage(
+                    onContinue: () {
+                      setState(() => _showHealthConnectDebugProbe = false);
+                    },
+                  )
+                : _isLoadingSettings
+                ? const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  )
+                : !_hasCompletedOnboarding
+                ? OnboardingPage(
+                    notificationPermissionStatus: _notificationPermissionStatus,
+                    continueToApp: () =>
+                        unawaited(_completeOnboarding(requestReminders: true)),
+                    skipNotifications: () =>
+                        unawaited(_completeOnboarding(requestReminders: false)),
+                  )
+                : _showSplash
+                ? SplashQuotePage(
+                    reducedMotionEnabled: _settings.reducedMotionEnabled,
+                    onComplete: () {
+                      setState(() => _showSplash = false);
+                    },
+                  )
+                : TimerHomePage(
+                    isDark: isDarkTheme,
+                    colorPreset: _settings.colorPreset,
+                    customAccentColorHex: _settings.customAccentColorHex,
+                    useSystemAccent: _settings.useSystemAccent,
+                    initialWorkDurationSeconds: _settings.workDurationSeconds,
+                    initialBreakDurationSeconds: _settings.breakDurationSeconds,
+                    initialStreakCount: _settings.streakCount,
+                    initialWaterGlassesToday: _waterGlassesToday,
+                    saveWaterGlassesToday: _saveWaterGlassesToday,
+                    adjustWaterGlassesToday: _adjustWaterGlassesToday,
+                    loadWaterGlassesToday:
+                        _preferencesService.loadWaterGlassesToday,
+                    dailyGoal: _settings.dailyGoal,
+                    longBreakEnabled: _settings.longBreakEnabled,
+                    longBreakDurationSeconds:
+                        _settings.longBreakDurationSeconds,
+                    longBreakEveryCycles: _settings.longBreakEveryCycles,
+                    autoRunEnabled: _settings.autoRunEnabled,
+                    autoRunCycleLimit: _settings.autoRunCycleLimit,
+                    notificationsEnabled: _settings.notificationsEnabled,
+                    hapticsEnabled: _settings.hapticsEnabled,
+                    soundEnabled: _settings.soundEnabled,
+                    soundscapeEnabled: _settings.soundscapeEnabled,
+                    setSoundscapeEnabled: _setSoundscapeEnabled,
+                    soundscapeStyle: _settings.soundscapeStyle,
+                    soundscapeVolume: _settings.soundscapeVolume,
+                    setSoundscapeVolume: _setSoundscapeVolume,
+                    chimeStyle: _settings.chimeStyle,
+                    blinkRemindersEnabled: _settings.blinkRemindersEnabled,
+                    blinkRemindersCadenceSeconds:
+                        _settings.blinkRemindersCadenceSeconds,
+                    trayBlinkNudgesEnabled: _settings.trayBlinkNudgesEnabled,
+                    trayBlinkNudgeCadenceSeconds:
+                        _settings.trayBlinkNudgeCadenceSeconds,
+                    workHoursEnabled: _settings.workHoursEnabled,
+                    workHoursStartHour: _settings.workHoursStartHour,
+                    workHoursStartMinute: _settings.workHoursStartMinute,
+                    workHoursEndHour: _settings.workHoursEndHour,
+                    workHoursEndMinute: _settings.workHoursEndMinute,
+                    workDays: _settings.workDays,
+                    naturalBreakCreditEnabled:
+                        _settings.naturalBreakCreditEnabled,
+                    autoStartSchedule: _settings.autoStartSchedule,
+                    breakMode: _settings.breakMode,
+                    allowSkip: _settings.allowSkip,
+                    maxConsecutiveSkips: _settings.maxConsecutiveSkips,
+                    allowPostpone: _settings.allowPostpone,
+                    maxConsecutivePostpones: _settings.maxConsecutivePostpones,
+                    endOfDaySummaryEnabled: _settings.endOfDaySummaryEnabled,
+                    endOfDaySummaryHour: _settings.endOfDaySummaryHour,
+                    endOfDaySummaryMinute: _settings.endOfDaySummaryMinute,
+                    postponeDurationSeconds: _settings.postponeDurationSeconds,
+                    adaptiveSchedulingEnabled:
+                        _settings.adaptiveSchedulingEnabled,
+                    animationSpeed: _settings.animationSpeed,
+                    reducedMotionEnabled: _settings.reducedMotionEnabled,
+                    smartIdleEnabled: _settings.smartIdleEnabled,
+                    idleTimeoutMinutes: _settings.idleTimeoutMinutes,
+                    breakVisualizerStyle: _settings.breakVisualizerStyle,
+                    breakShowClock: _settings.breakShowClock,
+                    breakShowTips: _settings.breakShowTips,
+                    breakShowProgress: _settings.breakShowProgress,
+                    breakCustomMessage: _settings.breakCustomMessage,
+                    initialSession: _session,
+                    openSettings: _openSettings,
+                    setPreset: _setPreset,
+                    toggleTheme: _toggleTheme,
+                    saveDurations: _saveDurations,
+                    saveAutoRunSettings: _saveAutoRunSettings,
+                    setDailyGoal: _setDailyGoal,
+                    saveStreakCount: _saveStreakCount,
+                    saveCompletedWorkSession: _saveCompletedWorkSession,
+                    saveTimerEventRecord: _saveTimerEventRecord,
+                    todaysEvents: todaysEvents,
+                    setNotificationsEnabled: _setNotificationsEnabled,
+                    saveSession: _saveSession,
+                    clearSession: _clearSession,
+                    notificationService: _notificationService,
+                    breakOverlayService: _breakOverlayService,
+                    aiMotivationEnabled: _settings.aiMotivationEnabled,
+                    osFocusDndEnabled: _settings.osFocusDndEnabled,
+                    aiProvider: _settings.aiProvider,
+                    aiApiKey: _settings.aiApiKey,
+                    aiModel: _settings.aiModel,
+                    aiCustomSystemPrompt: _settings.aiCustomSystemPrompt,
+                    blinkReminderAiEnabled: _settings.blinkReminderAiEnabled,
+                    blinkReminderCustomMessage:
+                        _settings.blinkReminderCustomMessage,
+                    cameraMicAutoPostponeEnabled:
+                        _settings.cameraMicAutoPostponeEnabled,
+                    autoPauseOnMediaEnabled: _settings.autoPauseOnMediaEnabled,
+                    autoPauseOnCallsEnabled: _settings.autoPauseOnCallsEnabled,
+                    autoPauseMediaFilter: _settings.autoPauseMediaFilter,
+                    wellnessRemindersEnabled:
+                        _settings.wellnessRemindersEnabled,
+                    wellnessReminderCadenceSeconds:
+                        _settings.wellnessReminderCadenceSeconds,
+                    waterRemindersEnabled: _settings.waterRemindersEnabled,
+                    waterDailyGoalGlasses: _settings.waterDailyGoalGlasses,
+                    waterGlassSizeMl: _settings.waterGlassSizeMl,
+                    blinkReminderInteractiveEnabled:
+                        _settings.blinkReminderInteractiveEnabled,
+                    openHistory: _openHistory,
+                    isCameraInUseOverride: widget.isCameraInUseOverride,
+                    isMicInUseOverride: widget.isMicInUseOverride,
+                    showBatteryWarning: _showBatteryWarningCard,
+                    oemManufacturer: _oemManufacturer,
+                    onDismissBatteryWarning: _dismissBatteryWarning,
+                    onFixBatteryRestriction: _fixBatteryRestriction,
+                    showNotificationWarning: _showNotificationWarningCard,
+                    onFixNotificationPermission: _fixNotificationPermission,
+                  ),
           ),
-          themeMode: _settings.themeMode,
-          themeAnimationDuration: _settings.animationSpeed == AnimationSpeed.fast
-              ? const Duration(milliseconds: 100)
-              : _settings.animationSpeed == AnimationSpeed.smooth
-                  ? const Duration(milliseconds: 400)
-                  : const Duration(milliseconds: 200),
-          themeAnimationCurve: Curves.easeInOut,
-          home: _isLoadingSettings
-              ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-              : !_hasCompletedOnboarding
-              ? OnboardingPage(
-                  notificationPermissionStatus: _notificationPermissionStatus,
-                  continueToApp: () =>
-                      unawaited(_completeOnboarding(requestReminders: true)),
-                  skipNotifications: () =>
-                      unawaited(_completeOnboarding(requestReminders: false)),
-                )
-              : _showSplash
-              ? SplashQuotePage(
-                  reducedMotionEnabled: _settings.reducedMotionEnabled,
-                  onComplete: () {
-                    setState(() => _showSplash = false);
-                  },
-                )
-              : TimerHomePage(
-                  isDark: isDarkTheme,
-                  colorPreset: _settings.colorPreset,
-                  customAccentColorHex: _settings.customAccentColorHex,
-                  useSystemAccent: _settings.useSystemAccent,
-                  initialWorkDurationSeconds: _settings.workDurationSeconds,
-                  initialBreakDurationSeconds: _settings.breakDurationSeconds,
-                  initialStreakCount: _settings.streakCount,
-                  initialWaterGlassesToday: _waterGlassesToday,
-                  saveWaterGlassesToday: _saveWaterGlassesToday,
-                  loadWaterGlassesToday:
-                      _preferencesService.loadWaterGlassesToday,
-                  dailyGoal: _settings.dailyGoal,
-                  longBreakEnabled: _settings.longBreakEnabled,
-                  longBreakDurationSeconds: _settings.longBreakDurationSeconds,
-                  longBreakEveryCycles: _settings.longBreakEveryCycles,
-                  autoRunEnabled: _settings.autoRunEnabled,
-                  autoRunCycleLimit: _settings.autoRunCycleLimit,
-                  notificationsEnabled: _settings.notificationsEnabled,
-                  hapticsEnabled: _settings.hapticsEnabled,
-                  soundEnabled: _settings.soundEnabled,
-                  soundscapeEnabled: _settings.soundscapeEnabled,
-                  setSoundscapeEnabled: _setSoundscapeEnabled,
-                  soundscapeStyle: _settings.soundscapeStyle,
-                  soundscapeVolume: _settings.soundscapeVolume,
-                  setSoundscapeVolume: _setSoundscapeVolume,
-                  chimeStyle: _settings.chimeStyle,
-                  blinkRemindersEnabled: _settings.blinkRemindersEnabled,
-                  blinkRemindersCadenceSeconds:
-                      _settings.blinkRemindersCadenceSeconds,
-                  trayBlinkNudgesEnabled: _settings.trayBlinkNudgesEnabled,
-                  trayBlinkNudgeCadenceSeconds:
-                      _settings.trayBlinkNudgeCadenceSeconds,
-                  workHoursEnabled: _settings.workHoursEnabled,
-                  workHoursStartHour: _settings.workHoursStartHour,
-                  workHoursStartMinute: _settings.workHoursStartMinute,
-                  workHoursEndHour: _settings.workHoursEndHour,
-                  workHoursEndMinute: _settings.workHoursEndMinute,
-                  workDays: _settings.workDays,
-                  naturalBreakCreditEnabled:
-                      _settings.naturalBreakCreditEnabled,
-                  autoStartSchedule: _settings.autoStartSchedule,
-                  breakMode: _settings.breakMode,
-                  allowSkip: _settings.allowSkip,
-                  maxConsecutiveSkips: _settings.maxConsecutiveSkips,
-                  allowPostpone: _settings.allowPostpone,
-                  maxConsecutivePostpones: _settings.maxConsecutivePostpones,
-                  endOfDaySummaryEnabled: _settings.endOfDaySummaryEnabled,
-                  endOfDaySummaryHour: _settings.endOfDaySummaryHour,
-                  endOfDaySummaryMinute: _settings.endOfDaySummaryMinute,
-                  postponeDurationSeconds: _settings.postponeDurationSeconds,
-                  adaptiveSchedulingEnabled: _settings.adaptiveSchedulingEnabled,
-                  animationSpeed: _settings.animationSpeed,
-                  reducedMotionEnabled: _settings.reducedMotionEnabled,
-                  smartIdleEnabled: _settings.smartIdleEnabled,
-                  idleTimeoutMinutes: _settings.idleTimeoutMinutes,
-                  breakVisualizerStyle: _settings.breakVisualizerStyle,
-                  breakShowClock: _settings.breakShowClock,
-                  breakShowTips: _settings.breakShowTips,
-                  breakShowProgress: _settings.breakShowProgress,
-                  breakCustomMessage: _settings.breakCustomMessage,
-                  initialSession: _session,
-                  openSettings: _openSettings,
-                  setPreset: _setPreset,
-                  toggleTheme: _toggleTheme,
-                  saveDurations: _saveDurations,
-                  saveAutoRunSettings: _saveAutoRunSettings,
-                  setDailyGoal: _setDailyGoal,
-                  saveStreakCount: _saveStreakCount,
-                  saveCompletedWorkSession: _saveCompletedWorkSession,
-                  saveTimerEventRecord: _saveTimerEventRecord,
-                  todaysEvents: todaysEvents,
-                  setNotificationsEnabled: _setNotificationsEnabled,
-                  saveSession: _saveSession,
-                  clearSession: _clearSession,
-                  notificationService: _notificationService,
-                  breakOverlayService: _breakOverlayService,
-                  aiMotivationEnabled: _settings.aiMotivationEnabled,
-                  osFocusDndEnabled: _settings.osFocusDndEnabled,
-                  aiProvider: _settings.aiProvider,
-                  aiApiKey: _settings.aiApiKey,
-                  aiModel: _settings.aiModel,
-                  aiCustomSystemPrompt: _settings.aiCustomSystemPrompt,
-                  blinkReminderAiEnabled: _settings.blinkReminderAiEnabled,
-                  blinkReminderCustomMessage:
-                      _settings.blinkReminderCustomMessage,
-                  cameraMicAutoPostponeEnabled:
-                      _settings.cameraMicAutoPostponeEnabled,
-                   autoPauseOnMediaEnabled:
-                       _settings.autoPauseOnMediaEnabled,
-                   autoPauseMediaFilter:
-                       _settings.autoPauseMediaFilter,
-                  wellnessRemindersEnabled: _settings.wellnessRemindersEnabled,
-                  wellnessReminderCadenceSeconds:
-                      _settings.wellnessReminderCadenceSeconds,
-                  waterRemindersEnabled: _settings.waterRemindersEnabled,
-                  waterDailyGoalGlasses: _settings.waterDailyGoalGlasses,
-                  waterGlassSizeMl: _settings.waterGlassSizeMl,
-                  blinkReminderInteractiveEnabled:
-                      _settings.blinkReminderInteractiveEnabled,
-                  openHistory: _openHistory,
-                  isCameraInUseOverride: widget.isCameraInUseOverride,
-                  isMicInUseOverride: widget.isMicInUseOverride,
-                  showBatteryWarning: _showBatteryWarningCard,
-                  oemManufacturer: _oemManufacturer,
-                  onDismissBatteryWarning: _dismissBatteryWarning,
-                  onFixBatteryRestriction: _fixBatteryRestriction,
-                  showNotificationWarning: _showNotificationWarningCard,
-                  onFixNotificationPermission: _fixNotificationPermission,
-                ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 }

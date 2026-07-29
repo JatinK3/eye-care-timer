@@ -8,6 +8,7 @@ import '../../services/desktop_controls_controller.dart';
 import '../../services/desktop_integration_service.dart';
 import '../../services/ai_service.dart';
 import '../../services/preferences_service.dart';
+import '../../theme/calm_surface.dart';
 import 'break_guides.dart';
 import 'eye_health_tips.dart';
 
@@ -269,6 +270,15 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   @override
   Widget build(BuildContext context) {
     final rects = widget.monitorRects;
+    final overlayTheme = ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.cyan,
+        brightness: Brightness.dark,
+      ),
+      scaffoldBackgroundColor: Colors.black,
+      cardTheme: CalmSurface.cardTheme(Brightness.dark),
+    );
 
     Widget content;
     // Spanning multiple monitors: paint backdrop across the whole window
@@ -314,11 +324,14 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
       overlayScaffold = Scaffold(backgroundColor: Colors.black, body: content);
     }
 
-    return KeyboardListener(
-      focusNode: _focusNode,
-      autofocus: true,
-      onKeyEvent: _handleKeyEvent,
-      child: overlayScaffold,
+    return Theme(
+      data: overlayTheme,
+      child: KeyboardListener(
+        focusNode: _focusNode,
+        autofocus: true,
+        onKeyEvent: _handleKeyEvent,
+        child: overlayScaffold,
+      ),
     );
   }
 
@@ -752,6 +765,9 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
   Widget _buildBreakActions(BuildContext context) {
     if (_isCoachBreakAwaitingClose) return const SizedBox.shrink();
 
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     if (widget.breakMode == BreakMode.gentle) {
       if (!widget.allowPostpone && !widget.allowSkip) {
         return const SizedBox.shrink();
@@ -762,8 +778,13 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           if (widget.allowPostpone)
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white70,
-                side: const BorderSide(color: Colors.white24),
+                foregroundColor: scheme.onSurface,
+                backgroundColor: CalmSurface.color(
+                  theme,
+                  accent: scheme.primary,
+                  tint: 0.06,
+                ),
+                side: CalmSurface.border(theme, accent: scheme.primary),
                 shape: const StadiumBorder(),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 28,
@@ -784,8 +805,8 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
           if (widget.allowSkip)
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.cyanAccent,
-                foregroundColor: Colors.black87,
+                backgroundColor: scheme.primary,
+                foregroundColor: scheme.onPrimary,
                 shape: const StadiumBorder(),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 28,
@@ -819,20 +840,20 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
                   child: CircularProgressIndicator(
                     value: _holdProgress,
                     strokeWidth: 6,
-                    color: Colors.redAccent,
-                    backgroundColor: Colors.white10,
+                    color: scheme.error,
+                    backgroundColor: scheme.onSurface.withValues(alpha: 0.12),
                   ),
                 ),
                 Container(
                   width: 64,
                   height: 64,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
+                  decoration: BoxDecoration(
+                    color: scheme.error,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.power_settings_new,
-                    color: Colors.white,
+                    color: scheme.onError,
                     size: 32,
                   ),
                 ),
@@ -843,7 +864,7 @@ class _DesktopBreakOverlayState extends State<DesktopBreakOverlay> {
               builder: (context) => Text(
                 'Press and hold to exit',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.redAccent,
+                  color: scheme.error,
                   fontWeight: FontWeight.w500,
                 ),
               ),

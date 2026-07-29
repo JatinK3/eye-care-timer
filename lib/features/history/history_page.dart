@@ -11,6 +11,7 @@ import "../../models/timer_event_record.dart";
 import "../../services/ai_service.dart";
 import "../../models/work_session_record.dart";
 import "../../generated/l10n/app_localizations.dart";
+import '../../theme/calm_surface.dart';
 import "weekly_health_report_page.dart";
 
 enum HistoryRange { sevenDays, thirtyDays, all }
@@ -39,6 +40,8 @@ class HistoryPage extends StatefulWidget {
   final int dailyGoal;
   final int waterDailyGoalGlasses;
   final int waterGlassSizeMl;
+  final ValueChanged<int>? setDailyGoal;
+  final ValueChanged<int>? setWaterDailyGoalGlasses;
   final VoidCallback resetHistory;
   final String aiProvider;
   final String aiApiKey;
@@ -57,6 +60,8 @@ class HistoryPage extends StatefulWidget {
     required this.dailyGoal,
     required this.waterDailyGoalGlasses,
     required this.waterGlassSizeMl,
+    this.setDailyGoal,
+    this.setWaterDailyGoalGlasses,
     required this.resetHistory,
     required this.aiProvider,
     required this.aiApiKey,
@@ -246,6 +251,8 @@ class _HistoryPageState extends State<HistoryPage> {
                     dailyGoal: widget.dailyGoal,
                     waterDailyGoalGlasses: widget.waterDailyGoalGlasses,
                     waterGlassSizeMl: widget.waterGlassSizeMl,
+                    setDailyGoal: widget.setDailyGoal,
+                    setWaterDailyGoalGlasses: widget.setWaterDailyGoalGlasses,
                   ),
                 ),
               );
@@ -290,6 +297,15 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
           ),
           const SizedBox(height: 16),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 180),
+            child: _isRefreshing
+                ? const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: LinearProgressIndicator(),
+                  )
+                : const SizedBox.shrink(),
+          ),
 
           // Visual Activity Chart
           _HistorySection(
@@ -850,9 +866,14 @@ class _HistoryPageState extends State<HistoryPage> {
 
     return Card(
       elevation: 0,
+      color: CalmSurface.color(
+        theme,
+        accent: theme.colorScheme.primary,
+        tint: 0.035,
+      ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.outlineVariant, width: 1),
+        borderRadius: BorderRadius.circular(CalmSurface.radius),
+        side: CalmSurface.border(theme),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1444,42 +1465,49 @@ class _MetricCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Card(
-    elevation: 1,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    child: Padding(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            detail,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-            ),
-          ),
-        ],
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      color: CalmSurface.color(theme),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(CalmSurface.compactRadius),
+        side: CalmSurface.border(theme),
       ),
-    ),
-  );
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: theme.colorScheme.primary),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              detail,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.8,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _HistorySection extends StatelessWidget {
@@ -1488,27 +1516,34 @@ class _HistorySection extends StatelessWidget {
   const _HistorySection({required this.title, required this.child});
 
   @override
-  Widget build(BuildContext context) => Card(
-    elevation: 1,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      color: CalmSurface.color(theme),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(CalmSurface.radius),
+        side: CalmSurface.border(theme),
       ),
-    ),
-  );
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _EmptyMessage extends StatelessWidget {
@@ -1517,7 +1552,7 @@ class _EmptyMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+    padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
     child: Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1543,6 +1578,14 @@ class _EmptyMessage extends StatelessWidget {
             message,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Your focus and wellness patterns will appear here as you use BlinkKind.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),

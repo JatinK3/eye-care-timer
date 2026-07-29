@@ -4,7 +4,10 @@ This document records integration decisions, constraints, and implementation con
 
 ## Health Data: Health Connect and Apple Health
 
-**Status:** Discovery complete on 2026-07-21. Implementation has not started.
+**Status:** Phase 1 write-only hydration implemented on 2026-07-21. Emulator
+validation covers provider availability, consent, write, durable outbox flush,
+and correction/delete. A physical release-build device matrix and Play Console
+declarations remain release gates.
 
 ### Platform Decision
 
@@ -43,16 +46,19 @@ The existing hydration data must not be backfilled into a health store: daily to
 
 #### Phase 0: Adapter and Data-Model Spike
 
-- Add the individual hydration event/outbox model and service boundary.
-- Validate availability, permission, idempotent write, update/delete, and retry behavior on a real Android device.
-- Do not add a settings toggle or request production permissions until this is proven.
+- [x] Add the individual hydration event/outbox model and service boundary.
+- [x] Use a small Kotlin Health Connect bridge: the Flutter `health` package
+  was not selected because the native API directly exposes the required
+  client-record ID/version upsert and client-ID delete contract.
+- [x] Validate availability, permission, write, and correction/delete on an
+  Android emulator. Retry behavior is covered by coordinator tests.
 
 #### Phase 1: Write-Only Hydration
 
-- Add `Sync with Health Connect`, provider availability/install/update guidance, sync status, and `Manage access` to Settings.
-- Request only `WRITE_HYDRATION`.
-- Sync new BlinkKind intake events, including notification-action events after foreground flush.
-- Do not request read permission or backfill history.
+- [x] Add `Sync with Health Connect`, provider availability/install/update guidance, sync status, retry, and `Manage access` to Settings.
+- [x] Request only `WRITE_HYDRATION`, after an explicit disclosure and opt-in.
+- [x] Sync new BlinkKind intake events, including notification-action events after foreground flush.
+- [x] Do not request read permission or backfill history.
 
 #### Phase 2: Connected Wellness View
 

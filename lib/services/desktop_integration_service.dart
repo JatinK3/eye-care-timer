@@ -37,6 +37,9 @@ class DesktopIntegrationService extends WindowListener {
   bool? _lastAllowPostpone;
   int? _lastPostponeDurationMinutes;
   bool? _lastIsSnoozed;
+  int? _lastWaterGlassesToday;
+  int? _lastWaterGlassSizeMl;
+  int? _lastWaterDailyGoalGlasses;
   String? _lastIconPath;
   DesktopTimerState? _latestState;
 
@@ -91,10 +94,18 @@ class DesktopIntegrationService extends WindowListener {
     _initLaunchAtStartup();
 
     // 4. Listen to state changes to update the tray menu dynamically
-    DesktopControlsController.instance.states.listen((state) {
+    final controls = DesktopControlsController.instance;
+    controls.states.listen((state) {
       _latestState = state;
       unawaited(_updateTrayMenu(state));
     });
+    // State can be published before the native tray finishes initializing.
+    // Replay the current snapshot so the indicator never shows an old status.
+    final currentState = controls.latestState;
+    if (currentState != null) {
+      _latestState = currentState;
+      await _updateTrayMenu(currentState);
+    }
 
     // 5. Setup MethodChannel for native system lock/unlock notifications
     _lockChannel.setMethodCallHandler((call) async {
@@ -282,7 +293,10 @@ class DesktopIntegrationService extends WindowListener {
           _lastAllowSkip == state.allowSkip &&
           _lastAllowPostpone == state.allowPostpone &&
           _lastPostponeDurationMinutes == state.postponeDurationMinutes &&
-          _lastIsSnoozed == state.isSnoozed) {
+          _lastIsSnoozed == state.isSnoozed &&
+          _lastWaterGlassesToday == state.waterGlassesToday &&
+          _lastWaterGlassSizeMl == state.waterGlassSizeMl &&
+          _lastWaterDailyGoalGlasses == state.waterDailyGoalGlasses) {
         return;
       }
 
@@ -293,6 +307,9 @@ class DesktopIntegrationService extends WindowListener {
       _lastAllowPostpone = state.allowPostpone;
       _lastPostponeDurationMinutes = state.postponeDurationMinutes;
       _lastIsSnoozed = state.isSnoozed;
+      _lastWaterGlassesToday = state.waterGlassesToday;
+      _lastWaterGlassSizeMl = state.waterGlassSizeMl;
+      _lastWaterDailyGoalGlasses = state.waterDailyGoalGlasses;
 
       final List<MenuItemBase> items = [
         MenuItemLabel(
@@ -333,6 +350,34 @@ class DesktopIntegrationService extends WindowListener {
       }
       items.addAll([
         MenuItemLabel(label: statusText, enabled: false),
+        MenuSeparator(),
+      ]);
+
+      // The count comes only from BlinkKind's own hydration log; it is not a
+      // merged total from a health provider or any other app.
+      final waterLitresConsumed =
+          (state.waterGlassesToday * state.waterGlassSizeMl) / 1000;
+      final waterLitresLeft =
+          ((state.waterDailyGoalGlasses - state.waterGlassesToday).clamp(
+                0,
+                99,
+              ) *
+              state.waterGlassSizeMl) /
+          1000;
+      items.addAll([
+        MenuItemLabel(
+          label:
+              'Water today: ${state.waterGlassesToday} glasses (${waterLitresConsumed.toStringAsFixed(2)} L consumed / ${waterLitresLeft.toStringAsFixed(2)} L left)',
+          enabled: false,
+        ),
+        MenuItemLabel(
+          label: 'Log a glass of water',
+          onClicked: (_) {
+            DesktopControlsController.instance.triggerCommand(
+              DesktopCommand.logWaterGlass,
+            );
+          },
+        ),
         MenuSeparator(),
       ]);
 
@@ -450,7 +495,9 @@ class DesktopIntegrationService extends WindowListener {
       items.addAll([
         MenuSeparator(),
         MenuItemLabel(
-          label: state.soundscapeEnabled ? 'Mute Focus Soundscape' : 'Unmute Focus Soundscape',
+          label: state.soundscapeEnabled
+              ? 'Mute Focus Soundscape'
+              : 'Unmute Focus Soundscape',
           onClicked: (_) {
             DesktopControlsController.instance.triggerCommand(
               DesktopCommand.toggleSoundscape,
@@ -622,7 +669,10 @@ class DesktopIntegrationService extends WindowListener {
       );
 
       final bgPaint = Paint()
-        ..color = const ui.Color(0xFF252525) // Brighter dark grey to contrast with black taskbars
+        ..color =
+            const ui.Color(
+              0xFF252525,
+            ) // Brighter dark grey to contrast with black taskbars
         ..style = ui.PaintingStyle.fill;
       canvas.drawCircle(center, outerRadius, bgPaint);
 
@@ -783,7 +833,9 @@ class DesktopIntegrationService extends WindowListener {
             text: text,
             style: TextStyle(
               color: Colors.white,
-              fontSize: text.length > 2 ? (14.0 * scale) : (18.0 * scale), // Slightly smaller
+              fontSize: text.length > 2
+                  ? (14.0 * scale)
+                  : (18.0 * scale), // Slightly smaller
               letterSpacing: -0.5, // Tighter horizontal spacing
               fontWeight: ui.FontWeight.w900,
               height: 1.0,

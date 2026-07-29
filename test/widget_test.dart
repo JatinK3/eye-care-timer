@@ -16,7 +16,6 @@ import 'package:eyeapptimer/models/timer_settings.dart';
 import 'package:eyeapptimer/features/timer/timer_home_page.dart';
 import 'package:eyeapptimer/features/timer/desktop_break_overlay.dart';
 import 'package:eyeapptimer/features/timer/eye_health_tips.dart';
-import 'package:eyeapptimer/features/settings/settings_page.dart';
 import 'package:eyeapptimer/generated/l10n/app_localizations.dart';
 
 class FakeBreakOverlayService extends BreakOverlayService {
@@ -26,11 +25,16 @@ class FakeBreakOverlayService extends BreakOverlayService {
   int breakOverlayCount = 0;
   final List<int> breakOverlayDurations = [];
   String? lastCustomMessage;
+  final Future<bool> Function(String filter)? mediaPlayingOverride;
 
   @override
-  Future<bool> isMediaPlaying({String filter = 'all'}) async => false;
+  Future<bool> isMediaPlaying({String filter = 'all'}) async =>
+      mediaPlayingOverride?.call(filter) ?? false;
 
-  FakeBreakOverlayService({this.status = OverlayPermissionStatus.allowed});
+  FakeBreakOverlayService({
+    this.status = OverlayPermissionStatus.allowed,
+    this.mediaPlayingOverride,
+  });
 
   @override
   Future<OverlayPermissionStatus> permissionStatus() async => status;
@@ -227,6 +231,31 @@ Future<FakeNotificationService> pumpBlinkKindApp(
   return notificationService;
 }
 
+Future<void> openTimerActions(WidgetTester tester) async {
+  await tester.tap(find.byTooltip('More timer actions'));
+  await tester.pump();
+}
+
+Future<void> selectTimerAction(WidgetTester tester, String action) async {
+  await openTimerActions(tester);
+  await tapDisclosedTimerAction(tester, action);
+}
+
+Future<void> tapDisclosedTimerAction(WidgetTester tester, String action) async {
+  final actionFinder = find.text(action);
+  // In compact landscape layouts, the lowest disclosed action can sit below
+  // the floating navigation. Move the timer panel up before tapping it.
+  if (action == 'Postpone') {
+    final scrollable = find
+        .ancestor(of: actionFinder, matching: find.byType(Scrollable))
+        .first;
+    await tester.drag(scrollable, const Offset(0, -100));
+    await tester.pump();
+  }
+  await tester.tap(actionFinder);
+  await tester.pump();
+}
+
 String todayKey() {
   final today = DateTime.now();
   final year = today.year.toString().padLeft(4, '0');
@@ -413,6 +442,11 @@ void main() {
   ) async {
     await pumpBlinkKindApp(tester);
 
+    final insightsToggle = find.text('More insights & tools');
+    await tester.ensureVisible(insightsToggle);
+    await tester.tap(insightsToggle);
+    await tester.pumpAndSettle();
+
     final visibleTipTitles = EyeHealthTips.all.where(
       (tip) => find.text(tip.title).evaluate().isNotEmpty,
     );
@@ -447,8 +481,8 @@ void main() {
     expect(find.text('20:00'), findsOneWidget);
     expect(find.text('Start'), findsOneWidget);
     expect(find.text('Cancel'), findsNothing);
-    expect(find.text('Breaks taken today'), findsOneWidget);
-    expect(find.text('0 / 6 breaks'), findsOneWidget);
+    expect(find.text('Breaks'), findsOneWidget);
+    expect(find.text('0/6'), findsOneWidget);
   });
 
   testWidgets('first run onboarding can request reminders', (
@@ -501,8 +535,8 @@ void main() {
     await pumpBlinkKindApp(tester);
 
     expect(find.text('05:00'), findsOneWidget);
-    expect(find.text('Breaks taken today'), findsOneWidget);
-    expect(find.text('2 / 8 breaks'), findsOneWidget);
+    expect(find.text('Breaks'), findsOneWidget);
+    expect(find.text('2/8'), findsOneWidget);
   });
 
   testWidgets('restores a paused work session', (WidgetTester tester) async {
@@ -600,7 +634,7 @@ void main() {
 
     expect(find.textContaining('Break Time'), findsOneWidget);
     expect(find.text('Pause'), findsOneWidget);
-    expect(find.text('1 / 6 breaks'), findsOneWidget);
+    expect(find.text('1/6'), findsOneWidget);
     expect(notificationService.breakReminderCount, 1);
   });
 
@@ -683,7 +717,11 @@ void main() {
 
     expect(find.text('Work duration'), findsOneWidget);
 
-    await tester.tap(find.text('20 min'));
+    final workDuration = find.text('20 min');
+    await tester.ensureVisible(workDuration);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -100));
+    await tester.pump();
+    await tester.tap(workDuration);
     await tester.pumpAndSettle();
     await tester.tap(find.text('5 min').last);
     await tester.pumpAndSettle();
@@ -777,20 +815,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
-    final categoryHeader = find.text('Auto Run & Long Breaks');
-    await tester.scrollUntilVisible(
-      categoryHeader,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(categoryHeader);
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.text('Run schedule automatically'),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.enterText(find.byType(TextField), 'run schedule');
     await tester.pumpAndSettle();
 
     await tester.tap(
@@ -1246,7 +1271,7 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    expect(find.text('0 / 10 breaks'), findsOneWidget);
+    expect(find.text('0/10'), findsOneWidget);
   });
 
   testWidgets('settings screen configures custom daily goal', (
@@ -1468,8 +1493,7 @@ void main() {
     expect(find.text('Pause'), findsOneWidget);
     expect(notificationService.workReminderCount, 2);
 
-    await tester.tap(find.text('Cancel'));
-    await tester.pump();
+    await selectTimerAction(tester, 'Cancel');
 
     expect(find.text('Start'), findsOneWidget);
     expect(find.text('20:00'), findsOneWidget);
@@ -1485,8 +1509,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(minutes: 20, seconds: 1));
 
-    await tester.tap(find.text('Cancel'));
-    await tester.pump();
+    await selectTimerAction(tester, 'Cancel');
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Start'), findsOneWidget);
@@ -1502,7 +1525,7 @@ void main() {
       await pumpBlinkKindApp(tester);
 
       expect(find.byIcon(Icons.settings), findsOneWidget);
-      expect(find.text('Breaks taken today'), findsOneWidget);
+      expect(find.text('Breaks'), findsOneWidget);
 
       await tester.tap(find.text('20:00'));
       for (int i = 0; i < 10; i++) {
@@ -1510,7 +1533,7 @@ void main() {
       }
 
       expect(find.byIcon(Icons.settings), findsNothing);
-      expect(find.text('Breaks taken today'), findsNothing);
+      expect(find.text('Breaks'), findsNothing);
       expect(find.text('Tap dial to exit focus mode'), findsOneWidget);
 
       await tester.tap(find.text('20:00'));
@@ -1519,7 +1542,7 @@ void main() {
       }
 
       expect(find.byIcon(Icons.settings), findsOneWidget);
-      expect(find.text('Breaks taken today'), findsOneWidget);
+      expect(find.text('Breaks'), findsOneWidget);
       expect(find.text('Tap dial to exit focus mode'), findsNothing);
     },
   );
@@ -1778,8 +1801,7 @@ void main() {
     await tester.pump(
       const Duration(seconds: 5),
     ); // Ticks countdown so elapsed > 0
-    await tester.tap(find.text('Cancel'));
-    await tester.pump();
+    await selectTimerAction(tester, 'Cancel');
 
     final records = await PreferencesService().loadTimerEventHistory();
     expect(records, isNotEmpty);
@@ -1802,9 +1824,7 @@ void main() {
     });
 
     await pumpBlinkKindApp(tester);
-    expect(find.text('Skip'), findsOneWidget);
-    await tester.tap(find.text('Skip'));
-    await tester.pump();
+    await selectTimerAction(tester, 'Skip');
 
     final records = await PreferencesService().loadTimerEventHistory();
     expect(records, isNotEmpty);
@@ -1833,7 +1853,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(overlayService.breakOverlayDurations, [900]);
 
-    await tester.tap(find.text('Skip'));
+    await selectTimerAction(tester, 'Skip');
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(seconds: 2));
     await tester.pump(const Duration(milliseconds: 400));
@@ -1860,7 +1880,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(overlayService.breakOverlayDurations, [300]);
 
-    await tester.tap(find.text('Skip'));
+    await selectTimerAction(tester, 'Skip');
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(seconds: 2));
     await tester.pump(const Duration(milliseconds: 400));
@@ -1885,9 +1905,7 @@ void main() {
     });
 
     await pumpBlinkKindApp(tester);
-    expect(find.text('Postpone'), findsOneWidget);
-    await tester.tap(find.text('Postpone'));
-    await tester.pump();
+    await selectTimerAction(tester, 'Postpone');
 
     final records = await PreferencesService().loadTimerEventHistory();
     expect(records, isNotEmpty);
@@ -1912,18 +1930,18 @@ void main() {
     });
 
     await pumpBlinkKindApp(tester);
-    expect(find.text('Skip'), findsOneWidget);
-
     final state = tester.state<TimerHomePageState>(find.byType(TimerHomePage));
     expect(state.consecutiveSkips, 0);
 
+    await openTimerActions(tester);
+    expect(find.text('Skip'), findsOneWidget);
     await tester.tap(find.text('Skip'));
     await tester.pump();
     expect(state.consecutiveSkips, 1);
 
     state.setBreakPhaseForTesting(true);
     await tester.pump();
-
+    await openTimerActions(tester);
     expect(find.text('Skip'), findsNothing);
   });
 
@@ -1947,14 +1965,14 @@ void main() {
     });
 
     await pumpBlinkKindApp(tester);
+    await openTimerActions(tester);
     expect(find.text('Postpone'), findsOneWidget);
 
     final state = tester.state<TimerHomePageState>(find.byType(TimerHomePage));
     expect(state.consecutivePostpones, 0);
 
     // Tap Postpone. It should succeed and increment the counter.
-    await tester.tap(find.text('Postpone'));
-    await tester.pump();
+    await tapDisclosedTimerAction(tester, 'Postpone');
     expect(state.consecutivePostpones, 1);
 
     // Transition back to break.
@@ -1962,6 +1980,7 @@ void main() {
     await tester.pump();
 
     // Since the limit is 1, the Postpone button should be hidden (consecutivePostpones == 1 >= limit)
+    await openTimerActions(tester);
     expect(find.text('Postpone'), findsNothing);
   });
 
@@ -1975,7 +1994,7 @@ void main() {
 
     final settingsScrollable = find
         .descendant(
-          of: find.byType(SettingsPage),
+          of: find.byType(ListView),
           matching: find.byType(Scrollable),
         )
         .first;
@@ -2036,7 +2055,7 @@ void main() {
 
     final settingsScrollable = find
         .descendant(
-          of: find.byType(SettingsPage),
+          of: find.byType(ListView),
           matching: find.byType(Scrollable),
         )
         .first;
@@ -2144,7 +2163,7 @@ void main() {
 
     final settingsScrollable = find
         .descendant(
-          of: find.byType(SettingsPage),
+          of: find.byType(ListView),
           matching: find.byType(Scrollable),
         )
         .first;
@@ -2202,6 +2221,10 @@ void main() {
     });
     await pumpBlinkKindApp(tester);
     await tester.pump();
+    final insightsToggle = find.text('More insights & tools');
+    await tester.ensureVisible(insightsToggle);
+    await tester.tap(insightsToggle);
+    await tester.pumpAndSettle();
     expect(find.text('AI Health Insight'), findsAtLeastNWidgets(1));
     expect(
       find.text('API key is missing. Please configure it in Settings.'),
@@ -2219,6 +2242,10 @@ void main() {
     });
     await pumpBlinkKindApp(tester);
     await tester.pump();
+    final insightsToggle = find.text('More insights & tools');
+    await tester.ensureVisible(insightsToggle);
+    await tester.tap(insightsToggle);
+    await tester.pumpAndSettle();
     expect(find.text('AI Health Insight'), findsAtLeastNWidgets(1));
   });
 
@@ -2411,7 +2438,7 @@ void main() {
     expect(notificationService.autoPostponeNotificationCount, 0);
   });
 
-  testWidgets('media auto-pause resumes after a microphone closes', (
+  testWidgets('media auto-pause ignores microphone activity', (
     WidgetTester tester,
   ) async {
     var micActive = true;
@@ -2430,14 +2457,31 @@ void main() {
     await tester.tap(find.text('Start'));
     await tester.pump(const Duration(seconds: 5));
     await tester.pump();
-    expect(find.text('Paused — media is playing'), findsOneWidget);
+    expect(find.text('Paused — media or a call is active'), findsNothing);
+    expect(find.text('Work Time - focus on your task'), findsOneWidget);
+  });
 
-    micActive = false;
+  testWidgets('call activity auto-pause pauses for microphone use', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.workDurationSecondsKey: 60,
+      PreferencesService.autoPauseOnCallsEnabledKey: true,
+    });
+
+    await pumpBlinkKindApp(
+      tester,
+      isCameraInUseOverride: () async => false,
+      isMicInUseOverride: () async => true,
+    );
+
+    await tester.tap(find.text('Start'));
     await tester.pump(const Duration(seconds: 5));
     await tester.pump();
 
-    expect(find.text('Paused — media is playing'), findsNothing);
-    expect(find.text('Work Time - focus on your task'), findsOneWidget);
+    expect(find.text('Paused — media or a call is active'), findsOneWidget);
+    expect(find.text('Automatic pause · Microphone active'), findsOneWidget);
   });
 
   testWidgets('automatic-pause override keeps the timer running', (
@@ -2451,14 +2495,17 @@ void main() {
 
     await pumpBlinkKindApp(
       tester,
+      breakOverlayService: FakeBreakOverlayService(
+        mediaPlayingOverride: (_) async => true,
+      ),
       isCameraInUseOverride: () async => false,
-      isMicInUseOverride: () async => true,
+      isMicInUseOverride: () async => false,
     );
 
     await tester.tap(find.text('Start'));
     await tester.pump(const Duration(seconds: 5));
     await tester.pump();
-    expect(find.text('Paused — media is playing'), findsOneWidget);
+    expect(find.text('Paused — media or a call is active'), findsOneWidget);
 
     final overrideControl = find.text('Override automatic pauses');
     await tester.ensureVisible(overrideControl);
@@ -2468,12 +2515,13 @@ void main() {
 
     await tester.pump(const Duration(seconds: 5));
     await tester.pump();
-    expect(find.text('Paused — media is playing'), findsNothing);
+    expect(find.text('Paused — media or a call is active'), findsNothing);
 
+    await tester.ensureVisible(overrideControl);
     await tester.tap(overrideControl);
     await tester.pump();
     await tester.pump();
-    expect(find.text('Paused — media is playing'), findsOneWidget);
+    expect(find.text('Paused — media or a call is active'), findsOneWidget);
   });
 
   testWidgets('Wellness reminders trigger static tips when AI is disabled', (
@@ -2502,7 +2550,7 @@ void main() {
     expect(notificationService.wellnessReminderCount, greaterThan(0));
     expect(notificationService.lastAiMessage, isNull);
 
-    await tester.tap(find.text('Cancel'));
+    await selectTimerAction(tester, 'Cancel');
     await tester.pumpAndSettle();
   });
 
@@ -2532,7 +2580,7 @@ void main() {
 
     expect(notificationService.wellnessReminderCount, greaterThan(0));
 
-    await tester.tap(find.text('Cancel'));
+    await selectTimerAction(tester, 'Cancel');
     await tester.pumpAndSettle();
   });
 
@@ -2567,7 +2615,7 @@ void main() {
     expect(notificationService.lastWaterGoalGlasses, 99);
     expect(notificationService.lastWaterConsumedGlasses, 0);
 
-    await tester.tap(find.text('Cancel'));
+    await selectTimerAction(tester, 'Cancel');
     await tester.pumpAndSettle();
   });
 
@@ -2592,7 +2640,7 @@ void main() {
 
     expect(notificationService.waterReminderCount, 0);
 
-    await tester.tap(find.text('Cancel'));
+    await selectTimerAction(tester, 'Cancel');
     await tester.pumpAndSettle();
   });
 
@@ -2629,6 +2677,29 @@ void main() {
     expect(await PreferencesService().loadWaterHistory(), {todayKey(): 3});
   });
 
+  testWidgets('water logged confirmation dismisses automatically', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      PreferencesService.onboardingCompletedKey: true,
+      PreferencesService.waterRemindersEnabledKey: true,
+      PreferencesService.waterDailyGoalGlassesKey: 8,
+      PreferencesService.waterGlassesDateKey: todayKey(),
+      PreferencesService.waterGlassesTodayKey: 3,
+    });
+
+    await pumpBlinkKindApp(tester);
+    DesktopControlsController.instance.triggerCommand(
+      DesktopCommand.logWaterGlass,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Logged — 4/8 glasses'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Logged — 4/8 glasses'), findsNothing);
+  });
+
   testWidgets('water reminders stay silent when the toggle is off', (
     tester,
   ) async {
@@ -2650,7 +2721,7 @@ void main() {
 
     expect(notificationService.waterReminderCount, 0);
 
-    await tester.tap(find.text('Cancel'));
+    await selectTimerAction(tester, 'Cancel');
     await tester.pumpAndSettle();
   });
 
@@ -2664,7 +2735,7 @@ void main() {
 
     final settingsScrollable = find
         .descendant(
-          of: find.byType(SettingsPage),
+          of: find.byType(ListView),
           matching: find.byType(Scrollable),
         )
         .first;
@@ -2716,7 +2787,7 @@ void main() {
 
       final settingsScrollable = find
           .descendant(
-            of: find.byType(SettingsPage),
+            of: find.byType(ListView),
             matching: find.byType(Scrollable),
           )
           .first;

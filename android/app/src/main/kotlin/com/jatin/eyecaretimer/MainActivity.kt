@@ -15,16 +15,41 @@ import android.content.Context
 import android.hardware.camera2.CameraManager
 import android.media.AudioManager
 import android.util.Rational
-import io.flutter.embedding.android.FlutterActivity
+import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.deleteRecords
+import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.PermissionController
+import androidx.health.connect.client.records.HydrationRecord
+import androidx.health.connect.client.records.metadata.Metadata
+import androidx.health.connect.client.units.Volume
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
 
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
     private val notificationSettingsChannel = "eye_care_timer/notification_settings"
     private val breakOverlayChannel = "blinkkind/break_overlay"
     private val timerBackgroundChannel = "blinkkind/timer_background"
     private val permissionsChannel = "blinkkind/permissions"
+    private val healthConnectChannel = "blinkkind/health_connect"
     private val reminderChannelId = "blinkkind_phase_reminders_v2"
+    private var healthPermissionResult: MethodChannel.Result? = null
+    private val writeHydrationPermission =
+        HealthPermission.getWritePermission(HydrationRecord::class)
+    private val healthPermissionLauncher = registerForActivityResult(
+        PermissionController.createRequestPermissionResultContract(),
+    ) { grantedPermissions ->
+        healthPermissionResult?.success(
+            grantedPermissions.contains(writeHydrationPermission),
+        )
+        healthPermissionResult = null
+    }
 
     // Kept so onPictureInPictureModeChanged can notify Dart to swap in/out the
     // compact PiP UI and keep _isMiniMode in sync with the OS PiP window state.
@@ -319,6 +344,163 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            healthConnectChannel,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getStatus" -> runHealthConnect(result) {
+                    healthConnectStatus()
+                }
+                "requestWriteHydrationPermission" -> {
+                    if (healthPermissionResult != null) {
+                        result.error(
+                            "request_in_progress",
+                            "A Health Connect permission request is already active.",
+                            null,
+                        )
+                    } else if (
+                        HealthConnectClient.getSdkStatus(this) !=
+                            HealthConnectClient.SDK_AVAILABLE
+                    ) {
+                        result.error(
+                            "unavailable",
+                            "Health Connect is unavailable on this device.",
+                            null,
+                        )
+                    } else {
+                        healthPermissionResult = result
+                        healthPermissionLauncher.launch(setOf(writeHydrationPermission))
+                    }
+                }
+                "openManageAccess" -> result.success(openHealthConnectSettings())
+                "upsertHydration" -> {
+                    val id = call.argument<String>("id")
+                    val version = (call.argument<Number>("version"))?.toLong()
+                    val recordedAt = (call.argument<Number>("recordedAt"))?.toLong()
+                    val volumeMl = (call.argument<Number>("volumeMl"))?.toDouble()
+                    if (id == null || version == null || recordedAt == null ||
+                        volumeMl == null || volumeMl <= 0.0 || volumeMl > 100000.0
+                    ) {
+                        result.error("invalid_arguments", "Invalid hydration record", null)
+                    } else {
+                        runHealthConnect(result) {
+                            upsertHydration(id, version, recordedAt, volumeMl)
+                            true
+                        }
+                    }
+                }
+                "deleteHydration" -> {
+                    val id = call.argument<String>("id")
+                    if (id == null) {
+                        result.error("invalid_arguments", "Missing hydration record ID", null)
+                    } else {
+                        runHealthConnect(result) {
+                            deleteHydration(id)
+                            true
+                        }
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun runHealthConnect(
+        result: MethodChannel.Result,
+        operation: suspend () -> Any,
+    ) {
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                val value = operation()
+                runOnUiThread { result.success(value) }
+            } catch (error: Exception) {
+                runOnUiThread {
+                    result.error(
+                        "health_connect_error",
+                        error.message ?: error.javaClass.simpleName,
+                        null,
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun healthConnectStatus(): Map<String, Any> {
+        return when (HealthConnectClient.getSdkStatus(this)) {
+            HealthConnectClient.SDK_AVAILABLE -> {
+                val client = HealthConnectClient.getOrCreate(this)
+                val permission = HealthPermission.getWritePermission(HydrationRecord::class)
+                val granted = client.permissionController
+                    .getGrantedPermissions()
+                    .contains(permission)
+                mapOf(
+                    "availability" to "available",
+                    "writeHydrationGranted" to granted,
+                )
+            }
+            HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> mapOf(
+                "availability" to "updateRequired",
+                "writeHydrationGranted" to false,
+                "detail" to "Health Connect is not installed or needs an update.",
+            )
+            HealthConnectClient.SDK_UNAVAILABLE -> mapOf(
+                "availability" to "unavailable",
+                "writeHydrationGranted" to false,
+                "detail" to "Health Connect is unavailable on this device.",
+            )
+            else -> mapOf(
+                "availability" to "unavailable",
+                "writeHydrationGranted" to false,
+            )
+        }
+    }
+
+    private suspend fun upsertHydration(
+        id: String,
+        version: Long,
+        recordedAtMillis: Long,
+        volumeMl: Double,
+    ) {
+        val client = requireHealthConnectClient()
+        val startTime = Instant.ofEpochMilli(recordedAtMillis)
+        // Health Connect represents hydration as an interval. The event time is
+        // preserved as the exact start; the one-millisecond end is structural.
+        val endTime = startTime.plusMillis(1)
+        val zoneOffset = ZoneId.systemDefault().rules.getOffset(startTime)
+        val record = HydrationRecord(
+            startTime = startTime,
+            startZoneOffset = zoneOffset,
+            endTime = endTime,
+            endZoneOffset = zoneOffset,
+            volume = Volume.milliliters(volumeMl),
+            metadata = Metadata.manualEntry(id, version, null),
+        )
+        client.insertRecords(listOf(record))
+    }
+
+    private suspend fun deleteHydration(id: String) {
+        requireHealthConnectClient().deleteRecords<HydrationRecord>(
+            recordIdsList = emptyList(),
+            clientRecordIdsList = listOf(id),
+        )
+    }
+
+    private fun requireHealthConnectClient(): HealthConnectClient {
+        check(HealthConnectClient.getSdkStatus(this) == HealthConnectClient.SDK_AVAILABLE) {
+            "Health Connect is unavailable."
+        }
+        return HealthConnectClient.getOrCreate(this)
+    }
+
+    private fun openHealthConnectSettings(): Boolean = try {
+        startActivity(
+            Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS")
+                .putExtra(Intent.EXTRA_PACKAGE_NAME, packageName),
+        )
+        true
+    } catch (_: Exception) {
+        false
     }
 
     private fun isDndPermissionGranted(): Boolean {

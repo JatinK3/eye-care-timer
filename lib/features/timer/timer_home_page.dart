@@ -5330,17 +5330,6 @@ class TimerHomePageState extends State<TimerHomePage>
             child: Scaffold(
               extendBody: true,
               extendBodyBehindAppBar: true,
-              // Reserve navigation space on regular phone screens. Short windows
-              // keep the compact floating layout so timer controls stay reachable.
-              floatingActionButtonLocation: reserveDashboardNavigation
-                  ? null
-                  : FloatingActionButtonLocation.centerFloat,
-              floatingActionButton: _isFocusMode || reserveDashboardNavigation
-                  ? null
-                  : dashboardNavigation,
-              bottomNavigationBar: _isFocusMode || !reserveDashboardNavigation
-                  ? null
-                  : SizedBox(height: 128, child: dashboardNavigation),
               appBar: _isFocusMode
                   ? null
                   : AppBar(
@@ -6115,6 +6104,13 @@ class TimerHomePageState extends State<TimerHomePage>
                       },
                     ),
                   ),
+                  if (!_isFocusMode)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: dashboardNavigation,
+                    ),
                 ],
               ),
             ),

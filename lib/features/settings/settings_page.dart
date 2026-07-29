@@ -16,9 +16,12 @@ import '../../services/desktop_integration_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/permissions_service.dart';
 import '../../theme/color_presets.dart';
+import '../../theme/calm_surface.dart';
 import '../../generated/l10n/app_localizations.dart';
 import 'reminder_reliability_page.dart';
 import '../diagnostics/device_validation_page.dart';
+import 'health_connect_settings_page.dart';
+import 'privacy_health_data_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool isDark;
@@ -86,6 +89,7 @@ class SettingsPage extends StatefulWidget {
   final String blinkReminderCustomMessage;
   final bool cameraMicAutoPostponeEnabled;
   final bool autoPauseOnMediaEnabled;
+  final bool autoPauseOnCallsEnabled;
   final bool wellnessRemindersEnabled;
   final int wellnessReminderCadenceSeconds;
   final bool waterRemindersEnabled;
@@ -95,6 +99,7 @@ class SettingsPage extends StatefulWidget {
   final void Function(bool) setBlinkReminderInteractiveEnabled;
   final void Function(bool) setCameraMicAutoPostponeEnabled;
   final void Function(bool) setAutoPauseOnMediaEnabled;
+  final void Function(bool) setAutoPauseOnCallsEnabled;
   final String autoPauseMediaFilter;
   final void Function(String) setAutoPauseMediaFilter;
   final void Function(bool) setWellnessRemindersEnabled;
@@ -265,6 +270,7 @@ class SettingsPage extends StatefulWidget {
     required this.blinkReminderCustomMessage,
     required this.cameraMicAutoPostponeEnabled,
     required this.autoPauseOnMediaEnabled,
+    required this.autoPauseOnCallsEnabled,
     required this.wellnessRemindersEnabled,
     required this.wellnessReminderCadenceSeconds,
     required this.waterRemindersEnabled,
@@ -274,6 +280,7 @@ class SettingsPage extends StatefulWidget {
     required this.setBlinkReminderInteractiveEnabled,
     required this.setCameraMicAutoPostponeEnabled,
     required this.setAutoPauseOnMediaEnabled,
+    required this.setAutoPauseOnCallsEnabled,
     required this.autoPauseMediaFilter,
     required this.setAutoPauseMediaFilter,
     required this.setWellnessRemindersEnabled,
@@ -551,16 +558,18 @@ class _SettingsPageState extends State<SettingsPage>
               final process = await Process.start(util, [file.path]);
               _activeChimeProcess = process;
               played = true;
-              unawaited(process.exitCode.then((code) {
-                if (_activeChimeProcess == process) {
-                  _activeChimeProcess = null;
-                }
-                if (mounted && _playingChimeStyle == style) {
-                  setState(() {
-                    _playingChimeStyle = null;
-                  });
-                }
-              }));
+              unawaited(
+                process.exitCode.then((code) {
+                  if (_activeChimeProcess == process) {
+                    _activeChimeProcess = null;
+                  }
+                  if (mounted && _playingChimeStyle == style) {
+                    setState(() {
+                      _playingChimeStyle = null;
+                    });
+                  }
+                }),
+              );
               break;
             } catch (_) {}
           }
@@ -671,8 +680,6 @@ class _SettingsPageState extends State<SettingsPage>
   Future<void> _openBatteryOptimizationSettings() async {
     await widget.openBatteryOptimizationSettings();
   }
-
-
 
   void _saveLongBreak({bool? enabled, int? durationSeconds, int? everyCycles}) {
     widget.saveLongBreakSettings(
@@ -876,8 +883,16 @@ class _SettingsPageState extends State<SettingsPage>
       ),
       SettingItem(
         title: 'Adaptive Break Scheduling',
-        subtitle: 'Extend work duration by 5m if previous break was skipped/postponed',
-        keywords: ['adaptive', 'scheduling', 'skip', 'postpone', 'smart', 'dynamic'],
+        subtitle:
+            'Extend work duration by 5m if previous break was skipped/postponed',
+        keywords: [
+          'adaptive',
+          'scheduling',
+          'skip',
+          'postpone',
+          'smart',
+          'dynamic',
+        ],
         category: 'General Schedule',
         widget: SwitchListTile(
           contentPadding: EdgeInsets.zero,
@@ -929,11 +944,12 @@ class _SettingsPageState extends State<SettingsPage>
                     final nextSeconds = value == 0
                         ? widget.workDurationSeconds
                         : value * 60;
-                    
+
                     final oldWorkSeconds = widget.workDurationSeconds;
-                    
+
                     if (_autoRunCycleLimit > 0 && oldWorkSeconds > 0) {
-                      final int totalWorkSeconds = oldWorkSeconds * _autoRunCycleLimit;
+                      final int totalWorkSeconds =
+                          oldWorkSeconds * _autoRunCycleLimit;
                       int newLimit = (totalWorkSeconds / nextSeconds).round();
                       if (newLimit < 1) newLimit = 1;
                       if (newLimit > 99) newLimit = 99;
@@ -943,8 +959,10 @@ class _SettingsPageState extends State<SettingsPage>
                     }
 
                     if (widget.dailyGoal > 0 && oldWorkSeconds > 0) {
-                      final int totalDailySeconds = oldWorkSeconds * widget.dailyGoal;
-                      int newDailyGoal = (totalDailySeconds / nextSeconds).round();
+                      final int totalDailySeconds =
+                          oldWorkSeconds * widget.dailyGoal;
+                      int newDailyGoal = (totalDailySeconds / nextSeconds)
+                          .round();
                       if (newDailyGoal < 1) newDailyGoal = 1;
                       if (newDailyGoal > 99) newDailyGoal = 99;
                       if (newDailyGoal != widget.dailyGoal) {
@@ -1330,35 +1348,25 @@ class _SettingsPageState extends State<SettingsPage>
                       Expanded(
                         child: Text(
                           "Max consecutive skips",
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.color
+                                    ?.withValues(alpha: 0.8),
+                              ),
                         ),
                       ),
                       DropdownButton<int>(
                         value: widget.maxConsecutiveSkips,
                         underline: const SizedBox(),
                         items: const [
-                          DropdownMenuItem(
-                            value: 0,
-                            child: Text("No Limit"),
-                          ),
-                          DropdownMenuItem(
-                            value: 1,
-                            child: Text("1 skip"),
-                          ),
-                          DropdownMenuItem(
-                            value: 2,
-                            child: Text("2 skips"),
-                          ),
-                          DropdownMenuItem(
-                            value: 3,
-                            child: Text("3 skips"),
-                          ),
-                          DropdownMenuItem(
-                            value: 5,
-                            child: Text("5 skips"),
-                          ),
+                          DropdownMenuItem(value: 0, child: Text("No Limit")),
+                          DropdownMenuItem(value: 1, child: Text("1 skip")),
+                          DropdownMenuItem(value: 2, child: Text("2 skips")),
+                          DropdownMenuItem(value: 3, child: Text("3 skips")),
+                          DropdownMenuItem(value: 5, child: Text("5 skips")),
                         ],
                         onChanged: (val) {
                           if (val != null) {
@@ -1376,7 +1384,15 @@ class _SettingsPageState extends State<SettingsPage>
         SettingItem(
           title: l10n.settingsAllowPostpone,
           subtitle: l10n.settingsAllowPostponeSubtitle,
-          keywords: ['postpone', 'break', 'allow', 'gentle', 'delay', 'consecutive', 'limit'],
+          keywords: [
+            'postpone',
+            'break',
+            'allow',
+            'gentle',
+            'delay',
+            'consecutive',
+            'limit',
+          ],
           category: 'Break Screen & Behavior',
           widget: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1398,23 +1414,22 @@ class _SettingsPageState extends State<SettingsPage>
                       Expanded(
                         child: Text(
                           "Max consecutive postpones",
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.color
+                                    ?.withValues(alpha: 0.8),
+                              ),
                         ),
                       ),
                       DropdownButton<int>(
                         value: widget.maxConsecutivePostpones,
                         underline: const SizedBox(),
                         items: const [
-                          DropdownMenuItem(
-                            value: 0,
-                            child: Text("No Limit"),
-                          ),
-                          DropdownMenuItem(
-                            value: 1,
-                            child: Text("1 postpone"),
-                          ),
+                          DropdownMenuItem(value: 0, child: Text("No Limit")),
+                          DropdownMenuItem(value: 1, child: Text("1 postpone")),
                           DropdownMenuItem(
                             value: 2,
                             child: Text("2 postpones"),
@@ -1485,274 +1500,325 @@ class _SettingsPageState extends State<SettingsPage>
           'cast',
           'dnd',
         ],
-          category: 'Break Screen & Behavior',
-          widget: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                secondary: const Icon(Icons.psychology_outlined),
-                title: Text(l10n.settingsSmartPausePostpone),
-                subtitle: Text(l10n.settingsSmartPausePostponeSubtitle),
-                value: widget.smartIdleEnabled,
-                onChanged: widget.setSmartIdleEnabled,
-              ),
-              if (widget.smartIdleEnabled) ...[
-                ListTile(
-                  contentPadding: const EdgeInsets.only(left: 56),
-                  title: const Text('Idle Timeout'),
-                  subtitle: const Text('How long to wait before declaring you idle.'),
-                  trailing: DropdownButton<int>(
-                    value: widget.idleTimeoutMinutes,
-                    onChanged: (val) {
-                      if (val != null) widget.setIdleTimeoutMinutes(val);
-                    },
-                    items: const [
-                      DropdownMenuItem(value: 2, child: Text('2 min')),
-                      DropdownMenuItem(value: 3, child: Text('3 min')),
-                      DropdownMenuItem(value: 5, child: Text('5 min')),
-                      DropdownMenuItem(value: 10, child: Text('10 min')),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        SettingItem(
-          title: l10n.settingsCameraMicAutoPostpone,
-          subtitle: l10n.settingsCameraMicAutoPostponeSubtitle,
-          keywords: [
-            'camera',
-            'mic',
-            'microphone',
-            'video',
-            'call',
-            'meeting',
-            'zoom',
-            'teams',
-            'postpone',
-            'media',
-          ],
-          category: 'Break Screen & Behavior',
-          widget: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                secondary: const Icon(Icons.do_not_disturb_on_outlined),
-                title: Text(l10n.settingsCameraMicAutoPostpone),
-                subtitle: Text(l10n.settingsCameraMicAutoPostponeSubtitle),
-                value: widget.cameraMicAutoPostponeEnabled,
-                onChanged: widget.setCameraMicAutoPostponeEnabled,
-              ),
-              if (widget.cameraMicAutoPostponeEnabled)
-                Padding(
-                  padding: const EdgeInsets.only(left: 48.0, top: 4.0, bottom: 8.0),
-                  child: Text(
-                    l10n.settingsCameraMicAutoPostponeDesc,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        SettingItem(
-          title: l10n.settingsAutoPauseOnMedia,
-          subtitle: l10n.settingsAutoPauseOnMediaSubtitle,
-          keywords: ['media', 'music', 'video', 'audio', 'pause', 'playback', 'background'],
-          category: 'Break Screen & Behavior',
-          widget: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                secondary: const Icon(Icons.music_note_outlined),
-                title: Text(l10n.settingsAutoPauseOnMedia),
-                subtitle: Text(l10n.settingsAutoPauseOnMediaSubtitle),
-                value: widget.autoPauseOnMediaEnabled,
-                onChanged: widget.setAutoPauseOnMediaEnabled,
-              ),
-              if (widget.autoPauseOnMediaEnabled) ...[
-                Padding(
-                  padding: const EdgeInsets.only(left: 48.0, top: 4.0, bottom: 4.0),
-                  child: Text(
-                    l10n.settingsAutoPauseOnMediaDesc,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 48.0, bottom: 8.0),
-                  child: Wrap(
-                    spacing: 8.0,
-                    children: [
-                      ChoiceChip(
-                        label: const Text('All media'),
-                        selected: widget.autoPauseMediaFilter == 'all',
-                        showCheckmark: false,
-                        onSelected: (_) => widget.setAutoPauseMediaFilter('all'),
-                        avatar: const Icon(Icons.library_music_outlined, size: 16),
-                      ),
-                      ChoiceChip(
-                        label: const Text('Music only'),
-                        selected: widget.autoPauseMediaFilter == 'music_only',
-                        showCheckmark: false,
-                        onSelected: (_) => widget.setAutoPauseMediaFilter('music_only'),
-                        avatar: const Icon(Icons.music_note_outlined, size: 16),
-                      ),
-                      ChoiceChip(
-                        label: const Text('Video only'),
-                        selected: widget.autoPauseMediaFilter == 'video_only',
-                        showCheckmark: false,
-                        onSelected: (_) => widget.setAutoPauseMediaFilter('video_only'),
-                        avatar: const Icon(Icons.videocam_outlined, size: 16),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        SettingItem(
-          title: l10n.settingsNaturalBreakCredit,
-          subtitle: l10n.settingsNaturalBreakCreditSubtitle,
-          keywords: ['natural', 'break', 'credit', 'idle', 'away', 'keyboard'],
-          category: 'Break Screen & Behavior',
-          widget: SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.check_circle_outline),
-            title: Text(l10n.settingsNaturalBreakCredit),
-            subtitle: Text(l10n.settingsNaturalBreakCreditSubtitle),
-            value: widget.naturalBreakCreditEnabled,
-            onChanged: widget.setNaturalBreakCreditEnabled,
-          ),
-        ),
-        SettingItem(
-          title: l10n.settingsBreakVisualizerStyle,
-          subtitle: l10n.settingsBreakVisualizerStyleSubtitle,
-          keywords: [
-            'visualizer',
-            'style',
-            'breathing',
-            'box',
-            'exercise',
-            'blink',
-            'ambient',
-            'starry',
-            'random',
-          ],
-          category: 'Break Screen & Behavior',
-          widget: ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.style_outlined),
-            title: Text(l10n.settingsBreakVisualizerStyle),
-            subtitle: Text(l10n.settingsBreakVisualizerStyleSubtitle),
-            trailing: DropdownButton<String>(
-              value: widget.breakVisualizerStyle,
-              underline: const SizedBox(),
-              dropdownColor: theme.cardColor,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-              onChanged: (String? val) {
-                if (val != null) widget.setBreakVisualizerStyle(val);
-              },
-              items: [
-                DropdownMenuItem(
-                  value: 'Random',
-                  child: Text(l10n.settingsVisualizerRandom),
-                ),
-                DropdownMenuItem(
-                  value: 'Breathing',
-                  child: Text(l10n.settingsVisualizerBreathing),
-                ),
-                DropdownMenuItem(
-                  value: 'BoxBreathing',
-                  child: Text(l10n.settingsVisualizerBoxBreathing),
-                ),
-                DropdownMenuItem(
-                  value: 'EyeExercise',
-                  child: Text(l10n.settingsVisualizerEyeExercise),
-                ),
-                DropdownMenuItem(
-                  value: 'BlinkTraining',
-                  child: Text(l10n.settingsVisualizerBlinkTraining),
-                ),
-                DropdownMenuItem(
-                  value: 'Ambient',
-                  child: Text(l10n.settingsVisualizerAmbient),
-                ),
-                DropdownMenuItem(
-                  value: 'Starry',
-                  child: Text(l10n.settingsVisualizerStarry),
-                ),
-              ],
+        category: 'Break Screen & Behavior',
+        widget: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.psychology_outlined),
+              title: Text(l10n.settingsSmartPausePostpone),
+              subtitle: Text(l10n.settingsSmartPausePostponeSubtitle),
+              value: widget.smartIdleEnabled,
+              onChanged: widget.setSmartIdleEnabled,
             ),
-          ),
+            if (widget.smartIdleEnabled) ...[
+              ListTile(
+                contentPadding: const EdgeInsets.only(left: 56),
+                title: const Text('Idle Timeout'),
+                subtitle: const Text(
+                  'How long to wait before declaring you idle.',
+                ),
+                trailing: DropdownButton<int>(
+                  value: widget.idleTimeoutMinutes,
+                  onChanged: (val) {
+                    if (val != null) widget.setIdleTimeoutMinutes(val);
+                  },
+                  items: const [
+                    DropdownMenuItem(value: 2, child: Text('2 min')),
+                    DropdownMenuItem(value: 3, child: Text('3 min')),
+                    DropdownMenuItem(value: 5, child: Text('5 min')),
+                    DropdownMenuItem(value: 10, child: Text('10 min')),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
-        SettingItem(
-          title: l10n.settingsBreakScreenContent,
-          subtitle: l10n.settingsBreakScreenContentSubtitle,
-          keywords: ['break', 'screen', 'content', 'clock', 'tips', 'progress'],
-          category: 'Break Screen & Behavior',
-          widget: Column(
-            children: [
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                secondary: const Icon(Icons.schedule_outlined),
-                title: Text(l10n.settingsShowCountdown),
-                subtitle: Text(l10n.settingsShowCountdownDesc),
-                value: widget.breakShowClock,
-                onChanged: widget.setBreakShowClock,
+      ),
+      SettingItem(
+        title: l10n.settingsCameraMicAutoPostpone,
+        subtitle: l10n.settingsCameraMicAutoPostponeSubtitle,
+        keywords: [
+          'camera',
+          'mic',
+          'microphone',
+          'video',
+          'call',
+          'meeting',
+          'zoom',
+          'teams',
+          'postpone',
+          'media',
+        ],
+        category: 'Break Screen & Behavior',
+        widget: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.do_not_disturb_on_outlined),
+              title: Text(l10n.settingsCameraMicAutoPostpone),
+              subtitle: Text(l10n.settingsCameraMicAutoPostponeSubtitle),
+              value: widget.cameraMicAutoPostponeEnabled,
+              onChanged: widget.setCameraMicAutoPostponeEnabled,
+            ),
+            if (widget.cameraMicAutoPostponeEnabled)
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 48.0,
+                  top: 4.0,
+                  bottom: 8.0,
+                ),
+                child: Text(
+                  l10n.settingsCameraMicAutoPostponeDesc,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.textTheme.bodySmall?.color?.withValues(
+                      alpha: 0.7,
+                    ),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
               ),
-              const Divider(height: 1),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                secondary: const Icon(Icons.lightbulb_outline),
-                title: Text(l10n.settingsShowTips),
-                subtitle: Text(l10n.settingsShowTipsDesc),
-                value: widget.breakShowTips,
-                onChanged: widget.setBreakShowTips,
+          ],
+        ),
+      ),
+      SettingItem(
+        title: l10n.settingsAutoPauseOnMedia,
+        subtitle: l10n.settingsAutoPauseOnMediaSubtitle,
+        keywords: [
+          'media',
+          'music',
+          'video',
+          'audio',
+          'pause',
+          'playback',
+          'background',
+        ],
+        category: 'Break Screen & Behavior',
+        widget: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.music_note_outlined),
+              title: Text(l10n.settingsAutoPauseOnMedia),
+              subtitle: Text(l10n.settingsAutoPauseOnMediaSubtitle),
+              value: widget.autoPauseOnMediaEnabled,
+              onChanged: widget.setAutoPauseOnMediaEnabled,
+            ),
+            if (widget.autoPauseOnMediaEnabled) ...[
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 48.0,
+                  top: 4.0,
+                  bottom: 4.0,
+                ),
+                child: Text(
+                  l10n.settingsAutoPauseOnMediaDesc,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.textTheme.bodySmall?.color?.withValues(
+                      alpha: 0.7,
+                    ),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
               ),
-              const Divider(height: 1),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                secondary: const Icon(Icons.donut_large_outlined),
-                title: Text(l10n.settingsShowProgress),
-                subtitle: Text(l10n.settingsShowProgressDesc),
-                value: widget.breakShowProgress,
-                onChanged: widget.setBreakShowProgress,
+              Padding(
+                padding: const EdgeInsets.only(left: 48.0, bottom: 8.0),
+                child: Wrap(
+                  spacing: 8.0,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('All media'),
+                      selected: widget.autoPauseMediaFilter == 'all',
+                      showCheckmark: false,
+                      onSelected: (_) => widget.setAutoPauseMediaFilter('all'),
+                      avatar: const Icon(
+                        Icons.library_music_outlined,
+                        size: 16,
+                      ),
+                    ),
+                    ChoiceChip(
+                      label: const Text('Music only'),
+                      selected: widget.autoPauseMediaFilter == 'music_only',
+                      showCheckmark: false,
+                      onSelected: (_) =>
+                          widget.setAutoPauseMediaFilter('music_only'),
+                      avatar: const Icon(Icons.music_note_outlined, size: 16),
+                    ),
+                    ChoiceChip(
+                      label: const Text('Video only'),
+                      selected: widget.autoPauseMediaFilter == 'video_only',
+                      showCheckmark: false,
+                      onSelected: (_) =>
+                          widget.setAutoPauseMediaFilter('video_only'),
+                      avatar: const Icon(Icons.videocam_outlined, size: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      SettingItem(
+        title: 'Call activity auto-pause',
+        subtitle: 'Pause the timer while your microphone or camera is active',
+        keywords: [
+          'call',
+          'meeting',
+          'camera',
+          'mic',
+          'microphone',
+          'video call',
+          'pause',
+        ],
+        category: 'Break Screen & Behavior',
+        widget: SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.mic_none_outlined),
+          title: const Text('Call activity auto-pause'),
+          subtitle: const Text(
+            'Pause immediately during a call; resume when it ends.',
+          ),
+          value: widget.autoPauseOnCallsEnabled,
+          onChanged: widget.setAutoPauseOnCallsEnabled,
+        ),
+      ),
+      SettingItem(
+        title: l10n.settingsNaturalBreakCredit,
+        subtitle: l10n.settingsNaturalBreakCreditSubtitle,
+        keywords: ['natural', 'break', 'credit', 'idle', 'away', 'keyboard'],
+        category: 'Break Screen & Behavior',
+        widget: SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.check_circle_outline),
+          title: Text(l10n.settingsNaturalBreakCredit),
+          subtitle: Text(l10n.settingsNaturalBreakCreditSubtitle),
+          value: widget.naturalBreakCreditEnabled,
+          onChanged: widget.setNaturalBreakCreditEnabled,
+        ),
+      ),
+      SettingItem(
+        title: l10n.settingsBreakVisualizerStyle,
+        subtitle: l10n.settingsBreakVisualizerStyleSubtitle,
+        keywords: [
+          'visualizer',
+          'style',
+          'breathing',
+          'box',
+          'exercise',
+          'blink',
+          'ambient',
+          'starry',
+          'random',
+        ],
+        category: 'Break Screen & Behavior',
+        widget: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.style_outlined),
+          title: Text(l10n.settingsBreakVisualizerStyle),
+          subtitle: Text(l10n.settingsBreakVisualizerStyleSubtitle),
+          trailing: DropdownButton<String>(
+            value: widget.breakVisualizerStyle,
+            underline: const SizedBox(),
+            dropdownColor: theme.cardColor,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+            onChanged: (String? val) {
+              if (val != null) widget.setBreakVisualizerStyle(val);
+            },
+            items: [
+              DropdownMenuItem(
+                value: 'Random',
+                child: Text(l10n.settingsVisualizerRandom),
+              ),
+              DropdownMenuItem(
+                value: 'Breathing',
+                child: Text(l10n.settingsVisualizerBreathing),
+              ),
+              DropdownMenuItem(
+                value: 'BoxBreathing',
+                child: Text(l10n.settingsVisualizerBoxBreathing),
+              ),
+              DropdownMenuItem(
+                value: 'EyeExercise',
+                child: Text(l10n.settingsVisualizerEyeExercise),
+              ),
+              DropdownMenuItem(
+                value: 'BlinkTraining',
+                child: Text(l10n.settingsVisualizerBlinkTraining),
+              ),
+              DropdownMenuItem(
+                value: 'Ambient',
+                child: Text(l10n.settingsVisualizerAmbient),
+              ),
+              DropdownMenuItem(
+                value: 'Starry',
+                child: Text(l10n.settingsVisualizerStarry),
               ),
             ],
           ),
         ),
-        SettingItem(
-          title: l10n.settingsCustomBreakMessage,
-          subtitle: l10n.settingsCustomBreakMessageSubtitle,
-          keywords: ['custom', 'message', 'quote', 'break', 'text'],
-          category: 'Break Screen & Behavior',
-          widget: TextFormField(
-            initialValue: widget.breakCustomMessage,
-            decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.edit_note_outlined),
-              labelText: l10n.settingsCustomBreakMessage,
-              hintText: l10n.settingsCustomBreakMessageHint,
-              border: const OutlineInputBorder(),
+      ),
+      SettingItem(
+        title: l10n.settingsBreakScreenContent,
+        subtitle: l10n.settingsBreakScreenContentSubtitle,
+        keywords: ['break', 'screen', 'content', 'clock', 'tips', 'progress'],
+        category: 'Break Screen & Behavior',
+        widget: Column(
+          children: [
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.schedule_outlined),
+              title: Text(l10n.settingsShowCountdown),
+              subtitle: Text(l10n.settingsShowCountdownDesc),
+              value: widget.breakShowClock,
+              onChanged: widget.setBreakShowClock,
             ),
-            maxLength: 120,
-            minLines: 1,
-            maxLines: 3,
-            onChanged: widget.setBreakCustomMessage,
-          ),
+            const Divider(height: 1),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.lightbulb_outline),
+              title: Text(l10n.settingsShowTips),
+              subtitle: Text(l10n.settingsShowTipsDesc),
+              value: widget.breakShowTips,
+              onChanged: widget.setBreakShowTips,
+            ),
+            const Divider(height: 1),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.donut_large_outlined),
+              title: Text(l10n.settingsShowProgress),
+              subtitle: Text(l10n.settingsShowProgressDesc),
+              value: widget.breakShowProgress,
+              onChanged: widget.setBreakShowProgress,
+            ),
+          ],
         ),
+      ),
+      SettingItem(
+        title: l10n.settingsCustomBreakMessage,
+        subtitle: l10n.settingsCustomBreakMessageSubtitle,
+        keywords: ['custom', 'message', 'quote', 'break', 'text'],
+        category: 'Break Screen & Behavior',
+        widget: TextFormField(
+          initialValue: widget.breakCustomMessage,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.edit_note_outlined),
+            labelText: l10n.settingsCustomBreakMessage,
+            hintText: l10n.settingsCustomBreakMessageHint,
+            border: const OutlineInputBorder(),
+          ),
+          maxLength: 120,
+          minLines: 1,
+          maxLines: 3,
+          onChanged: widget.setBreakCustomMessage,
+        ),
+      ),
       if (_overlayPermissionStatus != OverlayPermissionStatus.unsupported) ...[
         SettingItem(
           title: l10n.settingsDisplayOverApps,
@@ -1954,7 +2020,9 @@ class _SettingsPageState extends State<SettingsPage>
             items: AnimationSpeed.values.map((s) {
               return DropdownMenuItem(
                 value: s,
-                child: Text(s.name.substring(0, 1).toUpperCase() + s.name.substring(1)),
+                child: Text(
+                  s.name.substring(0, 1).toUpperCase() + s.name.substring(1),
+                ),
               );
             }).toList(),
           ),
@@ -2058,7 +2126,7 @@ class _SettingsPageState extends State<SettingsPage>
                   ],
                 ),
                 const SizedBox(height: 16),
-                                TextFormField(
+                TextFormField(
                   initialValue: widget.customAccentColorHex,
                   key: ValueKey(widget.customAccentColorHex),
                   decoration: InputDecoration(
@@ -2094,19 +2162,20 @@ class _SettingsPageState extends State<SettingsPage>
                 const SizedBox(height: 16),
                 const Text(
                   "Accent Color Live Preview",
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.3,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                      color: theme.colorScheme.outlineVariant.withValues(
+                        alpha: 0.5,
+                      ),
                     ),
                   ),
                   child: Row(
@@ -2184,13 +2253,16 @@ class _SettingsPageState extends State<SettingsPage>
                                 widget.isDark,
                                 customHex: widget.customAccentColorHex,
                               ),
-                              foregroundColor: ThemeData.estimateBrightnessForColor(
-                                ColorPresets.swatchColor(
-                                  'Custom',
-                                  widget.isDark,
-                                  customHex: widget.customAccentColorHex,
-                                ),
-                              ) == Brightness.dark
+                              foregroundColor:
+                                  ThemeData.estimateBrightnessForColor(
+                                        ColorPresets.swatchColor(
+                                          'Custom',
+                                          widget.isDark,
+                                          customHex:
+                                              widget.customAccentColorHex,
+                                        ),
+                                      ) ==
+                                      Brightness.dark
                                   ? Colors.white
                                   : Colors.black,
                               padding: const EdgeInsets.symmetric(
@@ -2279,7 +2351,13 @@ class _SettingsPageState extends State<SettingsPage>
       SettingItem(
         title: 'Reminder Reliability Dashboard',
         subtitle: 'Diagnose and fix notification issues',
-        keywords: ['diagnostics', 'reliability', 'dashboard', 'fix', 'reminders'],
+        keywords: [
+          'diagnostics',
+          'reliability',
+          'dashboard',
+          'fix',
+          'reminders',
+        ],
         category: 'Notifications & Sounds',
         widget: ListTile(
           contentPadding: EdgeInsets.zero,
@@ -2288,24 +2366,28 @@ class _SettingsPageState extends State<SettingsPage>
           subtitle: const Text('Diagnose and fix notification issues'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
-            Navigator.of(context).push(MaterialPageRoute(
-              builder: (context) => ReminderReliabilityPage(
-                initialStatus: NotificationReliabilityStatus(
-                  permission: _permissionStatus,
-                  exactAlarms: _exactAlarmStatus,
-                  batteryOptimization: _batteryOptimizationStatus,
-                  hasPendingPhaseReminder: false, // will be fetched
-                  pendingRemindersCount: 0,
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => ReminderReliabilityPage(
+                  initialStatus: NotificationReliabilityStatus(
+                    permission: _permissionStatus,
+                    exactAlarms: _exactAlarmStatus,
+                    batteryOptimization: _batteryOptimizationStatus,
+                    hasPendingPhaseReminder: false, // will be fetched
+                    pendingRemindersCount: 0,
+                  ),
+                  refreshStatus: widget.refreshNotificationReliabilityStatus,
+                  openNotificationSettings: _openSystemNotificationSettings,
+                  requestExactAlarmPermission:
+                      widget.requestExactAlarmPermission,
+                  openBatteryOptimizationSettings:
+                      widget.openBatteryOptimizationSettings,
+                  showTestReminder: widget.showTestReminder,
+                  showTestWellnessReminder: widget.showTestWellnessReminder,
+                  showTestWaterReminder: widget.showTestWaterReminder,
                 ),
-                refreshStatus: widget.refreshNotificationReliabilityStatus,
-                openNotificationSettings: _openSystemNotificationSettings,
-                requestExactAlarmPermission: widget.requestExactAlarmPermission,
-                openBatteryOptimizationSettings: widget.openBatteryOptimizationSettings,
-                showTestReminder: widget.showTestReminder,
-                showTestWellnessReminder: widget.showTestWellnessReminder,
-                showTestWaterReminder: widget.showTestWaterReminder,
               ),
-            ));
+            );
           },
         ),
       ),
@@ -2512,7 +2594,16 @@ class _SettingsPageState extends State<SettingsPage>
       SettingItem(
         title: 'Focus Soundscapes',
         subtitle: 'Play ambient loops during work phases',
-        keywords: ['sound', 'ambient', 'focus', 'music', 'noise', 'brown', 'binaural', 'loop'],
+        keywords: [
+          'sound',
+          'ambient',
+          'focus',
+          'music',
+          'noise',
+          'brown',
+          'binaural',
+          'loop',
+        ],
         category: 'Notifications & Sounds',
         widget: Column(
           children: [
@@ -2533,21 +2624,24 @@ class _SettingsPageState extends State<SettingsPage>
                 subtitle: const Text('Choose your background audio'),
                 trailing: DropdownButton<String>(
                   value: widget.soundscapeStyle,
-                  items: [
-                    'Brown Noise',
-                    'Pink Noise',
-                    'White Noise',
-                    'Binaural Delta (2Hz)',
-                    'Binaural Theta (6Hz)',
-                    'Binaural Alpha (10Hz)',
-                    'Binaural Beta (20Hz)',
-                    'Binaural Gamma (40Hz)',
-                  ]
-                      .map((style) => DropdownMenuItem<String>(
-                            value: style,
-                            child: Text(style),
-                          ))
-                      .toList(),
+                  items:
+                      [
+                            'Brown Noise',
+                            'Pink Noise',
+                            'White Noise',
+                            'Binaural Delta (2Hz)',
+                            'Binaural Theta (6Hz)',
+                            'Binaural Alpha (10Hz)',
+                            'Binaural Beta (20Hz)',
+                            'Binaural Gamma (40Hz)',
+                          ]
+                          .map(
+                            (style) => DropdownMenuItem<String>(
+                              value: style,
+                              child: Text(style),
+                            ),
+                          )
+                          .toList(),
                   onChanged: (value) {
                     if (value != null) widget.setSoundscapeStyle(value);
                   },
@@ -2778,7 +2872,9 @@ class _SettingsPageState extends State<SettingsPage>
                               setState(() {
                                 _waterDailyGoalGlasses -= 1;
                               });
-                              widget.setWaterDailyGoalGlasses(_waterDailyGoalGlasses);
+                              widget.setWaterDailyGoalGlasses(
+                                _waterDailyGoalGlasses,
+                              );
                             }
                           : null,
                     ),
@@ -2793,7 +2889,9 @@ class _SettingsPageState extends State<SettingsPage>
                               setState(() {
                                 _waterDailyGoalGlasses += 1;
                               });
-                              widget.setWaterDailyGoalGlasses(_waterDailyGoalGlasses);
+                              widget.setWaterDailyGoalGlasses(
+                                _waterDailyGoalGlasses,
+                              );
                             }
                           : null,
                     ),
@@ -2829,6 +2927,36 @@ class _SettingsPageState extends State<SettingsPage>
           ],
         ),
       ),
+      if (!kIsWeb && Platform.isAndroid)
+        SettingItem(
+          title: 'Health Connect',
+          subtitle: 'Optionally sync new water glasses to Health Connect',
+          keywords: [
+            'health',
+            'health connect',
+            'hydration',
+            'water',
+            'sync',
+            'privacy',
+          ],
+          category: 'Notifications & Sounds',
+          widget: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.health_and_safety_outlined),
+            title: const Text('Health Connect water sync'),
+            subtitle: const Text(
+              'Write-only; no reading or historical backfill',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const HealthConnectSettingsPage(),
+                ),
+              );
+            },
+          ),
+        ),
 
       // 5. Auto Run & Long Breaks
       SettingItem(
@@ -2868,7 +2996,10 @@ class _SettingsPageState extends State<SettingsPage>
                       ),
                     )
                     .toList(),
-                onChanged: !widget.isTimerRunning && widget.canChangeDurations && _autoRunEnabled
+                onChanged:
+                    !widget.isTimerRunning &&
+                        widget.canChangeDurations &&
+                        _autoRunEnabled
                     ? (value) {
                         if (value != null) _saveAutoRun(cycleLimit: value);
                       }
@@ -3090,18 +3221,31 @@ class _SettingsPageState extends State<SettingsPage>
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.info_outline),
           title: Text(l10n.settingsAboutVersion),
-          trailing: const Text('1.0.0', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          trailing: const Text(
+            '1.0.0',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
         ),
       ),
       SettingItem(
         title: 'Opt-in Analytics & Crash Reporting',
-        subtitle: 'Help improve BlinkKind by securely sending anonymous crash reports and basic usage metrics. We never track personal data.',
-        keywords: ['analytics', 'crash', 'reporting', 'sentry', 'telemetry', 'data'],
+        subtitle:
+            'Help improve BlinkKind by securely sending anonymous crash reports and basic usage metrics. We never track personal data.',
+        keywords: [
+          'analytics',
+          'crash',
+          'reporting',
+          'sentry',
+          'telemetry',
+          'data',
+        ],
         category: 'About BlinkKind',
         widget: SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('Opt-in Analytics & Crash Reporting'),
-          subtitle: const Text('Send anonymous error reports to help improve the app.'),
+          subtitle: const Text(
+            'Send anonymous error reports to help improve the app.',
+          ),
           value: widget.analyticsEnabled,
           onChanged: widget.setAnalyticsEnabled,
         ),
@@ -3115,15 +3259,29 @@ class _SettingsPageState extends State<SettingsPage>
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.security),
           title: Text(l10n.settingsAboutPrivacyTitle),
-          subtitle: Text(l10n.settingsAboutPrivacySubtitle),
+          subtitle: const Text(
+            'Health Connect, local data, and optional services',
+          ),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => _showPrivacyPolicyDialog(context, l10n),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const PrivacyHealthDataPage(),
+              ),
+            );
+          },
         ),
       ),
       SettingItem(
         title: l10n.settingsAboutLicensesTitle,
         subtitle: l10n.settingsAboutLicensesSubtitle,
-        keywords: ['license', 'licenses', 'open source', 'libraries', 'packages'],
+        keywords: [
+          'license',
+          'licenses',
+          'open source',
+          'libraries',
+          'packages',
+        ],
         category: 'About BlinkKind',
         widget: ListTile(
           contentPadding: EdgeInsets.zero,
@@ -3141,7 +3299,8 @@ class _SettingsPageState extends State<SettingsPage>
                 'assets/app_icon.png',
                 width: 64,
                 height: 64,
-                errorBuilder: (context, error, stackTrace) => const Icon(Icons.visibility, size: 64, color: Colors.cyan),
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.visibility, size: 64, color: Colors.cyan),
               ),
             ),
           ),
@@ -3150,7 +3309,13 @@ class _SettingsPageState extends State<SettingsPage>
       SettingItem(
         title: 'Device Validation Mode',
         subtitle: 'Test background reminders and permissions',
-        keywords: ['test', 'diagnostics', 'validation', 'background', 'reminders'],
+        keywords: [
+          'test',
+          'diagnostics',
+          'validation',
+          'background',
+          'reminders',
+        ],
         category: 'Diagnostics & Validation',
         widget: ListTile(
           contentPadding: EdgeInsets.zero,
@@ -3241,7 +3406,9 @@ class _SettingsPageState extends State<SettingsPage>
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: primaryColor,
-                          valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            primaryColor,
+                          ),
                         ),
                       ),
                   ],
@@ -3257,8 +3424,12 @@ class _SettingsPageState extends State<SettingsPage>
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? primaryColor : theme.textTheme.bodyMedium?.color,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isSelected
+                              ? primaryColor
+                              : theme.textTheme.bodyMedium?.color,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -3269,7 +3440,9 @@ class _SettingsPageState extends State<SettingsPage>
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: isPlaying
                               ? primaryColor
-                              : theme.textTheme.labelSmall?.color?.withValues(alpha: 0.5),
+                              : theme.textTheme.labelSmall?.color?.withValues(
+                                  alpha: 0.5,
+                                ),
                           fontSize: 9,
                         ),
                       ),
@@ -3554,24 +3727,6 @@ class _SettingsPageState extends State<SettingsPage>
     );
   }
 
-  void _showPrivacyPolicyDialog(BuildContext context, AppLocalizations l10n) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.settingsAboutPrivacyTitle),
-        content: SingleChildScrollView(
-          child: Text(l10n.settingsAboutPrivacyBody),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(l10n.close),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showResetConfirmationDialog(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     showDialog<void>(
@@ -3612,14 +3767,12 @@ class _SettingsPageState extends State<SettingsPage>
     );
   }
 
-
-
   Future<void> _exportSettingsToFile(BuildContext context) async {
     try {
       final backupData = await widget.exportFullBackup();
       backupData['version'] = 2; // version 2 includes histories
       backupData['exportedAt'] = DateTime.now().toIso8601String();
-      
+
       final content = const JsonEncoder.withIndent('  ').convert(backupData);
 
       final timestamp = DateTime.now()
@@ -3661,9 +3814,7 @@ class _SettingsPageState extends State<SettingsPage>
           duration: const Duration(seconds: 4),
           content: Row(
             children: [
-              Expanded(
-                child: Text(l10n.settingsExportedSnackbar(fileName)),
-              ),
+              Expanded(child: Text(l10n.settingsExportedSnackbar(fileName))),
               const SizedBox(width: 8),
               _SnackBarButton(
                 label: l10n.openFolder,
@@ -3820,8 +3971,8 @@ class _SettingsPageState extends State<SettingsPage>
       );
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accentColor = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final accentColor = theme.colorScheme.primary;
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -3830,17 +3981,10 @@ class _SettingsPageState extends State<SettingsPage>
         final item = filtered[index];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          color: isDark 
-              ? Colors.white.withValues(alpha: 0.04) 
-              : Colors.black.withValues(alpha: 0.02),
+          color: CalmSurface.color(theme),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: isDark 
-                  ? Colors.white.withValues(alpha: 0.08) 
-                  : Colors.black.withValues(alpha: 0.05),
-              width: 1.0,
-            ),
+            borderRadius: BorderRadius.circular(CalmSurface.radius),
+            side: CalmSurface.border(theme),
           ),
           elevation: 0,
           child: Padding(
@@ -3880,6 +4024,124 @@ class _SettingsPageState extends State<SettingsPage>
     );
   }
 
+  void _openEssentialSearch(String query) {
+    _searchController.text = query;
+    _searchController.selection = TextSelection.collapsed(offset: query.length);
+    setState(() {
+      _searchQuery = query.toLowerCase();
+    });
+  }
+
+  Widget _buildEssentialsCard() {
+    final theme = Theme.of(context);
+    final accentColor = theme.colorScheme.primary;
+    final waterGoalLitres =
+        (widget.waterDailyGoalGlasses * widget.waterGlassSizeMl) / 1000;
+
+    Widget item({
+      required IconData icon,
+      required String title,
+      required String subtitle,
+      required String searchQuery,
+    }) {
+      return Expanded(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () => _openEssentialSearch(searchQuery),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: accentColor, size: 19),
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      margin: const EdgeInsets.fromLTRB(4, 4, 4, 12),
+      color: CalmSurface.color(theme, accent: accentColor, tint: 0.025),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(CalmSurface.radius),
+        side: CalmSurface.border(theme, accent: accentColor),
+      ),
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.tune_rounded, color: accentColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Essentials',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Quick access',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                item(
+                  icon: Icons.timer_outlined,
+                  title: 'Focus',
+                  subtitle: '${widget.workDurationSeconds ~/ 60}m cadence',
+                  searchQuery: 'work duration',
+                ),
+                item(
+                  icon: Icons.notifications_active_outlined,
+                  title: 'Reminders',
+                  subtitle: widget.notificationsEnabled ? 'On' : 'Off',
+                  searchQuery: 'notifications',
+                ),
+                item(
+                  icon: Icons.local_drink_outlined,
+                  title: 'Water',
+                  subtitle: '${waterGoalLitres.toStringAsFixed(2)} L goal',
+                  searchQuery: 'water',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCollapsibleGroups() {
     final items = _allSettingItems(context);
     final Map<String, List<Widget>> groups = {};
@@ -3899,14 +4161,17 @@ class _SettingsPageState extends State<SettingsPage>
       if (groups.containsKey('About BlinkKind')) 'About BlinkKind',
     ];
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accentColor = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final accentColor = theme.colorScheme.primary;
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: categories.length,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+      itemCount: categories.length + 1,
       itemBuilder: (context, index) {
-        final category = categories[index];
+        if (index == 0) {
+          return _buildEssentialsCard();
+        }
+        final category = categories[index - 1];
         final list = groups[category] ?? [];
 
         final children = <Widget>[];
@@ -3918,18 +4183,11 @@ class _SettingsPageState extends State<SettingsPage>
         }
 
         return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          color: isDark 
-              ? Colors.white.withValues(alpha: 0.04) 
-              : Colors.black.withValues(alpha: 0.015),
+          margin: const EdgeInsets.only(bottom: 10),
+          color: CalmSurface.color(theme),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: isDark 
-                  ? Colors.white.withValues(alpha: 0.08) 
-                  : Colors.black.withValues(alpha: 0.04),
-              width: 1.0,
-            ),
+            borderRadius: BorderRadius.circular(CalmSurface.radius),
+            side: CalmSurface.border(theme),
           ),
           elevation: 0,
           child: Theme(
@@ -3939,40 +4197,51 @@ class _SettingsPageState extends State<SettingsPage>
               highlightColor: Colors.transparent,
             ),
             child: ExpansionTile(
-              title: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: accentColor.withValues(alpha: 0.25),
-                    width: 1.0,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
+              tilePadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
+              childrenPadding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              iconColor: accentColor,
+              collapsedIconColor: theme.colorScheme.onSurfaceVariant,
+              title: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
                       _categoryIcon(category),
-                      size: 16,
+                      size: 18,
                       color: accentColor,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
                       _getCategoryLabel(context, category),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: accentColor,
-                        letterSpacing: 0.5,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              childrenPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
+              subtitle: Padding(
+                padding: const EdgeInsets.only(left: 46, top: 2),
+                child: Text(
+                  _categorySummary(category),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
               children: children,
             ),
@@ -4008,6 +4277,39 @@ class _SettingsPageState extends State<SettingsPage>
     }
   }
 
+  String _categorySummary(String category) {
+    switch (category) {
+      case 'General Schedule':
+        return '${widget.workDurationSeconds ~/ 60}m focus · ${widget.breakDurationSeconds}s break';
+      case 'Break Screen & Behavior':
+        return '${widget.breakMode.name} mode · ${widget.breakVisualizerStyle}';
+      case 'Theme & Appearance':
+        return widget.useSystemAccent
+            ? 'System color enabled'
+            : '${widget.colorPreset} accent';
+      case 'Notifications & Sounds':
+        return widget.notificationsEnabled
+            ? 'Reminders active'
+            : 'Reminders paused';
+      case 'Auto Run & Long Breaks':
+        return widget.autoRunEnabled ? 'Automatic cycles on' : 'Manual cycles';
+      case 'Desktop Options':
+        return widget.startMinimized ? 'Starts in tray' : 'Window on launch';
+      case 'AI Motivation & Prompts':
+        return widget.aiMotivationEnabled
+            ? 'Optional guidance on'
+            : 'Optional guidance off';
+      case 'System Options':
+        return widget.osFocusDndEnabled
+            ? 'Focus mode active'
+            : 'System defaults';
+      case 'About BlinkKind':
+        return 'Privacy, support, and app information';
+      default:
+        return '';
+    }
+  }
+
   IconData _categoryIcon(String category) {
     switch (category) {
       case 'General Schedule':
@@ -4040,10 +4342,7 @@ class _SettingsPageState extends State<SettingsPage>
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Hero(
-              tag: 'settings_icon',
-              child: Icon(Icons.settings),
-            ),
+            const Hero(tag: 'settings_icon', child: Icon(Icons.settings)),
             const SizedBox(width: 12),
             Text(AppLocalizations.of(context)!.settingsTitle),
           ],
@@ -4150,16 +4449,19 @@ class _SnackBarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return TextButton(
-      style: TextButton.styleFrom(
-        foregroundColor: cs.inversePrimary,
-        backgroundColor: cs.inversePrimary.withValues(alpha: 0.15),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        minimumSize: const Size(40, 32),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        shape: const StadiumBorder(),
-      ).copyWith(
-        overlayColor: WidgetStatePropertyAll(cs.inversePrimary.withValues(alpha: 0.22)),
-      ),
+      style:
+          TextButton.styleFrom(
+            foregroundColor: cs.inversePrimary,
+            backgroundColor: cs.inversePrimary.withValues(alpha: 0.15),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            minimumSize: const Size(40, 32),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            shape: const StadiumBorder(),
+          ).copyWith(
+            overlayColor: WidgetStatePropertyAll(
+              cs.inversePrimary.withValues(alpha: 0.22),
+            ),
+          ),
       onPressed: onPressed,
       child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
     );
@@ -4170,10 +4472,7 @@ class _AnimatedThemeSwitch extends StatefulWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
 
-  const _AnimatedThemeSwitch({
-    required this.value,
-    required this.onChanged,
-  });
+  const _AnimatedThemeSwitch({required this.value, required this.onChanged});
 
   @override
   State<_AnimatedThemeSwitch> createState() => _AnimatedThemeSwitchState();
@@ -4192,11 +4491,10 @@ class _AnimatedThemeSwitchState extends State<_AnimatedThemeSwitch>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _slideAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOutBack));
-    
+    _slideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutBack),
+    );
+
     _rotationAnimation = Tween<double>(
       begin: 0.0,
       end: 0.5,
@@ -4235,95 +4533,99 @@ class _AnimatedThemeSwitchState extends State<_AnimatedThemeSwitch>
       child: GestureDetector(
         onTap: () => widget.onChanged(!isDark),
         child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Container(
-            width: 72,
-            height: 38,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: Color.lerp(
-                theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                Colors.black.withValues(alpha: 0.4),
-                _slideAnimation.value,
-              ),
-              border: Border.all(
+          animation: _controller,
+          builder: (context, child) {
+            return Container(
+              width: 72,
+              height: 38,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
                 color: Color.lerp(
-                  theme.colorScheme.primary.withValues(alpha: 0.3),
-                  Colors.white.withValues(alpha: 0.1),
+                  theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  Colors.black.withValues(alpha: 0.4),
                   _slideAnimation.value,
-                )!,
-                width: 1.5,
+                ),
+                border: Border.all(
+                  color: Color.lerp(
+                    theme.colorScheme.primary.withValues(alpha: 0.3),
+                    Colors.white.withValues(alpha: 0.1),
+                    _slideAnimation.value,
+                  )!,
+                  width: 1.5,
+                ),
               ),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  left: 9,
-                  top: 9,
-                  child: Opacity(
-                    opacity: (1.0 - _slideAnimation.value).clamp(0.0, 1.0),
-                    child: Icon(
-                      Icons.light_mode,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: 9,
-                  top: 9,
-                  child: Opacity(
-                    opacity: _slideAnimation.value.clamp(0.0, 1.0),
-                    child: Icon(
-                      Icons.dark_mode,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 2 + (_slideAnimation.value * 32),
-                  top: 2,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color.lerp(
-                        theme.colorScheme.primary,
-                        Colors.blueGrey.shade800,
-                        _slideAnimation.value,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color.lerp(
-                            theme.colorScheme.primary.withValues(alpha: 0.4),
-                            Colors.black.withValues(alpha: 0.4),
-                            _slideAnimation.value,
-                          )!,
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Transform.rotate(
-                      angle: _rotationAnimation.value * 2 * math.pi,
-                      child: Center(
-                        child: Icon(
-                          isDark ? Icons.dark_mode : Icons.light_mode,
-                          size: 18,
-                          color: isDark ? Colors.cyanAccent : Colors.white,
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 9,
+                    top: 9,
+                    child: Opacity(
+                      opacity: (1.0 - _slideAnimation.value).clamp(0.0, 1.0),
+                      child: Icon(
+                        Icons.light_mode,
+                        size: 18,
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.6,
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+                  Positioned(
+                    right: 9,
+                    top: 9,
+                    child: Opacity(
+                      opacity: _slideAnimation.value.clamp(0.0, 1.0),
+                      child: Icon(
+                        Icons.dark_mode,
+                        size: 18,
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.6,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 2 + (_slideAnimation.value * 32),
+                    top: 2,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color.lerp(
+                          theme.colorScheme.primary,
+                          Colors.blueGrey.shade800,
+                          _slideAnimation.value,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color.lerp(
+                              theme.colorScheme.primary.withValues(alpha: 0.4),
+                              Colors.black.withValues(alpha: 0.4),
+                              _slideAnimation.value,
+                            )!,
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Transform.rotate(
+                        angle: _rotationAnimation.value * 2 * math.pi,
+                        child: Center(
+                          child: Icon(
+                            isDark ? Icons.dark_mode : Icons.light_mode,
+                            size: 18,
+                            color: isDark ? Colors.cyanAccent : Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

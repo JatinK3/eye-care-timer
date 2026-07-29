@@ -17,7 +17,9 @@ android {
 
     defaultConfig {
         applicationId = "com.jatin.eyecaretimer"
-        minSdk = flutter.minSdkVersion
+        // Health Connect's AndroidX client supports API 26+, while the Health
+        // Connect provider itself requires Android 9 (API 28) or newer.
+        minSdk = maxOf(flutter.minSdkVersion, 26)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -37,6 +39,10 @@ kotlin {
 }
 
 dependencies {
+    // Native Health Connect bridge. Keep this stable artifact during the
+    // Phase 0 validation spike rather than depending on a pre-release API.
+    implementation("androidx.health.connect:connect-client:1.1.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     // Core library desugaring required by flutter_local_notifications v19+
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

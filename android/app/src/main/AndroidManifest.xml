@@ -15,6 +15,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!-- Requested only after the user enables Health Connect hydration sync. -->
+    <uses-permission android:name="android.permission.health.WRITE_HYDRATION"/>
     
     <application
         android:label="BlinkKind: Eye Break Timer"
@@ -47,6 +49,23 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity
+            android:name=".HealthConnectPermissionsRationaleActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity>
+        <activity-alias
+            android:name="HealthConnectPermissionUsage"
+            android:exported="true"
+            android:targetActivity=".HealthConnectPermissionsRationaleActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
         <!-- Owns the active timer phase deadline while backgrounded -->
         <service
             android:name=".TimerForegroundService"
@@ -120,6 +139,8 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <!-- Lets the Phase 0 bridge identify the provider on Android 9-13. -->
+        <package android:name="com.google.android.apps.healthdata" />
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

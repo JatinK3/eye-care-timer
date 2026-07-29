@@ -45,6 +45,8 @@ class TimerSettings {
   static const bool defaultCameraMicAutoPostponeEnabled = false;
   static const bool defaultWellnessRemindersEnabled = false;
   static const bool defaultAutoPauseOnMediaEnabled = false;
+  static const bool defaultAutoPauseOnCallsEnabled = false;
+
   /// Values: 'all' | 'music_only' | 'video_only'
   static const String defaultAutoPauseMediaFilter = 'all';
   static const int defaultWellnessReminderCadenceSeconds = 3600;
@@ -142,6 +144,7 @@ class TimerSettings {
   final int endOfDaySummaryHour;
   final int endOfDaySummaryMinute;
   final bool autoPauseOnMediaEnabled;
+  final bool autoPauseOnCallsEnabled;
   final String autoPauseMediaFilter;
   final String activeProfile;
   final bool reducedMotionEnabled;
@@ -216,6 +219,7 @@ class TimerSettings {
     required this.waterGlassSizeMl,
     required this.blinkReminderInteractiveEnabled,
     required this.autoPauseOnMediaEnabled,
+    required this.autoPauseOnCallsEnabled,
     required this.autoPauseMediaFilter,
     required this.activeProfile,
     required this.reducedMotionEnabled,
@@ -291,6 +295,7 @@ class TimerSettings {
       endOfDaySummaryHour = defaultEndOfDaySummaryHour,
       endOfDaySummaryMinute = defaultEndOfDaySummaryMinute,
       autoPauseOnMediaEnabled = defaultAutoPauseOnMediaEnabled,
+      autoPauseOnCallsEnabled = defaultAutoPauseOnCallsEnabled,
       autoPauseMediaFilter = defaultAutoPauseMediaFilter,
       activeProfile = defaultActiveProfile,
       reducedMotionEnabled = defaultReducedMotionEnabled,
@@ -365,6 +370,7 @@ class TimerSettings {
     int? endOfDaySummaryHour,
     int? endOfDaySummaryMinute,
     bool? autoPauseOnMediaEnabled,
+    bool? autoPauseOnCallsEnabled,
     String? autoPauseMediaFilter,
     String? activeProfile,
     bool? reducedMotionEnabled,
@@ -452,21 +458,24 @@ class TimerSettings {
       maxConsecutiveSkips: maxConsecutiveSkips ?? this.maxConsecutiveSkips,
       maxConsecutivePostpones:
           maxConsecutivePostpones ?? this.maxConsecutivePostpones,
-      endOfDaySummaryEnabled: endOfDaySummaryEnabled ?? this.endOfDaySummaryEnabled,
+      endOfDaySummaryEnabled:
+          endOfDaySummaryEnabled ?? this.endOfDaySummaryEnabled,
       endOfDaySummaryHour: endOfDaySummaryHour ?? this.endOfDaySummaryHour,
-      endOfDaySummaryMinute: endOfDaySummaryMinute ?? this.endOfDaySummaryMinute,
+      endOfDaySummaryMinute:
+          endOfDaySummaryMinute ?? this.endOfDaySummaryMinute,
       autoPauseOnMediaEnabled:
           autoPauseOnMediaEnabled ?? this.autoPauseOnMediaEnabled,
-      autoPauseMediaFilter:
-          autoPauseMediaFilter ?? this.autoPauseMediaFilter,
+      autoPauseOnCallsEnabled:
+          autoPauseOnCallsEnabled ?? this.autoPauseOnCallsEnabled,
+      autoPauseMediaFilter: autoPauseMediaFilter ?? this.autoPauseMediaFilter,
       activeProfile: activeProfile ?? this.activeProfile,
       reducedMotionEnabled: reducedMotionEnabled ?? this.reducedMotionEnabled,
       animationSpeed: animationSpeed ?? this.animationSpeed,
       analyticsEnabled: analyticsEnabled ?? this.analyticsEnabled,
-      adaptiveSchedulingEnabled: adaptiveSchedulingEnabled ?? this.adaptiveSchedulingEnabled,
+      adaptiveSchedulingEnabled:
+          adaptiveSchedulingEnabled ?? this.adaptiveSchedulingEnabled,
     );
   }
-
 
   Map<String, dynamic> toJson() {
     return {
@@ -535,6 +544,7 @@ class TimerSettings {
       'endOfDaySummaryHour': endOfDaySummaryHour,
       'endOfDaySummaryMinute': endOfDaySummaryMinute,
       'autoPauseOnMediaEnabled': autoPauseOnMediaEnabled,
+      'autoPauseOnCallsEnabled': autoPauseOnCallsEnabled,
       'autoPauseMediaFilter': autoPauseMediaFilter,
       'activeProfile': activeProfile,
       'reducedMotionEnabled': reducedMotionEnabled,
@@ -579,8 +589,7 @@ class TimerSettings {
           defaultPostponeDurationSeconds,
       smartIdleEnabled:
           json['smartIdleEnabled'] as bool? ?? defaultSmartIdleEnabled,
-      idleTimeoutMinutes:
-          json['idleTimeoutMinutes'] as int? ?? 2,
+      idleTimeoutMinutes: json['idleTimeoutMinutes'] as int? ?? 2,
       breakVisualizerStyle:
           json['breakVisualizerStyle'] as String? ??
           defaultBreakVisualizerStyle,
@@ -602,14 +611,16 @@ class TimerSettings {
           defaultBlinkReminderInteractiveEnabled,
       maxConsecutiveSkips:
           json['maxConsecutiveSkips'] as int? ?? defaultMaxConsecutiveSkips,
-      maxConsecutivePostpones: json['maxConsecutivePostpones'] as int? ??
+      maxConsecutivePostpones:
+          json['maxConsecutivePostpones'] as int? ??
           defaultMaxConsecutivePostpones,
-      endOfDaySummaryEnabled: json['endOfDaySummaryEnabled'] as bool? ??
+      endOfDaySummaryEnabled:
+          json['endOfDaySummaryEnabled'] as bool? ??
           defaultEndOfDaySummaryEnabled,
-      endOfDaySummaryHour: json['endOfDaySummaryHour'] as int? ??
-          defaultEndOfDaySummaryHour,
-      endOfDaySummaryMinute: json['endOfDaySummaryMinute'] as int? ??
-          defaultEndOfDaySummaryMinute,
+      endOfDaySummaryHour:
+          json['endOfDaySummaryHour'] as int? ?? defaultEndOfDaySummaryHour,
+      endOfDaySummaryMinute:
+          json['endOfDaySummaryMinute'] as int? ?? defaultEndOfDaySummaryMinute,
       trayBlinkNudgesEnabled:
           json['trayBlinkNudgesEnabled'] as bool? ??
           defaultTrayBlinkNudgesEnabled,
@@ -637,8 +648,7 @@ class TimerSettings {
           defaultCustomAccentColorHex,
       useSystemAccent:
           json['useSystemAccent'] as bool? ?? defaultUseSystemAccent,
-      reducedMotionEnabled:
-          json['reducedMotionEnabled'] as bool? ?? false,
+      reducedMotionEnabled: json['reducedMotionEnabled'] as bool? ?? false,
       startMinimized: json['startMinimized'] as bool? ?? defaultStartMinimized,
       autoStartSchedule:
           json['autoStartSchedule'] as bool? ?? defaultAutoStartSchedule,
@@ -671,13 +681,15 @@ class TimerSettings {
           json['waterRemindersEnabled'] as bool? ??
           defaultWaterRemindersEnabled,
       waterDailyGoalGlasses:
-          json['waterDailyGoalGlasses'] as int? ??
-          defaultWaterDailyGoalGlasses,
+          json['waterDailyGoalGlasses'] as int? ?? defaultWaterDailyGoalGlasses,
       waterGlassSizeMl:
           json['waterGlassSizeMl'] as int? ?? defaultWaterGlassSizeMl,
       autoPauseOnMediaEnabled:
           json['autoPauseOnMediaEnabled'] as bool? ??
           defaultAutoPauseOnMediaEnabled,
+      autoPauseOnCallsEnabled:
+          json['autoPauseOnCallsEnabled'] as bool? ??
+          defaultAutoPauseOnCallsEnabled,
       autoPauseMediaFilter:
           json['autoPauseMediaFilter'] as String? ??
           defaultAutoPauseMediaFilter,
@@ -686,8 +698,11 @@ class TimerSettings {
         (e) => e.name == (json['animationSpeed'] as String?),
         orElse: () => defaultAnimationSpeed,
       ),
-      analyticsEnabled: json['analyticsEnabled'] as bool? ?? defaultAnalyticsEnabled,
-      adaptiveSchedulingEnabled: json['adaptiveSchedulingEnabled'] as bool? ?? defaultAdaptiveSchedulingEnabled,
+      analyticsEnabled:
+          json['analyticsEnabled'] as bool? ?? defaultAnalyticsEnabled,
+      adaptiveSchedulingEnabled:
+          json['adaptiveSchedulingEnabled'] as bool? ??
+          defaultAdaptiveSchedulingEnabled,
     );
   }
 
@@ -720,7 +735,9 @@ class SettingsProvider extends InheritedWidget {
   });
 
   static TimerSettings of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<SettingsProvider>()!.settings;
+    return context
+        .dependOnInheritedWidgetOfExactType<SettingsProvider>()!
+        .settings;
   }
 
   @override

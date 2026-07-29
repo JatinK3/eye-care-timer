@@ -28,11 +28,13 @@ void notificationBackgroundHandler(NotificationResponse response) {
   // Register plugins for this background isolate so SharedPreferences works.
   ui.DartPluginRegistrant.ensureInitialized();
   unawaited(
-    PreferencesService().incrementWaterGlassesToday(1).then(
-      (_) {},
-      onError: (Object e) =>
-          debugPrint('Background water-glass log failed: $e'),
-    ),
+    PreferencesService()
+        .incrementWaterGlassesToday(1)
+        .then(
+          (_) {},
+          onError: (Object e) =>
+              debugPrint('Background water-glass log failed: $e'),
+        ),
   );
 }
 
@@ -66,6 +68,9 @@ class NotificationReliabilityStatus {
 enum WellnessType { hydration, posture, stretch }
 
 class NotificationService {
+  // Keep all reminder notifications transient. Action buttons still work during
+  // this window, but an unattended notification must not remain in the shade.
+  static const int _transientNotificationTimeoutMs = 8000;
   static const int _phaseReminderId = 1001;
   static const int _testReminderId = 1002;
   static const int _preBreakWarningReminderId = 1003;
@@ -75,10 +80,22 @@ class NotificationService {
   static const int _waterReminderId = 1007;
   static int? _linuxBlinkNotificationReplaceId;
   static DateTime? _lastBlinkReminderSentAt;
+  // These guards sit at the final notification-delivery boundary. The timer
+  // cadence is normally much longer, but a duplicate foreground callback must
+  // never be able to flood the desktop notification daemon.
+  static DateTime? _lastWellnessReminderSentAt;
+  static DateTime? _lastWaterReminderSentAt;
+  static const Duration _minimumWellnessReminderGap = Duration(minutes: 15);
+  static const Duration _minimumWaterReminderGap = Duration(minutes: 5);
   static const String _wellnessChannelId = 'blinkkind_wellness_v1';
   static const String _wellnessChannelName = 'Wellness reminders';
   static const String _wellnessChannelDescription =
       'Periodic hydration, posture, and stretch reminders.';
+  Timer? _linuxBlinkDismissTimer;
+  Timer? _linuxWellnessDismissTimer;
+  Timer? _linuxWaterDismissTimer;
+  int? _linuxWellnessNotificationId;
+  int? _linuxWaterNotificationId;
   static const AndroidNotificationChannel _wellnessChannel =
       AndroidNotificationChannel(
         _wellnessChannelId,
@@ -99,6 +116,7 @@ class NotificationService {
           playSound: false,
           enableVibration: false,
           silent: true,
+          timeoutAfter: _transientNotificationTimeoutMs,
         ),
         iOS: DarwinNotificationDetails(presentAlert: true, presentSound: false),
         macOS: DarwinNotificationDetails(
@@ -123,6 +141,7 @@ class NotificationService {
           playSound: false,
           enableVibration: false,
           silent: true,
+          timeoutAfter: _transientNotificationTimeoutMs,
           actions: <AndroidNotificationAction>[
             AndroidNotificationAction(
               kLogWaterGlassActionId,
@@ -156,8 +175,8 @@ class NotificationService {
   static AndroidNotificationChannel _buildBlinkChannel(String chimeStyle) {
     final RawResourceAndroidNotificationSound? sound =
         (chimeStyle != 'system_alert')
-            ? RawResourceAndroidNotificationSound(chimeStyle)
-            : null;
+        ? RawResourceAndroidNotificationSound(chimeStyle)
+        : null;
     return AndroidNotificationChannel(
       _blinkChannelId(chimeStyle),
       _blinkChannelName,
@@ -176,8 +195,8 @@ class NotificationService {
     final channelId = _blinkChannelId(chimeStyle);
     final RawResourceAndroidNotificationSound? sound =
         (chimeStyle != 'system_alert')
-            ? RawResourceAndroidNotificationSound(chimeStyle)
-            : null;
+        ? RawResourceAndroidNotificationSound(chimeStyle)
+        : null;
     return NotificationDetails(
       android: AndroidNotificationDetails(
         channelId,
@@ -190,6 +209,7 @@ class NotificationService {
         enableVibration: false,
         silent: false,
         icon: 'ic_stat_eye',
+        timeoutAfter: _transientNotificationTimeoutMs,
         actions: interactive
             ? <AndroidNotificationAction>[
                 AndroidNotificationAction(
@@ -273,6 +293,7 @@ class NotificationService {
           enableVibration: true,
           category: AndroidNotificationCategory.alarm,
           audioAttributesUsage: AudioAttributesUsage.alarm,
+          timeoutAfter: _transientNotificationTimeoutMs,
         ),
         iOS: DarwinNotificationDetails(presentAlert: true, presentSound: true),
         macOS: DarwinNotificationDetails(
@@ -293,6 +314,7 @@ class NotificationService {
           enableVibration: true,
           category: AndroidNotificationCategory.alarm,
           audioAttributesUsage: AudioAttributesUsage.alarm,
+          timeoutAfter: _transientNotificationTimeoutMs,
           actions: <AndroidNotificationAction>[
             AndroidNotificationAction(
               'postpone_break',
@@ -547,7 +569,8 @@ class NotificationService {
     if (kIsWeb || !Platform.isAndroid) return '';
     try {
       return await _settingsChannel.invokeMethod<String>(
-            'detectOemManufacturer') ??
+            'detectOemManufacturer',
+          ) ??
           '';
     } on PlatformException {
       return '';
@@ -628,6 +651,8 @@ class NotificationService {
           'BlinkKind',
           '-i',
           'com.jatin.eyecaretimer',
+          '-t',
+          '$_transientNotificationTimeoutMs',
           'Wellness test reminder',
           'If you heard this, wellness reminder sound is ready.',
         ]);
@@ -665,6 +690,8 @@ class NotificationService {
           'BlinkKind',
           '-i',
           'com.jatin.eyecaretimer',
+          '-t',
+          '$_transientNotificationTimeoutMs',
           'Water test reminder',
           'If you heard this, water reminder sound is ready.',
         ]);
@@ -794,7 +821,9 @@ class NotificationService {
     final now = DateTime.now();
     if (_lastBlinkReminderSentAt != null &&
         now.difference(_lastBlinkReminderSentAt!).inSeconds < 5) {
-      debugPrint('Skipping duplicate blink reminder notification due to rate limit.');
+      debugPrint(
+        'Skipping duplicate blink reminder notification due to rate limit.',
+      );
       return;
     }
     _lastBlinkReminderSentAt = now;
@@ -859,11 +888,12 @@ class NotificationService {
         replaceId: _linuxBlinkNotificationReplaceId ?? 0,
         actions: interactive ? "['blink_done', 'I blinked']" : '[]',
         urgency: 1,
-        timeoutMs: 7000,
+        timeoutMs: _transientNotificationTimeoutMs,
       );
       if (id != null) {
         if (id > 0) {
           _linuxBlinkNotificationReplaceId = id;
+          _scheduleLinuxBlinkDismissal(id);
         } else {
           _linuxBlinkNotificationReplaceId = null;
         }
@@ -916,6 +946,80 @@ class NotificationService {
     return int.tryParse(match.group(1)!);
   }
 
+  Future<void> _closeLinuxNotification(int id) async {
+    try {
+      final result = await Process.run('gdbus', [
+        'call',
+        '--session',
+        '--dest',
+        'org.freedesktop.Notifications',
+        '--object-path',
+        '/org/freedesktop/Notifications',
+        '--method',
+        'org.freedesktop.Notifications.CloseNotification',
+        id.toString(),
+      ]);
+      if (result.exitCode != 0) {
+        debugPrint('Failed to close Linux notification: ${result.stderr}');
+      }
+    } catch (e) {
+      debugPrint('Failed to close Linux notification: $e');
+    }
+  }
+
+  Timer _linuxDismissTimer({
+    required int notificationId,
+    required bool Function() isCurrent,
+    required VoidCallback clearTracking,
+  }) {
+    return Timer(
+      const Duration(milliseconds: _transientNotificationTimeoutMs),
+      () async {
+        if (!isCurrent()) return;
+        await _closeLinuxNotification(notificationId);
+        if (isCurrent()) clearTracking();
+      },
+    );
+  }
+
+  void _scheduleLinuxBlinkDismissal(int notificationId) {
+    _linuxBlinkDismissTimer?.cancel();
+    _linuxBlinkDismissTimer = _linuxDismissTimer(
+      notificationId: notificationId,
+      isCurrent: () => _linuxBlinkNotificationReplaceId == notificationId,
+      clearTracking: () {
+        _linuxBlinkNotificationReplaceId = null;
+        _linuxBlinkDismissTimer = null;
+      },
+    );
+  }
+
+  void _scheduleLinuxWellnessDismissal(int notificationId) {
+    _linuxWellnessDismissTimer?.cancel();
+    _linuxWellnessNotificationId = notificationId;
+    _linuxWellnessDismissTimer = _linuxDismissTimer(
+      notificationId: notificationId,
+      isCurrent: () => _linuxWellnessNotificationId == notificationId,
+      clearTracking: () {
+        _linuxWellnessNotificationId = null;
+        _linuxWellnessDismissTimer = null;
+      },
+    );
+  }
+
+  void _scheduleLinuxWaterDismissal(int notificationId) {
+    _linuxWaterDismissTimer?.cancel();
+    _linuxWaterNotificationId = notificationId;
+    _linuxWaterDismissTimer = _linuxDismissTimer(
+      notificationId: notificationId,
+      isCurrent: () => _linuxWaterNotificationId == notificationId,
+      clearTracking: () {
+        _linuxWaterNotificationId = null;
+        _linuxWaterDismissTimer = null;
+      },
+    );
+  }
+
   Future<void> _showLinuxNotificationViaNotifySend({
     required String title,
     required String body,
@@ -926,8 +1030,8 @@ class NotificationService {
     final urgencyName = urgency <= 0
         ? 'low'
         : urgency >= 2
-            ? 'critical'
-            : 'normal';
+        ? 'critical'
+        : 'normal';
     final process = await Process.start('notify-send', [
       '-a',
       'BlinkKind',
@@ -979,7 +1083,9 @@ class NotificationService {
               .substring(_linuxBlinkActionMonitorBuffer.length - 4096);
         }
 
-        final regExp = RegExp(r'member=ActionInvoked[\s\S]*?string\s+"([^"]+)"');
+        final regExp = RegExp(
+          r'member=ActionInvoked[\s\S]*?string\s+"([^"]+)"',
+        );
         final matches = regExp.allMatches(_linuxBlinkActionMonitorBuffer);
         for (final match in matches) {
           final actionId = match.group(1);
@@ -989,7 +1095,8 @@ class NotificationService {
             }
             _notificationResponseController.add(
               NotificationResponse(
-                notificationResponseType: NotificationResponseType.selectedNotificationAction,
+                notificationResponseType:
+                    NotificationResponseType.selectedNotificationAction,
                 actionId: actionId,
               ),
             );
@@ -1029,7 +1136,7 @@ class NotificationService {
         '-u',
         'normal',
         '-t',
-        '7000',
+        '$_transientNotificationTimeoutMs',
         if (interactive) ...['-A', 'blink_done=I blinked'],
         '-p',
         if (replaceId != null) ...['-r', replaceId.toString()],
@@ -1040,19 +1147,20 @@ class NotificationService {
       // Use Process.start so we don't block on interactive notifications
       // but still capture the notification ID from stdout.
       final process = await Process.start('notify-send', args);
-      
+
       // Read the first line of stdout to get the notification ID (printed immediately by -p)
       final stdoutLine = await process.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .first
           .timeout(const Duration(seconds: 1), onTimeout: () => '');
-          
+
       final notificationId = int.tryParse(stdoutLine.trim());
       if (notificationId != null) {
         _linuxBlinkNotificationReplaceId = notificationId;
+        _scheduleLinuxBlinkDismissal(notificationId);
       }
-      
+
       // Drain stdout/stderr so the process doesn't get blocked
       unawaited(process.stdout.drain<void>());
       unawaited(process.stderr.drain<void>());
@@ -1065,24 +1173,12 @@ class NotificationService {
     if (kIsWeb) return;
 
     if (Platform.isLinux) {
+      _linuxBlinkDismissTimer?.cancel();
+      _linuxBlinkDismissTimer = null;
       final id = _linuxBlinkNotificationReplaceId;
+      _linuxBlinkNotificationReplaceId = null;
       if (id != null) {
-        try {
-          await Process.run('gdbus', [
-            'call',
-            '--session',
-            '--dest',
-            'org.freedesktop.Notifications',
-            '--object-path',
-            '/org/freedesktop/Notifications',
-            '--method',
-            'org.freedesktop.Notifications.CloseNotification',
-            id.toString(),
-          ]);
-          _linuxBlinkNotificationReplaceId = null;
-        } catch (e) {
-          debugPrint('Failed to close Linux blink notification: $e');
-        }
+        await _closeLinuxNotification(id);
       }
       return;
     }
@@ -1100,6 +1196,15 @@ class NotificationService {
     String? aiMessage,
   }) async {
     if (kIsWeb) return;
+
+    final now = DateTime.now();
+    final lastSent = _lastWellnessReminderSentAt;
+    if (lastSent != null &&
+        now.difference(lastSent) < _minimumWellnessReminderGap) {
+      debugPrint('Skipping duplicate wellness reminder due to rate limit.');
+      return;
+    }
+    _lastWellnessReminderSentAt = now;
 
     String title;
     String body;
@@ -1127,10 +1232,14 @@ class NotificationService {
         final id = await _showLinuxNotificationViaDbus(
           title: title,
           body: body,
+          replaceId: _linuxWellnessNotificationId ?? 0,
           urgency: 1,
-          timeoutMs: 8000,
+          timeoutMs: _transientNotificationTimeoutMs,
         );
-        if (id != null) return;
+        if (id != null) {
+          if (id > 0) _scheduleLinuxWellnessDismissal(id);
+          return;
+        }
       } catch (e) {
         debugPrint('Failed to send Linux wellness notification via DBus: $e');
       }
@@ -1140,10 +1249,12 @@ class NotificationService {
           title: title,
           body: body,
           urgency: 1,
-          timeoutMs: 8000,
+          timeoutMs: _transientNotificationTimeoutMs,
         );
       } catch (e) {
-        debugPrint('Failed to send Linux wellness notification via notify-send: $e');
+        debugPrint(
+          'Failed to send Linux wellness notification via notify-send: $e',
+        );
       }
       return;
     }
@@ -1206,8 +1317,9 @@ class NotificationService {
             id: idBase + scheduledCount,
             title: message[0],
             body: message[1],
-            scheduledDate:
-                tz.TZDateTime.now(tz.local).add(Duration(seconds: delay)),
+            scheduledDate: tz.TZDateTime.now(
+              tz.local,
+            ).add(Duration(seconds: delay)),
             notificationDetails: details,
             androidScheduleMode: exactAlarmsAllowed
                 ? AndroidScheduleMode.exactAllowWhileIdle
@@ -1251,11 +1363,11 @@ class NotificationService {
         ['Hydration check', 'Take a sip of water and stay hydrated!'],
         [
           'Posture check',
-          'Sit up straight, shoulders relaxed, screen at eye level.'
+          'Sit up straight, shoulders relaxed, screen at eye level.',
         ],
         [
           'Stretch reminder',
-          'Stand up and stretch for 30 seconds. Your body will thank you!'
+          'Stand up and stretch for 30 seconds. Your body will thank you!',
         ],
       ],
     );
@@ -1289,8 +1401,21 @@ class NotificationService {
   }
 
   /// Shows an immediate water reminder (used by the desktop foreground path).
-  Future<void> showWaterReminder({int? consumedGlasses, int? goalGlasses}) async {
+  Future<void> showWaterReminder({
+    int? consumedGlasses,
+    int? goalGlasses,
+  }) async {
     if (kIsWeb) return;
+
+    final now = DateTime.now();
+    final lastSent = _lastWaterReminderSentAt;
+    if (lastSent != null &&
+        now.difference(lastSent) < _minimumWaterReminderGap) {
+      debugPrint('Skipping duplicate water reminder due to rate limit.');
+      return;
+    }
+    _lastWaterReminderSentAt = now;
+
     const title = 'Hydration break 💧';
     final body = (consumedGlasses != null && goalGlasses != null)
         ? 'Time for some water — $consumedGlasses of $goalGlasses glasses so far today.'
@@ -1333,11 +1458,15 @@ class NotificationService {
       final id = await _showLinuxNotificationViaDbus(
         title: title,
         body: body,
+        replaceId: _linuxWaterNotificationId ?? 0,
         actions: "['$kLogWaterGlassActionId', '$actionLabel']",
         urgency: 1,
-        timeoutMs: 8000,
+        timeoutMs: _transientNotificationTimeoutMs,
       );
-      if (id != null) return;
+      if (id != null) {
+        if (id > 0) _scheduleLinuxWaterDismissal(id);
+        return;
+      }
     } catch (e) {
       debugPrint('Failed to send Linux water notification via DBus: $e');
     }
@@ -1349,7 +1478,7 @@ class NotificationService {
         title: title,
         body: body,
         urgency: 1,
-        timeoutMs: 8000,
+        timeoutMs: _transientNotificationTimeoutMs,
         actionArgs: ['-A', '$kLogWaterGlassActionId=$actionLabel'],
       );
     } catch (e) {
@@ -1361,7 +1490,8 @@ class NotificationService {
     if (kIsWeb) return;
 
     const title = 'Break Auto-Postponed 🎥';
-    const body = 'Your eye break was postponed because your camera or microphone is in use.';
+    const body =
+        'Your eye break was postponed because your camera or microphone is in use.';
 
     if (Platform.isLinux) {
       try {
@@ -1373,7 +1503,7 @@ class NotificationService {
           '-u',
           'normal',
           '-t',
-          '5000',
+          '$_transientNotificationTimeoutMs',
           title,
           body,
         ]);
@@ -1518,6 +1648,9 @@ class NotificationService {
   void dispose() {
     _linuxPhaseTimer?.cancel();
     _linuxWarningTimer?.cancel();
+    _linuxBlinkDismissTimer?.cancel();
+    _linuxWellnessDismissTimer?.cancel();
+    _linuxWaterDismissTimer?.cancel();
     _linuxBlinkActionMonitor?.kill();
     _linuxBlinkActionMonitor = null;
   }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +9,8 @@ import '../models/timer_settings.dart';
 import '../models/timer_event_record.dart';
 import '../models/work_session_record.dart';
 import '../models/pending_break.dart';
+import '../models/health_sync_outbox_operation.dart';
+import '../models/hydration_intake_event.dart';
 
 class PreferencesService {
   static const String timerEventsHistoryKey = 'timerEventsHistory';
@@ -101,11 +104,15 @@ class PreferencesService {
   static const String waterGlassesTodayKey = 'waterGlassesToday';
   static const String waterGlassesDateKey = 'waterGlassesDate';
   static const String waterHistoryKey = 'waterHistory';
+  static const String hydrationIntakeEventsKey = 'hydrationIntakeEvents';
+  static const String healthSyncOutboxKey = 'healthSyncOutbox';
+  static const String healthConnectSyncEnabledKey = 'healthConnectSyncEnabled';
   static const String blinkReminderInteractiveEnabledKey =
       'blinkReminderInteractiveEnabled';
   static const String maxConsecutiveSkipsKey = 'maxConsecutiveSkips';
   static const String maxConsecutivePostponesKey = 'maxConsecutivePostpones';
   static const String autoPauseOnMediaEnabledKey = 'autoPauseOnMediaEnabled';
+  static const String autoPauseOnCallsEnabledKey = 'autoPauseOnCallsEnabled';
   static const String autoPauseMediaFilterKey = 'autoPauseMediaFilter';
   static const String activeProfileKey = 'activeProfile';
   static const String reducedMotionEnabledKey = 'reducedMotionEnabled';
@@ -285,6 +292,9 @@ class PreferencesService {
       autoPauseOnMediaEnabled:
           prefs.getBool(autoPauseOnMediaEnabledKey) ??
           TimerSettings.defaultAutoPauseOnMediaEnabled,
+      autoPauseOnCallsEnabled:
+          prefs.getBool(autoPauseOnCallsEnabledKey) ??
+          TimerSettings.defaultAutoPauseOnCallsEnabled,
       autoPauseMediaFilter:
           prefs.getString(autoPauseMediaFilterKey) ??
           TimerSettings.defaultAutoPauseMediaFilter,
@@ -330,6 +340,48 @@ class PreferencesService {
   Future<Map<String, int>> loadWaterHistory() async {
     final prefs = await SharedPreferences.getInstance();
     return _waterHistoryFromPrefs(prefs);
+  }
+
+  Future<List<HydrationIntakeEvent>> loadHydrationIntakeEvents() async {
+    final prefs = await SharedPreferences.getInstance();
+    return _hydrationEventsFromPrefs(prefs);
+  }
+
+  Future<List<HealthSyncOutboxOperation>> loadHealthSyncOutbox() async {
+    final prefs = await SharedPreferences.getInstance();
+    return _healthSyncOutboxFromPrefs(prefs);
+  }
+
+  Future<bool> loadHealthConnectSyncEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(healthConnectSyncEnabledKey) ?? false;
+  }
+
+  Future<void> saveHealthConnectSyncEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(healthConnectSyncEnabledKey, enabled);
+  }
+
+  Future<void> completeHealthSyncOperation(String operationId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final operations = _healthSyncOutboxFromPrefs(prefs)
+      ..removeWhere((operation) => operation.id == operationId);
+    await _saveHealthSyncOutbox(prefs, operations);
+  }
+
+  Future<void> recordHealthSyncFailure(String operationId, Object error) async {
+    final prefs = await SharedPreferences.getInstance();
+    final operations = _healthSyncOutboxFromPrefs(prefs);
+    final index = operations.indexWhere(
+      (operation) => operation.id == operationId,
+    );
+    if (index == -1) return;
+    final operation = operations[index];
+    operations[index] = operation.copyWith(
+      attempts: operation.attempts + 1,
+      lastError: error.toString(),
+    );
+    await _saveHealthSyncOutbox(prefs, operations);
   }
 
   Future<List<WorkSessionRecord>> loadWorkSessionHistory() async {
@@ -603,6 +655,10 @@ class PreferencesService {
       blinkReminderInteractiveEnabledKey,
       TimerSettings.defaultBlinkReminderInteractiveEnabled,
     );
+    await prefs.setBool(
+      autoPauseOnCallsEnabledKey,
+      TimerSettings.defaultAutoPauseOnCallsEnabled,
+    );
 
     return const TimerSettings.defaults().copyWith(streakCount: currentStreak);
   }
@@ -734,6 +790,10 @@ class PreferencesService {
     await prefs.setBool(
       autoPauseOnMediaEnabledKey,
       settings.autoPauseOnMediaEnabled,
+    );
+    await prefs.setBool(
+      autoPauseOnCallsEnabledKey,
+      settings.autoPauseOnCallsEnabled,
     );
     await prefs.setString(
       autoPauseMediaFilterKey,
@@ -998,7 +1058,14 @@ class PreferencesService {
   Future<int> incrementWaterGlassesToday(int delta) async {
     final current = await loadWaterGlassesToday();
     final next = (current + delta).clamp(0, 99);
+    final appliedDelta = next - current;
+    if (appliedDelta == 0) return next;
     await saveWaterGlassesToday(next);
+    if (appliedDelta > 0) {
+      await _recordWaterIntakes(appliedDelta);
+    } else {
+      await _correctMostRecentWaterIntakes(-appliedDelta);
+    }
     return next;
   }
 
@@ -1254,6 +1321,139 @@ class PreferencesService {
     return _intMapFromPrefs(prefs, waterHistoryKey);
   }
 
+  List<HydrationIntakeEvent> _hydrationEventsFromPrefs(
+    SharedPreferences prefs,
+  ) {
+    return _listFromPrefs(
+      prefs,
+      hydrationIntakeEventsKey,
+      HydrationIntakeEvent.fromJson,
+    );
+  }
+
+  List<HealthSyncOutboxOperation> _healthSyncOutboxFromPrefs(
+    SharedPreferences prefs,
+  ) {
+    return _listFromPrefs(
+      prefs,
+      healthSyncOutboxKey,
+      HealthSyncOutboxOperation.fromJson,
+    );
+  }
+
+  List<T> _listFromPrefs<T>(
+    SharedPreferences prefs,
+    String key,
+    T Function(Map<String, dynamic> json) fromJson,
+  ) {
+    final raw = prefs.getString(key);
+    if (raw == null || raw.isEmpty) return <T>[];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List<dynamic>) return <T>[];
+      return decoded.whereType<Map<String, dynamic>>().map(fromJson).toList();
+    } on Object {
+      return <T>[];
+    }
+  }
+
+  Future<void> _recordWaterIntakes(int count) async {
+    final prefs = await SharedPreferences.getInstance();
+    final volumeMl =
+        prefs.getInt(waterGlassSizeMlKey) ??
+        TimerSettings.defaultWaterGlassSizeMl;
+    final events = _hydrationEventsFromPrefs(prefs);
+    final operations = _healthSyncOutboxFromPrefs(prefs);
+    final now = DateTime.now();
+    final random = Random.secure();
+
+    for (var index = 0; index < count; index++) {
+      // The random suffix keeps multiple quick taps and notification actions
+      // distinct while the timestamp remains the precise intake time.
+      final recordedAt = now.add(Duration(microseconds: index));
+      final event = HydrationIntakeEvent(
+        id: 'hydration-${recordedAt.microsecondsSinceEpoch}-${random.nextInt(1 << 32)}',
+        recordedAt: recordedAt,
+        volumeMl: volumeMl,
+      );
+      events.add(event);
+      _replaceOutboxOperation(
+        operations,
+        HealthSyncOutboxOperation(
+          id: 'hydration-${event.id}',
+          type: HealthSyncOperationType.upsertHydration,
+          hydrationEventId: event.id,
+          createdAt: now,
+        ),
+      );
+    }
+    await _saveHydrationEvents(prefs, events);
+    await _saveHealthSyncOutbox(prefs, operations);
+  }
+
+  Future<void> _correctMostRecentWaterIntakes(int count) async {
+    final prefs = await SharedPreferences.getInstance();
+    final events = _hydrationEventsFromPrefs(prefs);
+    final operations = _healthSyncOutboxFromPrefs(prefs);
+    final activeIndexes = <int>[];
+    for (var index = 0; index < events.length; index++) {
+      if (!events[index].isDeleted) activeIndexes.add(index);
+    }
+    activeIndexes.sort(
+      (left, right) =>
+          events[right].recordedAt.compareTo(events[left].recordedAt),
+    );
+
+    for (final index in activeIndexes.take(count)) {
+      final deleted = events[index].copyWith(
+        version: events[index].version + 1,
+        isDeleted: true,
+      );
+      events[index] = deleted;
+      _replaceOutboxOperation(
+        operations,
+        HealthSyncOutboxOperation(
+          id: 'hydration-${deleted.id}',
+          type: HealthSyncOperationType.deleteHydration,
+          hydrationEventId: deleted.id,
+          createdAt: DateTime.now(),
+        ),
+      );
+    }
+    await _saveHydrationEvents(prefs, events);
+    await _saveHealthSyncOutbox(prefs, operations);
+  }
+
+  void _replaceOutboxOperation(
+    List<HealthSyncOutboxOperation> operations,
+    HealthSyncOutboxOperation replacement,
+  ) {
+    operations.removeWhere(
+      (operation) => operation.hydrationEventId == replacement.hydrationEventId,
+    );
+    operations.add(replacement);
+  }
+
+  Future<void> _saveHydrationEvents(
+    SharedPreferences prefs,
+    List<HydrationIntakeEvent> events,
+  ) {
+    return prefs.setString(
+      hydrationIntakeEventsKey,
+      jsonEncode(events.map((event) => event.toJson()).toList()),
+    );
+  }
+
+  Future<void> _saveHealthSyncOutbox(
+    SharedPreferences prefs,
+    List<HealthSyncOutboxOperation> operations,
+  ) {
+    return prefs.setString(
+      healthSyncOutboxKey,
+      jsonEncode(operations.map((operation) => operation.toJson()).toList()),
+    );
+  }
+
   Map<String, int> _intMapFromPrefs(SharedPreferences prefs, String key) {
     final rawHistory = prefs.getString(key);
     if (rawHistory == null || rawHistory.isEmpty) {
@@ -1315,6 +1515,9 @@ class PreferencesService {
       'waterHistory': prefs.getString(waterHistoryKey),
       'waterGlassesToday': prefs.getInt(waterGlassesTodayKey),
       'waterGlassesDate': prefs.getString(waterGlassesDateKey),
+      'hydrationIntakeEvents': prefs.getString(hydrationIntakeEventsKey),
+      'healthSyncOutbox': prefs.getString(healthSyncOutboxKey),
+      'healthConnectSyncEnabled': prefs.getBool(healthConnectSyncEnabledKey),
     };
   }
 
@@ -1353,6 +1556,24 @@ class PreferencesService {
       await prefs.setString(
         waterGlassesDateKey,
         data['waterGlassesDate'] as String,
+      );
+    }
+    if (data['hydrationIntakeEvents'] != null) {
+      await prefs.setString(
+        hydrationIntakeEventsKey,
+        data['hydrationIntakeEvents'] as String,
+      );
+    }
+    if (data['healthSyncOutbox'] != null) {
+      await prefs.setString(
+        healthSyncOutboxKey,
+        data['healthSyncOutbox'] as String,
+      );
+    }
+    if (data['healthConnectSyncEnabled'] != null) {
+      await prefs.setBool(
+        healthConnectSyncEnabledKey,
+        data['healthConnectSyncEnabled'] as bool,
       );
     }
 

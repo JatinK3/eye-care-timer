@@ -44,6 +44,9 @@ class DesktopTimerState {
   final DateTime? nextBreakAt;
   final bool isLongBreak;
   final bool soundscapeEnabled;
+  final int waterGlassesToday;
+  final int waterGlassSizeMl;
+  final int waterDailyGoalGlasses;
 
   DesktopTimerState({
     required this.isRunning,
@@ -60,6 +63,9 @@ class DesktopTimerState {
     this.nextBreakAt,
     this.isLongBreak = false,
     this.soundscapeEnabled = false,
+    this.waterGlassesToday = 0,
+    this.waterGlassSizeMl = 250,
+    this.waterDailyGoalGlasses = 8,
   });
 }
 
@@ -70,15 +76,18 @@ class DesktopControlsController {
 
   final _commandController = StreamController<DesktopCommand>.broadcast();
   final _stateController = StreamController<DesktopTimerState>.broadcast();
+  DesktopTimerState? _latestState;
 
   Stream<DesktopCommand> get commands => _commandController.stream;
   Stream<DesktopTimerState> get states => _stateController.stream;
+  DesktopTimerState? get latestState => _latestState;
 
   void triggerCommand(DesktopCommand command) {
     _commandController.add(command);
   }
 
   void updateState(DesktopTimerState state) {
+    _latestState = state;
     _stateController.add(state);
   }
 }
