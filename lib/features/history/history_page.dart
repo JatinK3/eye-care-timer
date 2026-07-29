@@ -2159,7 +2159,14 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                       );
                     }
 
+                    final todayValue = values.last;
+                    final todayRatio = maxValue > 0
+                        ? todayValue / maxValue
+                        : 0.0;
+                    final todayY = chartHeight * (1 - todayRatio);
+
                     return Stack(
+                      clipBehavior: Clip.none,
                       children: [
                         // Goal Line (Dashed)
                         if (goalValue > 0)
@@ -2191,6 +2198,58 @@ class _ActivityBarChartState extends State<_ActivityBarChart> {
                                   ),
                                 ),
                               ),
+                            ),
+                          ),
+                        // Today's Value Line (Dotted)
+                        if (todayValue != goalValue && todayValue > 0)
+                          Positioned(
+                            left:
+                                -28, // Offset to draw in the Y-axis label area
+                            right: 0,
+                            top: todayY,
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 24,
+                                  child: Text(
+                                    _activeMetric == ChartMetric.compliance
+                                        ? "${todayValue.round()}%"
+                                        : _activeMetric == ChartMetric.focusTime
+                                        ? "${todayValue.toStringAsFixed(1)}"
+                                        : "${todayValue.round()}",
+                                    textAlign: TextAlign.right,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
+                                        ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Row(
+                                    children: List.generate(
+                                      40,
+                                      (i) => Expanded(
+                                        child: Container(
+                                          height: 1,
+                                          color: i % 2 == 0
+                                              ? Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant
+                                                    .withValues(alpha: 0.5)
+                                              : Colors.transparent,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         // Bars

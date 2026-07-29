@@ -951,7 +951,14 @@ class _WeeklyTrendPainter extends CustomPainter {
     );
 
     _drawSeries(canvas, chartRect, breaks, dailyBreakGoal, breakColor);
-    _drawSeries(canvas, chartRect, water, dailyWaterGoal, waterColor);
+    _drawSeries(
+      canvas,
+      chartRect,
+      water,
+      dailyWaterGoal,
+      waterColor,
+      maxRatio: 1.0,
+    );
   }
 
   void _drawSeries(
@@ -959,8 +966,9 @@ class _WeeklyTrendPainter extends CustomPainter {
     Rect chartRect,
     List<int> values,
     int goal,
-    Color color,
-  ) {
+    Color color, {
+    double maxRatio = 1.25,
+  }) {
     if (values.isEmpty) return;
     final effectiveGoal = math.max(1, goal);
     final stepX = values.length == 1
@@ -968,7 +976,8 @@ class _WeeklyTrendPainter extends CustomPainter {
         : chartRect.width / (values.length - 1);
     final points = <Offset>[];
     for (var index = 0; index < values.length; index++) {
-      final ratio = (values[index] / effectiveGoal).clamp(0.0, 1.25) / 1.25;
+      final ratio =
+          (values[index] / effectiveGoal).clamp(0.0, maxRatio) / maxRatio;
       final animatedRatio = ratio * progress;
       points.add(
         Offset(
@@ -1021,6 +1030,37 @@ class _WeeklyTrendPainter extends CustomPainter {
         point,
         1.5,
         Paint()..color = Colors.white.withValues(alpha: 0.95),
+      );
+    }
+
+    // Draw today's exact value as a dotted line to the Y-axis if != goal
+    final todayValue = values.last;
+    if (todayValue != goal && progress > 0.9) {
+      final todayPoint = points.last;
+      _drawDashedLine(
+        canvas,
+        Offset(0, todayPoint.dy),
+        todayPoint,
+        Paint()
+          ..color = color.withValues(alpha: 0.6)
+          ..strokeWidth = 1.0,
+      );
+
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: todayValue.toString(),
+          style: TextStyle(
+            color: color,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      textPainter.paint(
+        canvas,
+        Offset(-textPainter.width - 4, todayPoint.dy - textPainter.height / 2),
       );
     }
   }
