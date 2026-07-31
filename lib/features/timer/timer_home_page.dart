@@ -3831,22 +3831,6 @@ class TimerHomePageState extends State<TimerHomePage>
     return null;
   }
 
-  String? get _automaticPauseCauseDetail {
-    if (_isSchedulePaused) {
-      return 'The timer will resume during your next active work period.';
-    }
-    if (_isScreenLocked) {
-      return 'The timer will resume when you unlock the screen.';
-    }
-    if (_isSystemIdlePaused) {
-      return 'Move the mouse or use the keyboard to resume.';
-    }
-    if (_isMediaPaused) {
-      return 'The timer will resume when this activity ends.';
-    }
-    return null;
-  }
-
   IconData get _automaticPauseCauseIcon {
     if (_isSchedulePaused) return Icons.calendar_today_outlined;
     if (_isScreenLocked) return Icons.lock_outline_rounded;
@@ -3859,56 +3843,159 @@ class TimerHomePageState extends State<TimerHomePage>
     };
   }
 
+  List<({
+    String label,
+    String detail,
+    IconData icon,
+    Color Function(ColorScheme) colorGetter,
+  })> get _allActiveAutoPauseCauses {
+    final list = <({
+      String label,
+      String detail,
+      IconData icon,
+      Color Function(ColorScheme) colorGetter,
+    })>[];
+
+    if (_isSchedulePaused) {
+      list.add((
+        label: 'Schedule pause',
+        detail: 'The timer will resume during your next active work period.',
+        icon: Icons.calendar_today_outlined,
+        colorGetter: (s) => s.tertiary,
+      ));
+    }
+    if (_isScreenLocked) {
+      list.add((
+        label: 'Screen locked',
+        detail: 'The timer will resume when you unlock the screen.',
+        icon: Icons.lock_outline_rounded,
+        colorGetter: (s) => s.secondary,
+      ));
+    }
+    if (_isSystemIdlePaused) {
+      list.add((
+        label: 'Away from desk',
+        detail: 'Move the mouse or use the keyboard to resume.',
+        icon: Icons.person_off_outlined,
+        colorGetter: (s) => s.primary,
+      ));
+    }
+    if (_isMediaPaused) {
+      final (label, icon) = switch (_externalPauseCause) {
+        _ExternalPauseCause.microphone => (
+          'Microphone active',
+          Icons.mic_none_outlined,
+        ),
+        _ExternalPauseCause.camera => (
+          'Camera active',
+          Icons.videocam_outlined,
+        ),
+        _ExternalPauseCause.cameraAndMicrophone => (
+          'Camera & mic active',
+          Icons.video_call_outlined,
+        ),
+        _ExternalPauseCause.media || null => (
+          'Music or video playing',
+          Icons.music_note_outlined,
+        ),
+      };
+      list.add((
+        label: label,
+        detail: 'The timer will resume when this activity ends.',
+        icon: icon,
+        colorGetter: (s) => s.primary,
+      ));
+    }
+    return list;
+  }
+
   Widget _buildAutomaticPauseStatusCard(BuildContext context) {
-    final cause = _automaticPauseCauseLabel;
-    final detail = _automaticPauseCauseDetail;
-    if (cause == null || detail == null) return const SizedBox.shrink();
+    final activeCauses = _allActiveAutoPauseCauses;
+    if (activeCauses.isEmpty) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final color = _isSchedulePaused
-        ? scheme.tertiary
-        : _isScreenLocked
-        ? scheme.secondary
-        : _isSystemIdlePaused
-        ? scheme.primary
-        : scheme.primary;
+    final primaryColor = activeCauses.first.colorGetter(scheme);
+
     return Padding(
-      padding: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.only(top: 8),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 460),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: CalmSurface.color(theme, accent: color, tint: 0.10),
+            color: CalmSurface.color(theme, accent: primaryColor, tint: 0.10),
             borderRadius: BorderRadius.circular(CalmSurface.compactRadius),
             border: Border.all(
-              color: CalmSurface.border(theme, accent: color).color,
+              color: CalmSurface.border(theme, accent: primaryColor).color,
             ),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(_automaticPauseCauseIcon, color: color),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Automatic pause · $cause',
+              Row(
+                children: [
+                  Icon(_automaticPauseCauseIcon, size: 16, color: primaryColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Automatic pause · ${_automaticPauseCauseLabel ?? activeCauses.first.label}',
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: scheme.onSurface,
                         fontWeight: FontWeight.w800,
+                        fontSize: 13,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      detail,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+              if (activeCauses.length > 1) ...[
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: activeCauses.map((cause) {
+                    final badgeColor = cause.colorGetter(scheme);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
                       ),
-                    ),
-                  ],
+                      decoration: BoxDecoration(
+                        color: badgeColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: badgeColor.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(cause.icon, size: 12, color: badgeColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            cause.label,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: scheme.onSurface,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+              const SizedBox(height: 4),
+              Text(
+                activeCauses.length == 1
+                    ? activeCauses.first.detail
+                    : 'Timer is paused while these activities are active. It will resume automatically when they conclude.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontSize: 11,
                 ),
               ),
             ],

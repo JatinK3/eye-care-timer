@@ -1222,3 +1222,8 @@ Ideas captured from design review session. Prioritized by impact. None are sched
   - Slot files remain alive on disk throughout runtime rather than being deleted immediately, preventing `ENOENT` (File Not Found) errors when GNOME Shell or KDE Plasma asynchronously reads or re-renders the tray icon during tooltips, hovers, and workspace transitions.
   - Startup and shutdown cleanup functions (`_cleanUpTrayIconFiles`) automatically purge all temporary slot files on app launch and exit.
 
+- Enhanced Backup & Restore and Detailed Auto-Pause Status Badges:
+  - Updated `_importFullBackup` in `lib/app.dart` to trigger `_refreshHistoryData()` immediately after JSON backup restoration, ensuring history charts, timer event lists, and hydration logs update reactively without requiring an app restart.
+  - Upgraded `_buildAutomaticPauseStatusCard` in `lib/features/timer/timer_home_page.dart` to evaluate and display detailed status badge chips (`_allActiveAutoPauseCauses`) for every active auto-pause trigger (Microphone active, Camera active, Media playing, Away from desk, Schedule pause, Screen locked).
+
+

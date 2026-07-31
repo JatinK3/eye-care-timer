@@ -915,6 +915,7 @@ class _BlinkKindAppState extends State<BlinkKindApp>
     setState(() {
       _settings = newSettings;
     });
+    await _refreshHistoryData();
   }
 
   void _setAiMotivationEnabled(bool enabled) {
