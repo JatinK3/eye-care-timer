@@ -41,6 +41,8 @@ class DesktopIntegrationService extends WindowListener {
   int? _lastWaterGlassSizeMl;
   int? _lastWaterDailyGoalGlasses;
   String? _lastIconPath;
+  int _trayIconSlot = 0;
+  static const int _maxTrayIconSlots = 4;
   DesktopTimerState? _latestState;
 
   String? _lastTrayText;
@@ -148,7 +150,34 @@ class DesktopIntegrationService extends WindowListener {
     _isInitialized = true;
   }
 
+  String _getTempDir() {
+    if (Platform.isWindows) {
+      return Platform.environment['TEMP'] ?? Platform.environment['TMP'] ?? '.';
+    }
+    return Platform.environment['TMPDIR'] ?? '/tmp';
+  }
+
+  Future<void> _cleanUpTrayIconFiles() async {
+    try {
+      final tempDir = _getTempDir();
+      final dir = Directory(tempDir);
+      if (await dir.exists()) {
+        await for (final entity in dir.list()) {
+          if (entity is File && entity.path.contains('blinkkind_tray_icon')) {
+            try {
+              await entity.delete();
+            } catch (_) {}
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to clean up tray icon files: $e');
+    }
+  }
+
   Future<void> _initTray() async {
+    await _cleanUpTrayIconFiles();
+
     String iconPath;
     if (Platform.isWindows) {
       iconPath = 'assets/app_icon.ico';
@@ -532,17 +561,7 @@ class DesktopIntegrationService extends WindowListener {
     } catch (e) {
       debugPrint('Failed to cancel notifications on exit: $e');
     }
-    final oldPath = _lastIconPath;
-    if (oldPath != null) {
-      try {
-        final oldFile = File(oldPath);
-        if (await oldFile.exists()) {
-          await oldFile.delete();
-        }
-      } catch (e) {
-        debugPrint('Failed to delete tray icon on exit: $e');
-      }
-    }
+    await _cleanUpTrayIconFiles();
     try {
       await hotKeyManager.unregisterAll();
     } catch (e) {
@@ -875,33 +894,16 @@ class DesktopIntegrationService extends WindowListener {
 
       final pngBytes = byteData.buffer.asUint8List();
 
-      final String tempDir;
-      if (Platform.isWindows) {
-        tempDir =
-            Platform.environment['TEMP'] ?? Platform.environment['TMP'] ?? '.';
-      } else {
-        tempDir = Platform.environment['TMPDIR'] ?? '/tmp';
-      }
+      final tempDir = _getTempDir();
 
-      // Generate dynamic file path to bypass AppIndicator/composing caches
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final file = File('$tempDir/blinkkind_tray_icon_$timestamp.png');
+      // Cycle through a fixed ring-buffer of slot file paths to force
+      // AppIndicator/StatusNotifierItem icon updates while avoiding file-deletion
+      // race conditions with the compositor during rapid tray icon updates.
+      _trayIconSlot = (_trayIconSlot + 1) % _maxTrayIconSlots;
+      final file = File('$tempDir/blinkkind_tray_icon_slot_$_trayIconSlot.png');
       await file.writeAsBytes(pngBytes, flush: true);
 
       await _systemTray.setImage(file.path);
-
-      // Clean up the previously written tray icon file
-      final oldPath = _lastIconPath;
-      if (oldPath != null && oldPath != file.path) {
-        try {
-          final oldFile = File(oldPath);
-          if (await oldFile.exists()) {
-            await oldFile.delete();
-          }
-        } catch (e) {
-          debugPrint('Failed to delete old tray icon: $e');
-        }
-      }
       _lastIconPath = file.path;
     } catch (e) {
       debugPrint('Failed to update dynamic tray icon: $e');

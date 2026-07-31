@@ -1215,3 +1215,10 @@ Ideas captured from design review session. Prioritized by impact. None are sched
   - Increased system idle threshold from 60 seconds to 120 seconds.
   - Disabled aggressive natural break crediting upon resuming from idle state, ensuring the timer cleanly resumes from its paused state instead of resetting the work cycle from the beginning.
 - Added configurable idle detection timeout (2, 3, 5, 10 min) to settings.
+
+- Fixed Linux app indicator / tray icon getting stuck on stale positions or blink nudge icons:
+  - Bypassed Linux AppIndicator and DBus icon deletion race conditions by implementing a 4-slot ring buffer of persistent file paths (`blinkkind_tray_icon_slot_0.png` through `3.png`) in `desktop_integration_service.dart`.
+  - Icon file paths rotate between the 4 slots on each state update so AppIndicator receives a distinct file path to trigger OS updates.
+  - Slot files remain alive on disk throughout runtime rather than being deleted immediately, preventing `ENOENT` (File Not Found) errors when GNOME Shell or KDE Plasma asynchronously reads or re-renders the tray icon during tooltips, hovers, and workspace transitions.
+  - Startup and shutdown cleanup functions (`_cleanUpTrayIconFiles`) automatically purge all temporary slot files on app launch and exit.
+
